@@ -39,6 +39,8 @@ func TestShow(t *testing.T) {
 	// Use the fact that JSON is also valid YAML ..
 	expected := `
 {
+  "apiVersion": "v0alpha1",
+  "kind": "TestObject",
   "nil": null,
   "bool": true,
   "number": 42,
@@ -56,8 +58,8 @@ func TestShow(t *testing.T) {
 
 		output := cmdOutput(t, []string{"show",
 			"-J", filepath.FromSlash("../testdata/lib"),
-			"-f", filepath.FromSlash("../testdata/test.jsonnet"),
 			"-o", format,
+			filepath.FromSlash("../testdata/test.jsonnet"),
 		})
 
 		t.Log("output is", output)

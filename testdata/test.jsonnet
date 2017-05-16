@@ -1,5 +1,11 @@
 local test = import "test.libsonnet";
 
-test {
-  string: "bar",
+{
+  apiVersion: "v1",
+  kind: "List",
+  items: [
+    test {
+      string: "bar",
+    }
+  ],
 }

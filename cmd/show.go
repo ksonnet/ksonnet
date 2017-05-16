@@ -10,8 +10,6 @@ import (
 
 func init() {
 	RootCmd.AddCommand(showCmd)
-	showCmd.PersistentFlags().StringP("file", "f", "", "Input jsonnet file")
-	showCmd.MarkFlagFilename("file", "jsonnet", "libsonnet")
 	showCmd.PersistentFlags().StringP("format", "o", "yaml", "Output format.  Supported values are: json, yaml")
 }
 
@@ -28,11 +26,7 @@ var showCmd = &cobra.Command{
 		}
 		defer vm.Destroy()
 
-		file, err := flags.GetString("file")
-		if err != nil {
-			return err
-		}
-		jsobj, err := evalFile(vm, file)
+		objs, err := readObjs(cmd, args)
 		if err != nil {
 			return err
 		}
@@ -43,16 +37,36 @@ var showCmd = &cobra.Command{
 		}
 		switch format {
 		case "yaml":
-			buf, err := yaml.Marshal(jsobj)
-			if err != nil {
-				return err
+			for _, obj := range objs {
+				fmt.Fprintln(out, "---")
+				// Urgh.  Go via json because we need
+				// to trigger the custom scheme
+				// encoding.
+				buf, err := json.Marshal(obj)
+				if err != nil {
+					return err
+				}
+				o := map[string]interface{}{}
+				if err := json.Unmarshal(buf, &o); err != nil {
+					return err
+				}
+				buf, err = yaml.Marshal(o)
+				if err != nil {
+					return err
+				}
+				out.Write(buf)
 			}
-			out.Write(buf)
 		case "json":
 			enc := json.NewEncoder(out)
 			enc.SetIndent("", "  ")
-			if err := enc.Encode(&jsobj); err != nil {
-				return err
+			for _, obj := range objs {
+				// TODO: this is not valid framing for JSON
+				if len(objs) > 1 {
+					fmt.Fprintln(out, "---")
+				}
+				if err := enc.Encode(obj); err != nil {
+					return err
+				}
 			}
 		default:
 			return fmt.Errorf("Unknown --format: %s", format)

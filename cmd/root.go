@@ -1,13 +1,16 @@
 package cmd
 
 import (
-	"encoding/json"
 	goflag "flag"
+	"fmt"
 	"path/filepath"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	jsonnet "github.com/strickyak/jsonnet_cgo"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/bitnami/kubecfg/utils"
 )
 
 func init() {
@@ -40,30 +43,27 @@ func JsonnetVM(cmd *cobra.Command) (*jsonnet.VM, error) {
 		return nil, err
 	}
 	for _, p := range filepath.SplitList(jpath) {
-		glog.V(2).Infoln("Adding jsonnet path", p)
+		glog.V(2).Infoln("Adding jsonnet search path", p)
 		vm.JpathAdd(p)
 	}
 
 	return vm, nil
 }
 
-func evalFile(vm *jsonnet.VM, file string) (interface{}, error) {
-	var err error
-	jsonstr := ""
-	if file != "" {
-		jsonstr, err = vm.EvaluateFile(file)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	glog.V(4).Infof("jsonnet result is: %s\n", jsonstr)
-
-	var jsobj interface{}
-	err = json.Unmarshal([]byte(jsonstr), &jsobj)
+func readObjs(cmd *cobra.Command, paths []string) ([]metav1.Object, error) {
+	vm, err := JsonnetVM(cmd)
 	if err != nil {
 		return nil, err
 	}
+	defer vm.Destroy()
 
-	return jsobj, nil
+	res := []metav1.Object{}
+	for _, path := range paths {
+		objs, err := utils.Read(vm, path)
+		if err != nil {
+			return nil, fmt.Errorf("Error reading %s: %v", path, err)
+		}
+		res = append(res, utils.FlattenToV1(objs)...)
+	}
+	return res, nil
 }
