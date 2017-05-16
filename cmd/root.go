@@ -3,6 +3,7 @@ package cmd
 import (
 	goflag "flag"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/golang/glog"
@@ -37,6 +38,12 @@ var RootCmd = &cobra.Command{
 func JsonnetVM(cmd *cobra.Command) (*jsonnet.VM, error) {
 	vm := jsonnet.Make()
 	flags := cmd.Flags()
+
+	jpath := os.Getenv("KUBECFG_JPATH")
+	for _, p := range filepath.SplitList(jpath) {
+		glog.V(2).Infoln("Adding jsonnet search path", p)
+		vm.JpathAdd(p)
+	}
 
 	jpath, err := flags.GetString("jpath")
 	if err != nil {
