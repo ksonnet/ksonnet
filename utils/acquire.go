@@ -12,8 +12,8 @@ import (
 	jsonnet "github.com/strickyak/jsonnet_cgo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	unstructuredv1 "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 // Read fetches and decodes K8s objects by path.
