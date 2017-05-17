@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/bitnami/kubecfg/cmd"
+	"github.com/backsplice/kubecfg/cmd"
 )
 
 // Version is overridden using `-X main.version` during release builds

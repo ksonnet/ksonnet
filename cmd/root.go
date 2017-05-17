@@ -11,7 +11,7 @@ import (
 	jsonnet "github.com/strickyak/jsonnet_cgo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/bitnami/kubecfg/utils"
+	"github.com/backsplice/kubecfg/utils"
 )
 
 func init() {
