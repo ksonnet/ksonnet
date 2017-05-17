@@ -335,5 +335,5 @@
 			"versionExact": "v2.0.0"
 		}
 	],
-	"rootPath": "github.com/bitnami/kubecfg"
+	"rootPath": "github.com/backsplice/kubecfg"
 }
