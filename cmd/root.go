@@ -17,7 +17,7 @@ import (
 	"k8s.io/client-go/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/backsplice/kubecfg/utils"
+	"github.com/ksonnet/kubecfg/utils"
 )
 
 const (
