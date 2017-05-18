@@ -10,16 +10,14 @@ import (
 
 	"github.com/golang/glog"
 	jsonnet "github.com/strickyak/jsonnet_cgo"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	unstructuredv1 "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/client-go/pkg/runtime"
 )
 
 // Read fetches and decodes K8s objects by path.
 // TODO: Replace this with something supporting more sophisticated
 // content negotiation.
-func Read(vm *jsonnet.VM, path string) ([]runtime.Unstructured, error) {
+func Read(vm *jsonnet.VM, path string) ([]runtime.Object, error) {
 	ext := filepath.Ext(path)
 	if ext == ".json" {
 		f, err := os.Open(path)
@@ -42,21 +40,21 @@ func Read(vm *jsonnet.VM, path string) ([]runtime.Unstructured, error) {
 	return nil, fmt.Errorf("Unknown file extension: %s", path)
 }
 
-func jsonReader(r io.Reader) ([]runtime.Unstructured, error) {
+func jsonReader(r io.Reader) ([]runtime.Object, error) {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
-	obj, _, err := unstructuredv1.UnstructuredJSONScheme.Decode(data, nil, nil)
+	obj, _, err := runtime.UnstructuredJSONScheme.Decode(data, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	return []runtime.Unstructured{obj.(runtime.Unstructured)}, nil
+	return []runtime.Object{obj}, nil
 }
 
-func yamlReader(r io.ReadCloser) ([]runtime.Unstructured, error) {
+func yamlReader(r io.ReadCloser) ([]runtime.Object, error) {
 	decoder := yaml.NewDocumentDecoder(r)
-	ret := []runtime.Unstructured{}
+	ret := []runtime.Object{}
 	buf := []byte{}
 	for {
 		_, err := decoder.Read(buf)
@@ -69,16 +67,16 @@ func yamlReader(r io.ReadCloser) ([]runtime.Unstructured, error) {
 		if err != nil {
 			return nil, err
 		}
-		obj, _, err := unstructuredv1.UnstructuredJSONScheme.Decode(jsondata, nil, nil)
+		obj, _, err := runtime.UnstructuredJSONScheme.Decode(jsondata, nil, nil)
 		if err != nil {
 			return nil, err
 		}
-		ret = append(ret, obj.(runtime.Unstructured))
+		ret = append(ret, obj)
 	}
 	return ret, nil
 }
 
-func jsonnetReader(vm *jsonnet.VM, path string) ([]runtime.Unstructured, error) {
+func jsonnetReader(vm *jsonnet.VM, path string) ([]runtime.Object, error) {
 	jsonstr, err := vm.EvaluateFile(path)
 	if err != nil {
 		return nil, err
@@ -90,17 +88,17 @@ func jsonnetReader(vm *jsonnet.VM, path string) ([]runtime.Unstructured, error) 
 }
 
 // FlattenToV1 expands any List-type objects into their members, and
-// cooerces everything to metav1.Objects.  Panics if coercion
+// cooerces everything to v1.Unstructured.  Panics if coercion
 // encounters an unexpected object type.
-func FlattenToV1(objs []runtime.Unstructured) []metav1.Object {
-	ret := make([]metav1.Object, 0, len(objs))
+func FlattenToV1(objs []runtime.Object) []*runtime.Unstructured {
+	ret := make([]*runtime.Unstructured, 0, len(objs))
 	for _, obj := range objs {
 		switch o := obj.(type) {
-		case *unstructuredv1.UnstructuredList:
+		case *runtime.UnstructuredList:
 			for _, item := range o.Items {
-				ret = append(ret, &item)
+				ret = append(ret, item)
 			}
-		case *unstructuredv1.Unstructured:
+		case *runtime.Unstructured:
 			ret = append(ret, o)
 		default:
 			panic("Unexpected unstructured object type")

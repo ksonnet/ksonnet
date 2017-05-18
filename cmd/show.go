@@ -8,9 +8,13 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+const (
+	flagFormat = "format"
+)
+
 func init() {
 	RootCmd.AddCommand(showCmd)
-	showCmd.PersistentFlags().StringP("format", "o", "yaml", "Output format.  Supported values are: json, yaml")
+	showCmd.PersistentFlags().StringP(flagFormat, "o", "yaml", "Output format.  Supported values are: json, yaml")
 }
 
 var showCmd = &cobra.Command{
@@ -20,18 +24,12 @@ var showCmd = &cobra.Command{
 		flags := cmd.Flags()
 		out := cmd.OutOrStdout()
 
-		vm, err := JsonnetVM(cmd)
-		if err != nil {
-			return err
-		}
-		defer vm.Destroy()
-
 		objs, err := readObjs(cmd, args)
 		if err != nil {
 			return err
 		}
 
-		format, err := flags.GetString("format")
+		format, err := flags.GetString(flagFormat)
 		if err != nil {
 			return err
 		}
