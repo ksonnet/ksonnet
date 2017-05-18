@@ -4,13 +4,96 @@ go:
   - 1.7
   - 1.8
 
+os:
+  - linux
+  - osx
+
+matrix:
+  include:
+    - env: TARGET=x86_64-linux-musl
+      os: linux
+      go: 1.8
+
+addons:
+  apt:
+    packages:
+      # Most of these are musl-cross dependencies
+      - wget
+      - patch
+      - git-core
+      - gcc
+      - g++
+      - make
+      - gawk
+      - bzip2
+      - gzip
+      - xz-utils
+      - ca-certificates
+      - libgmp-dev
+      - libmpfr-dev
+      - libmpc-dev
+
+before_install:
+  - set -e
+  - |
+    if [ -n "$TARGET" -a ! -d "$HOME/cross/$TARGET/bin" ]; then
+      pushd /tmp
+      git clone --depth=1 https://github.com/GregorR/musl-cross.git
+      cd musl-cross
+      echo CC_BASE_PREFIX=$HOME/cross >> ./config.sh
+      if ! ./build.sh > build.log; then
+        tail -100 build.log
+        exit 1
+      fi
+      popd
+    fi
+  - PATH=$PATH:$HOME/cross/$TARGET/bin
+  - |
+    if [ -n "$TARGET" ]; then
+      export CC="$TARGET-gcc"
+      export CXX="$TARGET-g++"
+      export GO_LDFLAGS='-linkmode external -extldflags=-static'
+    fi
+
 install:
-  - go build -i .
+  - go build -i -ldflags "$GO_LDFLAGS" .
 
 script:
-  - make test vet
+  - make VERSION=${TRAVIS_TAG:-build-$TRAVIS_BUILD_ID}
+  - make test
+  - make vet
+  - "ldd ./kubecfg || :"
+  - ./kubecfg help
+  - ./kubecfg version
+
+after_script: set +e
+
+before_deploy:
+  - cp kubecfg $TARGET-kubecfg
+  - strip $TARGET-kubecfg && ./$TARGET-kubecfg version
+  - "size $TARGET-kubecfg || :"
+
+deploy:
+  api_key:
+    secure: "T/LpWZSgeqWBgY3mUNeej55n8TbZZM7UgrHl7pej1CE2cs6YGcfyog3peiXvCcVF9NhGsm6eTXZQeFxsuWgMbWYeqlBnMkHNPPqdNpeRFgY0TkFZXHZLexfqTo2MLgrZiJ+bZl8wZnTTXukieGeLE37ugkBJyceLyfqIaxwRlpDzKPn8XtIqOMOwMq0aeUA8wjSSpuWkuwlGWKwJtI48BNExZZ1FRpPHQdAZjX6zEPT2SuRaACZdoX+3k/Fr91H6O9TplE4q5eCpEdd3y7BGGtMm3WA70SxYIZPGzfwaALGja5BapZr9Eui6ppyPGesQ8zV+zNtOsnK5Phj3QUj8M+v4BmJbxbPyhAIWmFiDlutgwZUkXI+R+SXONy1/LTuLLNSJ9WPQsC9gL09FGQmg+X0s7VpJVWxD8FScY0DJ4/bNLgeWnzwT2YTsduDktqevMpetxJWZGVQx3EN595JJKlZGtE8PouzVm7sRQEfe3Jd0XIcPfj5AV5trEBDjgHZSnU4qa9G9RdUZfswVp+R7SEwoTwEIEyOpFAwi9Qg5wkCAZFU2+86LQOLYH0Pm38//RxSXJEF1abkEb0Y/awz6KKlGBK3z1VSXvK3LQ8r9SwF2h15rD74O1mGM8Mjbs+mJXPxKpCq+BslskRYur3F8tRx45pwr8Ly9dppZd2rrswI="
+  file: $TARGET-kubecfg
+  on:
+    condition: $TARGET = x86_64-linux-musl
+    tags: true
+  provider: releases
+  skip_cleanup: true
 
 cache:
   directories:
-    - $GOPATH/src
     - $GOPATH/pkg
+    - $HOME/cross
+
+branches:
+  only:
+    - master
+    # release tags
+    - /^v\d+\.\d+\.\d+.*$/
+
+notifications:
+  email:
+    on_success: never
