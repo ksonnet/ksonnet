@@ -3,6 +3,10 @@
 	"ignore": "test",
 	"package": [
 		{
+			"path": "-v",
+			"revision": ""
+		},
+		{
 			"path": "appengine",
 			"revision": ""
 		},
@@ -117,8 +121,12 @@
 			"revisionTime": "2017-04-10T11:07:28Z"
 		},
 		{
+			"checksumSHA1": "2OofLhHRnS/xkDiAjKvn7LmY228=",
 			"path": "github.com/emicklei/go-restful/swagger",
-			"revision": "ff4f55a206334ef123e4f79bbf348980da81ca46"
+			"revision": "777bb3f19bcafe2575ffb2a3e46af92509ae9594",
+			"revisionTime": "2015-11-26T14:56:26Z",
+			"version": "v1.2",
+			"versionExact": "v1.2"
 		},
 		{
 			"checksumSHA1": "ImX1uv6O09ggFeBPUJJ2nu7MPSA=",
