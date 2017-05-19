@@ -10,6 +10,8 @@ import (
 	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/runtime"
 	"k8s.io/client-go/pkg/util/diff"
+
+	"github.com/ksonnet/kubecfg/utils"
 )
 
 const (
@@ -46,6 +48,8 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
+		utils.SortDepFirst(objs)
 
 		for _, obj := range objs {
 			desc := fmt.Sprintf("%s/%s", obj.GetKind(), fqName(obj))
