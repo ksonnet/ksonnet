@@ -1,7 +1,7 @@
 VERSION = dev-$(shell date +%FT%T%z)
 
 GO = go
-GO_FLAGS = -ldflags="-X main.version=$(VERSION)"
+GO_FLAGS = -ldflags="-X main.version=$(VERSION) $(GO_LDFLAGS)"
 GOFMT = gofmt
 
 # TODO: Simplify this once ./... ignores ./vendor
@@ -13,10 +13,10 @@ kubecfg:
 	$(GO) build $(GO_FLAGS) .
 
 test:
-	$(GO) test $(GO_PACKAGES)
+	$(GO) test $(GO_FLAGS) $(GO_PACKAGES)
 
 vet:
-	$(GO) vet $(GO_PACKAGES)
+	$(GO) vet $(GO_FLAGS) $(GO_PACKAGES)
 
 fmt:
 	$(GOFMT) -s -w $(shell $(GO) list -f '{{.Dir}}' $(GO_PACKAGES))
