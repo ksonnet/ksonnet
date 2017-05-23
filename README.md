@@ -18,6 +18,10 @@ similarly-named internal tool ;)
 
 ## Install
 
+Pre-compiled executables exist for some platforms on
+the [Github releases](https://github.com/ksonnet/kubecfg/releases)
+page.
+
 To build from source:
 
 ```console
