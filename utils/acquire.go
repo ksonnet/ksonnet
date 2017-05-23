@@ -1,12 +1,12 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/golang/glog"
 	jsonnet "github.com/strickyak/jsonnet_cgo"
@@ -76,6 +76,36 @@ func yamlReader(r io.ReadCloser) ([]runtime.Object, error) {
 	return ret, nil
 }
 
+func jsonWalk(obj interface{}) ([]interface{}, error) {
+	switch o := obj.(type) {
+	case map[string]interface{}:
+		if o["kind"] != nil && o["apiVersion"] != nil {
+			return []interface{}{o}, nil
+		}
+		ret := []interface{}{}
+		for _, v := range o {
+			children, err := jsonWalk(v)
+			if err != nil {
+				return nil, err
+			}
+			ret = append(ret, children...)
+		}
+		return ret, nil
+	case []interface{}:
+		ret := make([]interface{}, 0, len(o))
+		for _, v := range o {
+			children, err := jsonWalk(v)
+			if err != nil {
+				return nil, err
+			}
+			ret = append(ret, children...)
+		}
+		return ret, nil
+	default:
+		return nil, fmt.Errorf("Unexpected object structure: %T", o)
+	}
+}
+
 func jsonnetReader(vm *jsonnet.VM, path string) ([]runtime.Object, error) {
 	jsonstr, err := vm.EvaluateFile(path)
 	if err != nil {
@@ -84,7 +114,31 @@ func jsonnetReader(vm *jsonnet.VM, path string) ([]runtime.Object, error) {
 
 	glog.V(4).Infof("jsonnet result is: %s\n", jsonstr)
 
-	return jsonReader(strings.NewReader(jsonstr))
+	var top interface{}
+	if err = json.Unmarshal([]byte(jsonstr), &top); err != nil {
+		return nil, err
+	}
+
+	objs, err := jsonWalk(top)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := make([]runtime.Object, 0, len(objs))
+	for _, v := range objs {
+		// TODO: Going to json and back is a bit horrible
+		data, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		obj, _, err := runtime.UnstructuredJSONScheme.Decode(data, nil, nil)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, obj)
+	}
+
+	return ret, nil
 }
 
 // FlattenToV1 expands any List-type objects into their members, and
