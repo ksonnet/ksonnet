@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,8 +11,8 @@ import (
 
 	"github.com/golang/glog"
 	jsonnet "github.com/strickyak/jsonnet_cgo"
-	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/pkg/runtime"
+	"k8s.io/client-go/pkg/util/yaml"
 )
 
 // Read fetches and decodes K8s objects by path.
@@ -53,20 +54,24 @@ func jsonReader(r io.Reader) ([]runtime.Object, error) {
 }
 
 func yamlReader(r io.ReadCloser) ([]runtime.Object, error) {
-	decoder := yaml.NewDocumentDecoder(r)
+	decoder := yaml.NewYAMLReader(bufio.NewReader(r))
 	ret := []runtime.Object{}
-	buf := []byte{}
 	for {
-		_, err := decoder.Read(buf)
+		bytes, err := decoder.Read()
 		if err == io.EOF {
 			break
 		} else if err != nil {
 			return nil, err
 		}
-		jsondata, err := yaml.ToJSON(buf)
+		glog.V(4).Infof("Read %d bytes of YAML: %s", len(bytes), bytes)
+		if len(bytes) == 0 {
+			continue
+		}
+		jsondata, err := yaml.ToJSON(bytes)
 		if err != nil {
 			return nil, err
 		}
+		glog.V(4).Infof("Converted to JSON: %s", jsondata)
 		obj, _, err := runtime.UnstructuredJSONScheme.Decode(jsondata, nil, nil)
 		if err != nil {
 			return nil, err
