@@ -26,7 +26,7 @@ To build from source:
 
 ```console
 % PATH=$PATH:$GOPATH/bin
-% go install github.com/ksonnet/kubecfg
+% go get github.com/ksonnet/kubecfg
 ```
 
 Requires golang >=1.7 and a functional cgo environment (C++ with libstdc++).
