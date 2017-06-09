@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"sort"
-
 	"k8s.io/client-go/pkg/api/unversioned"
 	"k8s.io/client-go/pkg/runtime"
 )
@@ -42,23 +40,32 @@ func depTier(o *runtime.Unstructured) int {
 	}
 }
 
-type dependentObjects []*runtime.Unstructured
+// DependencyOrder is a `sort.Interface` that *best-effort* sorts the
+// objects so that known dependencies appear earlier in the list.  The
+// idea is to prevent *some* of the "crash-restart" loops when
+// creating inter-dependent resources.
+type DependencyOrder []*runtime.Unstructured
 
-func (l dependentObjects) Len() int      { return len(l) }
-func (l dependentObjects) Swap(i, j int) { l[i], l[j] = l[j], l[i] }
-func (l dependentObjects) Less(i, j int) bool {
+func (l DependencyOrder) Len() int      { return len(l) }
+func (l DependencyOrder) Swap(i, j int) { l[i], l[j] = l[j], l[i] }
+func (l DependencyOrder) Less(i, j int) bool {
 	return depTier(l[i]) < depTier(l[j])
 }
 
-// SortDepFirst *best-effort* sorts the objects so that known
-// dependencies appear earlier in the list.  The idea is to prevent
-// *some* of the "crash-restart" loops when creating inter-dependent
-// resources.
-func SortDepFirst(objs []*runtime.Unstructured) {
-	sort.Sort(dependentObjects(objs))
-}
+// AlphabeticalOrder is a `sort.Interface` that sorts the
+// objects by namespace/name/kind alphabetical order
+type AlphabeticalOrder []*runtime.Unstructured
 
-// SortDepLast is the reverse order of SortDepFirst.
-func SortDepLast(objs []*runtime.Unstructured) {
-	sort.Sort(sort.Reverse(dependentObjects(objs)))
+func (l AlphabeticalOrder) Len() int      { return len(l) }
+func (l AlphabeticalOrder) Swap(i, j int) { l[i], l[j] = l[j], l[i] }
+func (l AlphabeticalOrder) Less(i, j int) bool {
+	a, b := l[i], l[j]
+
+	if a.GetNamespace() != b.GetNamespace() {
+		return a.GetNamespace() < b.GetNamespace()
+	}
+	if a.GetName() != b.GetName() {
+		return a.GetName() < b.GetName()
+	}
+	return a.GetKind() < b.GetKind()
 }

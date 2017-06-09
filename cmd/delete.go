@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
@@ -44,7 +45,7 @@ var deleteCmd = &cobra.Command{
 
 		defaultNs, _, err := clientConfig.Namespace()
 
-		utils.SortDepLast(objs)
+		sort.Sort(sort.Reverse(utils.DependencyOrder(objs)))
 
 		deleteOpts := v1.DeleteOptions{OrphanDependents: &boolFalse}
 		if gracePeriod >= 0 {
