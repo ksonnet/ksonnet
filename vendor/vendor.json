@@ -233,6 +233,12 @@
 			"revisionTime": "2017-04-26T07:38:02Z"
 		},
 		{
+			"checksumSHA1": "U6lX43KDDlNOn+Z0Yyww+ZzHfFo=",
+			"path": "github.com/mattn/go-isatty",
+			"revision": "fc9e8d8ef48496124e79ae0df75490096eccf6fe",
+			"revisionTime": "2017-03-22T23:44:13Z"
+		},
+		{
 			"checksumSHA1": "2AyUkWjutec6p+470tgio8mYOxI=",
 			"path": "github.com/opencontainers/go-digest",
 			"revision": "eaa60544f31ccf3b0653b1a118b76d33418ff41b",
@@ -243,6 +249,12 @@
 			"path": "github.com/pborman/uuid",
 			"revision": "1b00554d822231195d1babd97ff4a781231955c9",
 			"revisionTime": "2017-01-12T15:04:04Z"
+		},
+		{
+			"checksumSHA1": "v7C+aJ1D/z3MEeCte6bxvpoGjM4=",
+			"path": "github.com/sergi/go-diff/diffmatchpatch",
+			"revision": "feef008d51ad2b3778f85d387ccf91735543008d",
+			"revisionTime": "2017-04-09T07:17:39Z"
 		},
 		{
 			"checksumSHA1": "Wgm8Y0np1Usy3+ZTTPFdHoqzed8=",
@@ -267,6 +279,24 @@
 			"path": "github.com/ugorji/go/codec",
 			"revision": "708a42d246822952f38190a8d8c4e6b16a0e600c",
 			"revisionTime": "2017-03-12T11:21:14Z"
+		},
+		{
+			"checksumSHA1": "r7o16T0WQ/XSe2mlQuioMi8gxbw=",
+			"path": "github.com/yudai/gojsondiff",
+			"revision": "9209d1532c51cabe0439993586a71c207b09a0ac",
+			"revisionTime": "2017-02-27T22:09:00Z"
+		},
+		{
+			"checksumSHA1": "7/V6fDOOfkmSHQahCK+J5G4Y1uk=",
+			"path": "github.com/yudai/gojsondiff/formatter",
+			"revision": "9209d1532c51cabe0439993586a71c207b09a0ac",
+			"revisionTime": "2017-02-27T22:09:00Z"
+		},
+		{
+			"checksumSHA1": "5xoBoioS8LWHn9FC0pL+vo7wDjs=",
+			"path": "github.com/yudai/golcs",
+			"revision": "ecda9a501e8220fae3b4b600c3db4b0ba22cfc68",
+			"revisionTime": "2017-03-16T03:48:04Z"
 		},
 		{
 			"checksumSHA1": "ZaU56svwLgiJD0y8JOB3+/mpYBA=",
