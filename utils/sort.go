@@ -57,3 +57,8 @@ func (l dependentObjects) Less(i, j int) bool {
 func SortDepFirst(objs []*runtime.Unstructured) {
 	sort.Sort(dependentObjects(objs))
 }
+
+// SortDepLast is the reverse order of SortDepFirst.
+func SortDepLast(objs []*runtime.Unstructured) {
+	sort.Sort(sort.Reverse(dependentObjects(objs)))
+}
