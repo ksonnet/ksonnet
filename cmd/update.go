@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
@@ -49,7 +50,7 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 
-		utils.SortDepFirst(objs)
+		sort.Sort(utils.DependencyOrder(objs))
 
 		for _, obj := range objs {
 			desc := fmt.Sprintf("%s/%s", obj.GetKind(), fqName(obj))
