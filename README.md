@@ -77,5 +77,5 @@ or to recover from disaster.
 Kubecfg relies heavily on [jsonnet](http://jsonnet.org/) to describe
 Kubernetes resources, and is really just a thin Kubernetes-specific
 wrapper around jsonnet evaluation.  You should read the jsonnet
-tutorial, and skim the functions available in the jsonnet `std`
+[tutorial](http://jsonnet.org/docs/tutorial.html), and skim the functions available in the jsonnet [`std`](http://jsonnet.org/docs/stdlib.html)
 library.
