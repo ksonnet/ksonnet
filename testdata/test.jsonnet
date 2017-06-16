@@ -1,4 +1,5 @@
 local test = import "test.libsonnet";
+local aVar = std.extVar("aVar");
 
 {
   apiVersion: "v1",
@@ -6,6 +7,7 @@ local test = import "test.libsonnet";
   items: [
     test {
       string: "bar",
+      notAVal : aVar,
     }
   ],
 }
