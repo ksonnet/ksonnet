@@ -37,25 +37,31 @@ avoid an immediate `Killed: 9`.
 ## Quickstart
 
 ```console
-# This example uses ksonnet-lib
-% git clone https://github.com/ksonnet/ksonnet-lib.git
+# Fetch guestbook example
+% git clone https://github.com/ksonnet/kubecfg.git
+% cd kubecfg
 
-# Set kubecfg/jsonnet library search path.  Can also use `-J` args everywhere.
-% export KUBECFG_JPATH=$PWD/ksonnet-lib
-
-# Hello-world ksonnet-lib example
-% cd ksonnet-lib/examples/readme
+# Set kubecfg/jsonnet library search path to <kubecfg.git>/lib.
+# Can also use explicit `-J` args everywhere.
+% export KUBECFG_JPATH=$PWD/lib
 
 # Show generated YAML
-% kubecfg show -o yaml hello-nginx.jsonnet 
+% kubecfg show -o yaml examples/guestbook.jsonnet
 
 # Create resources
-% kubecfg update hello-nginx.jsonnet
+% kubecfg update examples/guestbook.jsonnet
 
-# Modify configuration
-% sed -ie 's/nginx:1.7.9/nginx:1.13.0/' hello-nginx.jsonnet
+# Modify configuration (downgrade gb-frontend image)
+% sed -i.bak '\,gcr.io/google-samples/gb-frontend,s/:v4/:v3/' examples/guestbook.jsonnet
+# See differences vs server
+% kubecfg diff examples/guestbook.jsonnet
+
 # Update to new config
-% kubecfg update hello-nginx.jsonnet
+% kubecfg update examples/guestbook.jsonnet
+
+# Clean up after demo
+% kubecfg delete examples/guestbook.jsonnet
+% mv examples/guestbook.jsonnet.bak examples/guestbook.jsonnet
 ```
 
 ## Features
