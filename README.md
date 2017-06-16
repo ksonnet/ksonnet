@@ -1,5 +1,7 @@
 # kubecfg
 
+[![Build Status](https://travis-ci.org/ksonnet/kubecfg.svg?branch=master)](https://travis-ci.org/ksonnet/kubecfg)
+
 A tool for managing Kubernetes resources as code.
 
 `kubecfg` allows you to express the patterns across your
@@ -8,10 +10,8 @@ services, and then manage those templates as files in version control.
 The more complex your infrastructure is, the more you will gain from
 using kubecfg.
 
-Status: This is a golang-rewrite of
-https://github.com/anguslees/kubecfg.  The original version has a few
-additional features, but the golang version will feel more similar to
-`kubectl` and is the focus of future development.
+Status: Basic functionality works, and the tool is usable.  The focus
+now is on clearer error reporting and advanced features.
 
 Yes, Google employees will recognise this as being very similar to a
 similarly-named internal tool ;)
@@ -30,6 +30,9 @@ To build from source:
 ```
 
 Requires golang >=1.7 and a functional cgo environment (C++ with libstdc++).
+Note that recent OSX environments
+[require golang >=1.8.1](https://github.com/golang/go/issues/19734) to
+avoid an immediate `Killed: 9`.
 
 ## Quickstart
 
