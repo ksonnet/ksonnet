@@ -6,17 +6,19 @@
 # See "Usage:" a few lines below.
 
 case "$#/$1" in
+	0/ )
+		set ../../google/jsonnet/
+		;;
 	1/*/jsonnet/ )
 		: ok
 		;;
 	* )
 		echo >&2 '
 Usage:
-	sh $0 /path/to/jsonnet/
+	sh  $0  ?/path/to/jsonnet/?
 
-This command requires one argument,
-the jsonnet repository directory,
-ending in /jsonnet/
+This command takes one argument, the jsonnet repository directory,
+ending in /jsonnet/.  The default is ../../google/jsonnet/.
 '
 		exit 13
 		;;

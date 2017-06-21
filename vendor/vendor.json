@@ -269,10 +269,10 @@
 			"revisionTime": "2017-05-08T18:43:26Z"
 		},
 		{
-			"checksumSHA1": "BXgH3TNmg26Ql/fH29Yb3dR3u2g=",
+			"checksumSHA1": "Ig39xerEZknDRBUmktZnC6GdkFs=",
 			"path": "github.com/strickyak/jsonnet_cgo",
-			"revision": "f22f0c43815490049135532023c27392536b057b",
-			"revisionTime": "2017-04-18T07:42:43Z"
+			"revision": "764010f55a278d2abc7be38b439929824a66aee4",
+			"revisionTime": "2017-06-16T09:44:14Z"
 		},
 		{
 			"checksumSHA1": "MxLnUmfrP+r5HfCZM29+WPKebn8=",
