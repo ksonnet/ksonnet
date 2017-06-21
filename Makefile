@@ -12,8 +12,13 @@ all: kubecfg
 kubecfg:
 	$(GO) build $(GO_FLAGS) .
 
-test:
+test: gotest jsonnettest
+
+gotest:
 	$(GO) test $(GO_FLAGS) $(GO_PACKAGES)
+
+jsonnettest: kubecfg lib/kubecfg_test.jsonnet
+	./kubecfg -J lib show lib/kubecfg_test.jsonnet
 
 vet:
 	$(GO) vet $(GO_FLAGS) $(GO_PACKAGES)

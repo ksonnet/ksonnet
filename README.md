@@ -63,6 +63,7 @@ avoid an immediate `Killed: 9`.
 - Supports JSON, YAML or jsonnet files (by file suffix).
 - Best-effort sorts objects before updating, so that dependencies are
   pushed to the server before objects that refer to them.
+- Additional jsonnet builtin functions. See `lib/kubecfg.libsonnet`.
 
 ## Infrastructure-as-code Philosophy
 
