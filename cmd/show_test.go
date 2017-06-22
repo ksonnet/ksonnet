@@ -45,6 +45,7 @@ func TestShow(t *testing.T) {
   "bool": true,
   "number": 42,
   "string": "bar",
+  "notAVal": "aVal",
   "array": ["one", 2, [3]],
   "object": {"foo": "bar"}
 }
@@ -60,6 +61,7 @@ func TestShow(t *testing.T) {
 			"-J", filepath.FromSlash("../testdata/lib"),
 			"-o", format,
 			filepath.FromSlash("../testdata/test.jsonnet"),
+			"-V", "aVar=aVal",
 		})
 
 		t.Log("output is", output)

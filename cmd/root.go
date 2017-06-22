@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
@@ -21,13 +22,15 @@ import (
 )
 
 const (
-	flagJpath = "jpath"
+	flagJpath  = "jpath"
+	flagExtVar = "extVar"
 )
 
 var clientConfig clientcmd.ClientConfig
 
 func init() {
 	RootCmd.PersistentFlags().StringP(flagJpath, "J", "", "Additional jsonnet library search path")
+	RootCmd.PersistentFlags().StringSliceP(flagExtVar, "V", nil, "Values of external variables")
 
 	// The "usual" clientcmd/kubectl flags
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
@@ -74,6 +77,18 @@ func JsonnetVM(cmd *cobra.Command) (*jsonnet.VM, error) {
 	for _, p := range filepath.SplitList(jpath) {
 		glog.V(2).Infoln("Adding jsonnet search path", p)
 		vm.JpathAdd(p)
+	}
+
+	extvars, err := flags.GetStringSlice(flagExtVar)
+	if err != nil {
+		return nil, err
+	}
+	for _, extvar := range extvars {
+		kv := strings.SplitN(extvar, "=", 2)
+		if len(kv) != 2 {
+			return nil, fmt.Errorf("Failed to parse extvar: missing '=' in %s", extvar)
+		}
+		vm.ExtVar(kv[0], kv[1])
 	}
 
 	return vm, nil
