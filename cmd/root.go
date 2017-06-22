@@ -91,6 +91,8 @@ func JsonnetVM(cmd *cobra.Command) (*jsonnet.VM, error) {
 		vm.ExtVar(kv[0], kv[1])
 	}
 
+	utils.RegisterNativeFuncs(vm)
+
 	return vm, nil
 }
 
