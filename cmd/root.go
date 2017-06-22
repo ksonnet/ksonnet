@@ -3,7 +3,6 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	goflag "flag"
 	"fmt"
 	"os"
@@ -87,7 +86,7 @@ func JsonnetVM(cmd *cobra.Command) (*jsonnet.VM, error) {
 	for _, extvar := range extvars {
 		kv := strings.SplitN(extvar, "=", 2)
 		if len(kv) != 2 {
-			return nil, errors.New("Failed to parse extvar: missing '=' in " + extvar)
+			return nil, fmt.Errorf("Failed to parse extvar: missing '=' in %s", extvar)
 		}
 		vm.ExtVar(kv[0], kv[1])
 	}
