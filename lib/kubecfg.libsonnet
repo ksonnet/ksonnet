@@ -8,4 +8,9 @@
   // YAML document will still be returned as an array with one
   // element.
   parseYaml:: std.native("parseYaml"),
+
+  // resolveImage(image): convert the docker image string from
+  // image:tag into a more specific image@digest, depending on kubecfg
+  // command line flags.
+  resolveImage:: std.native("resolveImage")
 }
