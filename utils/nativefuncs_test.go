@@ -18,7 +18,7 @@ func check(t *testing.T, err error, actual, expected string) {
 func TestParseJson(t *testing.T) {
 	vm := jsonnet.Make()
 	defer vm.Destroy()
-	RegisterNativeFuncs(vm)
+	RegisterNativeFuncs(vm, NewIdentityResolver())
 
 	_, err := vm.EvaluateSnippet("failtest", `std.native("parseJson")("barf{")`)
 	if err == nil {
@@ -37,7 +37,7 @@ func TestParseJson(t *testing.T) {
 func TestParseYaml(t *testing.T) {
 	vm := jsonnet.Make()
 	defer vm.Destroy()
-	RegisterNativeFuncs(vm)
+	RegisterNativeFuncs(vm, NewIdentityResolver())
 
 	_, err := vm.EvaluateSnippet("failtest", `std.native("parseYaml")("[barf")`)
 	if err == nil {

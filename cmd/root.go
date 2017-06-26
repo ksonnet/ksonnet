@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	goflag "flag"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,8 +23,10 @@ import (
 )
 
 const (
-	flagJpath  = "jpath"
-	flagExtVar = "extVar"
+	flagJpath      = "jpath"
+	flagExtVar     = "extVar"
+	flagResolver   = "resolve-images"
+	flagResolvFail = "resolve-images-error"
 )
 
 var clientConfig clientcmd.ClientConfig
@@ -31,6 +34,8 @@ var clientConfig clientcmd.ClientConfig
 func init() {
 	RootCmd.PersistentFlags().StringP(flagJpath, "J", "", "Additional jsonnet library search path")
 	RootCmd.PersistentFlags().StringSliceP(flagExtVar, "V", nil, "Values of external variables")
+	RootCmd.PersistentFlags().String(flagResolver, "noop", "Change implementation of resolveImage native function. One of: noop, registry")
+	RootCmd.PersistentFlags().String(flagResolvFail, "warn", "Action when resolveImage fails. One of ignore,warn,error")
 
 	// The "usual" clientcmd/kubectl flags
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
@@ -91,9 +96,67 @@ func JsonnetVM(cmd *cobra.Command) (*jsonnet.VM, error) {
 		vm.ExtVar(kv[0], kv[1])
 	}
 
-	utils.RegisterNativeFuncs(vm)
+	resolver, err := buildResolver(cmd)
+	if err != nil {
+		return nil, err
+	}
+	utils.RegisterNativeFuncs(vm, resolver)
 
 	return vm, nil
+}
+
+func buildResolver(cmd *cobra.Command) (utils.Resolver, error) {
+	flags := cmd.Flags()
+	resolver, err := flags.GetString(flagResolver)
+	if err != nil {
+		return nil, err
+	}
+	failAction, err := flags.GetString(flagResolvFail)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := resolverErrorWrapper{}
+
+	switch failAction {
+	case "ignore":
+		ret.OnErr = func(error) error { return nil }
+	case "warn":
+		ret.OnErr = func(err error) error {
+			glog.Warning(err.Error())
+			return nil
+		}
+	case "error":
+		ret.OnErr = func(err error) error { return err }
+	default:
+		return nil, fmt.Errorf("Bad value for --%s: %s", flagResolvFail, failAction)
+	}
+
+	switch resolver {
+	case "noop":
+		ret.Inner = utils.NewIdentityResolver()
+	case "registry":
+		ret.Inner = utils.NewRegistryResolver(&http.Client{
+			Transport: utils.NewAuthTransport(http.DefaultTransport),
+		})
+	default:
+		return nil, fmt.Errorf("Bad value for --%s: %s", flagResolver, resolver)
+	}
+
+	return &ret, nil
+}
+
+type resolverErrorWrapper struct {
+	Inner utils.Resolver
+	OnErr func(error) error
+}
+
+func (r *resolverErrorWrapper) Resolve(image *utils.ImageName) error {
+	err := r.Inner.Resolve(image)
+	if err != nil {
+		err = r.OnErr(err)
+	}
+	return err
 }
 
 func readObjs(cmd *cobra.Command, paths []string) ([]*runtime.Unstructured, error) {

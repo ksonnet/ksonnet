@@ -9,7 +9,21 @@ import (
 	"k8s.io/client-go/pkg/util/yaml"
 )
 
-func RegisterNativeFuncs(vm *jsonnet.VM) {
+func resolveImage(resolver Resolver, image string) (string, error) {
+	n, err := ParseImageName(image)
+	if err != nil {
+		return "", err
+	}
+
+	if err := resolver.Resolve(&n); err != nil {
+		return "", err
+	}
+
+	return n.String(), nil
+}
+
+// RegisterNativeFuncs adds kubecfg's native jsonnet functions to provided VM
+func RegisterNativeFuncs(vm *jsonnet.VM, resolver Resolver) {
 	vm.NativeCallback("parseJson", []string{"json"}, func(data []byte) (res interface{}, err error) {
 		err = json.Unmarshal(data, &res)
 		return
@@ -29,5 +43,9 @@ func RegisterNativeFuncs(vm *jsonnet.VM) {
 			ret = append(ret, doc)
 		}
 		return ret, nil
+	})
+
+	vm.NativeCallback("resolveImage", []string{"image"}, func(image string) (string, error) {
+		return resolveImage(resolver, image)
 	})
 }
