@@ -44,11 +44,12 @@ enum ASTType {
     AST_IMPORT,
     AST_IMPORTSTR,
     AST_INDEX,
-    AST_LOCAL,
+    AST_IN_SUPER,
     AST_LITERAL_BOOLEAN,
     AST_LITERAL_NULL,
     AST_LITERAL_NUMBER,
     AST_LITERAL_STRING,
+    AST_LOCAL,
     AST_OBJECT,
     AST_OBJECT_COMPREHENSION,
     AST_OBJECT_COMPREHENSION_SIMPLE,
@@ -61,8 +62,8 @@ enum ASTType {
 
 /** Represents a variable / parameter / field name. */
 struct Identifier {
-    String name;
-    Identifier(const String &name)
+    UString name;
+    Identifier(const UString &name)
       : name(name)
     { }
 };
@@ -244,6 +245,7 @@ enum BinaryOp {
     BOP_GREATER_EQ,
     BOP_LESS,
     BOP_LESS_EQ,
+    BOP_IN,
 
     BOP_MANIFEST_EQUAL,
     BOP_MANIFEST_UNEQUAL,
@@ -273,6 +275,7 @@ static inline std::string bop_string (BinaryOp bop)
         case BOP_GREATER_EQ: return ">=";
         case BOP_LESS: return "<";
         case BOP_LESS_EQ: return "<=";
+        case BOP_IN: return "in";
 
         case BOP_MANIFEST_EQUAL: return "==";
         case BOP_MANIFEST_UNEQUAL: return "!=";
@@ -472,12 +475,12 @@ struct LiteralNumber : public AST {
 
 /** Represents JSON strings. */
 struct LiteralString : public AST {
-    String value;
+    UString value;
     enum TokenKind { SINGLE, DOUBLE, BLOCK, VERBATIM_SINGLE, VERBATIM_DOUBLE };
     TokenKind tokenKind;
     std::string blockIndent;  // Only contains ' ' and '\t'.
     std::string blockTermIndent;  // Only contains ' ' and '\t'.
-    LiteralString(const LocationRange &lr, const Fodder &open_fodder, const String &value,
+    LiteralString(const LocationRange &lr, const Fodder &open_fodder, const UString &value,
                   TokenKind token_kind, const std::string &block_indent,
                   const std::string &block_term_indent)
       : AST(lr, AST_LITERAL_STRING, open_fodder), value(value), tokenKind(token_kind),
@@ -661,7 +664,8 @@ struct ObjectComprehensionSimple : public AST {
     AST *array;
     ObjectComprehensionSimple(const LocationRange &lr, AST *field, AST *value,
                               const Identifier *id, AST *array)
-      : AST(lr, AST_OBJECT_COMPREHENSION_SIMPLE, Fodder{}), field(field), value(value), id(id), array(array)
+      : AST(lr, AST_OBJECT_COMPREHENSION_SIMPLE, Fodder{}), field(field), value(value), id(id),
+        array(array)
     { }
 };
 
@@ -696,6 +700,19 @@ struct SuperIndex : public AST {
                AST *index, const Fodder &id_fodder, const Identifier *id)
       : AST(lr, AST_SUPER_INDEX, open_fodder), dotFodder(dot_fodder), index(index),
         idFodder(id_fodder), id(id)
+    { }
+};
+
+/** Represents the e in super construct.
+ */
+struct InSuper : public AST {
+    AST *element;
+    Fodder inFodder;
+    Fodder superFodder;
+    InSuper(const LocationRange &lr, const Fodder &open_fodder,
+            AST *element, const Fodder &in_fodder, const Fodder &super_fodder)
+      : AST(lr, AST_IN_SUPER, open_fodder), element(element),
+        inFodder(in_fodder), superFodder(super_fodder)
     { }
 };
 
@@ -741,7 +758,7 @@ struct Var : public AST {
 /** Allocates ASTs on demand, frees them in its destructor.
  */
 class Allocator {
-    std::map<String, const Identifier*> internedIdentifiers;
+    std::map<UString, const Identifier*> internedIdentifiers;
     ASTs allocated;
     public:
     template <class T, class... Args> T* make(Args&&... args)
@@ -760,7 +777,7 @@ class Allocator {
      *
      * The location used in the Identifier AST is that of the first one parsed.
      */
-    const Identifier *makeIdentifier(const String &name)
+    const Identifier *makeIdentifier(const UString &name)
     {
         auto it = internedIdentifiers.find(name);
         if (it != internedIdentifiers.end()) {
@@ -812,6 +829,7 @@ std::map<BinaryOp, int> build_precedence_map(void)
     r[BOP_GREATER_EQ] = 8;
     r[BOP_LESS] = 8;
     r[BOP_LESS_EQ] = 8;
+    r[BOP_IN] = 8;
 
     r[BOP_MANIFEST_EQUAL] = 9;
     r[BOP_MANIFEST_UNEQUAL] = 9;
@@ -857,6 +875,7 @@ std::map<std::string, BinaryOp> build_binary_map(void)
     r[">="] = BOP_GREATER_EQ;
     r["<"] = BOP_LESS;
     r["<="] = BOP_LESS_EQ;
+    r["in"] = BOP_IN;
 
     r["=="] = BOP_MANIFEST_EQUAL;
     r["!="] = BOP_MANIFEST_UNEQUAL;

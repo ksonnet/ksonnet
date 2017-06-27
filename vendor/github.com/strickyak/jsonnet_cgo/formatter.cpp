@@ -38,6 +38,8 @@ static AST *left_recursive(AST *ast_)
         return ast->left;
     if (auto *ast = dynamic_cast<Index*>(ast_))
         return ast->target;
+    if (auto *ast = dynamic_cast<InSuper*>(ast_))
+        return ast->element;
     return nullptr;
 }
 static const AST *left_recursive(const AST *ast_)
@@ -382,6 +384,13 @@ class Unparser {
             o << "importstr";
             unparse(ast->file, true);
 
+        } else if (auto *ast = dynamic_cast<const InSuper*>(ast_)) {
+            unparse(ast->element, true);
+            fill(ast->inFodder, true, true);
+            o << "in";
+            fill(ast->superFodder, true, true);
+            o << "super";
+
         } else if (auto *ast = dynamic_cast<const Index*>(ast_)) {
             unparse(ast->target, space_before);
             fill(ast->dotFodder, false, false);
@@ -643,7 +652,7 @@ class EnforceStringStyle : public FmtPass {
         if (lit->tokenKind == LiteralString::BLOCK) return;
         if (lit->tokenKind == LiteralString::VERBATIM_DOUBLE) return;
         if (lit->tokenKind == LiteralString::VERBATIM_SINGLE) return;
-        String canonical = jsonnet_string_unescape(lit->location, lit->value);
+        UString canonical = jsonnet_string_unescape(lit->location, lit->value);
         unsigned num_single = 0, num_double = 0;
         for (char32_t c : canonical) {
             if (c == '\'') num_single++;
@@ -925,7 +934,7 @@ class PrettyFieldNames : public FmtPass {
     public:
     PrettyFieldNames(Allocator &alloc, const FmtOpts &opts) : FmtPass(alloc, opts) { }
 
-    bool isIdentifier(const String &str) {
+    bool isIdentifier(const UString &str) {
         bool first = true;
         for (char32_t c : str) {
             if (!first && c >= '0' && c <= '9')
@@ -1304,7 +1313,8 @@ class FixIndentation {
             expr(ast->target, new_indent, space_before);
             fill(ast->fodderL, false, false, new_indent.lineUp);
             column++;  // (
-            const Fodder &first_fodder = ast->args.size() == 0 ? ast->fodderR : argParamFirstFodder(ast->args[0]);
+            const Fodder &first_fodder = ast->args.size() == 0
+                                         ? ast->fodderR : argParamFirstFodder(ast->args[0]);
             bool strong_indent = false;
             // Need to use strong indent if any of the
             // arguments (except the first) are preceded by newlines.
@@ -1484,6 +1494,13 @@ class FixIndentation {
             column += 9;  // importstr
             Indent new_indent = newIndent(open_fodder(ast->file), indent, column + 1);
             expr(ast->file, new_indent, true);
+
+        } else if (auto *ast = dynamic_cast<InSuper*>(ast_)) {
+            expr(ast->element, indent, space_before);
+            fill(ast->inFodder, true, true, indent.lineUp);
+            column += 2;  // in
+            fill(ast->superFodder, true, true, indent.lineUp);
+            column += 5;  // super
 
         } else if (auto *ast = dynamic_cast<Index*>(ast_)) {
             expr(ast->target, indent, space_before);
