@@ -44,18 +44,18 @@ avoid an immediate `Killed: 9`.
 % export KUBECFG_JPATH=$PWD/ksonnet-lib
 
 # Hello-world ksonnet-lib example
-% cd ksonnet-lib/examples/hello-world
+% cd ksonnet-lib/examples/readme
 
 # Show generated YAML
-% kubecfg show -o yaml hello.v1.jsonnet
+% kubecfg show -o yaml hello-nginx.jsonnet 
 
 # Create resources
-% kubecfg update hello.v1.jsonnet
+% kubecfg update hello-nginx.jsonnet
 
 # Modify configuration
-% sed -ie 's/nginx:1.7.9/nginx:1.13.0/' hello.v1.jsonnet
+% sed -ie 's/nginx:1.7.9/nginx:1.13.0/' hello-nginx.jsonnet
 # Update to new config
-% kubecfg update hello.v1.jsonnet
+% kubecfg update hello-nginx.jsonnet
 ```
 
 ## Features
