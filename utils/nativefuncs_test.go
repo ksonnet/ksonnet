@@ -57,3 +57,37 @@ func TestParseYaml(t *testing.T) {
     a[0] + a[1]`)
 	check(t, err, x, "\"helloworld\"\n")
 }
+
+func TestRegexMatch(t *testing.T) {
+	vm := jsonnet.Make()
+	defer vm.Destroy()
+	RegisterNativeFuncs(vm, NewIdentityResolver())
+
+	_, err := vm.EvaluateSnippet("failtest", `std.native("regexMatch")("[f", "foo")`)
+	if err == nil {
+		t.Errorf("regexMatch succeeded with invalid regex")
+	}
+
+	x, err := vm.EvaluateSnippet("test", `std.native("regexMatch")("foo.*", "seafood")`)
+	check(t, err, x, "true\n")
+
+	x, err = vm.EvaluateSnippet("test", `std.native("regexMatch")("bar.*", "seafood")`)
+	check(t, err, x, "false\n")
+}
+
+func TestRegexSubst(t *testing.T) {
+	vm := jsonnet.Make()
+	defer vm.Destroy()
+	RegisterNativeFuncs(vm, NewIdentityResolver())
+
+	_, err := vm.EvaluateSnippet("failtest", `std.native("regexSubst")("[f",s "foo", "bar")`)
+	if err == nil {
+		t.Errorf("regexSubst succeeded with invalid regex")
+	}
+
+	x, err := vm.EvaluateSnippet("test", `std.native("regexSubst")("a(x*)b", "-ab-axxb-", "T")`)
+	check(t, err, x, "\"-T-T-\"\n")
+
+	x, err = vm.EvaluateSnippet("test", `std.native("regexSubst")("a(x*)b", "-ab-axxb-", "${1}W")`)
+	check(t, err, x, "\"-W-xxW-\"\n")
+}
