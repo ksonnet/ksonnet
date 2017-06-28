@@ -28,8 +28,8 @@ static const Fodder EF;  // Empty fodder.
 static const LocationRange E;  // Empty.
 
 struct BuiltinDecl {
-    String name;
-    std::vector<String> params;
+    UString name;
+    std::vector<UString> params;
 };
 
 static unsigned long max_builtin = 26;
@@ -91,13 +91,16 @@ class Desugarer {
         return alloc->make<T>(std::forward<Args>(args)...);
     }
 
-    const Identifier *id(const String &s)
+    AST *clone(AST *ast)
+    { return clone_ast(*alloc, ast); }
+
+    const Identifier *id(const UString &s)
     { return alloc->makeIdentifier(s); }
 
-    LiteralString *str(const String &s)
+    LiteralString *str(const UString &s)
     { return make<LiteralString>(E, EF, s, LiteralString::DOUBLE, "", ""); }
 
-    LiteralString *str(const LocationRange &loc, const String &s)
+    LiteralString *str(const LocationRange &loc, const UString &s)
     { return make<LiteralString>(loc, EF, s, LiteralString::DOUBLE, "", ""); }
 
     LiteralNull *null(void)
@@ -126,7 +129,7 @@ class Desugarer {
                            false, EF);
     }
 
-    Apply *stdFunc(const String &name, AST *v)
+    Apply *stdFunc(const UString &name, AST *v)
     {
         return make<Apply>(
             v->location,
@@ -141,7 +144,7 @@ class Desugarer {
         );
     }
 
-    Apply *stdFunc(const LocationRange &loc, const String &name, AST *a, AST *b)
+    Apply *stdFunc(const LocationRange &loc, const UString &name, AST *a, AST *b)
     {
         return make<Apply>(
             loc,
@@ -181,7 +184,7 @@ class Desugarer {
         return make<Error>(msg->location, EF, msg);
     }
 
-    Error *error(const LocationRange &loc, const String &msg)
+    Error *error(const LocationRange &loc, const UString &msg)
     {
         return error(str(loc, msg));
     }
@@ -289,6 +292,10 @@ class Desugarer {
             }
         }
 
+        /** Replaces all occurrences of self, super[f] and e in super with variables.
+         *
+         * Returns all variables and original expressions via super_vars.
+         */
         class SubstituteSelfSuper : public CompilerPass {
             Desugarer *desugarer;
             SuperVars &superVars;
@@ -309,8 +316,8 @@ class Desugarer {
                     }
                     expr = alloc.make<Var>(expr->location, expr->openFodder, newSelf);
                 } else if (auto *super_index = dynamic_cast<SuperIndex*>(expr)) {
-                    StringStream ss;
-                    ss << "$outer_super" << (counter++);
+                    UStringStream ss;
+                    ss << U"$outer_super_index" << (counter++);
                     const Identifier *super_var = desugarer->id(ss.str());
                     AST *index = super_index->index;
                     // Desugaring of expr should already have occurred.
@@ -318,6 +325,13 @@ class Desugarer {
                     // Re-use super_index since we're replacing it here.
                     superVars.emplace_back(super_var, super_index);
                     expr = alloc.make<Var>(expr->location, expr->openFodder, super_var);
+                } else if (auto *in_super = dynamic_cast<InSuper*>(expr)) {
+                    UStringStream ss;
+                    ss << U"$outer_in_super" << (counter++);
+                    const Identifier *in_super_var = desugarer->id(ss.str());
+                    // Re-use in_super since we're replacing it here.
+                    superVars.emplace_back(in_super_var, in_super);
+                    expr = alloc.make<Var>(expr->location, expr->openFodder, in_super_var);
                 }
                 CompilerPass::visitExpr(expr);
             }
@@ -331,13 +345,24 @@ class Desugarer {
             if (!field.superSugar) continue;
             // We have to bind self/super from expr1 outside the class, as we copy the expression
             // into the field body.
-            AST *index = field.expr1;
             // Clone it so that we maintain the AST as a tree.
-            ClonePass(*alloc).expr(index);
+            AST *index = clone(field.expr1);
             // This will remove self/super.
             SubstituteSelfSuper(this, super_vars, counter).expr(index);
-            AST *super_f = make<SuperIndex>(field.expr1->location, EF, EF, index, EF, nullptr);
-            field.expr2 = make<Binary>(ast->location, EF, super_f, EF, BOP_PLUS, field.expr2);
+            field.expr2 = make<Conditional>(
+                ast->location,
+                EF,
+                make<InSuper>(ast->location, EF, index, EF, EF),
+                EF,
+                make<Binary>(
+                    ast->location,
+                    EF,
+                    make<SuperIndex>(ast->location, EF, EF, clone(index), EF, nullptr),
+                    EF,
+                    BOP_PLUS,
+                    field.expr2),
+                EF,
+                clone(field.expr2));
             field.superSugar = false;
         }
 
@@ -373,13 +398,13 @@ class Desugarer {
             auto *_l = id(U"$l");
             std::vector<const Identifier*> _i(n);
             for (int i = 0; i < n ; ++i) {
-                StringStream ss;
+                UStringStream ss;
                 ss << U"$i_" << i;
                 _i[i] = id(ss.str());
             }
             std::vector<const Identifier*> _aux(n);
             for (int i = 0; i < n ; ++i) {
-                StringStream ss;
+                UStringStream ss;
                 ss << U"$aux_" << i;
                 _aux[i] = id(ss.str());
             }
@@ -594,6 +619,9 @@ class Desugarer {
 
         } else if (dynamic_cast<const Importstr*>(ast_)) {
             // Nothing to do.
+
+        } else if (auto *ast = dynamic_cast<InSuper*>(ast_)) {
+            desugar(ast->element, obj_level);
 
         } else if (auto *ast = dynamic_cast<Index*>(ast_)) {
             desugar(ast->target, obj_level);
