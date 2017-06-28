@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -35,7 +35,7 @@ func NewRegistryClient(client *http.Client, url string) *Registry {
 func (r *Registry) ManifestDigest(reponame, tag string) (string, error) {
 	url := fmt.Sprintf("%s/v2/%s/manifests/%s", r.URL, reponame, tag)
 
-	glog.V(1).Infof("HEAD %s", url)
+	log.Debugf("HEAD %s", url)
 
 	req, err := http.NewRequest(http.MethodHead, url, nil)
 	if err != nil {
@@ -57,7 +57,7 @@ func (r *Registry) ManifestDigest(reponame, tag string) (string, error) {
 		return "", errors.New("No digest in response")
 	}
 
-	glog.V(1).Infof("Found digest %s", digest)
+	log.Debugf("Found digest %s", digest)
 	return digest, nil
 }
 
@@ -135,16 +135,16 @@ type authTransport struct {
 
 // RoundTrip is required for the http.RoundTripper interface
 func (t *authTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	glog.V(1).Infof("=> %v", req)
+	log.Debugf("=> %v", req)
 	resp, err := t.Transport.RoundTrip(req)
-	glog.V(1).Infof("<= err=%v resp=%v", err, resp)
+	log.Debugf("<= err=%v resp=%v", err, resp)
 	if err == nil && resp.StatusCode == http.StatusUnauthorized && matchesDomain(req.URL, t.HostDomain) {
 		schemes := parseAuthHeader(resp.Header)
 		for _, scheme := range schemes {
 			if scheme.Scheme == "basic" {
-				glog.V(2).Infof("Retrying with basic auth")
+				log.Debugf("Retrying with basic auth")
 				req.SetBasicAuth(t.Username, t.Password)
-				glog.V(1).Infof("=> %v", req)
+				log.Debugf("=> %v", req)
 				return t.Transport.RoundTrip(req)
 			}
 			if scheme.Scheme == "bearer" {
@@ -152,9 +152,9 @@ func (t *authTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 				if err != nil {
 					return resp, err
 				}
-				glog.V(2).Infof("Retrying with bearer auth")
+				log.Debugf("Retrying with bearer auth")
 				req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-				glog.V(1).Infof("=> %v", req)
+				log.Debugf("=> %v", req)
 				return t.Transport.RoundTrip(req)
 			}
 		}
@@ -187,7 +187,7 @@ func (t *authTransport) bearerAuth(realm, service, scope string) (string, error)
 		req.SetBasicAuth(t.Username, t.Password)
 	}
 
-	glog.V(3).Infof("Performing oauth request to %s", req.URL)
+	log.Debugf("Performing oauth request to %s", req.URL)
 	resp, err := t.Client.Do(req)
 	if err != nil {
 		return "", err
@@ -205,7 +205,7 @@ func (t *authTransport) bearerAuth(realm, service, scope string) (string, error)
 	if err := json.NewDecoder(resp.Body).Decode(&token); err != nil {
 		return "", err
 	}
-	glog.V(4).Infof("Got oauth token %q", token.Token)
+	log.Debugf("Got oauth token %q", token.Token)
 	t.tokenCache[cacheKey] = token.Token
 	return token.Token, err
 }

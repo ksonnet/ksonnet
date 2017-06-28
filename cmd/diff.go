@@ -6,8 +6,8 @@ import (
 	"os"
 	"sort"
 
-	"github.com/golang/glog"
 	"github.com/mattn/go-isatty"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
@@ -45,7 +45,7 @@ var diffCmd = &cobra.Command{
 
 		for _, obj := range objs {
 			desc := fmt.Sprintf("%s/%s", obj.GetKind(), fqName(obj))
-			glog.V(2).Info("Fetching ", desc)
+			log.Debugf("Fetching ", desc)
 
 			c, err := clientForResource(clientpool, disco, obj, defaultNs)
 			if err != nil {
@@ -54,7 +54,7 @@ var diffCmd = &cobra.Command{
 
 			liveObj, err := c.Get(obj.GetName())
 			if err != nil && errors.IsNotFound(err) {
-				glog.V(2).Infof("%s doesn't exist on the server", desc)
+				log.Debugf("%s doesn't exist on the server", desc)
 				liveObj = nil
 			} else if err != nil {
 				return fmt.Errorf("Error fetching %s: %v", desc, err)

@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 	jsonnet "github.com/strickyak/jsonnet_cgo"
 	"k8s.io/client-go/pkg/runtime"
 	"k8s.io/client-go/pkg/util/yaml"
@@ -63,7 +63,6 @@ func yamlReader(r io.ReadCloser) ([]runtime.Object, error) {
 		} else if err != nil {
 			return nil, err
 		}
-		glog.V(4).Infof("Read %d bytes of YAML: %s", len(bytes), bytes)
 		if len(bytes) == 0 {
 			continue
 		}
@@ -71,7 +70,6 @@ func yamlReader(r io.ReadCloser) ([]runtime.Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		glog.V(4).Infof("Converted to JSON: %s", jsondata)
 		obj, _, err := runtime.UnstructuredJSONScheme.Decode(jsondata, nil, nil)
 		if err != nil {
 			return nil, err
@@ -117,7 +115,7 @@ func jsonnetReader(vm *jsonnet.VM, path string) ([]runtime.Object, error) {
 		return nil, err
 	}
 
-	glog.V(4).Infof("jsonnet result is: %s\n", jsonstr)
+	log.Debugf("jsonnet result is: %s", jsonstr)
 
 	var top interface{}
 	if err = json.Unmarshal([]byte(jsonstr), &top); err != nil {
