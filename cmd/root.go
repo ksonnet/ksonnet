@@ -24,7 +24,7 @@ import (
 
 const (
 	flagJpath      = "jpath"
-	flagExtVar     = "extVar"
+	flagExtVar     = "ext-str"
 	flagResolver   = "resolve-images"
 	flagResolvFail = "resolve-images-error"
 )
