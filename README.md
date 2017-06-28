@@ -37,13 +37,9 @@ avoid an immediate `Killed: 9`.
 ## Quickstart
 
 ```console
-# Fetch guestbook example
-% git clone https://github.com/ksonnet/kubecfg.git
-% cd kubecfg
-
-# Set kubecfg/jsonnet library search path to <kubecfg.git>/lib.
+# Include <kubecfg.git>/lib in kubecfg/jsonnet library search path.
 # Can also use explicit `-J` args everywhere.
-% export KUBECFG_JPATH=$PWD/lib
+% export KUBECFG_JPATH=/path/to/kubecfg/lib
 
 # Show generated YAML
 % kubecfg show -o yaml examples/guestbook.jsonnet
@@ -61,7 +57,6 @@ avoid an immediate `Killed: 9`.
 
 # Clean up after demo
 % kubecfg delete examples/guestbook.jsonnet
-% mv examples/guestbook.jsonnet.bak examples/guestbook.jsonnet
 ```
 
 ## Features
