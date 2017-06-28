@@ -36,6 +36,7 @@ local example = import "example.libsonnet";
 
   frontend_service: example.service("frontend") {
     targetPod_: $.frontend_deployment.spec.template,
+    spec+: { type: "LoadBalancer" },
   },
 
   redis_master_deployment: example.deployment("redis-master") {
