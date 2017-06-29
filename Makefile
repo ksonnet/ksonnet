@@ -4,6 +4,7 @@ GO = go
 GO_FLAGS = -ldflags="-X main.version=$(VERSION) $(GO_LDFLAGS)"
 GOFMT = gofmt
 
+JSONNET_FILES = lib/kubecfg_test.jsonnet examples/guestbook.jsonnet
 # TODO: Simplify this once ./... ignores ./vendor
 GO_PACKAGES = ./cmd/... ./utils/...
 
@@ -17,8 +18,9 @@ test: gotest jsonnettest
 gotest:
 	$(GO) test $(GO_FLAGS) $(GO_PACKAGES)
 
-jsonnettest: kubecfg lib/kubecfg_test.jsonnet
-	./kubecfg -J lib show lib/kubecfg_test.jsonnet
+jsonnettest: kubecfg $(JSONNET_FILES)
+#	TODO: use `kubecfg check` once implemented
+	./kubecfg -J lib show $(JSONNET_FILES) >/dev/null
 
 vet:
 	$(GO) vet $(GO_FLAGS) $(GO_PACKAGES)
