@@ -44,6 +44,9 @@ var deleteCmd = &cobra.Command{
 		}
 
 		defaultNs, _, err := clientConfig.Namespace()
+		if err != nil {
+			return err
+		}
 
 		sort.Sort(sort.Reverse(utils.DependencyOrder(objs)))
 
