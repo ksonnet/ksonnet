@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"regexp"
 
 	jsonnet "github.com/strickyak/jsonnet_cgo"
 	"k8s.io/client-go/pkg/util/yaml"
@@ -47,5 +48,19 @@ func RegisterNativeFuncs(vm *jsonnet.VM, resolver Resolver) {
 
 	vm.NativeCallback("resolveImage", []string{"image"}, func(image string) (string, error) {
 		return resolveImage(resolver, image)
+	})
+
+	vm.NativeCallback("escapeStringRegex", []string{"str"}, func(s string) (string, error) {
+		return regexp.QuoteMeta(s), nil
+	})
+
+	vm.NativeCallback("regexMatch", []string{"regex", "string"}, regexp.MatchString)
+
+	vm.NativeCallback("regexSubst", []string{"regex", "src", "repl"}, func(regex, src, repl string) (string, error) {
+		r, err := regexp.Compile(regex)
+		if err != nil {
+			return "", err
+		}
+		return r.ReplaceAllString(src, repl), nil
 	})
 }
