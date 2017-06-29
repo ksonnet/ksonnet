@@ -48,7 +48,7 @@ func TestShow(t *testing.T) {
   "string": "bar",
   "notAVal": "aVal",
   "notAnotherVal": "aVal2",
-	"filevar": "foo",
+  "filevar": "foo\n",
   "array": ["one", 2, [3]],
   "object": {"foo": "bar"}
 }
@@ -69,7 +69,7 @@ func TestShow(t *testing.T) {
 			filepath.FromSlash("../testdata/test.jsonnet"),
 			"-V", "aVar=aVal",
 			"-V", "anVar",
-			"--ext-str-file", "filevar=../testdata/extvar.file",
+			"--ext-str-file", "filevar=" + filepath.FromSlash("../testdata/extvar.file"),
 		})
 
 		t.Log("output is", output)

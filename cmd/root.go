@@ -117,7 +117,7 @@ func JsonnetVM(cmd *cobra.Command) (*jsonnet.VM, error) {
 	for _, extvar := range extvarfiles {
 		kv := strings.SplitN(extvar, "=", 2)
 		if len(kv) != 2 {
-			return nil, fmt.Errorf("Failed to parse ext-str-file: missing '=' in %s", extvar)
+			return nil, fmt.Errorf("Failed to parse %s: missing '=' in %s", flagExtVarFile, extvar)
 		}
 		v, err := ioutil.ReadFile(kv[1])
 		if err != nil {
@@ -152,7 +152,7 @@ func JsonnetVM(cmd *cobra.Command) (*jsonnet.VM, error) {
 	for _, tlavar := range tlavarfiles {
 		kv := strings.SplitN(tlavar, "=", 2)
 		if len(kv) != 2 {
-			return nil, fmt.Errorf("Failed to parse tla-str-file: missing '=' in %s", tlavar)
+			return nil, fmt.Errorf("Failed to parse %s: missing '=' in %s", flagTlaVarFile, tlavar)
 		}
 		v, err := ioutil.ReadFile(kv[1])
 		if err != nil {
