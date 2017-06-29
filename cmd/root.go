@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	goflag "flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -25,6 +26,7 @@ import (
 const (
 	flagJpath      = "jpath"
 	flagExtVar     = "ext-str"
+	flagExtVarFile = "ext-str-file"
 	flagResolver   = "resolve-images"
 	flagResolvFail = "resolve-images-error"
 )
@@ -34,6 +36,7 @@ var clientConfig clientcmd.ClientConfig
 func init() {
 	RootCmd.PersistentFlags().StringP(flagJpath, "J", "", "Additional jsonnet library search path")
 	RootCmd.PersistentFlags().StringSliceP(flagExtVar, "V", nil, "Values of external variables")
+	RootCmd.PersistentFlags().StringSlice(flagExtVarFile, nil, "Read external variable from a file")
 	RootCmd.PersistentFlags().String(flagResolver, "noop", "Change implementation of resolveImage native function. One of: noop, registry")
 	RootCmd.PersistentFlags().String(flagResolvFail, "warn", "Action when resolveImage fails. One of ignore,warn,error")
 
@@ -101,6 +104,22 @@ func JsonnetVM(cmd *cobra.Command) (*jsonnet.VM, error) {
 		case 2:
 			vm.ExtVar(kv[0], kv[1])
 		}
+	}
+
+	extvarfiles, err := flags.GetStringSlice(flagExtVarFile)
+	if err != nil {
+		return nil, err
+	}
+	for _, extvar := range extvarfiles {
+		kv := strings.SplitN(extvar, "=", 2)
+		if len(kv) != 2 {
+			return nil, fmt.Errorf("Failed to parse ext-str-file: missing '=' in %s", extvar)
+		}
+		v, err := ioutil.ReadFile(kv[1])
+		if err != nil {
+			return nil, err
+		}
+		vm.ExtVar(kv[0], string(v))
 	}
 
 	resolver, err := buildResolver(cmd)
