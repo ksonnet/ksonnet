@@ -90,10 +90,17 @@ func JsonnetVM(cmd *cobra.Command) (*jsonnet.VM, error) {
 	}
 	for _, extvar := range extvars {
 		kv := strings.SplitN(extvar, "=", 2)
-		if len(kv) != 2 {
-			return nil, fmt.Errorf("Failed to parse extvar: missing '=' in %s", extvar)
+		switch len(kv) {
+		case 1:
+			v, present := os.LookupEnv(kv[0])
+			if present {
+				vm.ExtVar(kv[0], v)
+			} else {
+				return nil, fmt.Errorf("Missing environment variable: %s", kv[0])
+			}
+		case 2:
+			vm.ExtVar(kv[0], kv[1])
 		}
-		vm.ExtVar(kv[0], kv[1])
 	}
 
 	resolver, err := buildResolver(cmd)

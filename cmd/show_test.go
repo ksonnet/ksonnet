@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -46,6 +47,7 @@ func TestShow(t *testing.T) {
   "number": 42,
   "string": "bar",
   "notAVal": "aVal",
+  "notAnotherVal": "aVal2",
   "array": ["one", 2, [3]],
   "object": {"foo": "bar"}
 }
@@ -57,11 +59,15 @@ func TestShow(t *testing.T) {
 			t.Errorf("error parsing *expected* value: %s", err)
 		}
 
+		os.Setenv("anVar", "aVal2")
+		defer os.Unsetenv("anVar")
+
 		output := cmdOutput(t, []string{"show",
 			"-J", filepath.FromSlash("../testdata/lib"),
 			"-o", format,
 			filepath.FromSlash("../testdata/test.jsonnet"),
 			"-V", "aVar=aVal",
+			"-V", "anVar",
 		})
 
 		t.Log("output is", output)
