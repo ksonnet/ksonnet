@@ -57,17 +57,17 @@ func TestParseAuthHeader(t *testing.T) {
 	h.Add("WWW-Authenticate", ``)
 
 	expected := []*authChallenge{
-		&authChallenge{
+		{
 			Scheme: "basic",
 			Params: map[string]string{},
 		},
-		&authChallenge{
+		{
 			Scheme: "basic",
 			Params: map[string]string{
 				"realm": "User Visible Realm",
 			},
 		},
-		&authChallenge{
+		{
 			Scheme: "bearer",
 			Params: map[string]string{
 				"realm":   "https://auth.docker.io/token",

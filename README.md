@@ -1,6 +1,7 @@
 # kubecfg
 
 [![Build Status](https://travis-ci.org/ksonnet/kubecfg.svg?branch=master)](https://travis-ci.org/ksonnet/kubecfg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ksonnet/kubecfg)](https://goreportcard.com/report/github.com/ksonnet/kubecfg)
 
 A tool for managing Kubernetes resources as code.
 
