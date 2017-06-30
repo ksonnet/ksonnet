@@ -20,15 +20,17 @@ import (
 	"encoding/json"
 	goflag "flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	jsonnet "github.com/strickyak/jsonnet_cgo"
+	"golang.org/x/crypto/ssh/terminal"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/pkg/api/unversioned"
@@ -39,6 +41,7 @@ import (
 )
 
 const (
+	flagVerbose    = "verbose"
 	flagJpath      = "jpath"
 	flagExtVar     = "ext-str"
 	flagExtVarFile = "ext-str-file"
@@ -51,6 +54,7 @@ const (
 var clientConfig clientcmd.ClientConfig
 
 func init() {
+	RootCmd.PersistentFlags().CountP(flagVerbose, "v", "Increase verbosity. May be given multiple times.")
 	RootCmd.PersistentFlags().StringP(flagJpath, "J", "", "Additional jsonnet library search path")
 	RootCmd.PersistentFlags().StringSliceP(flagExtVar, "V", nil, "Values of external variables")
 	RootCmd.PersistentFlags().StringSlice(flagExtVarFile, nil, "Read external variable from a file")
@@ -68,8 +72,6 @@ func init() {
 	clientcmd.BindOverrideFlags(&overrides, RootCmd.PersistentFlags(), kflags)
 	clientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
 
-	// Standard goflags (glog in particular)
-	RootCmd.PersistentFlags().AddGoFlagSet(goflag.CommandLine)
 	RootCmd.PersistentFlags().Set("logtostderr", "true")
 }
 
@@ -79,10 +81,76 @@ var RootCmd = &cobra.Command{
 	Short:         "Synchronise Kubernetes resources with config files",
 	SilenceErrors: true,
 	SilenceUsage:  true,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		goflag.CommandLine.Parse([]string{})
-		glog.CopyStandardLogTo("INFO")
+		flags := cmd.Flags()
+		out := cmd.OutOrStderr()
+		log.SetOutput(out)
+
+		logFmt := NewLogFormatter(out)
+		log.SetFormatter(logFmt)
+
+		verbosity, err := flags.GetCount(flagVerbose)
+		if err != nil {
+			return err
+		}
+		log.SetLevel(logLevel(verbosity))
+
+		return nil
 	},
+}
+
+func logLevel(verbosity int) log.Level {
+	switch verbosity {
+	case 0:
+		return log.WarnLevel
+	case 1:
+		return log.InfoLevel
+	default:
+		return log.DebugLevel
+	}
+}
+
+type logFormatter struct {
+	escapes  *terminal.EscapeCodes
+	colorise bool
+}
+
+// NewLogFormatter creates a new log.Formatter customised for writer
+func NewLogFormatter(out io.Writer) log.Formatter {
+	var ret = logFormatter{}
+	if f, ok := out.(*os.File); ok {
+		ret.colorise = terminal.IsTerminal(int(f.Fd()))
+		ret.escapes = terminal.NewTerminal(f, "").Escape
+	}
+	return &ret
+}
+
+func (f *logFormatter) levelEsc(level log.Level) []byte {
+	switch level {
+	case log.DebugLevel:
+		return []byte{}
+	case log.WarnLevel:
+		return f.escapes.Yellow
+	case log.ErrorLevel, log.FatalLevel, log.PanicLevel:
+		return f.escapes.Red
+	default:
+		return f.escapes.Blue
+	}
+}
+
+func (f *logFormatter) Format(e *log.Entry) ([]byte, error) {
+	buf := bytes.Buffer{}
+	if f.colorise {
+		buf.Write(f.levelEsc(e.Level))
+		fmt.Fprintf(&buf, "%-5s ", strings.ToUpper(e.Level.String()))
+		buf.Write(f.escapes.Reset)
+	}
+
+	buf.WriteString(strings.TrimSpace(e.Message))
+	buf.WriteString("\n")
+
+	return buf.Bytes(), nil
 }
 
 // JsonnetVM constructs a new jsonnet.VM, according to command line
@@ -93,7 +161,7 @@ func JsonnetVM(cmd *cobra.Command) (*jsonnet.VM, error) {
 
 	jpath := os.Getenv("KUBECFG_JPATH")
 	for _, p := range filepath.SplitList(jpath) {
-		glog.V(2).Infoln("Adding jsonnet search path", p)
+		log.Debugln("Adding jsonnet search path", p)
 		vm.JpathAdd(p)
 	}
 
@@ -102,7 +170,7 @@ func JsonnetVM(cmd *cobra.Command) (*jsonnet.VM, error) {
 		return nil, err
 	}
 	for _, p := range filepath.SplitList(jpath) {
-		glog.V(2).Infoln("Adding jsonnet search path", p)
+		log.Debugln("Adding jsonnet search path", p)
 		vm.JpathAdd(p)
 	}
 
@@ -203,7 +271,7 @@ func buildResolver(cmd *cobra.Command) (utils.Resolver, error) {
 		ret.OnErr = func(error) error { return nil }
 	case "warn":
 		ret.OnErr = func(err error) error {
-			glog.Warning(err.Error())
+			log.Warning(err.Error())
 			return nil
 		}
 	case "error":
@@ -295,7 +363,7 @@ func serverResourceForGroupVersionKind(disco discovery.DiscoveryInterface, gvk u
 
 	for _, r := range resources.APIResources {
 		if r.Kind == gvk.Kind {
-			glog.V(4).Infof("Chose API '%s' for %s", r.Name, gvk)
+			log.Debugf("Chose API '%s' for %s", r.Name, gvk)
 			return &r, nil
 		}
 	}
@@ -321,7 +389,7 @@ func clientForResource(pool dynamic.ClientPool, disco discovery.DiscoveryInterfa
 		namespace = defNs
 	}
 
-	glog.V(4).Infof("Fetching client for %s namespace=%s", resource, namespace)
+	log.Debugf("Fetching client for %s namespace=%s", resource, namespace)
 	rc := client.Resource(resource, namespace)
 	return rc, nil
 }

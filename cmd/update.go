@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/errors"
@@ -69,7 +69,7 @@ var updateCmd = &cobra.Command{
 
 		for _, obj := range objs {
 			desc := fmt.Sprintf("%s/%s", obj.GetKind(), fqName(obj))
-			glog.Info("Updating ", desc)
+			log.Info("Updating ", desc)
 
 			c, err := clientForResource(clientpool, disco, obj, defaultNs)
 			if err != nil {
@@ -82,7 +82,7 @@ var updateCmd = &cobra.Command{
 			}
 			newobj, err := c.Patch(obj.GetName(), api.MergePatchType, asPatch)
 			if create && errors.IsNotFound(err) {
-				glog.Info(" Creating non-existent ", desc)
+				log.Info(" Creating non-existent ", desc)
 				newobj, err = c.Create(obj)
 			}
 			if err != nil {
@@ -90,7 +90,7 @@ var updateCmd = &cobra.Command{
 				return fmt.Errorf("Error updating %s: %s", desc, err)
 			}
 
-			glog.V(2).Info("Updated object: ", diff.ObjectDiff(obj, newobj))
+			log.Debug("Updated object: ", diff.ObjectDiff(obj, newobj))
 		}
 
 		return nil

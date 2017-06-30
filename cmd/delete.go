@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
@@ -72,7 +72,7 @@ var deleteCmd = &cobra.Command{
 
 		for _, obj := range objs {
 			desc := fmt.Sprintf("%s/%s", obj.GetKind(), fqName(obj))
-			glog.Info("Deleting ", desc)
+			log.Info("Deleting ", desc)
 
 			c, err := clientForResource(clientpool, disco, obj, defaultNs)
 			if err != nil {
@@ -84,7 +84,7 @@ var deleteCmd = &cobra.Command{
 				return fmt.Errorf("Error deleting %s: %s", desc, err)
 			}
 
-			glog.V(2).Info("Deleted object: ", obj)
+			log.Debugf("Deleted object: ", obj)
 		}
 
 		return nil
