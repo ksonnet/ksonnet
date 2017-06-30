@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	goflag "flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -25,6 +26,9 @@ import (
 const (
 	flagJpath      = "jpath"
 	flagExtVar     = "ext-str"
+	flagExtVarFile = "ext-str-file"
+	flagTlaVar     = "tla-str"
+	flagTlaVarFile = "tla-str-file"
 	flagResolver   = "resolve-images"
 	flagResolvFail = "resolve-images-error"
 )
@@ -34,6 +38,9 @@ var clientConfig clientcmd.ClientConfig
 func init() {
 	RootCmd.PersistentFlags().StringP(flagJpath, "J", "", "Additional jsonnet library search path")
 	RootCmd.PersistentFlags().StringSliceP(flagExtVar, "V", nil, "Values of external variables")
+	RootCmd.PersistentFlags().StringSlice(flagExtVarFile, nil, "Read external variable from a file")
+	RootCmd.PersistentFlags().StringSliceP(flagTlaVar, "A", nil, "Values of top level arguments")
+	RootCmd.PersistentFlags().StringSlice(flagTlaVarFile, nil, "Read top level argument from a file")
 	RootCmd.PersistentFlags().String(flagResolver, "noop", "Change implementation of resolveImage native function. One of: noop, registry")
 	RootCmd.PersistentFlags().String(flagResolvFail, "warn", "Action when resolveImage fails. One of ignore,warn,error")
 
@@ -90,10 +97,68 @@ func JsonnetVM(cmd *cobra.Command) (*jsonnet.VM, error) {
 	}
 	for _, extvar := range extvars {
 		kv := strings.SplitN(extvar, "=", 2)
-		if len(kv) != 2 {
-			return nil, fmt.Errorf("Failed to parse extvar: missing '=' in %s", extvar)
+		switch len(kv) {
+		case 1:
+			v, present := os.LookupEnv(kv[0])
+			if present {
+				vm.ExtVar(kv[0], v)
+			} else {
+				return nil, fmt.Errorf("Missing environment variable: %s", kv[0])
+			}
+		case 2:
+			vm.ExtVar(kv[0], kv[1])
 		}
-		vm.ExtVar(kv[0], kv[1])
+	}
+
+	extvarfiles, err := flags.GetStringSlice(flagExtVarFile)
+	if err != nil {
+		return nil, err
+	}
+	for _, extvar := range extvarfiles {
+		kv := strings.SplitN(extvar, "=", 2)
+		if len(kv) != 2 {
+			return nil, fmt.Errorf("Failed to parse %s: missing '=' in %s", flagExtVarFile, extvar)
+		}
+		v, err := ioutil.ReadFile(kv[1])
+		if err != nil {
+			return nil, err
+		}
+		vm.ExtVar(kv[0], string(v))
+	}
+
+	tlavars, err := flags.GetStringSlice(flagTlaVar)
+	if err != nil {
+		return nil, err
+	}
+	for _, tlavar := range tlavars {
+		kv := strings.SplitN(tlavar, "=", 2)
+		switch len(kv) {
+		case 1:
+			v, present := os.LookupEnv(kv[0])
+			if present {
+				vm.TlaVar(kv[0], v)
+			} else {
+				return nil, fmt.Errorf("Missing environment variable: %s", kv[0])
+			}
+		case 2:
+			vm.TlaVar(kv[0], kv[1])
+		}
+	}
+
+	tlavarfiles, err := flags.GetStringSlice(flagTlaVarFile)
+	if err != nil {
+		return nil, err
+	}
+	for _, tlavar := range tlavarfiles {
+		kv := strings.SplitN(tlavar, "=", 2)
+		if len(kv) != 2 {
+			return nil, fmt.Errorf("Failed to parse %s: missing '=' in %s", flagTlaVarFile, tlavar)
+		}
+		v, err := ioutil.ReadFile(kv[1])
+		if err != nil {
+			return nil, err
+		}
+		vm.TlaVar(kv[0], string(v))
 	}
 
 	resolver, err := buildResolver(cmd)
