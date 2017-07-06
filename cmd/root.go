@@ -31,10 +31,11 @@ import (
 	"github.com/spf13/cobra"
 	jsonnet "github.com/strickyak/jsonnet_cgo"
 	"golang.org/x/crypto/ssh/terminal"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/pkg/api/unversioned"
-	"k8s.io/client-go/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/ksonnet/kubecfg/utils"
@@ -307,14 +308,14 @@ func (r *resolverErrorWrapper) Resolve(image *utils.ImageName) error {
 	return err
 }
 
-func readObjs(cmd *cobra.Command, paths []string) ([]*runtime.Unstructured, error) {
+func readObjs(cmd *cobra.Command, paths []string) ([]*unstructured.Unstructured, error) {
 	vm, err := JsonnetVM(cmd)
 	if err != nil {
 		return nil, err
 	}
 	defer vm.Destroy()
 
-	res := []*runtime.Unstructured{}
+	res := []*unstructured.Unstructured{}
 	for _, path := range paths {
 		objs, err := utils.Read(vm, path)
 		if err != nil {
@@ -355,7 +356,7 @@ func restClientPool(cmd *cobra.Command) (dynamic.ClientPool, discovery.Discovery
 	return pool, discoCache, nil
 }
 
-func serverResourceForGroupVersionKind(disco discovery.DiscoveryInterface, gvk unversioned.GroupVersionKind) (*unversioned.APIResource, error) {
+func serverResourceForGroupVersionKind(disco discovery.DiscoveryInterface, gvk schema.GroupVersionKind) (*metav1.APIResource, error) {
 	resources, err := disco.ServerResourcesForGroupVersion(gvk.GroupVersion().String())
 	if err != nil {
 		return nil, err
@@ -371,7 +372,7 @@ func serverResourceForGroupVersionKind(disco discovery.DiscoveryInterface, gvk u
 	return nil, fmt.Errorf("Server is unable to handle %s", gvk)
 }
 
-func clientForResource(pool dynamic.ClientPool, disco discovery.DiscoveryInterface, obj *runtime.Unstructured, defNs string) (*dynamic.ResourceClient, error) {
+func clientForResource(pool dynamic.ClientPool, disco discovery.DiscoveryInterface, obj *unstructured.Unstructured, defNs string) (*dynamic.ResourceClient, error) {
 	gvk := obj.GroupVersionKind()
 
 	client, err := pool.ClientForGroupVersionKind(gvk)

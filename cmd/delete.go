@@ -21,8 +21,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/pkg/api/errors"
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/ksonnet/kubecfg/utils"
 )
@@ -65,7 +65,7 @@ var deleteCmd = &cobra.Command{
 
 		sort.Sort(sort.Reverse(utils.DependencyOrder(objs)))
 
-		deleteOpts := v1.DeleteOptions{OrphanDependents: &boolFalse}
+		deleteOpts := metav1.DeleteOptions{OrphanDependents: &boolFalse}
 		if gracePeriod >= 0 {
 			deleteOpts.GracePeriodSeconds = &gracePeriod
 		}

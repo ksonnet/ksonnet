@@ -22,10 +22,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/errors"
-	"k8s.io/client-go/pkg/runtime"
-	"k8s.io/client-go/pkg/util/diff"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/diff"
 
 	"github.com/ksonnet/kubecfg/utils"
 )
@@ -80,7 +80,7 @@ var updateCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			newobj, err := c.Patch(obj.GetName(), api.MergePatchType, asPatch)
+			newobj, err := c.Patch(obj.GetName(), types.MergePatchType, asPatch)
 			if create && errors.IsNotFound(err) {
 				log.Info(" Creating non-existent ", desc)
 				newobj, err = c.Create(obj)
@@ -97,7 +97,7 @@ var updateCmd = &cobra.Command{
 	},
 }
 
-func fqName(o *runtime.Unstructured) string {
+func fqName(o metav1.Object) string {
 	if o.GetNamespace() == "" {
 		return o.GetName()
 	}

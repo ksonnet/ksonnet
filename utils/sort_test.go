@@ -20,14 +20,14 @@ import (
 	"sort"
 	"testing"
 
-	"k8s.io/client-go/pkg/runtime"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var _ sort.Interface = DependencyOrder{}
 
 func TestDepSort(t *testing.T) {
-	newObj := func(apiVersion, kind string) *runtime.Unstructured {
-		return &runtime.Unstructured{
+	newObj := func(apiVersion, kind string) *unstructured.Unstructured {
+		return &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": apiVersion,
 				"kind":       kind,
@@ -35,7 +35,7 @@ func TestDepSort(t *testing.T) {
 		}
 	}
 
-	objs := []*runtime.Unstructured{
+	objs := []*unstructured.Unstructured{
 		newObj("extensions/v1beta1", "Deployment"),
 		newObj("v1", "ConfigMap"),
 		newObj("v1", "Namespace"),
@@ -53,15 +53,15 @@ func TestDepSort(t *testing.T) {
 }
 
 func TestAlphaSort(t *testing.T) {
-	newObj := func(ns, name, kind string) *runtime.Unstructured {
-		o := runtime.Unstructured{}
+	newObj := func(ns, name, kind string) *unstructured.Unstructured {
+		o := unstructured.Unstructured{}
 		o.SetNamespace(ns)
 		o.SetName(name)
 		o.SetKind(kind)
 		return &o
 	}
 
-	objs := []*runtime.Unstructured{
+	objs := []*unstructured.Unstructured{
 		newObj("default", "mysvc", "Deployment"),
 		newObj("", "default", "StorageClass"),
 		newObj("", "default", "ClusterRole"),
@@ -69,7 +69,7 @@ func TestAlphaSort(t *testing.T) {
 		newObj("default", "mysvc", "Secret"),
 	}
 
-	expected := []*runtime.Unstructured{
+	expected := []*unstructured.Unstructured{
 		objs[2],
 		objs[1],
 		objs[3],

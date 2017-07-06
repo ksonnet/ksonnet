@@ -22,7 +22,7 @@ import (
 	"regexp"
 
 	jsonnet "github.com/strickyak/jsonnet_cgo"
-	"k8s.io/client-go/pkg/util/yaml"
+	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 func resolveImage(resolver Resolver, image string) (string, error) {

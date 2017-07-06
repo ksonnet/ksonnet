@@ -16,25 +16,25 @@
 package utils
 
 import (
-	"k8s.io/client-go/pkg/api/unversioned"
-	"k8s.io/client-go/pkg/runtime"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 var (
-	gkNamespace    = unversioned.GroupKind{Group: "", Kind: "Namespace"}
-	gkTpr          = unversioned.GroupKind{Group: "extensions", Kind: "ThirdPartyResource"}
-	gkStorageClass = unversioned.GroupKind{Group: "storage.k8s.io", Kind: "StorageClass"}
+	gkNamespace    = schema.GroupKind{Group: "", Kind: "Namespace"}
+	gkTpr          = schema.GroupKind{Group: "extensions", Kind: "ThirdPartyResource"}
+	gkStorageClass = schema.GroupKind{Group: "storage.k8s.io", Kind: "StorageClass"}
 
-	gkPod         = unversioned.GroupKind{Group: "", Kind: "Pod"}
-	gkJob         = unversioned.GroupKind{Group: "batch", Kind: "Job"}
-	gkDeployment  = unversioned.GroupKind{Group: "extensions", Kind: "Deployment"}
-	gkDaemonSet   = unversioned.GroupKind{Group: "extensions", Kind: "DaemonSet"}
-	gkStatefulSet = unversioned.GroupKind{Group: "apps", Kind: "StatefulSet"}
+	gkPod         = schema.GroupKind{Group: "", Kind: "Pod"}
+	gkJob         = schema.GroupKind{Group: "batch", Kind: "Job"}
+	gkDeployment  = schema.GroupKind{Group: "extensions", Kind: "Deployment"}
+	gkDaemonSet   = schema.GroupKind{Group: "extensions", Kind: "DaemonSet"}
+	gkStatefulSet = schema.GroupKind{Group: "apps", Kind: "StatefulSet"}
 )
 
 // These kinds all start pods.
 // TODO: expand this list.
-func isPodOrSimilar(gk unversioned.GroupKind) bool {
+func isPodOrSimilar(gk schema.GroupKind) bool {
 	return gk == gkPod ||
 		gk == gkJob ||
 		gk == gkDeployment ||
@@ -44,7 +44,7 @@ func isPodOrSimilar(gk unversioned.GroupKind) bool {
 
 // Arbitrary numbers used to do a simple topological sort of resources.
 // TODO: expand this list.
-func depTier(o *runtime.Unstructured) int {
+func depTier(o schema.ObjectKind) int {
 	gk := o.GroupVersionKind().GroupKind()
 	if gk == gkNamespace || gk == gkTpr || gk == gkStorageClass {
 		return 10
@@ -59,17 +59,17 @@ func depTier(o *runtime.Unstructured) int {
 // objects so that known dependencies appear earlier in the list.  The
 // idea is to prevent *some* of the "crash-restart" loops when
 // creating inter-dependent resources.
-type DependencyOrder []*runtime.Unstructured
+type DependencyOrder []*unstructured.Unstructured
 
 func (l DependencyOrder) Len() int      { return len(l) }
 func (l DependencyOrder) Swap(i, j int) { l[i], l[j] = l[j], l[i] }
 func (l DependencyOrder) Less(i, j int) bool {
-	return depTier(l[i]) < depTier(l[j])
+	return depTier(l[i].GetObjectKind()) < depTier(l[j].GetObjectKind())
 }
 
 // AlphabeticalOrder is a `sort.Interface` that sorts the
 // objects by namespace/name/kind alphabetical order
-type AlphabeticalOrder []*runtime.Unstructured
+type AlphabeticalOrder []*unstructured.Unstructured
 
 func (l AlphabeticalOrder) Len() int      { return len(l) }
 func (l AlphabeticalOrder) Swap(i, j int) { l[i], l[j] = l[j], l[i] }
