@@ -26,7 +26,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
-	"k8s.io/client-go/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/ksonnet/kubecfg/utils"
 )

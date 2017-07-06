@@ -26,8 +26,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	jsonnet "github.com/strickyak/jsonnet_cgo"
-	"k8s.io/client-go/pkg/runtime"
-	"k8s.io/client-go/pkg/util/yaml"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 // Read fetches and decodes K8s objects by path.
@@ -61,7 +62,7 @@ func jsonReader(r io.Reader) ([]runtime.Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	obj, _, err := runtime.UnstructuredJSONScheme.Decode(data, nil, nil)
+	obj, _, err := unstructured.UnstructuredJSONScheme.Decode(data, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +86,7 @@ func yamlReader(r io.ReadCloser) ([]runtime.Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		obj, _, err := runtime.UnstructuredJSONScheme.Decode(jsondata, nil, nil)
+		obj, _, err := unstructured.UnstructuredJSONScheme.Decode(jsondata, nil, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -149,7 +150,7 @@ func jsonnetReader(vm *jsonnet.VM, path string) ([]runtime.Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		obj, _, err := runtime.UnstructuredJSONScheme.Decode(data, nil, nil)
+		obj, _, err := unstructured.UnstructuredJSONScheme.Decode(data, nil, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -162,15 +163,15 @@ func jsonnetReader(vm *jsonnet.VM, path string) ([]runtime.Object, error) {
 // FlattenToV1 expands any List-type objects into their members, and
 // cooerces everything to v1.Unstructured.  Panics if coercion
 // encounters an unexpected object type.
-func FlattenToV1(objs []runtime.Object) []*runtime.Unstructured {
-	ret := make([]*runtime.Unstructured, 0, len(objs))
+func FlattenToV1(objs []runtime.Object) []*unstructured.Unstructured {
+	ret := make([]*unstructured.Unstructured, 0, len(objs))
 	for _, obj := range objs {
 		switch o := obj.(type) {
-		case *runtime.UnstructuredList:
+		case *unstructured.UnstructuredList:
 			for _, item := range o.Items {
 				ret = append(ret, item)
 			}
-		case *runtime.Unstructured:
+		case *unstructured.Unstructured:
 			ret = append(ret, o)
 		default:
 			panic("Unexpected unstructured object type")

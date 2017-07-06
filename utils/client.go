@@ -19,18 +19,18 @@ import (
 	"sync"
 
 	"github.com/emicklei/go-restful/swagger"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/pkg/api/unversioned"
-	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
 )
 
 type memcachedDiscoveryClient struct {
-	cl                        discovery.DiscoveryInterface
-	lock                      sync.RWMutex
-	servergroups              *unversioned.APIGroupList
-	serverresources           map[string]*unversioned.APIResourceList
-	serverresourcesIsComplete bool
+	cl              discovery.DiscoveryInterface
+	lock            sync.RWMutex
+	servergroups    *metav1.APIGroupList
+	serverresources map[string]*metav1.APIResourceList
 }
 
 // NewMemcachedDiscoveryClient creates a new DiscoveryClient that
@@ -50,15 +50,14 @@ func (c *memcachedDiscoveryClient) Invalidate() {
 	defer c.lock.Unlock()
 
 	c.servergroups = nil
-	c.serverresources = make(map[string]*unversioned.APIResourceList)
-	c.serverresourcesIsComplete = false
+	c.serverresources = make(map[string]*metav1.APIResourceList)
 }
 
 func (c *memcachedDiscoveryClient) RESTClient() rest.Interface {
 	return c.cl.RESTClient()
 }
 
-func (c *memcachedDiscoveryClient) ServerGroups() (*unversioned.APIGroupList, error) {
+func (c *memcachedDiscoveryClient) ServerGroups() (*metav1.APIGroupList, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -70,7 +69,7 @@ func (c *memcachedDiscoveryClient) ServerGroups() (*unversioned.APIGroupList, er
 	return c.servergroups, err
 }
 
-func (c *memcachedDiscoveryClient) ServerResourcesForGroupVersion(groupVersion string) (*unversioned.APIResourceList, error) {
+func (c *memcachedDiscoveryClient) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -78,33 +77,19 @@ func (c *memcachedDiscoveryClient) ServerResourcesForGroupVersion(groupVersion s
 	if v := c.serverresources[groupVersion]; v != nil {
 		return v, nil
 	}
-	if c.serverresourcesIsComplete {
-		return &unversioned.APIResourceList{}, nil
-	}
 	c.serverresources[groupVersion], err = c.cl.ServerResourcesForGroupVersion(groupVersion)
 	return c.serverresources[groupVersion], err
 }
 
-func (c *memcachedDiscoveryClient) ServerResources() (map[string]*unversioned.APIResourceList, error) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
-	var err error
-	if c.serverresourcesIsComplete {
-		return c.serverresources, nil
-	}
-	c.serverresources, err = c.cl.ServerResources()
-	if err == nil {
-		c.serverresourcesIsComplete = true
-	}
-	return c.serverresources, err
+func (c *memcachedDiscoveryClient) ServerResources() ([]*metav1.APIResourceList, error) {
+	return c.cl.ServerResources()
 }
 
-func (c *memcachedDiscoveryClient) ServerPreferredResources() ([]unversioned.GroupVersionResource, error) {
+func (c *memcachedDiscoveryClient) ServerPreferredResources() ([]*metav1.APIResourceList, error) {
 	return c.cl.ServerPreferredResources()
 }
 
-func (c *memcachedDiscoveryClient) ServerPreferredNamespacedResources() ([]unversioned.GroupVersionResource, error) {
+func (c *memcachedDiscoveryClient) ServerPreferredNamespacedResources() ([]*metav1.APIResourceList, error) {
 	return c.cl.ServerPreferredNamespacedResources()
 }
 
@@ -112,7 +97,7 @@ func (c *memcachedDiscoveryClient) ServerVersion() (*version.Info, error) {
 	return c.cl.ServerVersion()
 }
 
-func (c *memcachedDiscoveryClient) SwaggerSchema(version unversioned.GroupVersion) (*swagger.ApiDeclaration, error) {
+func (c *memcachedDiscoveryClient) SwaggerSchema(version schema.GroupVersion) (*swagger.ApiDeclaration, error) {
 	return c.cl.SwaggerSchema(version)
 }
 
