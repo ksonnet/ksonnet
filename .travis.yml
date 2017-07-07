@@ -1,8 +1,8 @@
 language: go
 
 go:
-  - '1.7'
-  - '1.8'
+  - 1.7.x
+  - 1.8.x
 
 os:
   - linux
@@ -12,12 +12,12 @@ matrix:
   include:
     - env: TARGET=x86_64-linux-musl
       os: linux
-      go: '1.8'
+      go: 1.8.x
 
   allow_failures:
     # native functions crash. Unclear if this is a golang bug or
     # jsonnet_cgo.  Want to fix, but not critical since 1.8 works.
-    - go: '1.7'
+    - go: 1.7.x
       os: osx
 
 addons:
@@ -88,7 +88,7 @@ deploy:
   file: $EXE_NAME
   on:
     condition: $TARGET = x86_64-linux-musl || $TRAVIS_OS_NAME = osx
-    go: '1.8'
+    go: 1.8.x
     tags: true
   provider: releases
   skip_cleanup: true
