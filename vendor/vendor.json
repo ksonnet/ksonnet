@@ -33,6 +33,54 @@
 			"revisionTime": "2017-03-24T14:02:28Z"
 		},
 		{
+			"checksumSHA1": "vM0AXBjMyPUVF7sLxjXX0to78l0=",
+			"path": "github.com/coreos/go-oidc/http",
+			"revision": "d68c0e2fef598f5bbf15edd34905f4bf551a54ec",
+			"revisionTime": "2017-06-16T01:39:05Z"
+		},
+		{
+			"checksumSHA1": "4tTcNh86OwCSkCD6WeA6ajRYqDA=",
+			"path": "github.com/coreos/go-oidc/jose",
+			"revision": "d68c0e2fef598f5bbf15edd34905f4bf551a54ec",
+			"revisionTime": "2017-06-16T01:39:05Z"
+		},
+		{
+			"checksumSHA1": "r1oC4B8T20BNrRjyhtVE0Wbavt4=",
+			"path": "github.com/coreos/go-oidc/key",
+			"revision": "d68c0e2fef598f5bbf15edd34905f4bf551a54ec",
+			"revisionTime": "2017-06-16T01:39:05Z"
+		},
+		{
+			"checksumSHA1": "VDZdX1BgnrZ1pV5hZ98xOsN7Bbg=",
+			"path": "github.com/coreos/go-oidc/oauth2",
+			"revision": "d68c0e2fef598f5bbf15edd34905f4bf551a54ec",
+			"revisionTime": "2017-06-16T01:39:05Z"
+		},
+		{
+			"checksumSHA1": "JRmqnLrrYZWzHAeG6iu85hTuqlM=",
+			"path": "github.com/coreos/go-oidc/oidc",
+			"revision": "d68c0e2fef598f5bbf15edd34905f4bf551a54ec",
+			"revisionTime": "2017-06-16T01:39:05Z"
+		},
+		{
+			"checksumSHA1": "vhHfyZLaugP3bKfJjnZe2+5XaHc=",
+			"path": "github.com/coreos/pkg/health",
+			"revision": "8dbaa491b063ed47e2474b5363de0c0db91cf9f2",
+			"revisionTime": "2017-04-20T17:29:56Z"
+		},
+		{
+			"checksumSHA1": "gRHhz6qleTtTUH/UIXwGeNxBFR8=",
+			"path": "github.com/coreos/pkg/httputil",
+			"revision": "8dbaa491b063ed47e2474b5363de0c0db91cf9f2",
+			"revisionTime": "2017-04-20T17:29:56Z"
+		},
+		{
+			"checksumSHA1": "etBdQ0LN6ojGunfvUt6B5C3FNrQ=",
+			"path": "github.com/coreos/pkg/timeutil",
+			"revision": "8dbaa491b063ed47e2474b5363de0c0db91cf9f2",
+			"revisionTime": "2017-04-20T17:29:56Z"
+		},
+		{
 			"checksumSHA1": "dvabztWVQX8f6oMLRyv4dLH+TGY=",
 			"path": "github.com/davecgh/go-spew/spew",
 			"revision": "346938d642f2ec3594ed81d874461961cd0faa76",
@@ -147,6 +195,12 @@
 			"path": "github.com/inconshreveable/mousetrap",
 			"revision": "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75",
 			"revisionTime": "2014-10-17T20:07:13Z"
+		},
+		{
+			"checksumSHA1": "SGc5vSs9tXhrGJ5ncymDyMvTg24=",
+			"path": "github.com/jonboulle/clockwork",
+			"revision": "bcac9884e7502bb2b474c0339d889cb981a2f27f",
+			"revisionTime": "2016-09-07T12:20:59Z"
 		},
 		{
 			"checksumSHA1": "+NJzbj9fa71GPyEhyYcB2urBiXY=",
@@ -717,10 +771,26 @@
 			"versionExact": "v3.0.0-beta.0"
 		},
 		{
+			"checksumSHA1": "drjIIoy0trL0gWi/jxi7Nj/Xi/c=",
+			"path": "k8s.io/client-go/plugin/pkg/client/auth",
+			"revision": "3627aeb7d4f6ade38f995d2c923e459146493c7e",
+			"revisionTime": "2017-03-31T20:34:26Z",
+			"version": "v3.0",
+			"versionExact": "v3.0.0-beta.0"
+		},
+		{
 			"checksumSHA1": "2BDblVF8oc5+YR6c625SC0JnnUo=",
 			"path": "k8s.io/client-go/plugin/pkg/client/auth/gcp",
 			"revision": "6daa6a29b8b866679a5be039ad0c8149de1cd60a",
 			"revisionTime": "2017-07-05T23:52:01Z"
+		},
+		{
+			"checksumSHA1": "V2STSOlLArfXkmK9sD9xHHa7lFs=",
+			"path": "k8s.io/client-go/plugin/pkg/client/auth/oidc",
+			"revision": "3627aeb7d4f6ade38f995d2c923e459146493c7e",
+			"revisionTime": "2017-03-31T20:34:26Z",
+			"version": "v3.0",
+			"versionExact": "v3.0.0-beta.0"
 		},
 		{
 			"checksumSHA1": "WKKCrNPVWbJYm1im1DA9145z6xI=",
