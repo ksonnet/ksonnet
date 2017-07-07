@@ -31,10 +31,10 @@ import (
 	"github.com/ksonnet/kubecfg/utils"
 )
 
-var diffStrategy string
+const flagDiffStrategy = "diff-strategy"
 
 func init() {
-	diffCmd.Flags().StringVar(&diffStrategy, "diff-strategy", "all", "Diff strategy, all or subset.")
+	diffCmd.PersistentFlags().String(flagDiffStrategy, "all", "Diff strategy, all or subset.")
 	RootCmd.AddCommand(diffCmd)
 }
 
@@ -43,6 +43,12 @@ var diffCmd = &cobra.Command{
 	Short: "Display differences between server and local config",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		out := cmd.OutOrStdout()
+
+		flags := cmd.Flags()
+		diffStrategy, err := flags.GetString(flagDiffStrategy)
+		if err != nil {
+			return err
+		}
 
 		objs, err := readObjs(cmd, args)
 		if err != nil {
@@ -134,7 +140,9 @@ func removeMapFields(config, live map[string]interface{}) map[string]interface{}
 }
 
 func removeListFields(config, live []interface{}) []interface{} {
-	result := []interface{}{}
+	// If live is longer than config, then the extra elements at the end of the
+	// list will be returned as is so they appear in the diff.
+	result := make([]interface{}, 0, len(live))
 	for i, v2 := range live {
 		if len(config) > i {
 			result = append(result, removeFields(config[i], v2))

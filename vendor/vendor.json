@@ -185,6 +185,12 @@
 			"revisionTime": "2017-05-10T16:33:54Z"
 		},
 		{
+			"checksumSHA1": "LuFv4/jlrmFNnDb/5SCSEPAM9vU=",
+			"path": "github.com/pmezard/go-difflib/difflib",
+			"revision": "792786c7400a136282c1664665ae0a8db921c6c2",
+			"revisionTime": "2016-01-10T10:55:54Z"
+		},
+		{
 			"checksumSHA1": "v7C+aJ1D/z3MEeCte6bxvpoGjM4=",
 			"path": "github.com/sergi/go-diff/diffmatchpatch",
 			"revision": "feef008d51ad2b3778f85d387ccf91735543008d",
@@ -207,6 +213,18 @@
 			"path": "github.com/spf13/pflag",
 			"revision": "e57e3eeb33f795204c1ca35f56c44f83227c6e66",
 			"revisionTime": "2017-05-08T18:43:26Z"
+		},
+		{
+			"checksumSHA1": "5NBHAe3S15q3L9hOLThnMZjIZRE=",
+			"path": "github.com/stretchr/testify/assert",
+			"revision": "f6abca593680b2315d2075e0f5e2a9751e3f431a",
+			"revisionTime": "2017-06-01T20:57:54Z"
+		},
+		{
+			"checksumSHA1": "7vs6dSc1PPGBKyzb/SCIyeMJPLQ=",
+			"path": "github.com/stretchr/testify/require",
+			"revision": "f6abca593680b2315d2075e0f5e2a9751e3f431a",
+			"revisionTime": "2017-06-01T20:57:54Z"
 		},
 		{
 			"checksumSHA1": "zHXKW3VTfu4Dswo3GTsCGVCZuw4=",
