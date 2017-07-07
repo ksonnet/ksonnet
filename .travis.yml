@@ -8,15 +8,18 @@ os:
   - linux
   - osx
 
+# Frequent jsonnet_cgo crashes with xcode7.3 (default)
+osx_image: xcode8.3
+
 matrix:
   include:
     - env: TARGET=x86_64-linux-musl
       os: linux
       go: 1.8.x
 
-  allow_failures:
-    # native functions crash. Unclear if this is a golang bug or
-    # jsonnet_cgo.  Want to fix, but not critical since 1.8 works.
+  exclude:
+    # cgo requires golang >= 1.8.1 (or other workarounds) on recent
+    # osx/xcode - see https://github.com/golang/go/issues/19734
     - go: 1.7.x
       os: osx
 
