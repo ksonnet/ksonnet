@@ -42,6 +42,7 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
 		boolFalse := false
+		deletePolicyForeground := metav1.DeletePropagationForeground
 
 		gracePeriod, err := flags.GetInt64(flagGracePeriod)
 		if err != nil {
@@ -65,7 +66,12 @@ var deleteCmd = &cobra.Command{
 
 		sort.Sort(sort.Reverse(utils.DependencyOrder(objs)))
 
-		deleteOpts := metav1.DeleteOptions{OrphanDependents: &boolFalse}
+		deleteOpts := metav1.DeleteOptions{
+			// 1.5.x option
+			OrphanDependents: &boolFalse,
+			// 1.6.x option (NB: Background is broken)
+			PropagationPolicy: &deletePolicyForeground,
+		}
 		if gracePeriod >= 0 {
 			deleteOpts.GracePeriodSeconds = &gracePeriod
 		}
