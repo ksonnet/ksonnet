@@ -31,7 +31,10 @@ import (
 	"github.com/ksonnet/kubecfg/utils"
 )
 
+const flagDiffStrategy = "diff-strategy"
+
 func init() {
+	diffCmd.PersistentFlags().String(flagDiffStrategy, "all", "Diff strategy, all or subset.")
 	RootCmd.AddCommand(diffCmd)
 }
 
@@ -40,6 +43,12 @@ var diffCmd = &cobra.Command{
 	Short: "Display differences between server and local config",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		out := cmd.OutOrStdout()
+
+		flags := cmd.Flags()
+		diffStrategy, err := flags.GetString(flagDiffStrategy)
+		if err != nil {
+			return err
+		}
 
 		objs, err := readObjs(cmd, args)
 		if err != nil {
@@ -82,13 +91,17 @@ var diffCmd = &cobra.Command{
 				continue
 			}
 
-			diff := gojsondiff.New().CompareObjects(liveObj.Object, obj.Object)
+			liveObjObject := liveObj.Object
+			if diffStrategy == "subset" {
+				liveObjObject = removeMapFields(obj.Object, liveObjObject)
+			}
+			diff := gojsondiff.New().CompareObjects(liveObjObject, obj.Object)
 
 			if diff.Modified() {
 				fcfg := formatter.AsciiFormatterConfig{
 					Coloring: istty(out),
 				}
-				formatter := formatter.NewAsciiFormatter(liveObj.Object, fcfg)
+				formatter := formatter.NewAsciiFormatter(liveObjObject, fcfg)
 				text, err := formatter.Format(diff)
 				if err != nil {
 					return err
@@ -101,6 +114,43 @@ var diffCmd = &cobra.Command{
 
 		return nil
 	},
+}
+
+func removeFields(config, live interface{}) interface{} {
+	switch c := config.(type) {
+	case map[string]interface{}:
+		return removeMapFields(c, live.(map[string]interface{}))
+	case []interface{}:
+		return removeListFields(c, live.([]interface{}))
+	default:
+		return live
+	}
+}
+
+func removeMapFields(config, live map[string]interface{}) map[string]interface{} {
+	result := map[string]interface{}{}
+	for k, v1 := range config {
+		v2, ok := live[k]
+		if !ok {
+			continue
+		}
+		result[k] = removeFields(v1, v2)
+	}
+	return result
+}
+
+func removeListFields(config, live []interface{}) []interface{} {
+	// If live is longer than config, then the extra elements at the end of the
+	// list will be returned as is so they appear in the diff.
+	result := make([]interface{}, 0, len(live))
+	for i, v2 := range live {
+		if len(config) > i {
+			result = append(result, removeFields(config[i], v2))
+		} else {
+			result = append(result, v2)
+		}
+	}
+	return result
 }
 
 func istty(w io.Writer) bool {
