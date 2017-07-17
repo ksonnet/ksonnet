@@ -41,8 +41,6 @@ var deleteCmd = &cobra.Command{
 	Short: "Delete Kubernetes resources described in local config",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
-		boolFalse := false
-		deletePolicyForeground := metav1.DeletePropagationForeground
 
 		gracePeriod, err := flags.GetInt64(flagGracePeriod)
 		if err != nil {
@@ -64,13 +62,22 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 
+		version, err := utils.FetchVersion(disco)
+		if err != nil {
+			return err
+		}
+
 		sort.Sort(sort.Reverse(utils.DependencyOrder(objs)))
 
-		deleteOpts := metav1.DeleteOptions{
+		deleteOpts := metav1.DeleteOptions{}
+		if version.Compare(1, 6) < 0 {
 			// 1.5.x option
-			OrphanDependents: &boolFalse,
+			boolFalse := false
+			deleteOpts.OrphanDependents = &boolFalse
+		} else {
 			// 1.6.x option (NB: Background is broken)
-			PropagationPolicy: &deletePolicyForeground,
+			fg := metav1.DeletePropagationForeground
+			deleteOpts.PropagationPolicy = &fg
 		}
 		if gracePeriod >= 0 {
 			deleteOpts.GracePeriodSeconds = &gracePeriod
