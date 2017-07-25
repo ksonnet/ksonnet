@@ -67,6 +67,7 @@ var diffCmd = &cobra.Command{
 
 		sort.Sort(utils.AlphabeticalOrder(objs))
 
+		differencesFound := false
 		for _, obj := range objs {
 			desc := fmt.Sprintf("%s/%s", obj.GetKind(), fqName(obj))
 			log.Debugf("Fetching ", desc)
@@ -85,9 +86,10 @@ var diffCmd = &cobra.Command{
 			}
 
 			fmt.Fprintln(out, "---")
-			fmt.Fprintf(out, "- live %s\n+ config %s", desc, desc)
+			fmt.Fprintf(out, "- live %s\n+ config %s\n", desc, desc)
 			if liveObj == nil {
 				fmt.Fprintf(out, "%s doesn't exist on server\n", desc)
+				differencesFound = true
 				continue
 			}
 
@@ -98,6 +100,7 @@ var diffCmd = &cobra.Command{
 			diff := gojsondiff.New().CompareObjects(liveObjObject, obj.Object)
 
 			if diff.Modified() {
+				differencesFound = true
 				fcfg := formatter.AsciiFormatterConfig{
 					Coloring: istty(out),
 				}
@@ -112,6 +115,9 @@ var diffCmd = &cobra.Command{
 			}
 		}
 
+		if differencesFound {
+			return fmt.Errorf("Differences found.")
+		}
 		return nil
 	},
 }
