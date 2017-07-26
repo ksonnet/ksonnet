@@ -16,6 +16,8 @@
 package main
 
 import (
+	"os"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/ksonnet/kubecfg/cmd"
@@ -32,7 +34,13 @@ func main() {
 		// errors, like invalid command line flags.
 		logFmt := cmd.NewLogFormatter(log.StandardLogger().Out)
 		log.SetFormatter(logFmt)
+		log.Error(err.Error())
 
-		log.Fatal(err.Error())
+		switch err {
+		case cmd.ErrDiffFound:
+			os.Exit(1)
+		default:
+			os.Exit(2)
+		}
 	}
 }
