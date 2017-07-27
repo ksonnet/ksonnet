@@ -20,6 +20,9 @@ import (
 	"encoding/json"
 	"io"
 	"regexp"
+	"strings"
+
+	goyaml "github.com/ghodss/yaml"
 
 	jsonnet "github.com/strickyak/jsonnet_cgo"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -40,6 +43,11 @@ func resolveImage(resolver Resolver, image string) (string, error) {
 
 // RegisterNativeFuncs adds kubecfg's native jsonnet functions to provided VM
 func RegisterNativeFuncs(vm *jsonnet.VM, resolver Resolver) {
+	// NB: libjsonnet native functions can only pass primitive
+	// types, so some functions json-encode the arg.  These
+	// "*FromJson" functions will be replaced by regular native
+	// version when libjsonnet is able to support this.
+
 	vm.NativeCallback("parseJson", []string{"json"}, func(data []byte) (res interface{}, err error) {
 		err = json.Unmarshal(data, &res)
 		return
@@ -59,6 +67,25 @@ func RegisterNativeFuncs(vm *jsonnet.VM, resolver Resolver) {
 			ret = append(ret, doc)
 		}
 		return ret, nil
+	})
+
+	vm.NativeCallback("manifestJsonFromJson", []string{"json", "indent"}, func(data []byte, indent int) (string, error) {
+		data = bytes.TrimSpace(data)
+		buf := bytes.Buffer{}
+		if err := json.Indent(&buf, data, "", strings.Repeat(" ", indent)); err != nil {
+			return "", err
+		}
+		buf.WriteString("\n")
+		return buf.String(), nil
+	})
+
+	vm.NativeCallback("manifestYamlFromJson", []string{"json"}, func(data []byte) (string, error) {
+		var input interface{}
+		if err := json.Unmarshal(data, &input); err != nil {
+			return "", err
+		}
+		output, err := goyaml.Marshal(input)
+		return string(output), err
 	})
 
 	vm.NativeCallback("resolveImage", []string{"image"}, func(image string) (string, error) {
