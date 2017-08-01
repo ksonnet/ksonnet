@@ -38,9 +38,9 @@ func main() {
 
 		switch err {
 		case cmd.ErrDiffFound:
-			os.Exit(1)
+			os.Exit(10)
 		default:
-			os.Exit(2)
+			os.Exit(1)
 		}
 	}
 }
