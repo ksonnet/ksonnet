@@ -74,7 +74,7 @@ var diffCmd = &cobra.Command{
 			desc := fmt.Sprintf("%s/%s", obj.GetKind(), fqName(obj))
 			log.Debugf("Fetching ", desc)
 
-			c, err := clientForResource(clientpool, disco, obj, defaultNs)
+			c, err := utils.ClientForResource(clientpool, disco, obj, defaultNs)
 			if err != nil {
 				return err
 			}

@@ -31,11 +31,7 @@ import (
 	"github.com/spf13/cobra"
 	jsonnet "github.com/strickyak/jsonnet_cgo"
 	"golang.org/x/crypto/ssh/terminal"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
@@ -359,47 +355,4 @@ func restClientPool(cmd *cobra.Command) (dynamic.ClientPool, discovery.Discovery
 
 	pool := dynamic.NewClientPool(conf, mapper, pathresolver)
 	return pool, discoCache, nil
-}
-
-func serverResourceForGroupVersionKind(disco discovery.DiscoveryInterface, gvk schema.GroupVersionKind) (*metav1.APIResource, error) {
-	resources, err := disco.ServerResourcesForGroupVersion(gvk.GroupVersion().String())
-	if err != nil {
-		return nil, err
-	}
-
-	for _, r := range resources.APIResources {
-		if r.Kind == gvk.Kind {
-			log.Debugf("Chose API '%s' for %s", r.Name, gvk)
-			return &r, nil
-		}
-	}
-
-	return nil, fmt.Errorf("Server is unable to handle %s", gvk)
-}
-
-func clientForResource(pool dynamic.ClientPool, disco discovery.DiscoveryInterface, obj runtime.Object, defNs string) (*dynamic.ResourceClient, error) {
-	gvk := obj.GetObjectKind().GroupVersionKind()
-
-	client, err := pool.ClientForGroupVersionKind(gvk)
-	if err != nil {
-		return nil, err
-	}
-
-	resource, err := serverResourceForGroupVersionKind(disco, gvk)
-	if err != nil {
-		return nil, err
-	}
-
-	meta, err := meta.Accessor(obj)
-	if err != nil {
-		return nil, err
-	}
-	namespace := meta.GetNamespace()
-	if namespace == "" {
-		namespace = defNs
-	}
-
-	log.Debugf("Fetching client for %s namespace=%s", resource, namespace)
-	rc := client.Resource(resource, namespace)
-	return rc, nil
 }

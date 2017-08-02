@@ -124,7 +124,7 @@ var updateCmd = &cobra.Command{
 			desc := fmt.Sprintf("%s/%s", obj.GetKind(), fqName(obj))
 			log.Info("Updating ", desc, dryRunText)
 
-			rc, err := clientForResource(clientpool, disco, obj, defaultNs)
+			rc, err := utils.ClientForResource(clientpool, disco, obj, defaultNs)
 			if err != nil {
 				return err
 			}
@@ -237,7 +237,7 @@ func gcDelete(clientpool dynamic.ClientPool, disco discovery.DiscoveryInterface,
 		deleteOpts.PropagationPolicy = &fg
 	}
 
-	c, err := clientForResource(clientpool, disco, o, metav1.NamespaceNone)
+	c, err := utils.ClientForResource(clientpool, disco, o, metav1.NamespaceNone)
 	if err != nil {
 		return err
 	}
