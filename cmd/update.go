@@ -121,7 +121,7 @@ var updateCmd = &cobra.Command{
 				utils.SetMetaDataAnnotation(obj, AnnotationGcTag, gcTag)
 			}
 
-			desc := fmt.Sprintf("%s/%s", obj.GetKind(), fqName(obj))
+			desc := fmt.Sprintf("%s %s", utils.ResourceNameFor(disco, obj), utils.FqName(obj))
 			log.Info("Updating ", desc, dryRunText)
 
 			rc, err := utils.ClientForResource(clientpool, disco, obj, defaultNs)
@@ -177,7 +177,7 @@ var updateCmd = &cobra.Command{
 					return err
 				}
 				gvk := o.GetObjectKind().GroupVersionKind()
-				desc := fmt.Sprintf("%s/%s (%s)", gvk.Kind, fqName(meta), gvk.GroupVersion())
+				desc := fmt.Sprintf("%s %s (%s)", utils.ResourceNameFor(disco, o), utils.FqName(meta), gvk.GroupVersion())
 				log.Debugf("Considering %v for gc", desc)
 				if eligibleForGc(meta, gcTag) && !seenUids.Has(string(meta.GetUID())) {
 					log.Info("Garbage collecting ", desc, dryRunText)
@@ -199,13 +199,6 @@ var updateCmd = &cobra.Command{
 	},
 }
 
-func fqName(o metav1.Object) string {
-	if o.GetNamespace() == "" {
-		return o.GetName()
-	}
-	return fmt.Sprintf("%s.%s", o.GetNamespace(), o.GetName())
-}
-
 func stringListContains(list []string, value string) bool {
 	for _, item := range list {
 		if item == value {
@@ -222,7 +215,7 @@ func gcDelete(clientpool dynamic.ClientPool, disco discovery.DiscoveryInterface,
 	}
 
 	uid := obj.GetUID()
-	desc := fmt.Sprintf("%s/%s", o.GetObjectKind().GroupVersionKind().Kind, fqName(obj))
+	desc := fmt.Sprintf("%s %s", utils.ResourceNameFor(disco, o), utils.FqName(obj))
 
 	deleteOpts := metav1.DeleteOptions{
 		Preconditions: &metav1.Preconditions{UID: &uid},
