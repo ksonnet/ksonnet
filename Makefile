@@ -22,7 +22,7 @@ GOFMT = gofmt
 
 JSONNET_FILES = lib/kubecfg_test.jsonnet examples/guestbook.jsonnet
 # TODO: Simplify this once ./... ignores ./vendor
-GO_PACKAGES = ./cmd/... ./utils/...
+GO_PACKAGES = ./cmd/... ./utils/... ./pkg/...
 
 all: kubecfg
 
