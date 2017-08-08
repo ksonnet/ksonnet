@@ -20,6 +20,7 @@ import (
 
 	"github.com/spf13/cobra"
 	jsonnet "github.com/strickyak/jsonnet_cgo"
+	"k8s.io/client-go/pkg/version"
 )
 
 func init() {
@@ -36,5 +37,6 @@ var versionCmd = &cobra.Command{
 		out := cmd.OutOrStdout()
 		fmt.Fprintln(out, "kubecfg version:", Version)
 		fmt.Fprintln(out, "jsonnet version:", jsonnet.Version())
+		fmt.Fprintln(out, "client-go version:", version.Get())
 	},
 }
