@@ -1,27 +1,34 @@
 language: go
 
 go:
-  - 1.7.x
   - 1.8.x
+  - 1.7.x
 
 os:
   - linux
-  - osx
+
+env:
+  global:
+    - VERSION="${TRAVIS_TAG:-build-$TRAVIS_BUILD_ID}"
+    - EXTRA_GO_FLAGS_TEST="-race"
 
 # Frequent jsonnet_cgo crashes with xcode7.3 (default)
 osx_image: xcode8.3
 
 matrix:
   include:
-    - env: TARGET=x86_64-linux-musl
-      os: linux
+    - env: TARGET=x86_64-linux-musl EXTRA_GO_FLAGS_TEST=""
       go: 1.8.x
-
-  exclude:
     # cgo requires golang >= 1.8.1 (or other workarounds) on recent
     # osx/xcode - see https://github.com/golang/go/issues/19734
-    - go: 1.7.x
-      os: osx
+    # 'go test' also hangs repeatably on go-1.8.3/MacOS ?
+    - os: osx
+      go: 1.8.x
+  fast_finish: true
+  allow_failures:
+    # Let us know if/when 'go test' works again on MacOS..
+    - os: osx
+      go: 1.8.x
 
 addons:
   apt:
@@ -68,9 +75,9 @@ install:
   - go build -i -ldflags "$GO_LDFLAGS" .
 
 script:
-  - make VERSION=${TRAVIS_TAG:-build-$TRAVIS_BUILD_ID}
-  - make VERSION=${TRAVIS_TAG:-build-$TRAVIS_BUILD_ID} test
-  - make VERSION=${TRAVIS_TAG:-build-$TRAVIS_BUILD_ID} vet
+  - make VERSION="$VERSION" EXTRA_GO_FLAGS="$EXTRA_GO_FLAGS_TEST" test
+  - make vet
+  - rm -f ./kubecfg && make VERSION="$VERSION"
   - >
     ldd ./kubecfg || otool -L ./kubecfg || :
   - ./kubecfg help

@@ -16,7 +16,8 @@
 VERSION = dev-$(shell date +%FT%T%z)
 
 GO = go
-GO_FLAGS = -ldflags="-X main.version=$(VERSION) $(GO_LDFLAGS)"
+EXTRA_GO_FLAGS =
+GO_FLAGS = -ldflags="-X main.version=$(VERSION) $(GO_LDFLAGS)" $(EXTRA_GO_FLAGS)
 GOFMT = gofmt
 
 JSONNET_FILES = lib/kubecfg_test.jsonnet examples/guestbook.jsonnet
