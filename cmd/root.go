@@ -31,8 +31,10 @@ import (
 	"github.com/spf13/cobra"
 	jsonnet "github.com/strickyak/jsonnet_cgo"
 	"golang.org/x/crypto/ssh/terminal"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
@@ -375,8 +377,8 @@ func serverResourceForGroupVersionKind(disco discovery.DiscoveryInterface, gvk s
 	return nil, fmt.Errorf("Server is unable to handle %s", gvk)
 }
 
-func clientForResource(pool dynamic.ClientPool, disco discovery.DiscoveryInterface, obj *unstructured.Unstructured, defNs string) (*dynamic.ResourceClient, error) {
-	gvk := obj.GroupVersionKind()
+func clientForResource(pool dynamic.ClientPool, disco discovery.DiscoveryInterface, obj runtime.Object, defNs string) (*dynamic.ResourceClient, error) {
+	gvk := obj.GetObjectKind().GroupVersionKind()
 
 	client, err := pool.ClientForGroupVersionKind(gvk)
 	if err != nil {
@@ -388,7 +390,11 @@ func clientForResource(pool dynamic.ClientPool, disco discovery.DiscoveryInterfa
 		return nil, err
 	}
 
-	namespace := obj.GetNamespace()
+	meta, err := meta.Accessor(obj)
+	if err != nil {
+		return nil, err
+	}
+	namespace := meta.GetNamespace()
 	if namespace == "" {
 		namespace = defNs
 	}

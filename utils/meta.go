@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery"
 )
@@ -59,4 +60,14 @@ func (v ServerVersion) Compare(major, minor int) int {
 
 func (v ServerVersion) String() string {
 	return fmt.Sprintf("%d.%d", v.Major, v.Minor)
+}
+
+// SetMetaDataAnnotation sets an annotation value
+func SetMetaDataAnnotation(obj metav1.Object, key, value string) {
+	a := obj.GetAnnotations()
+	if a == nil {
+		a = make(map[string]string)
+	}
+	a[key] = value
+	obj.SetAnnotations(a)
 }
