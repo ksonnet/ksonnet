@@ -3,8 +3,11 @@ package utils
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery"
 )
@@ -70,4 +73,32 @@ func SetMetaDataAnnotation(obj metav1.Object, key, value string) {
 	}
 	a[key] = value
 	obj.SetAnnotations(a)
+}
+
+// ResourceNameFor returns a lowercase plural form of a type, for
+// human messages.  Returns lowercased kind if discovery lookup fails.
+func ResourceNameFor(disco discovery.ServerResourcesInterface, o runtime.Object) string {
+	gvk := o.GetObjectKind().GroupVersionKind()
+	rls, err := disco.ServerResourcesForGroupVersion(gvk.GroupVersion().String())
+	if err != nil {
+		log.Debugf("Discovery failed for %s: %s, falling back to kind", gvk, err)
+		return strings.ToLower(gvk.Kind)
+	}
+
+	for _, rl := range rls.APIResources {
+		if rl.Kind == gvk.Kind {
+			return rl.Name
+		}
+	}
+
+	log.Debugf("Discovery failed to find %s, falling back to kind", gvk)
+	return strings.ToLower(gvk.Kind)
+}
+
+// FqName returns "namespace.name"
+func FqName(o metav1.Object) string {
+	if o.GetNamespace() == "" {
+		return o.GetName()
+	}
+	return fmt.Sprintf("%s.%s", o.GetNamespace(), o.GetName())
 }

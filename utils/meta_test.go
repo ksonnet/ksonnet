@@ -3,7 +3,12 @@ package utils
 import (
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/version"
+	fakediscovery "k8s.io/client-go/discovery/fake"
+	ktesting "k8s.io/client-go/testing"
 )
 
 func TestParseVersion(t *testing.T) {
@@ -61,5 +66,68 @@ func TestVersionCompare(t *testing.T) {
 		if res != test.result {
 			t.Errorf("%d.%d => Expected %d, got %d", test.major, test.minor, test.result, res)
 		}
+	}
+}
+
+func TestResourceNameFor(t *testing.T) {
+	obj := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "tests/v1alpha1",
+			"kind":       "Test",
+			"metadata": map[string]interface{}{
+				"name":      "myname",
+				"namespace": "mynamespace",
+			},
+		},
+	}
+
+	fake := &ktesting.Fake{
+		Resources: []*metav1.APIResourceList{
+			{
+				GroupVersion: "tests/v1alpha1",
+				APIResources: []metav1.APIResource{
+					{
+						Name: "tests",
+						Kind: "Test",
+					},
+				},
+			},
+		},
+	}
+	disco := &fakediscovery.FakeDiscovery{Fake: fake}
+
+	if n := ResourceNameFor(disco, obj); n != "tests" {
+		t.Errorf("Got resource name %q for %v", n, obj)
+	}
+
+	obj.SetKind("Unknown")
+	if n := ResourceNameFor(disco, obj); n != "unknown" {
+		t.Errorf("Got resource name %q for %v", n, obj)
+	}
+
+	obj.SetGroupVersionKind(schema.GroupVersionKind{Group: "unknown", Version: "noversion", Kind: "SomeKind"})
+	if n := ResourceNameFor(disco, obj); n != "somekind" {
+		t.Errorf("Got resource name %q for %v", n, obj)
+	}
+}
+
+func TestFqName(t *testing.T) {
+	obj := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "tests/v1alpha1",
+			"kind":       "Test",
+			"metadata": map[string]interface{}{
+				"name": "myname",
+			},
+		},
+	}
+
+	if n := FqName(obj); n != "myname" {
+		t.Errorf("Got %q for %v", n, obj)
+	}
+
+	obj.SetNamespace("mynamespace")
+	if n := FqName(obj); n != "mynamespace.myname" {
+		t.Errorf("Got %q for %v", n, obj)
 	}
 }

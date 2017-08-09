@@ -84,10 +84,10 @@ var deleteCmd = &cobra.Command{
 		}
 
 		for _, obj := range objs {
-			desc := fmt.Sprintf("%s/%s", obj.GetKind(), fqName(obj))
+			desc := fmt.Sprintf("%s %s", utils.ResourceNameFor(disco, obj), utils.FqName(obj))
 			log.Info("Deleting ", desc)
 
-			c, err := clientForResource(clientpool, disco, obj, defaultNs)
+			c, err := utils.ClientForResource(clientpool, disco, obj, defaultNs)
 			if err != nil {
 				return err
 			}
