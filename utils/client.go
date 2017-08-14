@@ -36,6 +36,7 @@ type memcachedDiscoveryClient struct {
 	lock            sync.RWMutex
 	servergroups    *metav1.APIGroupList
 	serverresources map[string]*metav1.APIResourceList
+	schemas         map[string]*swagger.ApiDeclaration
 }
 
 // NewMemcachedDiscoveryClient creates a new DiscoveryClient that
@@ -56,6 +57,7 @@ func (c *memcachedDiscoveryClient) Invalidate() {
 
 	c.servergroups = nil
 	c.serverresources = make(map[string]*metav1.APIResourceList)
+	c.schemas = make(map[string]*swagger.ApiDeclaration)
 }
 
 func (c *memcachedDiscoveryClient) RESTClient() rest.Interface {
@@ -103,7 +105,22 @@ func (c *memcachedDiscoveryClient) ServerVersion() (*version.Info, error) {
 }
 
 func (c *memcachedDiscoveryClient) SwaggerSchema(version schema.GroupVersion) (*swagger.ApiDeclaration, error) {
-	return c.cl.SwaggerSchema(version)
+	key := version.String()
+
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.schemas[key] != nil {
+		return c.schemas[key], nil
+	}
+
+	schema, err := c.cl.SwaggerSchema(version)
+	if err != nil {
+		return nil, err
+	}
+
+	c.schemas[key] = schema
+	return schema, nil
 }
 
 var _ discovery.CachedDiscoveryInterface = &memcachedDiscoveryClient{}
