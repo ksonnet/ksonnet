@@ -239,6 +239,18 @@
 			"revisionTime": "2017-06-20T14:45:10Z"
 		},
 		{
+			"checksumSHA1": "lBehULzb2/kIK3wZ0gz2yNmHq9s=",
+			"path": "github.com/spf13/afero",
+			"revision": "9be650865eab0c12963d8753212f4f9c66cdcf12",
+			"revisionTime": "2017-02-17T16:41:46Z"
+		},
+		{
+			"checksumSHA1": "5KRbEQ28dDaQmKwAYTD0if/aEvg=",
+			"path": "github.com/spf13/afero/mem",
+			"revision": "9be650865eab0c12963d8753212f4f9c66cdcf12",
+			"revisionTime": "2017-02-17T16:41:46Z"
+		},
+		{
 			"checksumSHA1": "Wgm8Y0np1Usy3+ZTTPFdHoqzed8=",
 			"path": "github.com/spf13/cobra",
 			"revision": "4673102358fdd630e3bb0eb6dee96e4b533d53ec",
