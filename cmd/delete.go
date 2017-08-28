@@ -97,7 +97,7 @@ var deleteCmd = &cobra.Command{
 				return fmt.Errorf("Error deleting %s: %s", desc, err)
 			}
 
-			log.Debugf("Deleted object: ", obj)
+			log.Debug("Deleted object: ", obj)
 		}
 
 		return nil
