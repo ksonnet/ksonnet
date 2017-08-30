@@ -31,20 +31,20 @@ const (
 `
 )
 
-var appFS = afero.NewMemMapFs()
+var testFS = afero.NewMemMapFs()
 
 func init() {
-	afero.WriteFile(appFS, blankSwagger, []byte(blankSwaggerData), os.ModePerm)
+	afero.WriteFile(testFS, blankSwagger, []byte(blankSwaggerData), os.ModePerm)
 }
 
 func TestInitSuccess(t *testing.T) {
-	spec, err := ParseClusterSpec(fmt.Sprintf("file:%s", blankSwagger))
+	spec, err := parseClusterSpec(fmt.Sprintf("file:%s", blankSwagger), testFS)
 	if err != nil {
 		t.Fatalf("Failed to parse cluster spec: %v", err)
 	}
 
 	appPath := AbsPath("/fromEmptySwagger")
-	_, err = initManager(appPath, spec, appFS)
+	_, err = initManager(appPath, spec, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
@@ -62,7 +62,7 @@ func TestInitSuccess(t *testing.T) {
 
 	for _, p := range paths {
 		path := appendToAbsPath(appPath, string(p))
-		exists, err := afero.DirExists(appFS, string(path))
+		exists, err := afero.DirExists(testFS, string(path))
 		if err != nil {
 			t.Fatalf("Expected to create directory '%s', but failed:\n%v", p, err)
 		} else if !exists {
@@ -72,7 +72,7 @@ func TestInitSuccess(t *testing.T) {
 
 	envPath := appendToAbsPath(appPath, string(defaultEnvDir))
 	schemaPath := appendToAbsPath(envPath, schemaFilename)
-	bytes, err := afero.ReadFile(appFS, string(schemaPath))
+	bytes, err := afero.ReadFile(testFS, string(schemaPath))
 	if err != nil {
 		t.Fatalf("Failed to read swagger file at '%s':\n%v", schemaPath, err)
 	} else if actualSwagger := string(bytes); actualSwagger != blankSwaggerData {
@@ -80,7 +80,7 @@ func TestInitSuccess(t *testing.T) {
 	}
 
 	ksonnetLibPath := appendToAbsPath(envPath, ksonnetLibCoreFilename)
-	ksonnetLibBytes, err := afero.ReadFile(appFS, string(ksonnetLibPath))
+	ksonnetLibBytes, err := afero.ReadFile(testFS, string(ksonnetLibPath))
 	if err != nil {
 		t.Fatalf("Failed to read ksonnet-lib file at '%s':\n%v", ksonnetLibPath, err)
 	} else if actualKsonnetLib := string(ksonnetLibBytes); actualKsonnetLib != blankKsonnetLib {
@@ -90,7 +90,7 @@ func TestInitSuccess(t *testing.T) {
 
 func TestFindSuccess(t *testing.T) {
 	findSuccess := func(t *testing.T, appDir, currDir AbsPath) {
-		m, err := findManager(currDir, appFS)
+		m, err := findManager(currDir, testFS)
 		if err != nil {
 			t.Fatalf("Failed to find manager at path '%s':\n%v", currDir, err)
 		} else if m.rootPath != appDir {
@@ -98,13 +98,13 @@ func TestFindSuccess(t *testing.T) {
 		}
 	}
 
-	spec, err := ParseClusterSpec(fmt.Sprintf("file:%s", blankSwagger))
+	spec, err := parseClusterSpec(fmt.Sprintf("file:%s", blankSwagger), testFS)
 	if err != nil {
 		t.Fatalf("Failed to parse cluster spec: %v", err)
 	}
 
 	appPath := AbsPath("/findSuccess")
-	_, err = initManager(appPath, spec, appFS)
+	_, err = initManager(appPath, spec, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
@@ -116,7 +116,7 @@ func TestFindSuccess(t *testing.T) {
 
 	// Create empty app file.
 	appFile := appendToAbsPath(components, "app.jsonnet")
-	f, err := appFS.OpenFile(string(appFile), os.O_RDONLY|os.O_CREATE, 0777)
+	f, err := testFS.OpenFile(string(appFile), os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {
 		t.Fatalf("Failed to touch app file '%s'\n%v", appFile, err)
 	}
@@ -127,7 +127,7 @@ func TestFindSuccess(t *testing.T) {
 
 func TestFindFailure(t *testing.T) {
 	findFailure := func(t *testing.T, currDir AbsPath) {
-		_, err := findManager(currDir, appFS)
+		_, err := findManager(currDir, testFS)
 		if err == nil {
 			t.Fatalf("Expected to fail to find ksonnet app in '%s', but succeeded", currDir)
 		}
@@ -139,20 +139,20 @@ func TestFindFailure(t *testing.T) {
 }
 
 func TestDoubleNewFailure(t *testing.T) {
-	spec, err := ParseClusterSpec(fmt.Sprintf("file:%s", blankSwagger))
+	spec, err := parseClusterSpec(fmt.Sprintf("file:%s", blankSwagger), testFS)
 	if err != nil {
 		t.Fatalf("Failed to parse cluster spec: %v", err)
 	}
 
 	appPath := AbsPath("/doubleNew")
 
-	_, err = initManager(appPath, spec, appFS)
+	_, err = initManager(appPath, spec, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
 
 	targetErr := fmt.Sprintf("Could not create app; directory '%s' already exists", appPath)
-	_, err = initManager(appPath, spec, appFS)
+	_, err = initManager(appPath, spec, testFS)
 	if err == nil || err.Error() != targetErr {
 		t.Fatalf("Expected to fail to create app with message '%s', got '%s'", targetErr, err.Error())
 	}

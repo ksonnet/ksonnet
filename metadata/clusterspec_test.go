@@ -12,13 +12,13 @@ type parseSuccess struct {
 
 var successTests = []parseSuccess{
 	{"version:v1.7.1", &clusterSpecVersion{"v1.7.1"}},
-	{"file:swagger.json", &clusterSpecFile{"swagger.json"}},
+	{"file:swagger.json", &clusterSpecFile{"swagger.json", testFS}},
 	{"url:file:///some_file", &clusterSpecLive{"file:///some_file"}},
 }
 
 func TestClusterSpecParsingSuccess(t *testing.T) {
 	for _, test := range successTests {
-		parsed, err := ParseClusterSpec(test.input)
+		parsed, err := parseClusterSpec(test.input, testFS)
 		if err != nil {
 			t.Errorf("Failed to parse spec: %v", err)
 		}
@@ -66,7 +66,7 @@ var failureTests = []parseFailure{
 
 func TestClusterSpecParsingFailure(t *testing.T) {
 	for _, test := range failureTests {
-		_, err := ParseClusterSpec(test.input)
+		_, err := parseClusterSpec(test.input, testFS)
 		if err == nil {
 			t.Errorf("Cluster spec parse for '%s' should have failed, but succeeded", test.input)
 		} else if msg := err.Error(); msg != test.errorMsg {
