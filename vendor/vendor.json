@@ -191,6 +191,30 @@
 			"revisionTime": "2017-03-14T01:17:55Z"
 		},
 		{
+			"checksumSHA1": "wX+GmcWpMzCIcxR9YtN1FCM9BEE=",
+			"path": "github.com/ksonnet/ksonnet-lib/ksonnet-gen/jsonnet",
+			"revision": "fcf4c31408afc7b7469a1722c4cc06ccc315a722",
+			"revisionTime": "2017-08-16T22:14:57Z"
+		},
+		{
+			"checksumSHA1": "LGk0N301rp2uQSOmy7kBQEksues=",
+			"path": "github.com/ksonnet/ksonnet-lib/ksonnet-gen/ksonnet",
+			"revision": "fcf4c31408afc7b7469a1722c4cc06ccc315a722",
+			"revisionTime": "2017-08-16T22:14:57Z"
+		},
+		{
+			"checksumSHA1": "BiiHRiYpSOb+vHiP6h/A9lRotEY=",
+			"path": "github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubespec",
+			"revision": "fcf4c31408afc7b7469a1722c4cc06ccc315a722",
+			"revisionTime": "2017-08-16T22:14:57Z"
+		},
+		{
+			"checksumSHA1": "jpBOSqq1T9UyiANimAKtzyTt3qo=",
+			"path": "github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubeversion",
+			"revision": "fcf4c31408afc7b7469a1722c4cc06ccc315a722",
+			"revisionTime": "2017-08-16T22:14:57Z"
+		},
+		{
 			"checksumSHA1": "T8soMJArSZrYnhmdpAnq1bVxQ6Q=",
 			"path": "github.com/mailru/easyjson/buffer",
 			"revision": "3f09c2282fc5ad74b3d04a485311f3173c2431d3",
