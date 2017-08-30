@@ -33,6 +33,7 @@ const (
 
 func init() {
 	RootCmd.AddCommand(deleteCmd)
+	addEnvCmdFlags(deleteCmd)
 	deleteCmd.PersistentFlags().Int64(flagGracePeriod, -1, "Number of seconds given to resources to terminate gracefully. A negative value is ignored")
 }
 
@@ -47,7 +48,17 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 
-		objs, err := readObjs(cmd, args)
+		files, err := getFiles(cmd, args)
+		if err != nil {
+			return err
+		}
+
+		vm, err := newExpander(cmd)
+		if err != nil {
+			return err
+		}
+
+		objs, err := vm.Expand(files)
 		if err != nil {
 			return err
 		}

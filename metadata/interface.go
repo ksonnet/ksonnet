@@ -1,23 +1,25 @@
 package metadata
 
 import (
-	"fmt"
-	"path/filepath"
-	"strings"
-
 	"github.com/spf13/afero"
 )
+
+var appFS afero.Fs
 
 // AbsPath is an advisory type that represents an absolute path. It is advisory
 // in that it is not forced to be absolute, but rather, meant to indicate
 // intent, and make code easier to read.
 type AbsPath string
 
+// AbsPaths is a slice of `AbsPath`.
+type AbsPaths []string
+
 // Manager abstracts over a ksonnet application's metadata, allowing users to do
 // things like: create and delete environments; search for prototypes; vendor
 // libraries; and other non-core-application tasks.
 type Manager interface {
 	Root() AbsPath
+	ComponentPaths() (AbsPaths, error)
 	//
 	// TODO: Fill in methods as we need them.
 	//
@@ -40,7 +42,7 @@ func Find(path AbsPath) (Manager, error) {
 // capabilities-compliant version of ksonnet-lib, and then generate the
 // directory tree for an application.
 func Init(rootPath AbsPath, spec ClusterSpec) (Manager, error) {
-	return initManager(rootPath, spec, afero.NewOsFs())
+	return initManager(rootPath, spec, appFS)
 }
 
 // ClusterSpec represents the API supported by some cluster. There are several
@@ -57,24 +59,9 @@ type ClusterSpec interface {
 // will output a ClusterSpec representing the cluster specification associated
 // with the `v1.7.1` build of Kubernetes.
 func ParseClusterSpec(specFlag string) (ClusterSpec, error) {
-	split := strings.SplitN(specFlag, ":", 2)
-	if len(split) == 0 || len(split) == 1 || split[1] == "" {
-		return nil, fmt.Errorf("Invalid API specification '%s'", specFlag)
-	}
+	return parseClusterSpec(specFlag, appFS)
+}
 
-	switch split[0] {
-	case "version":
-		return &clusterSpecVersion{k8sVersion: split[1]}, nil
-	case "file":
-		abs, err := filepath.Abs(split[1])
-		if err != nil {
-			return nil, err
-		}
-		absPath := AbsPath(abs)
-		return &clusterSpecFile{specPath: absPath}, nil
-	case "url":
-		return &clusterSpecLive{apiServerURL: split[1]}, nil
-	default:
-		return nil, fmt.Errorf("Could not parse cluster spec '%s'", specFlag)
-	}
+func init() {
+	appFS = afero.NewOsFs()
 }

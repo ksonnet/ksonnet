@@ -21,21 +21,20 @@ import (
 	goflag "flag"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	jsonnet "github.com/strickyak/jsonnet_cgo"
 	"golang.org/x/crypto/ssh/terminal"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/ksonnet/kubecfg/metadata"
+	"github.com/ksonnet/kubecfg/pkg/kubecfg"
+	"github.com/ksonnet/kubecfg/template"
 	"github.com/ksonnet/kubecfg/utils"
 
 	// Register auth plugins
@@ -51,6 +50,11 @@ const (
 	flagTlaVarFile = "tla-str-file"
 	flagResolver   = "resolve-images"
 	flagResolvFail = "resolve-images-error"
+
+	// For use in the commands (e.g., diff, update, delete) that require either an
+	// environment or the -f flag.
+	flagFile      = "file"
+	flagFileShort = "f"
 )
 
 var clientConfig clientcmd.ClientConfig
@@ -155,176 +159,49 @@ func (f *logFormatter) Format(e *log.Entry) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// JsonnetVM constructs a new jsonnet.VM, according to command line
-// flags
-func JsonnetVM(cmd *cobra.Command) (*jsonnet.VM, error) {
-	vm := jsonnet.Make()
+func newExpander(cmd *cobra.Command) (*template.Expander, error) {
 	flags := cmd.Flags()
+	spec := template.Expander{}
+	var err error
 
-	jpath := os.Getenv("KUBECFG_JPATH")
-	for _, p := range filepath.SplitList(jpath) {
-		log.Debugln("Adding jsonnet search path", p)
-		vm.JpathAdd(p)
-	}
+	spec.EnvJPath = filepath.SplitList(os.Getenv("KUBECFG_JPATH"))
 
 	jpath, err := flags.GetString(flagJpath)
 	if err != nil {
 		return nil, err
 	}
-	for _, p := range filepath.SplitList(jpath) {
-		log.Debugln("Adding jsonnet search path", p)
-		vm.JpathAdd(p)
-	}
+	spec.FlagJpath = filepath.SplitList(jpath)
 
-	extvars, err := flags.GetStringSlice(flagExtVar)
-	if err != nil {
-		return nil, err
-	}
-	for _, extvar := range extvars {
-		kv := strings.SplitN(extvar, "=", 2)
-		switch len(kv) {
-		case 1:
-			v, present := os.LookupEnv(kv[0])
-			if present {
-				vm.ExtVar(kv[0], v)
-			} else {
-				return nil, fmt.Errorf("Missing environment variable: %s", kv[0])
-			}
-		case 2:
-			vm.ExtVar(kv[0], kv[1])
-		}
-	}
-
-	extvarfiles, err := flags.GetStringSlice(flagExtVarFile)
-	if err != nil {
-		return nil, err
-	}
-	for _, extvar := range extvarfiles {
-		kv := strings.SplitN(extvar, "=", 2)
-		if len(kv) != 2 {
-			return nil, fmt.Errorf("Failed to parse %s: missing '=' in %s", flagExtVarFile, extvar)
-		}
-		v, err := ioutil.ReadFile(kv[1])
-		if err != nil {
-			return nil, err
-		}
-		vm.ExtVar(kv[0], string(v))
-	}
-
-	tlavars, err := flags.GetStringSlice(flagTlaVar)
-	if err != nil {
-		return nil, err
-	}
-	for _, tlavar := range tlavars {
-		kv := strings.SplitN(tlavar, "=", 2)
-		switch len(kv) {
-		case 1:
-			v, present := os.LookupEnv(kv[0])
-			if present {
-				vm.TlaVar(kv[0], v)
-			} else {
-				return nil, fmt.Errorf("Missing environment variable: %s", kv[0])
-			}
-		case 2:
-			vm.TlaVar(kv[0], kv[1])
-		}
-	}
-
-	tlavarfiles, err := flags.GetStringSlice(flagTlaVarFile)
-	if err != nil {
-		return nil, err
-	}
-	for _, tlavar := range tlavarfiles {
-		kv := strings.SplitN(tlavar, "=", 2)
-		if len(kv) != 2 {
-			return nil, fmt.Errorf("Failed to parse %s: missing '=' in %s", flagTlaVarFile, tlavar)
-		}
-		v, err := ioutil.ReadFile(kv[1])
-		if err != nil {
-			return nil, err
-		}
-		vm.TlaVar(kv[0], string(v))
-	}
-
-	resolver, err := buildResolver(cmd)
-	if err != nil {
-		return nil, err
-	}
-	utils.RegisterNativeFuncs(vm, resolver)
-
-	return vm, nil
-}
-
-func buildResolver(cmd *cobra.Command) (utils.Resolver, error) {
-	flags := cmd.Flags()
-	resolver, err := flags.GetString(flagResolver)
-	if err != nil {
-		return nil, err
-	}
-	failAction, err := flags.GetString(flagResolvFail)
+	spec.ExtVars, err = flags.GetStringSlice(flagExtVar)
 	if err != nil {
 		return nil, err
 	}
 
-	ret := resolverErrorWrapper{}
-
-	switch failAction {
-	case "ignore":
-		ret.OnErr = func(error) error { return nil }
-	case "warn":
-		ret.OnErr = func(err error) error {
-			log.Warning(err.Error())
-			return nil
-		}
-	case "error":
-		ret.OnErr = func(err error) error { return err }
-	default:
-		return nil, fmt.Errorf("Bad value for --%s: %s", flagResolvFail, failAction)
-	}
-
-	switch resolver {
-	case "noop":
-		ret.Inner = utils.NewIdentityResolver()
-	case "registry":
-		ret.Inner = utils.NewRegistryResolver(&http.Client{
-			Transport: utils.NewAuthTransport(http.DefaultTransport),
-		})
-	default:
-		return nil, fmt.Errorf("Bad value for --%s: %s", flagResolver, resolver)
-	}
-
-	return &ret, nil
-}
-
-type resolverErrorWrapper struct {
-	Inner utils.Resolver
-	OnErr func(error) error
-}
-
-func (r *resolverErrorWrapper) Resolve(image *utils.ImageName) error {
-	err := r.Inner.Resolve(image)
-	if err != nil {
-		err = r.OnErr(err)
-	}
-	return err
-}
-
-func readObjs(cmd *cobra.Command, paths []string) ([]*unstructured.Unstructured, error) {
-	vm, err := JsonnetVM(cmd)
+	spec.ExtVarFiles, err = flags.GetStringSlice(flagExtVarFile)
 	if err != nil {
 		return nil, err
 	}
-	defer vm.Destroy()
 
-	res := []*unstructured.Unstructured{}
-	for _, path := range paths {
-		objs, err := utils.Read(vm, path)
-		if err != nil {
-			return nil, fmt.Errorf("Error reading %s: %v", path, err)
-		}
-		res = append(res, utils.FlattenToV1(objs)...)
+	spec.TlaVars, err = flags.GetStringSlice(flagTlaVar)
+	if err != nil {
+		return nil, err
 	}
-	return res, nil
+
+	spec.TlaVarFiles, err = flags.GetStringSlice(flagTlaVarFile)
+	if err != nil {
+		return nil, err
+	}
+
+	spec.Resolver, err = flags.GetString(flagResolver)
+	if err != nil {
+		return nil, err
+	}
+	spec.FailAction, err = flags.GetString(flagResolvFail)
+	if err != nil {
+		return nil, err
+	}
+
+	return &spec, nil
 }
 
 // For debugging
@@ -355,4 +232,40 @@ func restClientPool(cmd *cobra.Command) (dynamic.ClientPool, discovery.Discovery
 
 	pool := dynamic.NewClientPool(conf, mapper, pathresolver)
 	return pool, discoCache, nil
+}
+
+func addEnvCmdFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringArrayP(flagFile, flagFileShort, nil, "Filename or directory that contains the configuration to apply (accepts YAML, JSON, and Jsonnet)")
+}
+
+func parseEnvCmd(cmd *cobra.Command, args []string) (*string, []string, error) {
+	flags := cmd.Flags()
+
+	files, err := flags.GetStringArray(flagFile)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var env *string
+	if len(args) == 1 {
+		env = &args[0]
+	}
+
+	return env, files, nil
+}
+
+// TODO: Remove this and use `kubecfg.GetFiles` when we move commands into
+// `pkg`.
+func getFiles(cmd *cobra.Command, args []string) ([]string, error) {
+	env, files, err := parseEnvCmd(cmd, args)
+	if err != nil {
+		return nil, err
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	return kubecfg.GetFiles(metadata.AbsPath(cwd), env, files)
 }

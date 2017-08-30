@@ -1,11 +1,14 @@
 package metadata
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 
+	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/ksonnet"
+	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubespec"
 	"github.com/spf13/afero"
 )
 
@@ -24,7 +27,8 @@ const (
 	schemaDir     = "vendor/schema"
 	vendorLibDir  = "vendor/lib"
 
-	schemaFilename = "swagger.json"
+	schemaFilename         = "swagger.json"
+	ksonnetLibCoreFilename = "k8s.libsonnet"
 )
 
 type manager struct {
@@ -62,18 +66,41 @@ func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
 }
 
 func initManager(rootPath AbsPath, spec ClusterSpec, appFS afero.Fs) (*manager, error) {
-	data, err := spec.data()
+	//
+	// IMPLEMENTATION NOTE: We get the cluster specification and generate
+	// ksonnet-lib before initializing the directory structure so that failure of
+	// either (e.g., GET'ing the spec from a live cluster returns 404) does not
+	// result in a partially-initialized directory structure.
+	//
+
+	// Get cluster specification data, possibly from the network.
+	specData, err := spec.data()
 	if err != nil {
 		return nil, err
 	}
 
 	m := newManager(rootPath, appFS)
 
+	// Generate the program text for ksonnet-lib.
+	ksonnetLibDir := appendToAbsPath(m.schemaDir, defaultEnvName)
+	ksonnetLibData, err := generateKsonnetLibData(ksonnetLibDir, specData)
+	if err != nil {
+		return nil, err
+	}
+
+	// Initialize directory structure.
 	if err = m.createAppDirTree(); err != nil {
 		return nil, err
 	}
 
-	if err = m.cacheClusterSpecData(defaultEnvName, data); err != nil {
+	// Cache specification data.
+	if err = m.cacheClusterSpecData(defaultEnvName, specData); err != nil {
+		return nil, err
+	}
+
+	ksonnetLibPath := appendToAbsPath(ksonnetLibDir, ksonnetLibCoreFilename)
+	err = afero.WriteFile(appFS, string(ksonnetLibPath), ksonnetLibData, 0644)
+	if err != nil {
 		return nil, err
 	}
 
@@ -96,6 +123,25 @@ func newManager(rootPath AbsPath, appFS afero.Fs) *manager {
 
 func (m *manager) Root() AbsPath {
 	return m.rootPath
+}
+
+func (m *manager) ComponentPaths() (AbsPaths, error) {
+	paths := []string{}
+	err := afero.Walk(m.appFS, string(m.componentsPath), func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() {
+			paths = append(paths, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return paths, nil
 }
 
 func (m *manager) cacheClusterSpecData(name string, specData []byte) error {
@@ -135,4 +181,19 @@ func (m *manager) createAppDirTree() error {
 	}
 
 	return nil
+}
+
+func generateKsonnetLibData(ksonnetLibDir AbsPath, text []byte) ([]byte, error) {
+	// Deserialize the API object.
+	s := kubespec.APISpec{}
+	err := json.Unmarshal(text, &s)
+	if err != nil {
+		return nil, err
+	}
+
+	s.Text = text
+	s.FilePath = filepath.Dir(string(ksonnetLibDir))
+
+	// Emit Jsonnet code.
+	return ksonnet.Emit(&s, nil, nil)
 }
