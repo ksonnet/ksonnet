@@ -25,6 +25,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
@@ -254,10 +256,8 @@ func parseEnvCmd(cmd *cobra.Command, args []string) (*string, []string, error) {
 	return env, files, nil
 }
 
-// TODO: Remove this and use `kubecfg.GetFiles` when we move commands into
-// `pkg`.
-func getFiles(cmd *cobra.Command, args []string) ([]string, error) {
-	env, files, err := parseEnvCmd(cmd, args)
+func readObjs(cmd *cobra.Command, args []string) ([]*unstructured.Unstructured, error) {
+	env, f, err := parseEnvCmd(cmd, args)
 	if err != nil {
 		return nil, err
 	}
@@ -267,5 +267,15 @@ func getFiles(cmd *cobra.Command, args []string) ([]string, error) {
 		return nil, err
 	}
 
-	return kubecfg.GetFiles(metadata.AbsPath(cwd), env, files)
+	expander, err := newExpander(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	files, err := kubecfg.GetFiles(metadata.AbsPath(cwd), env, f)
+	if err != nil {
+		return nil, err
+	}
+
+	return expander.Expand(files)
 }

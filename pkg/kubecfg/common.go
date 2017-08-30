@@ -6,7 +6,6 @@ import (
 	"github.com/ksonnet/kubecfg/metadata"
 )
 
-// TODO: Make this private when we move more commands into `pkg`.
 func GetFiles(wd metadata.AbsPath, env *string, files []string) ([]string, error) {
 	envPresent := env != nil
 	filesPresent := len(files) > 0

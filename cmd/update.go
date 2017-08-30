@@ -66,11 +66,6 @@ local configuration. Accepts JSON, YAML, or Jsonnet.`,
 
 		c := kubecfg.UpdateCmd{}
 
-		c.Environment, c.Files, err = parseEnvCmd(cmd, args)
-		if err != nil {
-			return err
-		}
-
 		c.Create, err = flags.GetBool(flagCreate)
 		if err != nil {
 			return err
@@ -101,17 +96,17 @@ local configuration. Accepts JSON, YAML, or Jsonnet.`,
 			return err
 		}
 
-		c.Expander, err = newExpander(cmd)
-		if err != nil {
-			return err
-		}
-
 		cwd, err := os.Getwd()
 		if err != nil {
 			return err
 		}
 
-		return c.Run(metadata.AbsPath(cwd))
+		objs, err := readObjs(cmd, args)
+		if err != nil {
+			return err
+		}
+
+		return c.Run(objs, metadata.AbsPath(cwd))
 	},
 	Long: `Update (or optionally create) Kubernetes resources on the cluster using the
 local configuration. Use the '--create' flag to control whether we create them

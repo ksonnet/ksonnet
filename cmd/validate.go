@@ -16,12 +16,9 @@
 package cmd
 
 import (
-	"fmt"
-
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/ksonnet/kubecfg/utils"
+	"github.com/ksonnet/kubecfg/pkg/kubecfg"
 )
 
 func init() {
@@ -33,53 +30,21 @@ var validateCmd = &cobra.Command{
 	Use:   "validate [<env>|-f <file-or-dir>]",
 	Short: "Compare generated manifest against server OpenAPI spec",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		files, err := getFiles(cmd, args)
+		var err error
+
+		c := kubecfg.ValidateCmd{}
+
+		_, c.Discovery, err = restClientPool(cmd)
 		if err != nil {
 			return err
 		}
 
-		vm, err := newExpander(cmd)
+		objs, err := readObjs(cmd, args)
 		if err != nil {
 			return err
 		}
 
-		objs, err := vm.Expand(files)
-		if err != nil {
-			return err
-		}
-
-		_, disco, err := restClientPool(cmd)
-		if err != nil {
-			return err
-		}
-
-		hasError := false
-
-		for _, obj := range objs {
-			desc := fmt.Sprintf("%s %s", utils.ResourceNameFor(disco, obj), utils.FqName(obj))
-			log.Info("Validating ", desc)
-
-			var allErrs []error
-
-			schema, err := utils.NewSwaggerSchemaFor(disco, obj.GroupVersionKind().GroupVersion())
-			if err != nil {
-				allErrs = append(allErrs, fmt.Errorf("Unable to fetch schema: %v", err))
-			} else {
-				// Validate obj
-				allErrs = append(allErrs, schema.Validate(obj)...)
-			}
-
-			for _, err := range allErrs {
-				log.Errorf("Error in %s: %v", desc, err)
-				hasError = true
-			}
-		}
-
-		if hasError {
-			return fmt.Errorf("Validation failed")
-		}
-
-		return nil
+		return c.Run(objs, cmd.OutOrStdout())
 	},
 	Long: `Validate that an application or file is compliant with the Kubernetes
 specification.

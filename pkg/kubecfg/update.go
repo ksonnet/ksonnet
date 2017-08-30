@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -18,7 +19,6 @@ import (
 	"k8s.io/client-go/dynamic"
 
 	"github.com/ksonnet/kubecfg/metadata"
-	"github.com/ksonnet/kubecfg/template"
 	"github.com/ksonnet/kubecfg/utils"
 )
 
@@ -45,37 +45,23 @@ type UpdateCmd struct {
 	Discovery        discovery.DiscoveryInterface
 	DefaultNamespace string
 
-	Expander    *template.Expander
-	Environment *string
-	Files       []string
-
 	Create bool
 	GcTag  string
 	SkipGc bool
 	DryRun bool
 }
 
-func (c UpdateCmd) Run(wd metadata.AbsPath) error {
-	files, err := GetFiles(wd, c.Environment, c.Files)
-	if err != nil {
-		return err
-	}
-
-	objs, err := c.Expander.Expand(files)
-	if err != nil {
-		return err
-	}
-
+func (c UpdateCmd) Run(apiObjects []*unstructured.Unstructured, wd metadata.AbsPath) error {
 	dryRunText := ""
 	if c.DryRun {
 		dryRunText = " (dry-run)"
 	}
 
-	sort.Sort(utils.DependencyOrder(objs))
+	sort.Sort(utils.DependencyOrder(apiObjects))
 
 	seenUids := sets.NewString()
 
-	for _, obj := range objs {
+	for _, obj := range apiObjects {
 		if c.GcTag != "" {
 			utils.SetMetaDataAnnotation(obj, AnnotationGcTag, c.GcTag)
 		}
