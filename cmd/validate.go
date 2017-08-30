@@ -32,10 +32,16 @@ var validateCmd = &cobra.Command{
 	Use:   "validate",
 	Short: "Compare generated manifest against server OpenAPI spec",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		objs, err := readObjs(cmd, args)
+		vm, err := newExpander(cmd)
 		if err != nil {
 			return err
 		}
+
+		objs, err := vm.Expand(args)
+		if err != nil {
+			return err
+		}
+
 		_, disco, err := restClientPool(cmd)
 		if err != nil {
 			return err

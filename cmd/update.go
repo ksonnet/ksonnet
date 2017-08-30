@@ -89,7 +89,12 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 
-		objs, err := readObjs(cmd, args)
+		vm, err := newExpander(cmd)
+		if err != nil {
+			return err
+		}
+
+		objs, err := vm.Expand(args)
 		if err != nil {
 			return err
 		}
