@@ -11,11 +11,15 @@ var appFS afero.Fs
 // intent, and make code easier to read.
 type AbsPath string
 
+// AbsPaths is a slice of `AbsPath`.
+type AbsPaths []string
+
 // Manager abstracts over a ksonnet application's metadata, allowing users to do
 // things like: create and delete environments; search for prototypes; vendor
 // libraries; and other non-core-application tasks.
 type Manager interface {
 	Root() AbsPath
+	ComponentPaths() (AbsPaths, error)
 	//
 	// TODO: Fill in methods as we need them.
 	//

@@ -125,6 +125,25 @@ func (m *manager) Root() AbsPath {
 	return m.rootPath
 }
 
+func (m *manager) ComponentPaths() (AbsPaths, error) {
+	paths := []string{}
+	err := afero.Walk(m.appFS, string(m.componentsPath), func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() {
+			paths = append(paths, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return paths, nil
+}
+
 func (m *manager) cacheClusterSpecData(name string, specData []byte) error {
 	envPath := string(appendToAbsPath(m.schemaDir, name))
 	err := m.appFS.MkdirAll(envPath, os.ModePerm)
