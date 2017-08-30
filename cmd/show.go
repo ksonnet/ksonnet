@@ -29,22 +29,28 @@ const (
 
 func init() {
 	RootCmd.AddCommand(showCmd)
+	addEnvCmdFlags(showCmd)
 	showCmd.PersistentFlags().StringP(flagFormat, "o", "yaml", "Output format.  Supported values are: json, yaml")
 }
 
 var showCmd = &cobra.Command{
-	Use:   "show",
+	Use:   "show [<env>|-f <file-or-dir>]",
 	Short: "Show expanded resource definitions",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
 		out := cmd.OutOrStdout()
+
+		files, err := getFiles(cmd, args)
+		if err != nil {
+			return err
+		}
 
 		vm, err := newExpander(cmd)
 		if err != nil {
 			return err
 		}
 
-		objs, err := vm.Expand(args)
+		objs, err := vm.Expand(files)
 		if err != nil {
 			return err
 		}

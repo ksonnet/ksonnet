@@ -9,7 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -18,6 +17,8 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 
+	"github.com/ksonnet/kubecfg/metadata"
+	"github.com/ksonnet/kubecfg/template"
 	"github.com/ksonnet/kubecfg/utils"
 )
 
@@ -44,13 +45,27 @@ type UpdateCmd struct {
 	Discovery        discovery.DiscoveryInterface
 	DefaultNamespace string
 
+	Expander    *template.Expander
+	Environment *string
+	Files       []string
+
 	Create bool
 	GcTag  string
 	SkipGc bool
 	DryRun bool
 }
 
-func (c UpdateCmd) Run(objs []*unstructured.Unstructured) error {
+func (c UpdateCmd) Run(wd metadata.AbsPath) error {
+	files, err := GetFiles(wd, c.Environment, c.Files)
+	if err != nil {
+		return err
+	}
+
+	objs, err := c.Expander.Expand(files)
+	if err != nil {
+		return err
+	}
+
 	dryRunText := ""
 	if c.DryRun {
 		dryRunText = " (dry-run)"

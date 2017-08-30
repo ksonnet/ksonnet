@@ -16,8 +16,11 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 
+	"github.com/ksonnet/kubecfg/metadata"
 	"github.com/ksonnet/kubecfg/pkg/kubecfg"
 )
 
@@ -45,6 +48,8 @@ const (
 
 func init() {
 	RootCmd.AddCommand(updateCmd)
+
+	addEnvCmdFlags(updateCmd)
 	updateCmd.PersistentFlags().Bool(flagCreate, true, "Create missing resources")
 	updateCmd.PersistentFlags().Bool(flagSkipGc, false, "Don't perform garbage collection, even with --"+flagGcTag)
 	updateCmd.PersistentFlags().String(flagGcTag, "", "Add this tag to updated objects, and garbage collect existing objects with this tag and not in config")
@@ -52,12 +57,19 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
-	Short: "Update Kubernetes resources with local config",
+	Use: "update [<env>|-f <file-or-dir>]",
+	Short: `Update (or optionally create) Kubernetes resources on the cluster using the
+local configuration. Accepts JSON, YAML, or Jsonnet.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
 		var err error
+
 		c := kubecfg.UpdateCmd{}
+
+		c.Environment, c.Files, err = parseEnvCmd(cmd, args)
+		if err != nil {
+			return err
+		}
 
 		c.Create, err = flags.GetBool(flagCreate)
 		if err != nil {
@@ -89,16 +101,37 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 
-		vm, err := newExpander(cmd)
+		c.Expander, err = newExpander(cmd)
 		if err != nil {
 			return err
 		}
 
-		objs, err := vm.Expand(args)
+		cwd, err := os.Getwd()
 		if err != nil {
 			return err
 		}
 
-		return c.Run(objs)
+		return c.Run(metadata.AbsPath(cwd))
 	},
+	Long: `Update (or optionally create) Kubernetes resources on the cluster using the
+local configuration. Use the '--create' flag to control whether we create them
+if they do not exist (default: true).
+
+ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
+files.`,
+	Example: `  # Create or update all resources described in a ksonnet application, and
+  # running in the 'dev' environment. Can be used in any subdirectory of the
+  # application.
+  ksonnet update dev
+
+  # Create or update resources described in a YAML file. Automatically picks up
+  # the cluster's location from '$KUBECONFIG'.
+  ksonnet appy -f ./pod.yaml
+
+  # Update resources described in a YAML file, and running in cluster referred
+  # to by './kubeconfig'.
+  ksonnet update --kubeconfig=./kubeconfig -f ./pod.yaml
+
+  # Display set of actions we will execute when we run 'update'.
+  ksonnet update dev --dry-run`,
 }

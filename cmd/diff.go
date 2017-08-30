@@ -36,18 +36,23 @@ const flagDiffStrategy = "diff-strategy"
 var ErrDiffFound = fmt.Errorf("Differences found.")
 
 func init() {
+	addEnvCmdFlags(diffCmd)
 	diffCmd.PersistentFlags().String(flagDiffStrategy, "all", "Diff strategy, all or subset.")
 	RootCmd.AddCommand(diffCmd)
 }
 
 var diffCmd = &cobra.Command{
-	Use:   "diff",
+	Use:   "diff [<env>|-f <file-or-dir>]",
 	Short: "Display differences between server and local config",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		out := cmd.OutOrStdout()
-
 		flags := cmd.Flags()
 		diffStrategy, err := flags.GetString(flagDiffStrategy)
+		if err != nil {
+			return err
+		}
+
+		files, err := getFiles(cmd, args)
 		if err != nil {
 			return err
 		}
@@ -57,7 +62,7 @@ var diffCmd = &cobra.Command{
 			return err
 		}
 
-		objs, err := vm.Expand(args)
+		objs, err := vm.Expand(files)
 		if err != nil {
 			return err
 		}
@@ -127,6 +132,22 @@ var diffCmd = &cobra.Command{
 		}
 		return nil
 	},
+	Long: `Display differences between server and local configuration.
+
+ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
+files.`,
+	Example: `  # Show diff between resources described in a local ksonnet application and
+  # the cluster referenced by the 'dev' environment. Can be used in any
+  # subdirectory of the application.
+  ksonnet diff -e=dev
+
+  # Show diff between resources described in a YAML file and the cluster
+  # referenced in '$KUBECONFIG'.
+  ksonnet diff -f ./pod.yaml
+
+  # Show diff between resources described in a YAML file and the cluster
+  # referred to by './kubeconfig'.
+  ksonnet diff --kubeconfig=./kubeconfig -f ./pod.yaml`,
 }
 
 func removeFields(config, live interface{}) interface{} {

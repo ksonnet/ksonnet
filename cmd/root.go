@@ -32,6 +32,8 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/ksonnet/kubecfg/metadata"
+	"github.com/ksonnet/kubecfg/pkg/kubecfg"
 	"github.com/ksonnet/kubecfg/template"
 	"github.com/ksonnet/kubecfg/utils"
 
@@ -48,6 +50,11 @@ const (
 	flagTlaVarFile = "tla-str-file"
 	flagResolver   = "resolve-images"
 	flagResolvFail = "resolve-images-error"
+
+	// For use in the commands (e.g., diff, update, delete) that require either an
+	// environment or the -f flag.
+	flagFile      = "file"
+	flagFileShort = "f"
 )
 
 var clientConfig clientcmd.ClientConfig
@@ -225,4 +232,40 @@ func restClientPool(cmd *cobra.Command) (dynamic.ClientPool, discovery.Discovery
 
 	pool := dynamic.NewClientPool(conf, mapper, pathresolver)
 	return pool, discoCache, nil
+}
+
+func addEnvCmdFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringArrayP(flagFile, flagFileShort, nil, "Filename or directory that contains the configuration to apply (accepts YAML, JSON, and Jsonnet)")
+}
+
+func parseEnvCmd(cmd *cobra.Command, args []string) (*string, []string, error) {
+	flags := cmd.Flags()
+
+	files, err := flags.GetStringArray(flagFile)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var env *string
+	if len(args) == 1 {
+		env = &args[0]
+	}
+
+	return env, files, nil
+}
+
+// TODO: Remove this and use `kubecfg.GetFiles` when we move commands into
+// `pkg`.
+func getFiles(cmd *cobra.Command, args []string) ([]string, error) {
+	env, files, err := parseEnvCmd(cmd, args)
+	if err != nil {
+		return nil, err
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	return kubecfg.GetFiles(metadata.AbsPath(cwd), env, files)
 }

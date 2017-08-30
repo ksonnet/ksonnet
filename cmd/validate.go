@@ -26,18 +26,24 @@ import (
 
 func init() {
 	RootCmd.AddCommand(validateCmd)
+	addEnvCmdFlags(validateCmd)
 }
 
 var validateCmd = &cobra.Command{
-	Use:   "validate",
+	Use:   "validate [<env>|-f <file-or-dir>]",
 	Short: "Compare generated manifest against server OpenAPI spec",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		files, err := getFiles(cmd, args)
+		if err != nil {
+			return err
+		}
+
 		vm, err := newExpander(cmd)
 		if err != nil {
 			return err
 		}
 
-		objs, err := vm.Expand(args)
+		objs, err := vm.Expand(files)
 		if err != nil {
 			return err
 		}
@@ -75,4 +81,20 @@ var validateCmd = &cobra.Command{
 
 		return nil
 	},
+	Long: `Validate that an application or file is compliant with the Kubernetes
+specification.
+
+ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
+files.`,
+	Example: `  # Validate all resources described in a ksonnet application, expanding
+  # ksonnet code with 'dev' environment where necessary (i.e., not YAML, JSON,
+  # or non-ksonnet Jsonnet code).
+  ksonnet validate -e=dev
+
+  # Validate resources described in a YAML file.
+  ksonnet validate -f ./pod.yaml
+
+  # Validate resources described in a Jsonnet file. Does not expand using
+  # environment bindings.
+  ksonnet validate -f ./pod.jsonnet`,
 }

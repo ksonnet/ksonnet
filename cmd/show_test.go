@@ -81,7 +81,7 @@ func TestShow(t *testing.T) {
 		output := cmdOutput(t, []string{"show",
 			"-J", filepath.FromSlash("../testdata/lib"),
 			"-o", format,
-			filepath.FromSlash("../testdata/test.jsonnet"),
+			"-f", filepath.FromSlash("../testdata/test.jsonnet"),
 			"-V", "aVar=aVal",
 			"-V", "anVar",
 			"--ext-str-file", "filevar=" + filepath.FromSlash("../testdata/extvar.file"),
