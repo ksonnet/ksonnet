@@ -8,8 +8,13 @@ os:
 
 env:
   global:
+    - PATH=$PATH:$GOPATH/bin
     - VERSION="${TRAVIS_TAG:-build-$TRAVIS_BUILD_ID}"
     - EXTRA_GO_FLAGS_TEST="-race"
+    - MINIKUBE_WANTUPDATENOTIFICATION=false
+    - MINIKUBE_WANTREPORTERRORPROMPT=false
+    - MINIKUBE_HOME=${HOME}
+    - CHANGE_MINIKUBE_NONE_USER=true
 
 # Frequent jsonnet_cgo crashes with xcode7.3 (default)
 osx_image: xcode8.3
@@ -18,6 +23,7 @@ matrix:
   include:
     - env: TARGET=x86_64-linux-musl EXTRA_GO_FLAGS_TEST=""
       go: 1.8.x
+    - env: DO_INTEGRATION_TEST=1 INT_KVERS=v1.7.0
     # cgo requires golang >= 1.8.1 (or other workarounds) on recent
     # osx/xcode - see https://github.com/golang/go/issues/19734
     # 'go test' also hangs repeatably on go-1.8.3/MacOS ?
@@ -28,6 +34,9 @@ matrix:
     # Let us know if/when 'go test' works again on MacOS..
     - os: osx
       go: 1.8.x
+
+services:
+  - docker
 
 addons:
   apt:
@@ -72,6 +81,25 @@ before_install:
 
 install:
   - go build -i -ldflags "$GO_LDFLAGS" .
+  - |
+    if [ "$DO_INTEGRATION_TEST" = 1 ]; then
+      if ! which minikube; then
+        wget -O minikube \
+           https://storage.googleapis.com/minikube/releases/v0.21.0/minikube-$(go env GOOS)-$(go env GOARCH)
+        install -m 755 minikube $GOPATH/bin/minikube
+      fi
+      if ! which kubectl; then
+        wget https://storage.googleapis.com/kubernetes-release/release/$INT_KVERS/bin/$(go env GOOS)/$(go env GOARCH)/kubectl
+        install -m 755 kubectl $GOPATH/bin/kubectl
+      fi
+      mkdir -p $HOME/.kube
+      touch $HOME/.kube/config
+      sudo -E $GOPATH/bin/minikube start --vm-driver=none \
+        --extra-config apiserver.Authorization.Mode=RBAC \
+        --kubernetes-version $INT_KVERS
+
+      go get github.com/onsi/ginkgo/ginkgo
+    fi
 
 script:
   - make VERSION="$VERSION" EXTRA_GO_FLAGS="$EXTRA_GO_FLAGS_TEST" test
@@ -81,6 +109,12 @@ script:
     ldd ./kubecfg || otool -L ./kubecfg || :
   - ./kubecfg help
   - ./kubecfg version
+  - |
+    if [ "$DO_INTEGRATION_TEST" = 1 ]; then
+       minikube update-context
+       minikube status
+       make VERSION="$VERSION" EXTRA_GO_FLAGS="$EXTRA_GO_FLAGS_TEST" integrationtest
+    fi
 
 after_script: set +e
 

@@ -95,7 +95,7 @@ func (c UpdateCmd) Run(wd metadata.AbsPath) error {
 		var newobj metav1.Object
 		if !c.DryRun {
 			newobj, err = rc.Patch(obj.GetName(), types.MergePatchType, asPatch)
-			log.Debug("Patch(%s) returned (%v, %v)", obj.GetName(), newobj, err)
+			log.Debugf("Patch(%s) returned (%v, %v)", obj.GetName(), newobj, err)
 		} else {
 			newobj, err = rc.Get(obj.GetName())
 		}
@@ -103,7 +103,7 @@ func (c UpdateCmd) Run(wd metadata.AbsPath) error {
 			log.Info(" Creating non-existent ", desc, dryRunText)
 			if !c.DryRun {
 				newobj, err = rc.Create(obj)
-				log.Debug("Create(%s) returned (%v, %v)", obj.GetName(), newobj, err)
+				log.Debugf("Create(%s) returned (%v, %v)", obj.GetName(), newobj, err)
 			} else {
 				newobj = obj
 				err = nil
