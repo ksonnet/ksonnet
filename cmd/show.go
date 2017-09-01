@@ -16,11 +16,9 @@
 package cmd
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
+
+	"github.com/ksonnet/kubecfg/pkg/kubecfg"
 )
 
 const (
@@ -38,64 +36,20 @@ var showCmd = &cobra.Command{
 	Short: "Show expanded resource definitions",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
-		out := cmd.OutOrStdout()
+		var err error
 
-		files, err := getFiles(cmd, args)
+		c := kubecfg.ShowCmd{}
+
+		c.Format, err = flags.GetString(flagFormat)
 		if err != nil {
 			return err
 		}
 
-		vm, err := newExpander(cmd)
+		objs, err := readObjs(cmd, args)
 		if err != nil {
 			return err
 		}
 
-		objs, err := vm.Expand(files)
-		if err != nil {
-			return err
-		}
-
-		format, err := flags.GetString(flagFormat)
-		if err != nil {
-			return err
-		}
-		switch format {
-		case "yaml":
-			for _, obj := range objs {
-				fmt.Fprintln(out, "---")
-				// Urgh.  Go via json because we need
-				// to trigger the custom scheme
-				// encoding.
-				buf, err := json.Marshal(obj)
-				if err != nil {
-					return err
-				}
-				o := map[string]interface{}{}
-				if err := json.Unmarshal(buf, &o); err != nil {
-					return err
-				}
-				buf, err = yaml.Marshal(o)
-				if err != nil {
-					return err
-				}
-				out.Write(buf)
-			}
-		case "json":
-			enc := json.NewEncoder(out)
-			enc.SetIndent("", "  ")
-			for _, obj := range objs {
-				// TODO: this is not valid framing for JSON
-				if len(objs) > 1 {
-					fmt.Fprintln(out, "---")
-				}
-				if err := enc.Encode(obj); err != nil {
-					return err
-				}
-			}
-		default:
-			return fmt.Errorf("Unknown --format: %s", format)
-		}
-
-		return nil
+		return c.Run(objs, cmd.OutOrStdout())
 	},
 }

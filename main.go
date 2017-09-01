@@ -21,6 +21,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/ksonnet/kubecfg/cmd"
+	"github.com/ksonnet/kubecfg/pkg/kubecfg"
 )
 
 // Version is overridden using `-X main.version` during release builds
@@ -37,7 +38,7 @@ func main() {
 		log.Error(err.Error())
 
 		switch err {
-		case cmd.ErrDiffFound:
+		case kubecfg.ErrDiffFound:
 			os.Exit(10)
 		default:
 			os.Exit(1)
