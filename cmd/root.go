@@ -92,7 +92,7 @@ var RootCmd = &cobra.Command{
 }
 
 func addJsonnetFlagsToCmd(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringP(flagJpath, "J", "", "Additional jsonnet library search path")
+	cmd.PersistentFlags().StringSliceP(flagJpath, "J", nil, "Additional jsonnet library search path")
 	cmd.PersistentFlags().StringSliceP(flagExtVar, "V", nil, "Values of external variables")
 	cmd.PersistentFlags().StringSlice(flagExtVarFile, nil, "Read external variable from a file")
 	cmd.PersistentFlags().StringSliceP(flagTlaVar, "A", nil, "Values of top level arguments")
@@ -174,11 +174,10 @@ func newExpander(cmd *cobra.Command) (*template.Expander, error) {
 
 	spec.EnvJPath = filepath.SplitList(os.Getenv("KUBECFG_JPATH"))
 
-	jpath, err := flags.GetString(flagJpath)
+	spec.FlagJpath, err = flags.GetStringSlice(flagJpath)
 	if err != nil {
 		return nil, err
 	}
-	spec.FlagJpath = filepath.SplitList(jpath)
 
 	spec.ExtVars, err = flags.GetStringSlice(flagExtVar)
 	if err != nil {
