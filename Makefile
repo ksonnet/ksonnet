@@ -26,7 +26,7 @@ KCFG_TEST_FILE = lib/kubecfg_test.jsonnet
 GUESTBOOK_FILE = examples/guestbook.jsonnet
 JSONNET_FILES = $(KCFG_TEST_FILE) $(GUESTBOOK_FILE)
 # TODO: Simplify this once ./... ignores ./vendor
-GO_PACKAGES = ./cmd/... ./utils/... ./pkg/... ./metadata/...
+GO_PACKAGES = ./cmd/... ./utils/... ./pkg/... ./metadata/... ./prototype/...
 
 # Default cluster from this config is used for integration tests
 KUBECONFIG = $(HOME)/.kube/config
