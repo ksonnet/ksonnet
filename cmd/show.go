@@ -27,6 +27,8 @@ const (
 
 func init() {
 	RootCmd.AddCommand(showCmd)
+	addJsonnetFlagsToCmd(showCmd)
+	addKubectlFlagsToCmd(showCmd)
 	addEnvCmdFlags(showCmd)
 	showCmd.PersistentFlags().StringP(flagFormat, "o", "yaml", "Output format.  Supported values are: json, yaml")
 }

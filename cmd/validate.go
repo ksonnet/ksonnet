@@ -23,6 +23,8 @@ import (
 
 func init() {
 	RootCmd.AddCommand(validateCmd)
+	addJsonnetFlagsToCmd(validateCmd)
+	addKubectlFlagsToCmd(validateCmd)
 	addEnvCmdFlags(validateCmd)
 }
 
