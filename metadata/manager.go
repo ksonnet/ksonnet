@@ -126,7 +126,7 @@ func (m *manager) Root() AbsPath {
 }
 
 func (m *manager) ComponentPaths() (AbsPaths, error) {
-	paths := []string{}
+	paths := AbsPaths{}
 	err := afero.Walk(m.appFS, string(m.componentsPath), func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -142,6 +142,10 @@ func (m *manager) ComponentPaths() (AbsPaths, error) {
 	}
 
 	return paths, nil
+}
+
+func (m *manager) LibPaths() (libPath, vendorLibPath AbsPath) {
+	return m.libPath, m.vendorLibDir
 }
 
 func (m *manager) cacheClusterSpecData(name string, specData []byte) error {

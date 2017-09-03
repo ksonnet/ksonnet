@@ -101,7 +101,7 @@ local configuration. Accepts JSON, YAML, or Jsonnet.`,
 			return err
 		}
 
-		objs, err := readObjs(cmd, args)
+		objs, err := expandEnvCmdObjs(cmd, args)
 		if err != nil {
 			return err
 		}
