@@ -24,8 +24,6 @@ import (
 const flagDiffStrategy = "diff-strategy"
 
 func init() {
-	addJsonnetFlagsToCmd(diffCmd)
-	addKubectlFlagsToCmd(diffCmd)
 	addEnvCmdFlags(diffCmd)
 	diffCmd.PersistentFlags().String(flagDiffStrategy, "all", "Diff strategy, all or subset.")
 	RootCmd.AddCommand(diffCmd)
