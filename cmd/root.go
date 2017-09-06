@@ -60,6 +60,7 @@ const (
 )
 
 var clientConfig clientcmd.ClientConfig
+var overrides clientcmd.ConfigOverrides
 
 func init() {
 	RootCmd.PersistentFlags().CountP(flagVerbose, "v", "Increase verbosity. May be given multiple times.")
@@ -74,7 +75,6 @@ func init() {
 	// The "usual" clientcmd/kubectl flags
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-	overrides := clientcmd.ConfigOverrides{}
 	kflags := clientcmd.RecommendedConfigOverrideFlags("")
 	RootCmd.PersistentFlags().StringVar(&loadingRules.ExplicitPath, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
 	clientcmd.BindOverrideFlags(&overrides, RootCmd.PersistentFlags(), kflags)
@@ -106,6 +106,16 @@ var RootCmd = &cobra.Command{
 
 		return nil
 	},
+}
+
+// clientConfig.Namespace() is broken in client-go 3.0:
+// namespace in config erroneously overrides explicit --namespace
+func defaultNamespace(c clientcmd.ClientConfig) (string, error) {
+	if overrides.Context.Namespace != "" {
+		return overrides.Context.Namespace, nil
+	}
+	ns, _, err := c.Namespace()
+	return ns, err
 }
 
 func logLevel(verbosity int) log.Level {
