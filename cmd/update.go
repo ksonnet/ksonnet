@@ -91,7 +91,7 @@ local configuration. Accepts JSON, YAML, or Jsonnet.`,
 			return err
 		}
 
-		c.DefaultNamespace, _, err = clientConfig.Namespace()
+		c.DefaultNamespace, err = defaultNamespace(clientConfig)
 		if err != nil {
 			return err
 		}

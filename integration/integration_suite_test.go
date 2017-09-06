@@ -5,6 +5,7 @@ package integration
 import (
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -76,6 +77,15 @@ func deleteNsOrDie(c corev1.CoreV1Interface, ns string) {
 	}
 }
 
+func containsString(haystack []string, needle string) bool {
+	for _, s := range haystack {
+		if s == needle {
+			return true
+		}
+	}
+	return false
+}
+
 func runKubecfgWith(flags []string, input []runtime.Object) error {
 	tmpdir, err := ioutil.TempDir("", "kubecfg-testdata")
 	if err != nil {
@@ -90,25 +100,19 @@ func runKubecfgWith(flags []string, input []runtime.Object) error {
 		return err
 	}
 	enc := api.Codecs.LegacyCodec(v1.SchemeGroupVersion)
-	for _, o := range input {
-		buf, err := runtime.Encode(enc, o)
-		if err != nil {
-			return err
-		}
-		fmt.Fprintf(f, "---\n")
-		_, err = f.Write(buf)
-		if err != nil {
-			return err
-		}
+	if err := encodeTo(f, enc, input); err != nil {
+		return err
 	}
 	if err := f.Close(); err != nil {
 		return err
 	}
 
 	args := []string{}
+	if *kubeconfig != "" && !containsString(flags, "--kubeconfig") {
+		args = append(args, "--kubeconfig", *kubeconfig)
+	}
 	args = append(args, flags...)
-	args = append(args, "-f")
-	args = append(args, fname)
+	args = append(args, "-f", fname)
 
 	fmt.Fprintf(GinkgoWriter, "Running %q %q\n", *kubecfgBin, args)
 	cmd := exec.Command(*kubecfgBin, args...)
@@ -119,6 +123,21 @@ func runKubecfgWith(flags []string, input []runtime.Object) error {
 		return err
 	}
 
+	return nil
+}
+
+func encodeTo(w io.Writer, enc runtime.Encoder, objs []runtime.Object) error {
+	for _, o := range objs {
+		buf, err := runtime.Encode(enc, o)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(w, "---\n")
+		_, err = w.Write(buf)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
