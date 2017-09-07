@@ -22,8 +22,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
-
-	"gopkg.in/yaml.v2"
 )
 
 func cmdOutput(t *testing.T, args []string) string {
@@ -46,10 +44,14 @@ func TestShow(t *testing.T) {
 			err = json.Unmarshal([]byte(text), &ret)
 			return
 		},
+
+		/* Temporarily(!) disabled due to
+		   https://github.com/ksonnet/kubecfg/issues/99
 		"yaml": func(text string) (ret interface{}, err error) {
 			err = yaml.Unmarshal([]byte(text), &ret)
 			return
 		},
+		*/
 	}
 
 	// Use the fact that JSON is also valid YAML ..
