@@ -35,7 +35,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/ksonnet/kubecfg/metadata"
-	"github.com/ksonnet/kubecfg/pkg/kubecfg"
 	"github.com/ksonnet/kubecfg/template"
 	"github.com/ksonnet/kubecfg/utils"
 
@@ -245,10 +244,14 @@ func restClientPool(cmd *cobra.Command) (dynamic.ClientPool, discovery.Discovery
 	return pool, discoCache, nil
 }
 
+// addEnvCmdFlags adds the flags that are common to the family of commands
+// whose form is `[<env>|-f <file-name>]`, e.g., `update` and `delete`.
 func addEnvCmdFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringArrayP(flagFile, flagFileShort, nil, "Filename or directory that contains the configuration to apply (accepts YAML, JSON, and Jsonnet)")
 }
 
+// parseEnvCmd parses the family of commands that come in the form `[<env>|-f
+// <file-name>]`, e.g., `update` and `delete`.
 func parseEnvCmd(cmd *cobra.Command, args []string) (*string, []string, error) {
 	flags := cmd.Flags()
 
@@ -265,8 +268,13 @@ func parseEnvCmd(cmd *cobra.Command, args []string) (*string, []string, error) {
 	return env, files, nil
 }
 
-func readObjs(cmd *cobra.Command, args []string) ([]*unstructured.Unstructured, error) {
-	env, f, err := parseEnvCmd(cmd, args)
+// expandEnvCmdObjs finds and expands templates for the family of commands of
+// the form `[<env>|-f <file-name>]`, e.g., `update` and `delete`. That is, if
+// the user passes a list of files, we will expand all templates in those files,
+// while if a user passes an environment name, we will expand all component
+// files using that environment.
+func expandEnvCmdObjs(cmd *cobra.Command, args []string) ([]*unstructured.Unstructured, error) {
+	env, fileNames, err := parseEnvCmd(cmd, args)
 	if err != nil {
 		return nil, err
 	}
@@ -281,10 +289,40 @@ func readObjs(cmd *cobra.Command, args []string) ([]*unstructured.Unstructured, 
 		return nil, err
 	}
 
-	files, err := kubecfg.GetFiles(metadata.AbsPath(cwd), env, f)
-	if err != nil {
-		return nil, err
+	//
+	// Get all filenames that contain templates to expand. Importantly, we need to
+	// enforce the form `[<env-name>|-f <file-name>]`; that is, we need to make
+	// sure that the user either passed an environment name or a `-f` flag.
+	//
+
+	envPresent := env != nil
+	filesPresent := len(fileNames) > 0
+
+	// This is equivalent to: `if !xor(envPresent, filesPresent) {`
+	if envPresent && filesPresent {
+		return nil, fmt.Errorf("Either an environment name or a file list is required, but not both")
+	} else if !envPresent && !filesPresent {
+		return nil, fmt.Errorf("Must specify either an environment or a file list")
 	}
 
-	return expander.Expand(files)
+	if envPresent {
+		manager, err := metadata.Find(metadata.AbsPath(cwd))
+		if err != nil {
+			return nil, err
+		}
+
+		libPath, vendorLibPath := manager.LibPaths()
+		expander.FlagJpath = append([]string{string(libPath), string(vendorLibPath)}, expander.FlagJpath...)
+
+		fileNames, err = manager.ComponentPaths()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	//
+	// Expand templates.
+	//
+
+	return expander.Expand(fileNames)
 }
