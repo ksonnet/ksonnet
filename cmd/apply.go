@@ -24,22 +24,41 @@ import (
 	"github.com/ksonnet/kubecfg/pkg/kubecfg"
 )
 
-func init() {
-	RootCmd.AddCommand(updateCmd)
+const (
+	flagCreate = "create"
+	flagSkipGc = "skip-gc"
+	flagGcTag  = "gc-tag"
+	flagDryRun = "dry-run"
 
-	addEnvCmdFlags(updateCmd)
-	updateCmd.PersistentFlags().Bool(flagCreate, true, "Create missing resources")
-	updateCmd.PersistentFlags().Bool(flagSkipGc, false, "Don't perform garbage collection, even with --"+flagGcTag)
-	updateCmd.PersistentFlags().String(flagGcTag, "", "Add this tag to updated objects, and garbage collect existing objects with this tag and not in config")
-	updateCmd.PersistentFlags().Bool(flagDryRun, false, "Perform only read-only operations")
+	// AnnotationGcTag annotation that triggers
+	// garbage collection. Objects with value equal to
+	// command-line flag that are *not* in config will be deleted.
+	AnnotationGcTag = "kubecfg.ksonnet.io/garbage-collect-tag"
+
+	// AnnotationGcStrategy controls gc logic.  Current values:
+	// `auto` (default if absent) - do garbage collection
+	// `ignore` - never garbage collect this object
+	AnnotationGcStrategy = "kubecfg.ksonnet.io/garbage-collect-strategy"
+
+	// GcStrategyAuto is the default automatic gc logic
+	GcStrategyAuto = "auto"
+	// GcStrategyIgnore means this object should be ignored by garbage collection
+	GcStrategyIgnore = "ignore"
+)
+
+func init() {
+	RootCmd.AddCommand(applyCmd)
+
+	addEnvCmdFlags(applyCmd)
+	applyCmd.PersistentFlags().Bool(flagCreate, true, "Create missing resources")
+	applyCmd.PersistentFlags().Bool(flagSkipGc, false, "Don't perform garbage collection, even with --"+flagGcTag)
+	applyCmd.PersistentFlags().String(flagGcTag, "", "Add this tag to updated objects, and garbage collect existing objects with this tag and not in config")
+	applyCmd.PersistentFlags().Bool(flagDryRun, false, "Perform only read-only operations")
 }
 
-var updateCmd = &cobra.Command{
-	Deprecated: "NOTE: Command 'update' is deprecated, use 'apply' instead",
-	Hidden:     true,
-	Use:        "update [<env>|-f <file-or-dir>]",
-	Short: `[DEPRECATED] Update (or optionally create) Kubernetes resources on the cluster using the
-local configuration. Accepts JSON, YAML, or Jsonnet.`,
+var applyCmd = &cobra.Command{
+	Use:   "apply [<env>|-f <file-or-dir>]",
+	Short: `Apply local configuration to remote cluster`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
 		var err error
@@ -71,7 +90,7 @@ local configuration. Accepts JSON, YAML, or Jsonnet.`,
 			return err
 		}
 
-		c.DefaultNamespace, err = defaultNamespace(clientConfig)
+		c.DefaultNamespace, _, err = clientConfig.Namespace()
 		if err != nil {
 			return err
 		}
@@ -88,9 +107,7 @@ local configuration. Accepts JSON, YAML, or Jsonnet.`,
 
 		return c.Run(objs, metadata.AbsPath(cwd))
 	},
-	Long: `NOTE: Command 'update' is deprecated, use 'apply' instead.
-
-Update (or optionally create) Kubernetes resources on the cluster using the
+	Long: `Update (or optionally create) Kubernetes resources on the cluster using the
 local configuration. Use the '--create' flag to control whether we create them
 if they do not exist (default: true).
 
@@ -99,7 +116,7 @@ files.`,
 	Example: `  # Create or update all resources described in a ksonnet application, and
   # running in the 'dev' environment. Can be used in any subdirectory of the
   # application.
-  ksonnet update dev
+  ksonnet apply dev
 
   # Create or update resources described in a YAML file. Automatically picks up
   # the cluster's location from '$KUBECONFIG'.
@@ -107,8 +124,8 @@ files.`,
 
   # Update resources described in a YAML file, and running in cluster referred
   # to by './kubeconfig'.
-  ksonnet update --kubeconfig=./kubeconfig -f ./pod.yaml
+  ksonnet apply --kubeconfig=./kubeconfig -f ./pod.yaml
 
-  # Display set of actions we will execute when we run 'update'.
-  ksonnet update dev --dry-run`,
+  # Display set of actions we will execute when we run 'apply'.
+  ksonnet apply dev --dry-run`,
 }

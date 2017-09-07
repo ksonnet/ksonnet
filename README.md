@@ -46,7 +46,7 @@ avoid an immediate `Killed: 9`.
 % kubecfg show -o yaml -f examples/guestbook.jsonnet
 
 # Create resources
-% kubecfg update -f examples/guestbook.jsonnet
+% kubecfg apply -f examples/guestbook.jsonnet
 
 # Modify configuration (downgrade gb-frontend image)
 % sed -i.bak '\,gcr.io/google-samples/gb-frontend,s/:v4/:v3/' examples/guestbook.jsonnet
@@ -54,7 +54,7 @@ avoid an immediate `Killed: 9`.
 % kubecfg diff -f examples/guestbook.jsonnet
 
 # Update to new config
-% kubecfg update -f examples/guestbook.jsonnet
+% kubecfg apply -f examples/guestbook.jsonnet
 
 # Clean up after demo
 % kubecfg delete -f examples/guestbook.jsonnet

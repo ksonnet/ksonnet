@@ -39,8 +39,8 @@ const (
 	GcStrategyIgnore = "ignore"
 )
 
-// UpdateCmd represents the update subcommand
-type UpdateCmd struct {
+// ApplyCmd represents the apply subcommand
+type ApplyCmd struct {
 	ClientPool       dynamic.ClientPool
 	Discovery        discovery.DiscoveryInterface
 	DefaultNamespace string
@@ -51,7 +51,7 @@ type UpdateCmd struct {
 	DryRun bool
 }
 
-func (c UpdateCmd) Run(apiObjects []*unstructured.Unstructured, wd metadata.AbsPath) error {
+func (c ApplyCmd) Run(apiObjects []*unstructured.Unstructured, wd metadata.AbsPath) error {
 	dryRunText := ""
 	if c.DryRun {
 		dryRunText = " (dry-run)"

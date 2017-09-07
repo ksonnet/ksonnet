@@ -12,20 +12,24 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("update", func() {
+func cmData(cm *v1.ConfigMap) map[string]string {
+	return cm.Data
+}
+
+var _ = Describe("apply", func() {
 	var c corev1.CoreV1Interface
 	var ns string
 	const cmName = "testcm"
 
 	BeforeEach(func() {
 		c = corev1.NewForConfigOrDie(clusterConfigOrDie())
-		ns = createNsOrDie(c, "update")
+		ns = createNsOrDie(c, "apply")
 	})
 	AfterEach(func() {
 		deleteNsOrDie(c, ns)
 	})
 
-	Describe("A simple update", func() {
+	Describe("A simple apply", func() {
 		var cm *v1.ConfigMap
 		BeforeEach(func() {
 			cm = &v1.ConfigMap{
@@ -35,7 +39,7 @@ var _ = Describe("update", func() {
 		})
 
 		JustBeforeEach(func() {
-			err := runKubecfgWith([]string{"update", "-vv", "-n", ns}, []runtime.Object{cm})
+			err := runKubecfgWith([]string{"apply", "-vv", "-n", ns}, []runtime.Object{cm})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -77,10 +81,10 @@ var _ = Describe("update", func() {
 		})
 	})
 
-	Describe("An update with mixed namespaces", func() {
+	Describe("An apply with mixed namespaces", func() {
 		var ns2 string
 		BeforeEach(func() {
-			ns2 = createNsOrDie(c, "update")
+			ns2 = createNsOrDie(c, "apply")
 		})
 		AfterEach(func() {
 			deleteNsOrDie(c, ns2)
@@ -102,7 +106,7 @@ var _ = Describe("update", func() {
 		})
 
 		JustBeforeEach(func() {
-			err := runKubecfgWith([]string{"update", "-vv", "-n", ns}, objs)
+			err := runKubecfgWith([]string{"apply", "-vv", "-n", ns}, objs)
 			Expect(err).NotTo(HaveOccurred())
 		})
 

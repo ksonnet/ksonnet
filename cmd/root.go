@@ -52,7 +52,7 @@ const (
 	flagResolver   = "resolve-images"
 	flagResolvFail = "resolve-images-error"
 
-	// For use in the commands (e.g., diff, update, delete) that require either an
+	// For use in the commands (e.g., diff, apply, delete) that require either an
 	// environment or the -f flag.
 	flagFile      = "file"
 	flagFileShort = "f"
@@ -245,13 +245,13 @@ func restClientPool(cmd *cobra.Command) (dynamic.ClientPool, discovery.Discovery
 }
 
 // addEnvCmdFlags adds the flags that are common to the family of commands
-// whose form is `[<env>|-f <file-name>]`, e.g., `update` and `delete`.
+// whose form is `[<env>|-f <file-name>]`, e.g., `apply` and `delete`.
 func addEnvCmdFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringArrayP(flagFile, flagFileShort, nil, "Filename or directory that contains the configuration to apply (accepts YAML, JSON, and Jsonnet)")
 }
 
 // parseEnvCmd parses the family of commands that come in the form `[<env>|-f
-// <file-name>]`, e.g., `update` and `delete`.
+// <file-name>]`, e.g., `apply` and `delete`.
 func parseEnvCmd(cmd *cobra.Command, args []string) (*string, []string, error) {
 	flags := cmd.Flags()
 
@@ -269,7 +269,7 @@ func parseEnvCmd(cmd *cobra.Command, args []string) (*string, []string, error) {
 }
 
 // expandEnvCmdObjs finds and expands templates for the family of commands of
-// the form `[<env>|-f <file-name>]`, e.g., `update` and `delete`. That is, if
+// the form `[<env>|-f <file-name>]`, e.g., `apply` and `delete`. That is, if
 // the user passes a list of files, we will expand all templates in those files,
 // while if a user passes an environment name, we will expand all component
 // files using that environment.
