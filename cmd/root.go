@@ -311,8 +311,8 @@ func expandEnvCmdObjs(cmd *cobra.Command, args []string) ([]*unstructured.Unstru
 			return nil, err
 		}
 
-		libPath, vendorLibPath := manager.LibPaths()
-		expander.FlagJpath = append([]string{string(libPath), string(vendorLibPath)}, expander.FlagJpath...)
+		libPath, envLibPath := manager.LibPaths(*env)
+		expander.FlagJpath = append([]string{string(libPath), string(envLibPath)}, expander.FlagJpath...)
 
 		fileNames, err = manager.ComponentPaths()
 		if err != nil {

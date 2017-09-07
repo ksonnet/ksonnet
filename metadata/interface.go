@@ -20,7 +20,7 @@ type AbsPaths []string
 type Manager interface {
 	Root() AbsPath
 	ComponentPaths() (AbsPaths, error)
-	LibPaths() (libPath, vendorLibPath AbsPath)
+	LibPaths(envName string) (libPath, envLibPath AbsPath)
 	//
 	// TODO: Fill in methods as we need them.
 	//
