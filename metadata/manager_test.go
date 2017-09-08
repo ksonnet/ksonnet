@@ -50,14 +50,13 @@ func TestInitSuccess(t *testing.T) {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
 
-	defaultEnvDir := appendToAbsPath(schemaDir, defaultEnvName)
+	defaultEnvDir := appendToAbsPath(environmentsDir, defaultEnvName)
 	paths := []AbsPath{
 		ksonnetDir,
 		libDir,
 		componentsDir,
+		environmentsDir,
 		vendorDir,
-		schemaDir,
-		vendorLibDir,
 		defaultEnvDir,
 	}
 

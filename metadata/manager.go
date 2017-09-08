@@ -18,29 +18,29 @@ func appendToAbsPath(originalPath AbsPath, toAppend ...string) AbsPath {
 }
 
 const (
-	defaultEnvName = "dev"
+	ksonnetDir      = ".ksonnet"
+	libDir          = "lib"
+	componentsDir   = "components"
+	environmentsDir = "environments"
+	vendorDir       = "vendor"
 
-	ksonnetDir    = ".ksonnet"
-	libDir        = "lib"
-	componentsDir = "components"
-	vendorDir     = "vendor"
-	schemaDir     = "vendor/schema"
-	vendorLibDir  = "vendor/lib"
+	defaultEnvName = "default"
 
+	// Environment-specific files
 	schemaFilename         = "swagger.json"
 	ksonnetLibCoreFilename = "k8s.libsonnet"
+	specFilename           = "spec.json"
 )
 
 type manager struct {
 	appFS afero.Fs
 
-	rootPath       AbsPath
-	ksonnetPath    AbsPath
-	libPath        AbsPath
-	componentsPath AbsPath
-	vendorDir      AbsPath
-	schemaDir      AbsPath
-	vendorLibDir   AbsPath
+	rootPath        AbsPath
+	ksonnetPath     AbsPath
+	libPath         AbsPath
+	componentsPath  AbsPath
+	environmentsDir AbsPath
+	vendorDir       AbsPath
 }
 
 func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
@@ -66,13 +66,6 @@ func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
 }
 
 func initManager(rootPath AbsPath, spec ClusterSpec, appFS afero.Fs) (*manager, error) {
-	//
-	// IMPLEMENTATION NOTE: We get the cluster specification and generate
-	// ksonnet-lib before initializing the directory structure so that failure of
-	// either (e.g., GET'ing the spec from a live cluster returns 404) does not
-	// result in a partially-initialized directory structure.
-	//
-
 	// Get cluster specification data, possibly from the network.
 	specData, err := spec.data()
 	if err != nil {
@@ -82,7 +75,13 @@ func initManager(rootPath AbsPath, spec ClusterSpec, appFS afero.Fs) (*manager, 
 	m := newManager(rootPath, appFS)
 
 	// Generate the program text for ksonnet-lib.
-	ksonnetLibDir := appendToAbsPath(m.schemaDir, defaultEnvName)
+	//
+	// IMPLEMENTATION NOTE: We get the cluster specification and generate
+	// ksonnet-lib before initializing the directory structure so that failure of
+	// either (e.g., GET'ing the spec from a live cluster returns 404) does not
+	// result in a partially-initialized directory structure.
+	//
+	ksonnetLibDir := appendToAbsPath(m.environmentsDir, defaultEnvName)
 	ksonnetLibData, err := generateKsonnetLibData(ksonnetLibDir, specData)
 	if err != nil {
 		return nil, err
@@ -94,13 +93,7 @@ func initManager(rootPath AbsPath, spec ClusterSpec, appFS afero.Fs) (*manager, 
 	}
 
 	// Cache specification data.
-	if err = m.cacheClusterSpecData(defaultEnvName, specData); err != nil {
-		return nil, err
-	}
-
-	ksonnetLibPath := appendToAbsPath(ksonnetLibDir, ksonnetLibCoreFilename)
-	err = afero.WriteFile(appFS, string(ksonnetLibPath), ksonnetLibData, 0644)
-	if err != nil {
+	if err = m.createEnvironment(defaultEnvName, specData, ksonnetLibData); err != nil {
 		return nil, err
 	}
 
@@ -111,13 +104,12 @@ func newManager(rootPath AbsPath, appFS afero.Fs) *manager {
 	return &manager{
 		appFS: appFS,
 
-		rootPath:       rootPath,
-		ksonnetPath:    appendToAbsPath(rootPath, ksonnetDir),
-		libPath:        appendToAbsPath(rootPath, libDir),
-		componentsPath: appendToAbsPath(rootPath, componentsDir),
-		vendorDir:      appendToAbsPath(rootPath, vendorDir),
-		schemaDir:      appendToAbsPath(rootPath, schemaDir),
-		vendorLibDir:   appendToAbsPath(rootPath, vendorLibDir),
+		rootPath:        rootPath,
+		ksonnetPath:     appendToAbsPath(rootPath, ksonnetDir),
+		libPath:         appendToAbsPath(rootPath, libDir),
+		componentsPath:  appendToAbsPath(rootPath, componentsDir),
+		environmentsDir: appendToAbsPath(rootPath, environmentsDir),
+		vendorDir:       appendToAbsPath(rootPath, vendorDir),
 	}
 }
 
@@ -144,19 +136,26 @@ func (m *manager) ComponentPaths() (AbsPaths, error) {
 	return paths, nil
 }
 
-func (m *manager) LibPaths() (libPath, vendorLibPath AbsPath) {
-	return m.libPath, m.vendorLibDir
+func (m *manager) LibPaths(envName string) (libPath, envLibPath AbsPath) {
+	return m.libPath, appendToAbsPath(m.environmentsDir, envName)
 }
 
-func (m *manager) cacheClusterSpecData(name string, specData []byte) error {
-	envPath := string(appendToAbsPath(m.schemaDir, name))
-	err := m.appFS.MkdirAll(envPath, os.ModePerm)
+func (m *manager) createEnvironment(name string, specData, ksonnetLibData []byte) error {
+	envPath := appendToAbsPath(m.environmentsDir, name)
+	err := m.appFS.MkdirAll(string(envPath), os.ModePerm)
 	if err != nil {
 		return err
 	}
 
-	schemaPath := string(filepath.Join(envPath, schemaFilename))
-	err = afero.WriteFile(m.appFS, schemaPath, specData, os.ModePerm)
+	// Generate the schema file.
+	schemaPath := appendToAbsPath(envPath, schemaFilename)
+	err = afero.WriteFile(m.appFS, string(schemaPath), specData, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	ksonnetLibPath := appendToAbsPath(envPath, ksonnetLibCoreFilename)
+	err = afero.WriteFile(m.appFS, string(ksonnetLibPath), ksonnetLibData, 0644)
 	return err
 }
 
@@ -174,8 +173,6 @@ func (m *manager) createAppDirTree() error {
 		m.libPath,
 		m.componentsPath,
 		m.vendorDir,
-		m.schemaDir,
-		m.vendorLibDir,
 	}
 
 	for _, p := range paths {
