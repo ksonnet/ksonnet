@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
 
 	"github.com/ksonnet/kubecfg/metadata"
 	"github.com/ksonnet/kubecfg/pkg/kubecfg"
@@ -46,7 +45,7 @@ var initCmd = &cobra.Command{
 		}
 
 		appName := args[0]
-		appDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+		appDir, err := os.Getwd()
 		if err != nil {
 			return err
 		}
