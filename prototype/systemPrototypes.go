@@ -10,6 +10,7 @@ var defaultPrototypes = []*SpecificationSchema{
 		Template: SnippetSchema{
 			Description: `A simple namespace. Labels are automatically populated from the name of the
 namespace.`,
+			ShortDescription: `Namespace with labels automatically populated from the name`,
 			YAMLBody: []string{
 				"kind: Namespace",
 				"apiVersion: v1",
@@ -53,6 +54,7 @@ namespace.`,
 		Template: SnippetSchema{
 			Description: `A service that exposes 'servicePort', and directs traffic
 to 'targetLabelSelector', at 'targetPort'.`,
+			ShortDescription: `Service that exposes a single port`,
 			YAMLBody: []string{
 				"kind: Service",
 				"apiVersion: v1",
@@ -101,13 +103,14 @@ to 'targetLabelSelector', at 'targetPort'.`,
 	},
 	&SpecificationSchema{
 		APIVersion: "0.1",
-		Name:       "io.ksonnet.pkg.empty-configMap",
+		Name:       "io.ksonnet.pkg.configMap",
 		Params: ParamSchemas{
 			RequiredParam("name", "name", "Name to give the configMap.", String),
 			OptionalParam("data", "data", "Data for the configMap.", "{}", Object),
 		},
 		Template: SnippetSchema{
-			Description: `A simple config map. Contains no data.`,
+			Description:      `A simple config map with optional user-specified data.`,
+			ShortDescription: `A simple config map with optional user-specified data`,
 			YAMLBody: []string{
 				"apiVersion: v1",
 				"kind: ConfigMap",
@@ -148,6 +151,7 @@ to 'targetLabelSelector', at 'targetPort'.`,
 			Description: `A deployment that replicates container 'image' some number of times
 (default: 1), and exposes a port (default: 80). Labels are automatically
 populated from 'name'.`,
+			ShortDescription: `Replicates a container n times, exposes a single port`,
 			YAMLBody: []string{
 				"apiVersion: apps/v1beta1",
 				"kind: Deployment",

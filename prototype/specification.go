@@ -2,6 +2,7 @@ package prototype
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -24,6 +25,52 @@ type SpecificationSchema struct {
 	Name     string        `json:"name"`
 	Params   ParamSchemas  `json:"params"`
 	Template SnippetSchema `json:"template"`
+}
+
+// SpecificationSchemas is a slice of pointer to `SpecificationSchema`.
+type SpecificationSchemas []*SpecificationSchema
+
+func (ss SpecificationSchemas) String() string {
+	//
+	// We want output that's lined up, like:
+	//
+	//   io.whatever.pkg.foo    Foo's main template    [jsonnet, yaml]
+	//   io.whatever.pkg.foobar Foobar's main template [jsonnet, yaml, json]
+	//
+	// To accomplish this we find (1) the longest prototype name, and (2) the
+	// longest description, so that we can properly pad the output.
+	//
+
+	maxNameLen := 0
+	for _, proto := range ss {
+		if l := len(proto.Name); l > maxNameLen {
+			maxNameLen = l
+		}
+	}
+
+	maxNameDescLen := 0
+	for _, proto := range ss {
+		nameDescLen := maxNameLen + 1 + len(proto.Template.ShortDescription)
+		if nameDescLen > maxNameDescLen {
+			maxNameDescLen = nameDescLen
+		}
+	}
+
+	lines := []string{}
+	for _, proto := range ss {
+		// NOTE: If we don't add 1 below, the longest name will look like :
+		// `io.whatever.pkg.fooDescription is here.`
+		nameSpace := strings.Repeat(" ", maxNameLen-len(proto.Name)+1)
+		descSpace := strings.Repeat(" ", maxNameDescLen-maxNameLen-len(proto.Template.ShortDescription)+2)
+
+		avail := fmt.Sprintf("%s", proto.Template.AvailableTemplates())
+
+		lines = append(lines, proto.Name+nameSpace+proto.Template.ShortDescription+descSpace+avail+"\n")
+	}
+
+	sort.Slice(lines, func(i, j int) bool { return lines[i] < lines[j] })
+
+	return strings.Join(lines, "")
 }
 
 // RequiredParams retrieves all parameters that are required by a prototype.
@@ -86,6 +133,9 @@ type SnippetSchema struct {
 
 	// Description describes what the prototype does.
 	Description string `json:"description"`
+
+	// ShortDescription briefly describes what the prototype does.
+	ShortDescription string `json:"shortDescription"`
 
 	// Various body types of the prototype. Follows the TextMate snippets syntax,
 	// with several features disallowed. At least one of these is required to be

@@ -13,7 +13,7 @@ type index struct {
 	prototypes map[string]*SpecificationSchema
 }
 
-func (idx *index) SearchNames(query string, opts SearchOptions) ([]*SpecificationSchema, error) {
+func (idx *index) SearchNames(query string, opts SearchOptions) (SpecificationSchemas, error) {
 	// TODO(hausdorff): This is the world's worst search algorithm. Improve it at
 	// some point.
 

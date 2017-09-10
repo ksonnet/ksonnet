@@ -151,9 +151,7 @@ var prototypeSearchCmd = &cobra.Command{
 			return fmt.Errorf("Failed to find any search results for query '%s'", query)
 		}
 
-		for _, proto := range protos {
-			fmt.Println(proto.Name)
-		}
+		fmt.Print(protos)
 
 		return nil
 	},
