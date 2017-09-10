@@ -211,26 +211,26 @@
 		{
 			"checksumSHA1": "wX+GmcWpMzCIcxR9YtN1FCM9BEE=",
 			"path": "github.com/ksonnet/ksonnet-lib/ksonnet-gen/jsonnet",
-			"revision": "fcf4c31408afc7b7469a1722c4cc06ccc315a722",
-			"revisionTime": "2017-08-16T22:14:57Z"
+			"revision": "b27d2d7778c12c3d762d24c1b9fd4c41da6c73c7",
+			"revisionTime": "2017-09-10T05:18:39Z"
 		},
 		{
-			"checksumSHA1": "LGk0N301rp2uQSOmy7kBQEksues=",
+			"checksumSHA1": "zJx/j+IS6qd0P5h2m8WEQEtrACU=",
 			"path": "github.com/ksonnet/ksonnet-lib/ksonnet-gen/ksonnet",
-			"revision": "fcf4c31408afc7b7469a1722c4cc06ccc315a722",
-			"revisionTime": "2017-08-16T22:14:57Z"
+			"revision": "b27d2d7778c12c3d762d24c1b9fd4c41da6c73c7",
+			"revisionTime": "2017-09-10T05:18:39Z"
 		},
 		{
 			"checksumSHA1": "BiiHRiYpSOb+vHiP6h/A9lRotEY=",
 			"path": "github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubespec",
-			"revision": "fcf4c31408afc7b7469a1722c4cc06ccc315a722",
-			"revisionTime": "2017-08-16T22:14:57Z"
+			"revision": "b27d2d7778c12c3d762d24c1b9fd4c41da6c73c7",
+			"revisionTime": "2017-09-10T05:18:39Z"
 		},
 		{
-			"checksumSHA1": "jpBOSqq1T9UyiANimAKtzyTt3qo=",
+			"checksumSHA1": "lr+Bx7/N2KHk9dOrsWfLYBPjbdQ=",
 			"path": "github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubeversion",
-			"revision": "fcf4c31408afc7b7469a1722c4cc06ccc315a722",
-			"revisionTime": "2017-08-16T22:14:57Z"
+			"revision": "b27d2d7778c12c3d762d24c1b9fd4c41da6c73c7",
+			"revisionTime": "2017-09-10T05:18:39Z"
 		},
 		{
 			"checksumSHA1": "T8soMJArSZrYnhmdpAnq1bVxQ6Q=",

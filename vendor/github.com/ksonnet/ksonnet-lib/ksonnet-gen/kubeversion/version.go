@@ -15,6 +15,17 @@ import (
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubespec"
 )
 
+// KSource returns the source of `k.libsonnet` for a specific version
+// of Kubernetes.
+func KSource(k8sVersion string) string {
+	verData, ok := versions[k8sVersion]
+	if !ok {
+		log.Fatalf("Unrecognized Kubernetes version '%s'", k8sVersion)
+	}
+
+	return verData.kSource
+}
+
 // MapIdentifier takes a text identifier and maps it to a
 // Jsonnet-appropriate identifier, for some version of Kubernetes. For
 // example, in Kubernetes v1.7.0, we might map `clusterIP` ->
@@ -75,6 +86,7 @@ type versionData struct {
 	idAliases         map[string]string
 	constructorSpecs  map[string][]CustomConstructorSpec
 	propertyBlacklist map[string]propertySet
+	kSource           string
 }
 
 type propertySet map[string]bool
