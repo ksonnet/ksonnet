@@ -110,16 +110,16 @@ func TestSearch(t *testing.T) {
 	assertSearch(t, idx, Prefix, "service", []string{})
 	assertSearch(t, idx, Prefix, "simple", []string{})
 	assertSearch(t, idx, Prefix, "io.ksonnet", []string{
-		"io.ksonnet.pkg.yaml-single-port-service",
-		"io.ksonnet.pkg.yaml-namespace",
-		"io.ksonnet.pkg.yaml-empty-configMap",
-		"io.ksonnet.pkg.yaml-single-port-deployment",
+		"io.ksonnet.pkg.single-port-service",
+		"io.ksonnet.pkg.namespace",
+		"io.ksonnet.pkg.configMap",
+		"io.ksonnet.pkg.single-port-deployment",
 	})
 	assertSearch(t, idx, Prefix, "foo", []string{})
 
 	// Suffix searches.
 	assertSearch(t, idx, Suffix, "service", []string{
-		"io.ksonnet.pkg.yaml-single-port-service",
+		"io.ksonnet.pkg.single-port-service",
 		"io.some-vendor.pkg.simple-service",
 	})
 	assertSearch(t, idx, Suffix, "simple", []string{})
@@ -128,7 +128,7 @@ func TestSearch(t *testing.T) {
 
 	// Substring searches.
 	assertSearch(t, idx, Substring, "service", []string{
-		"io.ksonnet.pkg.yaml-single-port-service",
+		"io.ksonnet.pkg.single-port-service",
 		"io.some-vendor.pkg.simple-service",
 	})
 	assertSearch(t, idx, Substring, "simple", []string{
@@ -136,10 +136,10 @@ func TestSearch(t *testing.T) {
 		"io.some-vendor.pkg.simple-service",
 	})
 	assertSearch(t, idx, Substring, "io.ksonnet", []string{
-		"io.ksonnet.pkg.yaml-single-port-service",
-		"io.ksonnet.pkg.yaml-single-port-deployment",
-		"io.ksonnet.pkg.yaml-empty-configMap",
-		"io.ksonnet.pkg.yaml-namespace",
+		"io.ksonnet.pkg.single-port-service",
+		"io.ksonnet.pkg.single-port-deployment",
+		"io.ksonnet.pkg.configMap",
+		"io.ksonnet.pkg.namespace",
 	})
 	assertSearch(t, idx, Substring, "foo", []string{})
 }
