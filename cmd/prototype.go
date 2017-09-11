@@ -104,8 +104,8 @@ var prototypeDescribeCmd = &cobra.Command{
 		fmt.Println(`OPTIONAL PARAMETERS:`)
 		fmt.Println(proto.OptionalParams().PrettyString("  "))
 		fmt.Println()
-		fmt.Println(`TEMPLATE:`)
-		fmt.Println(strings.Join(proto.Template.Body, "\n"))
+		fmt.Println(`TEMPLATE TYPES AVAILABLE:`)
+		fmt.Println(fmt.Sprintf("  %s", proto.Template.AvailableTemplates()))
 
 		return nil
 	},
@@ -151,9 +151,7 @@ var prototypeSearchCmd = &cobra.Command{
 			return fmt.Errorf("Failed to find any search results for query '%s'", query)
 		}
 
-		for _, proto := range protos {
-			fmt.Println(proto.Name)
-		}
+		fmt.Print(protos)
 
 		return nil
 	},
@@ -163,7 +161,7 @@ var prototypeSearchCmd = &cobra.Command{
 }
 
 var prototypeUseCmd = &cobra.Command{
-	Use:                "use <prototype-name> [parameter-flags]",
+	Use:                "use <prototype-name> [type] [parameter-flags]",
 	Short:              `Instantiate prototype, emitting the generated code to stdout.`,
 	DisableFlagParsing: true,
 	RunE: func(cmd *cobra.Command, rawArgs []string) error {
@@ -187,8 +185,26 @@ var prototypeUseCmd = &cobra.Command{
 		}
 
 		cmd.DisableFlagParsing = false
-		cmd.ParseFlags(rawArgs)
+		err = cmd.ParseFlags(rawArgs)
+		if err != nil {
+			return err
+		}
 		flags := cmd.Flags()
+
+		// Try to find the template type (if it is supplied) after the args are
+		// parsed. Note that the case that `len(args) == 0` is handled at the
+		// beginning of this command.
+		var templateType prototype.TemplateType
+		if args := flags.Args(); len(args) == 1 {
+			templateType = prototype.Jsonnet
+		} else if len(args) == 2 {
+			templateType, err = prototype.ParseTemplateType(args[1])
+			if err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf("Incorrect number of arguments supplied to 'prototype use'\n\n%s", cmd.UsageString())
+		}
 
 		missingReqd := prototype.ParamSchemas{}
 		values := map[string]string{}
@@ -202,7 +218,11 @@ var prototypeUseCmd = &cobra.Command{
 				return fmt.Errorf("Prototype '%s' has multiple parameters with name '%s'", proto.Name, param.Name)
 			}
 
-			values[param.Name] = val
+			quoted, err := param.Quote(val)
+			if err != nil {
+				return err
+			}
+			values[param.Name] = quoted
 		}
 
 		if len(missingReqd) > 0 {
@@ -217,10 +237,19 @@ var prototypeUseCmd = &cobra.Command{
 				return fmt.Errorf("Prototype '%s' has multiple parameters with name '%s'", proto.Name, param.Name)
 			}
 
-			values[param.Name] = val
+			quoted, err := param.Quote(val)
+			if err != nil {
+				return err
+			}
+			values[param.Name] = quoted
 		}
 
-		tm := snippet.Parse(strings.Join(proto.Template.Body, "\n"))
+		template, err := proto.Template.Body(templateType)
+		if err != nil {
+			return err
+		}
+
+		tm := snippet.Parse(strings.Join(template, "\n"))
 		text, err := tm.Evaluate(values)
 		if err != nil {
 			return err
@@ -241,16 +270,13 @@ unique enough to resolve to 'io.ksonnet.pkg.prototype.simple-deployment'.`,
   # the 'nginx' image, and port 80 exposed.
   ksonnet prototype use io.ksonnet.pkg.prototype.simple-deployment \
     --name=nginx                                                   \
-    --image=nginx                                                  \
-    --port=80                                                      \
-    --portName=http
+    --image=nginx
 
-  # Instantiate prototype using a unique suffix of an identifier. That is, this
-  # command only requires a long enough suffix to uniquely identify a ksonnet
-  # prototype. In this example, the suffix 'simple-deployment' is enough to
-  # uniquely identify 'io.ksonnet.pkg.prototype.simple-deployment', but
-  # 'deployment' might not be, as several names end with that suffix.
-  ksonnet prototype describe simple-deployment`,
+  # Instantiate prototype using a unique suffix of an identifier. See
+  # introduction of help message for more information on how this works.
+  ksonnet prototype use simple-deployment \
+    --name=nginx                          \
+    --image=nginx`,
 }
 
 func fundUniquePrototype(query string) (*prototype.SpecificationSchema, error) {
