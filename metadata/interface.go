@@ -21,13 +21,14 @@ type Manager interface {
 	Root() AbsPath
 	ComponentPaths() (AbsPaths, error)
 	LibPaths(envName string) (libPath, envLibPath AbsPath)
+	GenerateKsonnetLibData(spec ClusterSpec) ([]byte, []byte, error)
+	CreateEnvironment(name, uri string, spec ClusterSpec, extensionsLibData, k8sLibData []byte) error
 	//
 	// TODO: Fill in methods as we need them.
 	//
 	// GetPrototype(id string) Protoype
 	// SearchPrototypes(query string) []Protoype
 	// VendorLibrary(uri, version string) error
-	// CreateEnv(name string, spec *ClusterSpec) error
 	// DeleteEnv(name string) error
 	//
 }
