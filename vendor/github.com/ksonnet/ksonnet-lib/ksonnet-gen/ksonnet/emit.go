@@ -13,12 +13,19 @@ import (
 
 // Emit takes a swagger API specification, and returns the text of
 // `ksonnet-lib`, written in Jsonnet.
-func Emit(spec *kubespec.APISpec, ksonnetLibSHA, k8sSHA *string) ([]byte, error) {
+func Emit(spec *kubespec.APISpec, ksonnetLibSHA, k8sSHA *string) ([]byte, []byte, error) {
 	root := newRoot(spec, ksonnetLibSHA, k8sSHA)
 
 	m := newIndentWriter()
 	root.emit(m)
-	return m.bytes()
+	k8sBytes, err := m.bytes()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	kBytes := []byte(kubeversion.KSource(spec.Info.Version))
+
+	return kBytes, k8sBytes, nil
 }
 
 //-----------------------------------------------------------------------------
