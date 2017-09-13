@@ -17,6 +17,7 @@ package metadata
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -94,6 +95,54 @@ func (m *manager) CreateEnvironment(name, uri string, spec ClusterSpec, extensio
 
 	envSpecPath := appendToAbsPath(envPath, specFilename)
 	return afero.WriteFile(m.appFS, string(envSpecPath), envSpecData, os.ModePerm)
+}
+
+func (m *manager) DeleteEnvironment(name string) error {
+	envPath := string(appendToAbsPath(m.environmentsDir, name))
+
+	envs, err := m.GetEnvironments()
+	if err != nil {
+		return err
+	}
+
+	// Check whether this environment exists
+	envExists := false
+	for _, env := range envs {
+		if env.Path == envPath {
+			envExists = true
+			break
+		}
+	}
+	if !envExists {
+		return errors.New("Environment \"" + name + "\" does not exist.")
+	}
+
+	// Remove the directory and all files within the environment path.
+	err = m.appFS.RemoveAll(envPath)
+	if err != nil {
+		return err
+	}
+
+	// Need to ensure empty parent directories are also removed.
+	dirs := strings.Split(name, "/")
+	parentDir := name
+	for i := len(dirs) - 2; i >= 0; i-- {
+		parentDir = strings.TrimSuffix(parentDir, "/"+dirs[i+1])
+		parentPath := string(appendToAbsPath(m.environmentsDir, parentDir))
+
+		isEmpty, err := afero.IsEmpty(m.appFS, parentPath)
+		if err != nil {
+			return err
+		}
+		if isEmpty {
+			err := m.appFS.RemoveAll(parentPath)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func (m *manager) GetEnvironments() ([]Environment, error) {

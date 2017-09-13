@@ -55,6 +55,27 @@ func (c *EnvAddCmd) Run() error {
 
 // ==================================================================
 
+type EnvRmCmd struct {
+	name string
+
+	rootPath metadata.AbsPath
+}
+
+func NewEnvRmCmd(name string, rootPath metadata.AbsPath) (*EnvRmCmd, error) {
+	return &EnvRmCmd{name: name, rootPath: rootPath}, nil
+}
+
+func (c *EnvRmCmd) Run() error {
+	manager, err := metadata.Find(c.rootPath)
+	if err != nil {
+		return err
+	}
+
+	return manager.DeleteEnvironment(c.name)
+}
+
+// ==================================================================
+
 type EnvListCmd struct {
 	rootPath metadata.AbsPath
 }

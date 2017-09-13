@@ -38,6 +38,7 @@ type Manager interface {
 	LibPaths(envName string) (libPath, envLibPath AbsPath)
 	GenerateKsonnetLibData(spec ClusterSpec) ([]byte, []byte, error)
 	CreateEnvironment(name, uri string, spec ClusterSpec, extensionsLibData, k8sLibData []byte) error
+	DeleteEnvironment(name string) error
 	GetEnvironments() ([]Environment, error)
 	//
 	// TODO: Fill in methods as we need them.
@@ -45,7 +46,6 @@ type Manager interface {
 	// GetPrototype(id string) Protoype
 	// SearchPrototypes(query string) []Protoype
 	// VendorLibrary(uri, version string) error
-	// DeleteEnv(name string) error
 	//
 }
 
