@@ -36,10 +36,10 @@ type Manager interface {
 	Root() AbsPath
 	ComponentPaths() (AbsPaths, error)
 	LibPaths(envName string) (libPath, envLibPath AbsPath)
-	GenerateKsonnetLibData(spec ClusterSpec) ([]byte, []byte, error)
-	CreateEnvironment(name, uri string, spec ClusterSpec, extensionsLibData, k8sLibData []byte) error
+	CreateEnvironment(name, uri string, spec ClusterSpec) error
 	DeleteEnvironment(name string) error
 	GetEnvironments() ([]Environment, error)
+	SetEnvironment(name string, desired Environment) error
 	//
 	// TODO: Fill in methods as we need them.
 	//

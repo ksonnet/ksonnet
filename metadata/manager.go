@@ -40,12 +40,12 @@ const (
 type manager struct {
 	appFS afero.Fs
 
-	rootPath        AbsPath
-	ksonnetPath     AbsPath
-	libPath         AbsPath
-	componentsPath  AbsPath
-	environmentsDir AbsPath
-	vendorDir       AbsPath
+	rootPath         AbsPath
+	ksonnetPath      AbsPath
+	libPath          AbsPath
+	componentsPath   AbsPath
+	environmentsPath AbsPath
+	vendorDir        AbsPath
 }
 
 func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
@@ -80,7 +80,7 @@ func initManager(rootPath AbsPath, spec ClusterSpec, appFS afero.Fs) (*manager, 
 	// either (e.g., GET'ing the spec from a live cluster returns 404) does not
 	// result in a partially-initialized directory structure.
 	//
-	extensionsLibData, k8sLibData, err := m.GenerateKsonnetLibData(spec)
+	extensionsLibData, k8sLibData, specData, err := m.generateKsonnetLibData(spec)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func initManager(rootPath AbsPath, spec ClusterSpec, appFS afero.Fs) (*manager, 
 
 	// Initialize environment, and cache specification data.
 	// TODO the URI for the default environment needs to be generated from KUBECONFIG
-	if err := m.CreateEnvironment(defaultEnvName, "", spec, extensionsLibData, k8sLibData); err != nil {
+	if err := m.createEnvironment(defaultEnvName, "", extensionsLibData, k8sLibData, specData); err != nil {
 		return nil, err
 	}
 
@@ -103,12 +103,12 @@ func newManager(rootPath AbsPath, appFS afero.Fs) *manager {
 	return &manager{
 		appFS: appFS,
 
-		rootPath:        rootPath,
-		ksonnetPath:     appendToAbsPath(rootPath, ksonnetDir),
-		libPath:         appendToAbsPath(rootPath, libDir),
-		componentsPath:  appendToAbsPath(rootPath, componentsDir),
-		environmentsDir: appendToAbsPath(rootPath, environmentsDir),
-		vendorDir:       appendToAbsPath(rootPath, vendorDir),
+		rootPath:         rootPath,
+		ksonnetPath:      appendToAbsPath(rootPath, ksonnetDir),
+		libPath:          appendToAbsPath(rootPath, libDir),
+		componentsPath:   appendToAbsPath(rootPath, componentsDir),
+		environmentsPath: appendToAbsPath(rootPath, environmentsDir),
+		vendorDir:        appendToAbsPath(rootPath, vendorDir),
 	}
 }
 
@@ -136,7 +136,7 @@ func (m *manager) ComponentPaths() (AbsPaths, error) {
 }
 
 func (m *manager) LibPaths(envName string) (libPath, envLibPath AbsPath) {
-	return m.libPath, appendToAbsPath(m.environmentsDir, envName)
+	return m.libPath, appendToAbsPath(m.environmentsPath, envName)
 }
 
 func (m *manager) createAppDirTree() error {
@@ -152,6 +152,7 @@ func (m *manager) createAppDirTree() error {
 		m.ksonnetPath,
 		m.libPath,
 		m.componentsPath,
+		m.environmentsPath,
 		m.vendorDir,
 	}
 

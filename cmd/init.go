@@ -25,14 +25,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	flagAPISpec = "api-spec"
-)
-
 func init() {
 	RootCmd.AddCommand(initCmd)
 	// TODO: We need to make this default to checking the `kubeconfig` file.
-	initCmd.PersistentFlags().String(flagAPISpec, "version:v1.7.0", "Manually specify API version from OpenAPI schema, cluster, or Kubernetes version")
+	initCmd.PersistentFlags().String(flagAPISpec, "version:v1.7.0",
+		"Manually specify API version from OpenAPI schema, cluster, or Kubernetes version")
 }
 
 var initCmd = &cobra.Command{

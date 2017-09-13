@@ -16,6 +16,8 @@
 package kubecfg
 
 import (
+	"fmt"
+	"io"
 	"sort"
 	"strings"
 
@@ -45,12 +47,7 @@ func (c *EnvAddCmd) Run() error {
 		return err
 	}
 
-	extensionsLibData, k8sLibData, err := manager.GenerateKsonnetLibData(c.spec)
-	if err != nil {
-		return err
-	}
-
-	return manager.CreateEnvironment(c.name, c.uri, c.spec, extensionsLibData, k8sLibData)
+	return manager.CreateEnvironment(c.name, c.uri, c.spec)
 }
 
 // ==================================================================
@@ -84,15 +81,15 @@ func NewEnvListCmd(rootPath metadata.AbsPath) (*EnvListCmd, error) {
 	return &EnvListCmd{rootPath: rootPath}, nil
 }
 
-func (c *EnvListCmd) Run() (string, error) {
+func (c *EnvListCmd) Run(out io.Writer) error {
 	manager, err := metadata.Find(c.rootPath)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	envs, err := manager.GetEnvironments()
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	// Sort environments by ascending alphabetical name
@@ -119,5 +116,33 @@ func (c *EnvListCmd) Run() (string, error) {
 		lines = append(lines, env.Name+nameSpacing+env.URI+"\n")
 	}
 
-	return strings.Join(lines, ""), nil
+	formattedEnvsList := strings.Join(lines, "")
+
+	_, err = fmt.Fprint(out, formattedEnvsList)
+	return err
+}
+
+// ==================================================================
+
+type EnvSetCmd struct {
+	name string
+
+	desiredName string
+	desiredURI  string
+
+	rootPath metadata.AbsPath
+}
+
+func NewEnvSetCmd(name, desiredName, desiredURI string, rootPath metadata.AbsPath) (*EnvSetCmd, error) {
+	return &EnvSetCmd{name: name, desiredName: desiredName, desiredURI: desiredURI, rootPath: rootPath}, nil
+}
+
+func (c *EnvSetCmd) Run() error {
+	manager, err := metadata.Find(c.rootPath)
+	if err != nil {
+		return err
+	}
+
+	desired := metadata.Environment{Name: c.desiredName, URI: c.desiredURI}
+	return manager.SetEnvironment(c.name, desired)
 }

@@ -25,14 +25,26 @@ import (
 	"github.com/ksonnet/kubecfg/pkg/kubecfg"
 )
 
+const (
+	flagEnvName = "name"
+	flagEnvURI  = "uri"
+)
+
 func init() {
 	RootCmd.AddCommand(envCmd)
 	envCmd.AddCommand(envAddCmd)
 	envCmd.AddCommand(envRmCmd)
 	envCmd.AddCommand(envListCmd)
+	envCmd.AddCommand(envSetCmd)
+
 	// TODO: We need to make this default to checking the `kubeconfig` file.
 	envAddCmd.PersistentFlags().String(flagAPISpec, "version:v1.7.0",
 		"Manually specify API version from OpenAPI schema, cluster, or Kubernetes version")
+
+	envSetCmd.PersistentFlags().String(flagEnvName, "",
+		"Specify name to rename environment to. Name must not already exist")
+	envSetCmd.PersistentFlags().String(flagEnvURI, "",
+		"Specify URI to point environment cluster to a new location")
 }
 
 var envCmd = &cobra.Command{
@@ -160,14 +172,54 @@ var envListCmd = &cobra.Command{
 			return err
 		}
 
-		formattedEnvsString, err := c.Run()
-		if err != nil {
-			return err
-		}
-		fmt.Print(formattedEnvsString)
-
-		return nil
+		return c.Run(cmd.OutOrStdout())
 	},
 	Long: `List all environments within a ksonnet project. This will
 display the name and the URI of each environment within the ksonnet project.`,
+}
+
+var envSetCmd = &cobra.Command{
+	Use:   "set <env-name> [parameter-flags]",
+	Short: "Set environment fields such as the name, and cluster URI.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		flags := cmd.Flags()
+		if len(args) != 1 {
+			return fmt.Errorf("'env set' takes a single argument, that is the name of the environment")
+		}
+
+		envName := args[0]
+
+		appDir, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		appRoot := metadata.AbsPath(appDir)
+
+		desiredEnvName, err := flags.GetString(flagEnvName)
+		if err != nil {
+			return err
+		}
+
+		desiredEnvURI, err := flags.GetString(flagEnvURI)
+		if err != nil {
+			return err
+		}
+
+		c, err := kubecfg.NewEnvSetCmd(envName, desiredEnvName, desiredEnvURI, appRoot)
+		if err != nil {
+			return err
+		}
+
+		return c.Run()
+	},
+	Long: `Set environment fields such as the name, and cluster URI. Changing
+the name of an environment will also update the directory structure in
+'environments'.
+`,
+	Example: `  # Updates the URI of the environment 'us-west/staging'.
+  ksonnet env set us-west/staging --uri=http://example.com
+
+  # Updates both the name and the URI of the environment 'us-west/staging'.
+  # Updating the name will update the directory structure in 'environments'
+  ksonnet env set us-west/staging --uri=http://example.com --name=us-east/staging`,
 }
