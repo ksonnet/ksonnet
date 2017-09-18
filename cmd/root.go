@@ -51,6 +51,7 @@ const (
 	flagTlaVarFile = "tla-str-file"
 	flagResolver   = "resolve-images"
 	flagResolvFail = "resolve-images-error"
+	flagAPISpec    = "api-spec"
 
 	// For use in the commands (e.g., diff, apply, delete) that require either an
 	// environment or the -f flag.
