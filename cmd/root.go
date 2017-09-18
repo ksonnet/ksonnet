@@ -121,8 +121,6 @@ func defaultNamespace(c clientcmd.ClientConfig) (string, error) {
 func logLevel(verbosity int) log.Level {
 	switch verbosity {
 	case 0:
-		return log.WarnLevel
-	case 1:
 		return log.InfoLevel
 	default:
 		return log.DebugLevel
