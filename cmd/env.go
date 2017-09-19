@@ -49,7 +49,35 @@ func init() {
 
 var envCmd = &cobra.Command{
 	Use:   "env",
-	Short: `Create, remove, modify, and list ksonnet environments`,
+	Short: `Manage ksonnet environments`,
+	Long: `An environment acts as a sort of "named cluster", allowing for commands like
+'ksonnet apply dev', which applies the ksonnet application to the "dev cluster".
+Additionally, environments allow users to cache data about the cluster it points
+to, including data needed to run 'verify', and a version of ksonnet-lib that is
+generated based on the flags the API server was started with (e.g., RBAC enabled
+or not).
+
+An environment contains no user-specific data (such as the private key
+often contained in a kubeconfig file), and
+
+Environments are represented as a hierarchy in the 'environments' directory of a
+ksonnet application. For example, in the example below, there are two
+environments: 'default' and 'us-west/staging'. Each contains a cached version of
+ksonnet-lib, and a 'spec.json' that contains the URI and server cert that
+uniquely identifies the cluster.
+
+environments/
+  default/           [Default generated environment]
+    k.libsonnet
+    k8s.libsonnet
+    swagger.json
+    spec.json
+  us-west/
+    staging/         [Example of user-generated env]
+      k.libsonnet
+      k8s.libsonnet
+      swagger.json
+      spec.json      [This will contain the uri of the environment]`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Command 'env' requires a subcommand\n\n%s", cmd.UsageString())
 	},
@@ -57,7 +85,7 @@ var envCmd = &cobra.Command{
 
 var envAddCmd = &cobra.Command{
 	Use:   "add <env-name> <env-uri>",
-	Short: "Add a new environment within a ksonnet project",
+	Short: "Add a new environment to a ksonnet project",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
 		if len(args) != 2 {
@@ -85,28 +113,32 @@ var envAddCmd = &cobra.Command{
 
 		return c.Run()
 	},
-	Long: `Create a new environment within a ksonnet project. This will
-generate a new directory, 'env-name', within the 'environmentss' directory,
-containing the environment-specific files. 'env-uri' is the URI which the
-Kubernete's cluster is located for the added environment.
 
-Below is an example directory structure:
+	Long: `Add a new environment to a ksonnet project. Names are restricted to not
+include punctuation, so names like '../foo' are not allowed.
 
-	app-name/
-	  .gitignore             Default .gitignore; can customize VCS
-		.ksonnet/            Metadata for ksonnet
-		environments/        Env specs (defaults: dev, test, prod)
-		  default/           [Default generated environment]
-		  us-west/           [Example of user-generated env]
-			staging/
-			  k.libsonnet
-			  k8s.libsonnet
-			  swagger.json
-			  spec.json      [This will contain the uri of the environment]
-		components/          Top-level Kubernetes objects defining application
-		lib/                 user-written .libsonnet files
-		vendor/              mixin libraries, prototypes
-`,
+An environment acts as a sort of "named cluster", allowing for commands like
+'ksonnet apply dev', which applies the ksonnet application to the "dev cluster".
+For more information on what an environment is and how they work, run 'help
+env'.
+
+Environments are represented as a hierarchy in the 'environments' directory of a
+ksonnet application, and hence 'env add' will add to this directory structure.
+For example, in the example below, there are two environments: 'default' and
+'us-west/staging'. 'env add' will add a similar directory to this environment.
+
+environments/
+  default/           [Default generated environment]
+    k.libsonnet
+    k8s.libsonnet
+    swagger.json
+    spec.json
+  us-west/
+    staging/         [Example of user-generated env]
+      k.libsonnet
+      k8s.libsonnet
+      swagger.json
+      spec.json      [This will contain the uri of the environment]`,
 	Example: `  # Initialize a new staging environment at us-west. The directory
   # structure rooted at 'us-west' in the documentation above will be generated.
   ksonnet env add us-west/staging https://kubecfg-1.us-west.elb.amazonaws.com
@@ -122,7 +154,7 @@ Below is an example directory structure:
 
 var envRmCmd = &cobra.Command{
 	Use:   "rm <env-name>",
-	Short: "Delete an environment within a ksonnet project",
+	Short: "Delete an environment from a ksonnet project",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("'env rm' takes a single argument, that is the name of the environment")
@@ -143,11 +175,13 @@ var envRmCmd = &cobra.Command{
 
 		return c.Run()
 	},
-	Long: `Delete an environment within a ksonnet project. This is the same
-as removing the <env-name> environment directory and all files contained.
-Empty parent directories will also be removed.
-`,
-	Example: `  # Remove the directory 'us-west/staging' and all contents 
+	Long: `Delete an environment from a ksonnet project. This is the same
+as removing the <env-name> environment directory and all files contained. If the
+project exists in a hierarchy (e.g., 'us-east/staging') and deleting the
+environment results in an empty environments directory (e.g., if deleting
+'us-east/staging' resulted in an empty 'us-east/' directory), then all empty
+parent directories are subsequently deleted.`,
+	Example: `  # Remove the directory 'us-west/staging' and all contents
   #	in the 'environments' directory. This will also remove the parent directory
   # 'us-west' if it is empty.
   ksonnet env rm us-west/staging`,
@@ -155,7 +189,7 @@ Empty parent directories will also be removed.
 
 var envListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List all environments within a ksonnet project",
+	Short: "List all environments in a ksonnet project",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 0 {
 			return fmt.Errorf("'env list' takes zero arguments")
@@ -173,8 +207,7 @@ var envListCmd = &cobra.Command{
 		}
 
 		return c.Run(cmd.OutOrStdout())
-	},
-	Long: `List all environments within a ksonnet project. This will
+	}, Long: `List all environments in a ksonnet project. This will
 display the name and the URI of each environment within the ksonnet project.`,
 }
 
@@ -214,8 +247,7 @@ var envSetCmd = &cobra.Command{
 	},
 	Long: `Set environment fields such as the name, and cluster URI. Changing
 the name of an environment will also update the directory structure in
-'environments'.
-`,
+'environments'.`,
 	Example: `  # Updates the URI of the environment 'us-west/staging'.
   ksonnet env set us-west/staging --uri=http://example.com
 
