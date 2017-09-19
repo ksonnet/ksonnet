@@ -74,26 +74,26 @@ func (m *manager) createEnvironment(name, uri string, extensionsLibData, k8sLibD
 	}
 
 	envPath := appendToAbsPath(m.environmentsPath, name)
-	err = m.appFS.MkdirAll(string(envPath), os.ModePerm)
+	err = m.appFS.MkdirAll(string(envPath), defaultPermissions)
 	if err != nil {
 		return err
 	}
 
 	// Generate the schema file.
 	schemaPath := appendToAbsPath(envPath, schemaFilename)
-	err = afero.WriteFile(m.appFS, string(schemaPath), specData, os.ModePerm)
+	err = afero.WriteFile(m.appFS, string(schemaPath), specData, defaultPermissions)
 	if err != nil {
 		return err
 	}
 
 	k8sLibPath := appendToAbsPath(envPath, k8sLibFilename)
-	err = afero.WriteFile(m.appFS, string(k8sLibPath), k8sLibData, 0644)
+	err = afero.WriteFile(m.appFS, string(k8sLibPath), k8sLibData, defaultPermissions)
 	if err != nil {
 		return err
 	}
 
 	extensionsLibPath := appendToAbsPath(envPath, extensionsLibFilename)
-	err = afero.WriteFile(m.appFS, string(extensionsLibPath), extensionsLibData, 0644)
+	err = afero.WriteFile(m.appFS, string(extensionsLibPath), extensionsLibData, defaultPermissions)
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func (m *manager) createEnvironment(name, uri string, extensionsLibData, k8sLibD
 	}
 
 	envSpecPath := appendToAbsPath(envPath, specFilename)
-	return afero.WriteFile(m.appFS, string(envSpecPath), envSpecData, os.ModePerm)
+	return afero.WriteFile(m.appFS, string(envSpecPath), envSpecData, defaultPermissions)
 }
 
 func (m *manager) DeleteEnvironment(name string) error {
@@ -240,7 +240,7 @@ func (m *manager) SetEnvironment(name string, desired Environment) error {
 
 		envPath := appendToAbsPath(m.environmentsPath, name)
 		specPath := appendToAbsPath(envPath, specFilename)
-		return afero.WriteFile(m.appFS, string(specPath), newSpec, os.ModePerm)
+		return afero.WriteFile(m.appFS, string(specPath), newSpec, defaultPermissions)
 	}
 
 	return nil

@@ -157,7 +157,7 @@ func (m *manager) createAppDirTree() error {
 	}
 
 	for _, p := range paths {
-		if err := m.appFS.MkdirAll(string(p), os.ModePerm); err != nil {
+		if err := m.appFS.MkdirAll(string(p), defaultPermissions); err != nil {
 			return err
 		}
 	}
