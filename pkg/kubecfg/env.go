@@ -21,6 +21,8 @@ import (
 	"sort"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/ksonnet/kubecfg/metadata"
 )
 
@@ -37,6 +39,7 @@ func NewEnvAddCmd(name, uri, specFlag string, rootPath metadata.AbsPath) (*EnvAd
 	if err != nil {
 		return nil, err
 	}
+	log.Debugf("Generating ksonnetLib data with spec: %s", specFlag)
 
 	return &EnvAddCmd{name: name, uri: uri, spec: spec, rootPath: rootPath}, nil
 }
