@@ -32,7 +32,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete [env-name] [-f <file-or-dir>]",
 	Short: "Delete Kubernetes resources described in local config",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()

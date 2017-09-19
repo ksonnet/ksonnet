@@ -30,7 +30,7 @@ func init() {
 }
 
 var diffCmd = &cobra.Command{
-	Use:   "diff [<env>|-f <file-or-dir>]",
+	Use:   "diff [env-name] [-f <file-or-dir>]",
 	Short: "Display differences between server and local config",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
@@ -67,11 +67,15 @@ files.`,
 	Example: `  # Show diff between resources described in a local ksonnet application and
   # the cluster referenced by the 'dev' environment. Can be used in any
   # subdirectory of the application.
-  ksonnet diff -e=dev
+  ksonnet diff dev
 
   # Show diff between resources described in a YAML file and the cluster
   # referenced in '$KUBECONFIG'.
   ksonnet diff -f ./pod.yaml
+
+  # Show diff between resources described in a JSON file and the cluster
+  # referenced by the environment 'dev'.
+  ksonnet diff dev -f ./pod.json
 
   # Show diff between resources described in a YAML file and the cluster
   # referred to by './kubeconfig'.

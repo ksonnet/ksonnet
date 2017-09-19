@@ -299,14 +299,11 @@ func expandEnvCmdObjs(cmd *cobra.Command, args []string) ([]*unstructured.Unstru
 	envPresent := env != nil
 	filesPresent := len(fileNames) > 0
 
-	// This is equivalent to: `if !xor(envPresent, filesPresent) {`
-	if envPresent && filesPresent {
-		return nil, fmt.Errorf("Either an environment name or a file list is required, but not both")
-	} else if !envPresent && !filesPresent {
-		return nil, fmt.Errorf("Must specify either an environment or a file list")
+	if !envPresent && !filesPresent {
+		return nil, fmt.Errorf("Must specify either an environment or a file list, or both")
 	}
 
-	if envPresent {
+	if envPresent && !filesPresent {
 		manager, err := metadata.Find(metadata.AbsPath(cwd))
 		if err != nil {
 			return nil, err

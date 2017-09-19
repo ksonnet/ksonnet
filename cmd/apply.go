@@ -57,7 +57,7 @@ func init() {
 }
 
 var applyCmd = &cobra.Command{
-	Use:   "apply [<env>|-f <file-or-dir>]",
+	Use:   "apply [env-name] [-f <file-or-dir>]",
 	Short: `Apply local configuration to remote cluster`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
@@ -121,6 +121,10 @@ files.`,
   # Create or update resources described in a YAML file. Automatically picks up
   # the cluster's location from '$KUBECONFIG'.
   ksonnet appy -f ./pod.yaml
+
+  # Create or update resources described in the JSON file. Changes are deployed
+  # to the cluster pointed at the 'dev' environment.
+  ksonnet apply dev -f ./pod.json
 
   # Update resources described in a YAML file, and running in cluster referred
   # to by './kubeconfig'.

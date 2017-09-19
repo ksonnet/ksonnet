@@ -27,7 +27,7 @@ func init() {
 }
 
 var validateCmd = &cobra.Command{
-	Use:   "validate [<env>|-f <file-or-dir>]",
+	Use:   "validate [env-name] [-f <file-or-dir>]",
 	Short: "Compare generated manifest against server OpenAPI spec",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var err error
@@ -54,10 +54,14 @@ files.`,
 	Example: `  # Validate all resources described in a ksonnet application, expanding
   # ksonnet code with 'dev' environment where necessary (i.e., not YAML, JSON,
   # or non-ksonnet Jsonnet code).
-  ksonnet validate -e=dev
+  ksonnet validate dev
 
   # Validate resources described in a YAML file.
   ksonnet validate -f ./pod.yaml
+
+  # Validate resources described in the JSON file against existing resources
+  # in the cluster the 'dev' environment is pointing at.
+  ksonnet validate dev -f ./pod.yaml
 
   # Validate resources described in a Jsonnet file. Does not expand using
   # environment bindings.
