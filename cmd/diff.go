@@ -16,8 +16,11 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 
+	"github.com/ksonnet/kubecfg/metadata"
 	"github.com/ksonnet/kubecfg/pkg/kubecfg"
 )
 
@@ -43,7 +46,18 @@ var diffCmd = &cobra.Command{
 			return err
 		}
 
-		c.ClientPool, c.Discovery, err = restClientPool(cmd)
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		wd := metadata.AbsPath(cwd)
+
+		envSpec, err := parseEnvCmd(cmd, args)
+		if err != nil {
+			return err
+		}
+
+		c.ClientPool, c.Discovery, err = restClientPool(cmd, envSpec.env)
 		if err != nil {
 			return err
 		}
@@ -53,7 +67,7 @@ var diffCmd = &cobra.Command{
 			return err
 		}
 
-		objs, err := expandEnvCmdObjs(cmd, args)
+		objs, err := expandEnvCmdObjs(cmd, envSpec, wd)
 		if err != nil {
 			return err
 		}

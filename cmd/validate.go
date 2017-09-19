@@ -16,8 +16,11 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 
+	"github.com/ksonnet/kubecfg/metadata"
 	"github.com/ksonnet/kubecfg/pkg/kubecfg"
 )
 
@@ -34,12 +37,23 @@ var validateCmd = &cobra.Command{
 
 		c := kubecfg.ValidateCmd{}
 
-		_, c.Discovery, err = restClientPool(cmd)
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		wd := metadata.AbsPath(cwd)
+
+		envSpec, err := parseEnvCmd(cmd, args)
 		if err != nil {
 			return err
 		}
 
-		objs, err := expandEnvCmdObjs(cmd, args)
+		_, c.Discovery, err = restClientPool(cmd, nil)
+		if err != nil {
+			return err
+		}
+
+		objs, err := expandEnvCmdObjs(cmd, envSpec, wd)
 		if err != nil {
 			return err
 		}

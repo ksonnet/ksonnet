@@ -42,8 +42,9 @@ type Manager interface {
 	LibPaths(envName string) (libPath, envLibPath AbsPath)
 	CreateEnvironment(name, uri string, spec ClusterSpec) error
 	DeleteEnvironment(name string) error
-	GetEnvironments() ([]Environment, error)
-	SetEnvironment(name string, desired Environment) error
+	GetEnvironments() ([]*Environment, error)
+	GetEnvironment(name string) (*Environment, error)
+	SetEnvironment(name string, desired *Environment) error
 	//
 	// TODO: Fill in methods as we need them.
 	//

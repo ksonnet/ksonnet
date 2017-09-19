@@ -173,8 +173,8 @@ func (m *manager) DeleteEnvironment(name string) error {
 	return nil
 }
 
-func (m *manager) GetEnvironments() ([]Environment, error) {
-	envs := []Environment{}
+func (m *manager) GetEnvironments() ([]*Environment, error) {
+	envs := []*Environment{}
 
 	log.Info("Retrieving all environments")
 	err := afero.Walk(m.appFS, string(m.environmentsPath), func(path string, f os.FileInfo, err error) error {
@@ -207,7 +207,7 @@ func (m *manager) GetEnvironments() ([]Environment, error) {
 				}
 
 				log.Debugf("Found environment '%s', with uri '%s", envName, envSpec.URI)
-				envs = append(envs, Environment{Name: envName, Path: path, URI: envSpec.URI})
+				envs = append(envs, &Environment{Name: envName, Path: path, URI: envSpec.URI})
 			}
 		}
 
@@ -221,7 +221,22 @@ func (m *manager) GetEnvironments() ([]Environment, error) {
 	return envs, nil
 }
 
-func (m *manager) SetEnvironment(name string, desired Environment) error {
+func (m *manager) GetEnvironment(name string) (*Environment, error) {
+	envs, err := m.GetEnvironments()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, env := range envs {
+		if env.Name == name {
+			return env, nil
+		}
+	}
+
+	return nil, fmt.Errorf("Environment '%s' does not exist", name)
+}
+
+func (m *manager) SetEnvironment(name string, desired *Environment) error {
 	// Check whether this environment exists
 	envExists, err := m.environmentExists(name)
 	if err != nil {

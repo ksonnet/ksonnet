@@ -85,27 +85,33 @@ var applyCmd = &cobra.Command{
 			return err
 		}
 
-		c.ClientPool, c.Discovery, err = restClientPool(cmd)
-		if err != nil {
-			return err
-		}
-
-		c.DefaultNamespace, _, err = clientConfig.Namespace()
-		if err != nil {
-			return err
-		}
-
 		cwd, err := os.Getwd()
 		if err != nil {
 			return err
 		}
+		wd := metadata.AbsPath(cwd)
 
-		objs, err := expandEnvCmdObjs(cmd, args)
+		envSpec, err := parseEnvCmd(cmd, args)
 		if err != nil {
 			return err
 		}
 
-		return c.Run(objs, metadata.AbsPath(cwd))
+		c.ClientPool, c.Discovery, err = restClientPool(cmd, envSpec.env)
+		if err != nil {
+			return err
+		}
+
+		c.DefaultNamespace, err = defaultNamespace(clientConfig)
+		if err != nil {
+			return err
+		}
+
+		objs, err := expandEnvCmdObjs(cmd, envSpec, wd)
+		if err != nil {
+			return err
+		}
+
+		return c.Run(objs, wd)
 	},
 	Long: `Update (or optionally create) Kubernetes resources on the cluster using the
 local configuration. Use the '--create' flag to control whether we create them

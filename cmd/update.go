@@ -66,7 +66,13 @@ local configuration. Accepts JSON, YAML, or Jsonnet.`,
 			return err
 		}
 
-		c.ClientPool, c.Discovery, err = restClientPool(cmd)
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		wd := metadata.AbsPath(cwd)
+
+		c.ClientPool, c.Discovery, err = restClientPool(cmd, nil)
 		if err != nil {
 			return err
 		}
@@ -76,17 +82,17 @@ local configuration. Accepts JSON, YAML, or Jsonnet.`,
 			return err
 		}
 
-		cwd, err := os.Getwd()
+		envSpec, err := parseEnvCmd(cmd, args)
 		if err != nil {
 			return err
 		}
 
-		objs, err := expandEnvCmdObjs(cmd, args)
+		objs, err := expandEnvCmdObjs(cmd, envSpec, wd)
 		if err != nil {
 			return err
 		}
 
-		return c.Run(objs, metadata.AbsPath(cwd))
+		return c.Run(objs, wd)
 	},
 	Long: `NOTE: Command 'update' is deprecated, use 'apply' instead.
 
