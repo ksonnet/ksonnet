@@ -22,7 +22,8 @@ import (
 )
 
 var appFS afero.Fs
-var defaultPermissions = os.FileMode(0644)
+var defaultFolderPermissions = os.FileMode(0755)
+var defaultFilePermissions = os.FileMode(0644)
 
 // AbsPath is an advisory type that represents an absolute path. It is advisory
 // in that it is not forced to be absolute, but rather, meant to indicate

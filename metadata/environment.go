@@ -83,7 +83,7 @@ func (m *manager) createEnvironment(name, uri string, extensionsLibData, k8sLibD
 	log.Infof("Creating environment '%s' with uri '%s'", name, uri)
 
 	envPath := appendToAbsPath(m.environmentsPath, name)
-	err = m.appFS.MkdirAll(string(envPath), defaultPermissions)
+	err = m.appFS.MkdirAll(string(envPath), defaultFolderPermissions)
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func (m *manager) createEnvironment(name, uri string, extensionsLibData, k8sLibD
 	// Generate the schema file.
 	log.Debugf("Generating '%s', length: %d", schemaFilename, len(specData))
 	schemaPath := appendToAbsPath(envPath, schemaFilename)
-	err = afero.WriteFile(m.appFS, string(schemaPath), specData, defaultPermissions)
+	err = afero.WriteFile(m.appFS, string(schemaPath), specData, defaultFilePermissions)
 	if err != nil {
 		log.Debugf("Failed to write '%s'", schemaFilename)
 		return err
@@ -101,7 +101,7 @@ func (m *manager) createEnvironment(name, uri string, extensionsLibData, k8sLibD
 
 	log.Debugf("Generating '%s', length: %d", k8sLibFilename, len(k8sLibData))
 	k8sLibPath := appendToAbsPath(envPath, k8sLibFilename)
-	err = afero.WriteFile(m.appFS, string(k8sLibPath), k8sLibData, defaultPermissions)
+	err = afero.WriteFile(m.appFS, string(k8sLibPath), k8sLibData, defaultFilePermissions)
 	if err != nil {
 		log.Debugf("Failed to write '%s'", k8sLibFilename)
 		return err
@@ -109,7 +109,7 @@ func (m *manager) createEnvironment(name, uri string, extensionsLibData, k8sLibD
 
 	log.Debugf("Generating '%s', length: %d", extensionsLibFilename, len(extensionsLibData))
 	extensionsLibPath := appendToAbsPath(envPath, extensionsLibFilename)
-	err = afero.WriteFile(m.appFS, string(extensionsLibPath), extensionsLibData, defaultPermissions)
+	err = afero.WriteFile(m.appFS, string(extensionsLibPath), extensionsLibData, defaultFilePermissions)
 	if err != nil {
 		log.Debugf("Failed to write '%s'", extensionsLibFilename)
 		return err
@@ -123,7 +123,7 @@ func (m *manager) createEnvironment(name, uri string, extensionsLibData, k8sLibD
 
 	log.Debugf("Generating '%s', length: %d", specFilename, len(envSpecData))
 	envSpecPath := appendToAbsPath(envPath, specFilename)
-	return afero.WriteFile(m.appFS, string(envSpecPath), envSpecData, defaultPermissions)
+	return afero.WriteFile(m.appFS, string(envSpecPath), envSpecData, defaultFilePermissions)
 }
 
 func (m *manager) DeleteEnvironment(name string) error {
@@ -278,7 +278,7 @@ func (m *manager) SetEnvironment(name string, desired Environment) error {
 		envPath := appendToAbsPath(m.environmentsPath, name)
 		specPath := appendToAbsPath(envPath, specFilename)
 
-		err = afero.WriteFile(m.appFS, string(specPath), newSpec, defaultPermissions)
+		err = afero.WriteFile(m.appFS, string(specPath), newSpec, defaultFilePermissions)
 		if err != nil {
 			log.Debugf("Failed to write %s at path '%s'", specFilename, specPath)
 			return err
