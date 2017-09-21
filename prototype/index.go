@@ -13,6 +13,14 @@ type index struct {
 	prototypes map[string]*SpecificationSchema
 }
 
+func (idx *index) List() (SpecificationSchemas, error) {
+	prototypes := []*SpecificationSchema{}
+	for _, prototype := range idx.prototypes {
+		prototypes = append(prototypes, prototype)
+	}
+	return prototypes, nil
+}
+
 func (idx *index) SearchNames(query string, opts SearchOptions) (SpecificationSchemas, error) {
 	// TODO(hausdorff): This is the world's worst search algorithm. Improve it at
 	// some point.

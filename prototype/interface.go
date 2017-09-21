@@ -31,6 +31,7 @@ const (
 
 // Index represents a queryable index of prototype specifications.
 type Index interface {
+	List() (SpecificationSchemas, error)
 	SearchNames(query string, opts SearchOptions) (SpecificationSchemas, error)
 }
 
