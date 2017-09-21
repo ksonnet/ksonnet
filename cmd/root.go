@@ -357,7 +357,7 @@ func expandEnvCmdObjs(cmd *cobra.Command, envSpec *envSpec, cwd metadata.AbsPath
 	}
 
 	fileNames := envSpec.files
-	if envPresent && !filesPresent {
+	if envPresent {
 		manager, err := metadata.Find(cwd)
 		if err != nil {
 			return nil, err
@@ -366,10 +366,13 @@ func expandEnvCmdObjs(cmd *cobra.Command, envSpec *envSpec, cwd metadata.AbsPath
 		libPath, envLibPath := manager.LibPaths(*envSpec.env)
 		expander.FlagJpath = append([]string{string(libPath), string(envLibPath)}, expander.FlagJpath...)
 
-		fileNames, err = manager.ComponentPaths()
-		if err != nil {
-			return nil, err
+		if !filesPresent {
+			fileNames, err = manager.ComponentPaths()
+			if err != nil {
+				return nil, err
+			}
 		}
+
 	}
 
 	//
