@@ -101,12 +101,17 @@ var envAddCmd = &cobra.Command{
 		}
 		appRoot := metadata.AbsPath(appDir)
 
+		manager, err := metadata.Find(appRoot)
+		if err != nil {
+			return err
+		}
+
 		specFlag, err := flags.GetString(flagAPISpec)
 		if err != nil {
 			return err
 		}
 
-		c, err := kubecfg.NewEnvAddCmd(envName, envURI, specFlag, appRoot)
+		c, err := kubecfg.NewEnvAddCmd(envName, envURI, specFlag, manager)
 		if err != nil {
 			return err
 		}
@@ -168,7 +173,12 @@ var envRmCmd = &cobra.Command{
 		}
 		appRoot := metadata.AbsPath(appDir)
 
-		c, err := kubecfg.NewEnvRmCmd(envName, appRoot)
+		manager, err := metadata.Find(appRoot)
+		if err != nil {
+			return err
+		}
+
+		c, err := kubecfg.NewEnvRmCmd(envName, manager)
 		if err != nil {
 			return err
 		}
@@ -201,7 +211,12 @@ var envListCmd = &cobra.Command{
 		}
 		appRoot := metadata.AbsPath(appDir)
 
-		c, err := kubecfg.NewEnvListCmd(appRoot)
+		manager, err := metadata.Find(appRoot)
+		if err != nil {
+			return err
+		}
+
+		c, err := kubecfg.NewEnvListCmd(manager)
 		if err != nil {
 			return err
 		}
@@ -228,6 +243,11 @@ var envSetCmd = &cobra.Command{
 		}
 		appRoot := metadata.AbsPath(appDir)
 
+		manager, err := metadata.Find(appRoot)
+		if err != nil {
+			return err
+		}
+
 		desiredEnvName, err := flags.GetString(flagEnvName)
 		if err != nil {
 			return err
@@ -238,7 +258,7 @@ var envSetCmd = &cobra.Command{
 			return err
 		}
 
-		c, err := kubecfg.NewEnvSetCmd(envName, desiredEnvName, desiredEnvURI, appRoot)
+		c, err := kubecfg.NewEnvSetCmd(envName, desiredEnvName, desiredEnvURI, manager)
 		if err != nil {
 			return err
 		}

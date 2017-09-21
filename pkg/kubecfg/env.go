@@ -30,27 +30,22 @@ type EnvAddCmd struct {
 	name string
 	uri  string
 
-	rootPath metadata.AbsPath
-	spec     metadata.ClusterSpec
+	spec    metadata.ClusterSpec
+	manager metadata.Manager
 }
 
-func NewEnvAddCmd(name, uri, specFlag string, rootPath metadata.AbsPath) (*EnvAddCmd, error) {
+func NewEnvAddCmd(name, uri, specFlag string, manager metadata.Manager) (*EnvAddCmd, error) {
 	spec, err := metadata.ParseClusterSpec(specFlag)
 	if err != nil {
 		return nil, err
 	}
 	log.Debugf("Generating ksonnetLib data with spec: %s", specFlag)
 
-	return &EnvAddCmd{name: name, uri: uri, spec: spec, rootPath: rootPath}, nil
+	return &EnvAddCmd{name: name, uri: uri, spec: spec, manager: manager}, nil
 }
 
 func (c *EnvAddCmd) Run() error {
-	manager, err := metadata.Find(c.rootPath)
-	if err != nil {
-		return err
-	}
-
-	return manager.CreateEnvironment(c.name, c.uri, c.spec)
+	return c.manager.CreateEnvironment(c.name, c.uri, c.spec)
 }
 
 // ==================================================================
@@ -58,39 +53,29 @@ func (c *EnvAddCmd) Run() error {
 type EnvRmCmd struct {
 	name string
 
-	rootPath metadata.AbsPath
+	manager metadata.Manager
 }
 
-func NewEnvRmCmd(name string, rootPath metadata.AbsPath) (*EnvRmCmd, error) {
-	return &EnvRmCmd{name: name, rootPath: rootPath}, nil
+func NewEnvRmCmd(name string, manager metadata.Manager) (*EnvRmCmd, error) {
+	return &EnvRmCmd{name: name, manager: manager}, nil
 }
 
 func (c *EnvRmCmd) Run() error {
-	manager, err := metadata.Find(c.rootPath)
-	if err != nil {
-		return err
-	}
-
-	return manager.DeleteEnvironment(c.name)
+	return c.manager.DeleteEnvironment(c.name)
 }
 
 // ==================================================================
 
 type EnvListCmd struct {
-	rootPath metadata.AbsPath
+	manager metadata.Manager
 }
 
-func NewEnvListCmd(rootPath metadata.AbsPath) (*EnvListCmd, error) {
-	return &EnvListCmd{rootPath: rootPath}, nil
+func NewEnvListCmd(manager metadata.Manager) (*EnvListCmd, error) {
+	return &EnvListCmd{manager: manager}, nil
 }
 
 func (c *EnvListCmd) Run(out io.Writer) error {
-	manager, err := metadata.Find(c.rootPath)
-	if err != nil {
-		return err
-	}
-
-	envs, err := manager.GetEnvironments()
+	envs, err := c.manager.GetEnvironments()
 	if err != nil {
 		return err
 	}
@@ -133,19 +118,14 @@ type EnvSetCmd struct {
 	desiredName string
 	desiredURI  string
 
-	rootPath metadata.AbsPath
+	manager metadata.Manager
 }
 
-func NewEnvSetCmd(name, desiredName, desiredURI string, rootPath metadata.AbsPath) (*EnvSetCmd, error) {
-	return &EnvSetCmd{name: name, desiredName: desiredName, desiredURI: desiredURI, rootPath: rootPath}, nil
+func NewEnvSetCmd(name, desiredName, desiredURI string, manager metadata.Manager) (*EnvSetCmd, error) {
+	return &EnvSetCmd{name: name, desiredName: desiredName, desiredURI: desiredURI, manager: manager}, nil
 }
 
 func (c *EnvSetCmd) Run() error {
-	manager, err := metadata.Find(c.rootPath)
-	if err != nil {
-		return err
-	}
-
 	desired := metadata.Environment{Name: c.desiredName, URI: c.desiredURI}
-	return manager.SetEnvironment(c.name, desired)
+	return c.manager.SetEnvironment(c.name, &desired)
 }

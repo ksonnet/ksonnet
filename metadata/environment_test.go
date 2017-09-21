@@ -137,13 +137,13 @@ func TestSetEnvironment(t *testing.T) {
 	set := Environment{Name: setName, URI: setURI}
 
 	// Test updating an environment that doesn't exist
-	err := m.SetEnvironment("notexists", set)
+	err := m.SetEnvironment("notexists", &set)
 	if err == nil {
 		t.Fatal("Expected error when setting an environment that does not exist")
 	}
 
 	// Test updating an environment to an environment that already exists
-	err = m.SetEnvironment(mockEnvName, Environment{Name: mockEnvName2})
+	err = m.SetEnvironment(mockEnvName, &Environment{Name: mockEnvName2})
 	if err == nil {
 		t.Fatalf("Expected error when setting \"%s\" to \"%s\", because env already exists", mockEnvName, mockEnvName2)
 	}
@@ -151,7 +151,7 @@ func TestSetEnvironment(t *testing.T) {
 	// Test changing the name and URI of a an existing environment.
 	// Ensure new env directory is created, and old directory no longer exists.
 	// Also ensure URI is set in spec.json
-	err = m.SetEnvironment(mockEnvName, set)
+	err = m.SetEnvironment(mockEnvName, &set)
 	if err != nil {
 		t.Fatalf("Could not set \"%s\", got:\n  %s", mockEnvName, err)
 	}

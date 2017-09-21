@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -226,7 +227,14 @@ func dumpJSON(v interface{}) string {
 	return string(buf.Bytes())
 }
 
-func restClientPool(cmd *cobra.Command) (dynamic.ClientPool, discovery.DiscoveryInterface, error) {
+func restClientPool(cmd *cobra.Command, envName *string) (dynamic.ClientPool, discovery.DiscoveryInterface, error) {
+	if envName != nil {
+		err := overrideCluster(*envName)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
 	conf, err := clientConfig.ClientConfig()
 	if err != nil {
 		return nil, nil, err
@@ -245,6 +253,11 @@ func restClientPool(cmd *cobra.Command) (dynamic.ClientPool, discovery.Discovery
 	return pool, discoCache, nil
 }
 
+type envSpec struct {
+	env   *string
+	files []string
+}
+
 // addEnvCmdFlags adds the flags that are common to the family of commands
 // whose form is `[<env>|-f <file-name>]`, e.g., `apply` and `delete`.
 func addEnvCmdFlags(cmd *cobra.Command) {
@@ -253,12 +266,12 @@ func addEnvCmdFlags(cmd *cobra.Command) {
 
 // parseEnvCmd parses the family of commands that come in the form `[<env>|-f
 // <file-name>]`, e.g., `apply` and `delete`.
-func parseEnvCmd(cmd *cobra.Command, args []string) (*string, []string, error) {
+func parseEnvCmd(cmd *cobra.Command, args []string) (*envSpec, error) {
 	flags := cmd.Flags()
 
 	files, err := flags.GetStringArray(flagFile)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	var env *string
@@ -266,7 +279,57 @@ func parseEnvCmd(cmd *cobra.Command, args []string) (*string, []string, error) {
 		env = &args[0]
 	}
 
-	return env, files, nil
+	return &envSpec{env: env, files: files}, nil
+}
+
+// overrideCluster ensures that the cluster URI specified in the environment is
+// associated in the user's kubeconfig file during deployment to a ksonnet
+// environment. We will error out if it is not.
+//
+// If the environment URI the user is attempting to deploy to is not the current
+// kubeconfig context, we must manually override the client-go --cluster flag
+// to ensure we are deploying to the correct cluster.
+func overrideCluster(envName string) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	wd := metadata.AbsPath(cwd)
+
+	metadataManager, err := metadata.Find(wd)
+	if err != nil {
+		return err
+	}
+
+	rawConfig, err := clientConfig.RawConfig()
+	if err != nil {
+		return err
+	}
+
+	var clusterURIs = make(map[string]string)
+	for name, cluster := range rawConfig.Clusters {
+		clusterURIs[cluster.Server] = name
+	}
+
+	//
+	// check to ensure that the environment we are trying to deploy to is
+	// created, and that the environment URI is located in kubeconfig.
+	//
+
+	log.Debugf("Validating deployment at '%s' with cluster URIs '%v'", envName, reflect.ValueOf(clusterURIs).MapKeys())
+	env, err := metadataManager.GetEnvironment(envName)
+	if err != nil {
+		return err
+	}
+
+	if _, ok := clusterURIs[env.URI]; ok {
+		clusterName := clusterURIs[env.URI]
+		log.Debugf("Overwriting --cluster flag with '%s'", clusterName)
+		overrides.Context.Cluster = clusterName
+		return nil
+	}
+
+	return fmt.Errorf("Attempting to deploy to environment '%s' at %s, but there are no clusters with that URI", envName, env.URI)
 }
 
 // expandEnvCmdObjs finds and expands templates for the family of commands of
@@ -274,17 +337,7 @@ func parseEnvCmd(cmd *cobra.Command, args []string) (*string, []string, error) {
 // the user passes a list of files, we will expand all templates in those files,
 // while if a user passes an environment name, we will expand all component
 // files using that environment.
-func expandEnvCmdObjs(cmd *cobra.Command, args []string) ([]*unstructured.Unstructured, error) {
-	env, fileNames, err := parseEnvCmd(cmd, args)
-	if err != nil {
-		return nil, err
-	}
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
+func expandEnvCmdObjs(cmd *cobra.Command, envSpec *envSpec, cwd metadata.AbsPath) ([]*unstructured.Unstructured, error) {
 	expander, err := newExpander(cmd)
 	if err != nil {
 		return nil, err
@@ -296,23 +349,21 @@ func expandEnvCmdObjs(cmd *cobra.Command, args []string) ([]*unstructured.Unstru
 	// sure that the user either passed an environment name or a `-f` flag.
 	//
 
-	envPresent := env != nil
-	filesPresent := len(fileNames) > 0
+	envPresent := envSpec.env != nil
+	filesPresent := len(envSpec.files) > 0
 
-	// This is equivalent to: `if !xor(envPresent, filesPresent) {`
-	if envPresent && filesPresent {
-		return nil, fmt.Errorf("Either an environment name or a file list is required, but not both")
-	} else if !envPresent && !filesPresent {
-		return nil, fmt.Errorf("Must specify either an environment or a file list")
+	if !envPresent && !filesPresent {
+		return nil, fmt.Errorf("Must specify either an environment or a file list, or both")
 	}
 
-	if envPresent {
-		manager, err := metadata.Find(metadata.AbsPath(cwd))
+	fileNames := envSpec.files
+	if envPresent && !filesPresent {
+		manager, err := metadata.Find(cwd)
 		if err != nil {
 			return nil, err
 		}
 
-		libPath, envLibPath := manager.LibPaths(*env)
+		libPath, envLibPath := manager.LibPaths(*envSpec.env)
 		expander.FlagJpath = append([]string{string(libPath), string(envLibPath)}, expander.FlagJpath...)
 
 		fileNames, err = manager.ComponentPaths()

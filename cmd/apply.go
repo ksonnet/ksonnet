@@ -57,7 +57,7 @@ func init() {
 }
 
 var applyCmd = &cobra.Command{
-	Use:   "apply [<env>|-f <file-or-dir>]",
+	Use:   "apply [env-name] [-f <file-or-dir>]",
 	Short: `Apply local configuration to remote cluster`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
@@ -85,27 +85,33 @@ var applyCmd = &cobra.Command{
 			return err
 		}
 
-		c.ClientPool, c.Discovery, err = restClientPool(cmd)
-		if err != nil {
-			return err
-		}
-
-		c.DefaultNamespace, _, err = clientConfig.Namespace()
-		if err != nil {
-			return err
-		}
-
 		cwd, err := os.Getwd()
 		if err != nil {
 			return err
 		}
+		wd := metadata.AbsPath(cwd)
 
-		objs, err := expandEnvCmdObjs(cmd, args)
+		envSpec, err := parseEnvCmd(cmd, args)
 		if err != nil {
 			return err
 		}
 
-		return c.Run(objs, metadata.AbsPath(cwd))
+		c.ClientPool, c.Discovery, err = restClientPool(cmd, envSpec.env)
+		if err != nil {
+			return err
+		}
+
+		c.DefaultNamespace, err = defaultNamespace(clientConfig)
+		if err != nil {
+			return err
+		}
+
+		objs, err := expandEnvCmdObjs(cmd, envSpec, wd)
+		if err != nil {
+			return err
+		}
+
+		return c.Run(objs, wd)
 	},
 	Long: `Update (or optionally create) Kubernetes resources on the cluster using the
 local configuration. Use the '--create' flag to control whether we create them
@@ -121,6 +127,10 @@ files.`,
   # Create or update resources described in a YAML file. Automatically picks up
   # the cluster's location from '$KUBECONFIG'.
   ksonnet appy -f ./pod.yaml
+
+  # Create or update resources described in the JSON file. Changes are deployed
+  # to the cluster pointed at the 'dev' environment.
+  ksonnet apply dev -f ./pod.json
 
   # Update resources described in a YAML file, and running in cluster referred
   # to by './kubeconfig'.
