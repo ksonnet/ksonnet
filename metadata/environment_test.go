@@ -34,6 +34,8 @@ const (
 	mockEnvName3 = "us-east/test"
 )
 
+var mockAPIServerURI = "http://google.com"
+
 func mockEnvironments(t *testing.T, appName string) *manager {
 	spec, err := parseClusterSpec(fmt.Sprintf("file:%s", blankSwagger), testFS)
 	if err != nil {
@@ -41,7 +43,7 @@ func mockEnvironments(t *testing.T, appName string) *manager {
 	}
 
 	appPath := AbsPath(appName)
-	m, err := initManager(appPath, spec, testFS)
+	m, err := initManager(appPath, spec, &mockAPIServerURI, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}

@@ -20,6 +20,8 @@ import (
 	"os"
 	"path"
 
+	"k8s.io/client-go/tools/clientcmd/api"
+
 	"github.com/ksonnet/kubecfg/metadata"
 	"github.com/ksonnet/kubecfg/pkg/kubecfg"
 	"github.com/spf13/cobra"
@@ -53,7 +55,32 @@ var initCmd = &cobra.Command{
 			return err
 		}
 
-		c, err := kubecfg.NewInitCmd(appRoot, specFlag)
+		//
+		// Find the URI of the current cluster, if it exists.
+		//
+
+		rawConfig, err := clientConfig.RawConfig()
+		if err != nil {
+			return err
+		}
+
+		var currCtx *api.Context
+		for name, ctx := range rawConfig.Contexts {
+			if name == rawConfig.CurrentContext {
+				currCtx = ctx
+			}
+		}
+
+		var currClusterURI *string
+		if rawConfig.CurrentContext != "" && currCtx != nil {
+			for name, cluster := range rawConfig.Clusters {
+				if currCtx.Cluster == name {
+					currClusterURI = &cluster.Server
+				}
+			}
+		}
+
+		c, err := kubecfg.NewInitCmd(appRoot, specFlag, currClusterURI)
 		if err != nil {
 			return err
 		}
@@ -73,12 +100,12 @@ consists of two steps:
    app-name/
      .gitignore     Default .gitignore; can customize VCS
      .ksonnet/      Metadata for ksonnet
-     envs/          Env specs (defaults: dev, test, prod)
-       params.yaml  Specifies the schema of the environments
-       dev.yaml
-       test.yaml
-       prod.yaml
-       us-east.yaml [Example of user-generated env]
+     envs/
+       default/     Default generated environment]
+         k.libsonnet
+         k8s.libsonnet
+         swagger.json
+         spec.json
      components/    Top-level Kubernetes objects defining application
      lib/           user-written .libsonnet files
      vendor/        mixin libraries, prototypes
