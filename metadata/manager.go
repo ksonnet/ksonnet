@@ -20,7 +20,10 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
+	"github.com/ksonnet/kubecfg/prototype"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
@@ -136,6 +139,34 @@ func (m *manager) ComponentPaths() (AbsPaths, error) {
 	}
 
 	return paths, nil
+}
+
+func (m *manager) CreateComponent(name string, text string, templateType prototype.TemplateType) error {
+	if !isValidName(name) || strings.Contains(name, "/") {
+		return fmt.Errorf("Component name '%s' is not valid; must not contain punctuation, spaces, or begin or end with a slash", name)
+	}
+
+	componentPath := string(appendToAbsPath(m.componentsPath, name))
+	switch templateType {
+	case prototype.YAML:
+		componentPath = componentPath + ".yaml"
+	case prototype.JSON:
+		componentPath = componentPath + ".json"
+	case prototype.Jsonnet:
+		componentPath = componentPath + ".jsonnet"
+	default:
+		return fmt.Errorf("Unrecognized prototype template type '%s'", templateType)
+	}
+
+	if exists, err := afero.Exists(m.appFS, componentPath); exists {
+		return fmt.Errorf("Component with name '%s' already exists", name)
+	} else if err != nil {
+		return fmt.Errorf("Could not check whether component '%s' exists:\n\n%v", name, err)
+	}
+
+	log.Infof("Writing component at '%s/%s'", componentsDir, name)
+
+	return afero.WriteFile(m.appFS, componentPath, []byte(text), defaultFilePermissions)
 }
 
 func (m *manager) LibPaths(envName string) (libPath, envLibPath AbsPath) {

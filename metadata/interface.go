@@ -20,6 +20,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ksonnet/kubecfg/prototype"
 	"github.com/spf13/afero"
 )
 
@@ -41,6 +42,7 @@ type AbsPaths []string
 type Manager interface {
 	Root() AbsPath
 	ComponentPaths() (AbsPaths, error)
+	CreateComponent(name string, text string, templateType prototype.TemplateType) error
 	LibPaths(envName string) (libPath, envLibPath AbsPath)
 	CreateEnvironment(name, uri string, spec ClusterSpec) error
 	DeleteEnvironment(name string) error

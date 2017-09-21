@@ -17,8 +17,12 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/spf13/pflag"
+
+	"github.com/ksonnet/kubecfg/metadata"
 	"github.com/ksonnet/kubecfg/prototype"
 	"github.com/ksonnet/kubecfg/prototype/snippet"
 	"github.com/spf13/cobra"
@@ -29,6 +33,7 @@ func init() {
 	prototypeCmd.AddCommand(prototypeDescribeCmd)
 	prototypeCmd.AddCommand(prototypeSearchCmd)
 	prototypeCmd.AddCommand(prototypeUseCmd)
+	prototypeCmd.AddCommand(prototypePreviewCmd)
 }
 
 var prototypeCmd = &cobra.Command{
@@ -160,13 +165,13 @@ var prototypeSearchCmd = &cobra.Command{
   ksonnet prototype search deployment`,
 }
 
-var prototypeUseCmd = &cobra.Command{
-	Use:                "use <prototype-name> [type] [parameter-flags]",
-	Short:              `Instantiate prototype, emitting the generated code to stdout.`,
+var prototypePreviewCmd = &cobra.Command{
+	Use:                "preview <prototype-name> [type] [parameter-flags]",
+	Short:              `Expand prototype, emitting the generated code to stdout`,
 	DisableFlagParsing: true,
 	RunE: func(cmd *cobra.Command, rawArgs []string) error {
 		if len(rawArgs) < 1 {
-			return fmt.Errorf("Command 'prototype use' requires a prototype name\n\n%s", cmd.UsageString())
+			return fmt.Errorf("Command 'prototype preview' requires a prototype name\n\n%s", cmd.UsageString())
 		}
 
 		query := rawArgs[0]
@@ -176,13 +181,7 @@ var prototypeUseCmd = &cobra.Command{
 			return err
 		}
 
-		for _, param := range proto.RequiredParams() {
-			cmd.PersistentFlags().String(param.Name, "", param.Description)
-		}
-
-		for _, param := range proto.OptionalParams() {
-			cmd.PersistentFlags().String(param.Name, *param.Default, param.Description)
-		}
+		bindPrototypeFlags(cmd, proto)
 
 		cmd.DisableFlagParsing = false
 		err = cmd.ParseFlags(rawArgs)
@@ -203,80 +202,212 @@ var prototypeUseCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			return fmt.Errorf("Incorrect number of arguments supplied to 'prototype use'\n\n%s", cmd.UsageString())
+			return fmt.Errorf("Incorrect number of arguments supplied to 'prototype preview'\n\n%s", cmd.UsageString())
 		}
 
-		missingReqd := prototype.ParamSchemas{}
-		values := map[string]string{}
-		for _, param := range proto.RequiredParams() {
-			val, err := flags.GetString(param.Name)
-			if err != nil {
-				return err
-			} else if val == "" {
-				missingReqd = append(missingReqd, param)
-			} else if _, ok := values[param.Name]; ok {
-				return fmt.Errorf("Prototype '%s' has multiple parameters with name '%s'", proto.Name, param.Name)
-			}
-
-			quoted, err := param.Quote(val)
-			if err != nil {
-				return err
-			}
-			values[param.Name] = quoted
-		}
-
-		if len(missingReqd) > 0 {
-			return fmt.Errorf("Failed to instantiate prototype '%s'. The following required parameters are missing:\n%s", proto.Name, missingReqd.PrettyString(""))
-		}
-
-		for _, param := range proto.OptionalParams() {
-			val, err := flags.GetString(param.Name)
-			if err != nil {
-				return err
-			} else if _, ok := values[param.Name]; ok {
-				return fmt.Errorf("Prototype '%s' has multiple parameters with name '%s'", proto.Name, param.Name)
-			}
-
-			quoted, err := param.Quote(val)
-			if err != nil {
-				return err
-			}
-			values[param.Name] = quoted
-		}
-
-		template, err := proto.Template.Body(templateType)
+		text, err := expandPrototype(proto, flags, templateType)
 		if err != nil {
 			return err
 		}
 
-		tm := snippet.Parse(strings.Join(template, "\n"))
-		text, err := tm.Evaluate(values)
-		if err != nil {
-			return err
-		}
 		fmt.Println(text)
 		return nil
 	},
-	Long: `Instantiate prototype uniquely identified by (possibly partial)
+	Long: `Expand prototype uniquely identified by (possibly partial)
 'prototype-name', filling in parameters from flags, and emitting the generated
 code to stdout.
 
-'prototype-name' need only contain enough of the suffix of a name to uniquely
-disambiguate it among known names. For example, 'deployment' may resolve
-ambiguously, in which case 'use' will fail, while 'simple-deployment' might be
-unique enough to resolve to 'io.ksonnet.pkg.prototype.simple-deployment'.`,
+Note also that 'prototype-name' need only contain enough of the suffix of a name
+to uniquely disambiguate it among known names. For example, 'deployment' may
+resolve ambiguously, in which case 'use' will fail, while 'deployment' might be
+unique enough to resolve to 'io.ksonnet.pkg.single-port-deployment'.`,
 
-	Example: `  # Instantiate prototype 'io.ksonnet.pkg.prototype.simple-deployment', using
-  # the 'nginx' image, and port 80 exposed.
-  ksonnet prototype use io.ksonnet.pkg.prototype.simple-deployment \
-    --name=nginx                                                   \
+	Example: `  # Preview prototype 'io.ksonnet.pkg.single-port-deployment', using the
+  # 'nginx' image, and port 80 exposed.
+  ksonnet prototype preview io.ksonnet.pkg.prototype.simple-deployment \
+    --name=nginx                                                       \
     --image=nginx
 
-  # Instantiate prototype using a unique suffix of an identifier. See
+  # Preview prototype using a unique suffix of an identifier. See
   # introduction of help message for more information on how this works.
-  ksonnet prototype use simple-deployment \
-    --name=nginx                          \
+  ksonnet prototype preview simple-deployment \
+    --name=nginx                              \
+    --image=nginx
+
+  # Preview prototype 'io.ksonnet.pkg.single-port-deployment' as YAML,
+  # placing the result in 'components/nginx-depl.yaml. Note that some templates
+  # do not have a YAML or JSON versions.
+  ksonnet prototype preview deployment nginx-depl yaml \
+    --name=nginx                                       \
     --image=nginx`,
+}
+
+var prototypeUseCmd = &cobra.Command{
+	Use:                "use <prototype-name> <componentName> [type] [parameter-flags]",
+	Short:              `Expand prototype, place in components/ directory of ksonnet app`,
+	DisableFlagParsing: true,
+	RunE: func(cmd *cobra.Command, rawArgs []string) error {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		manager, err := metadata.Find(metadata.AbsPath(cwd))
+		if err != nil {
+			return fmt.Errorf("'prototype use' can only be run in a ksonnet application directory:\n\n%v", err)
+		}
+
+		if len(rawArgs) < 1 {
+			return fmt.Errorf("Command 'prototype preview' requires a prototype name\n\n%s", cmd.UsageString())
+		}
+
+		query := rawArgs[0]
+
+		proto, err := fundUniquePrototype(query)
+		if err != nil {
+			return err
+		}
+
+		bindPrototypeFlags(cmd, proto)
+
+		cmd.DisableFlagParsing = false
+		err = cmd.ParseFlags(rawArgs)
+		if err != nil {
+			return err
+		}
+		flags := cmd.Flags()
+
+		// Try to find the template type (if it is supplied) after the args are
+		// parsed. Note that the case that `len(args) == 0` is handled at the
+		// beginning of this command.
+		var componentName string
+		var templateType prototype.TemplateType
+		if args := flags.Args(); len(args) == 1 {
+			return fmt.Errorf("'prototype use' is missing argument 'componentName'\n\n%s", cmd.UsageString())
+		} else if len(args) == 2 {
+			componentName = args[1]
+			templateType = prototype.Jsonnet
+		} else if len(args) == 3 {
+			componentName = args[1]
+			templateType, err = prototype.ParseTemplateType(args[1])
+			if err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf("'prototype use' has too many arguments (takes a prototype name and a component name)\n\n%s", cmd.UsageString())
+		}
+
+		text, err := expandPrototype(proto, flags, templateType)
+		if err != nil {
+			return err
+		}
+
+		return manager.CreateComponent(componentName, text, templateType)
+	},
+	Long: `Expand prototype uniquely identified by (possibly partial) 'prototype-name',
+filling in parameters from flags, and placing it into the file
+'components/componentName', with the appropriate extension set. For example, the
+following command will expand template 'io.ksonnet.pkg.single-port-deployment'
+and place it in the file 'components/nginx-depl.jsonnet' (since by default
+ksonnet will expand templates as Jsonnet).
+
+  ksonnet prototype use io.ksonnet.pkg.single-port-deployment nginx-depl \
+    --name=nginx                                                         \
+    --image=nginx
+
+Note that if we were to specify to expand the template as JSON or YAML, we would
+generate a file with a '.json' or '.yaml' extension, respectively. See examples
+below for an example of how to do this.
+
+Note also that 'prototype-name' need only contain enough of the suffix of a name
+to uniquely disambiguate it among known names. For example, 'deployment' may
+resolve ambiguously, in which case 'use' will fail, while 'deployment' might be
+unique enough to resolve to 'io.ksonnet.pkg.single-port-deployment'.`,
+
+	Example: `  # Instantiate prototype 'io.ksonnet.pkg.single-port-deployment', using the
+  # 'nginx' image. The expanded prototype is placed in
+  # 'components/nginx-depl.jsonnet'.
+  ksonnet prototype use io.ksonnet.pkg.prototype.simple-deployment nginx-depl \
+    --name=nginx                                                              \
+    --image=nginx
+
+  # Instantiate prototype 'io.ksonnet.pkg.single-port-deployment' using the
+  # unique suffix, 'deployment'. The expanded prototype is again placed in
+  # 'components/nginx-depl.jsonnet'. See introduction of help message for more
+  # information on how this works. Note that if you have imported another
+  # prototype with this suffix, this may resolve ambiguously for you.
+  ksonnet prototype use deployment nginx-depl \
+    --name=nginx                              \
+    --image=nginx
+
+  # Instantiate prototype 'io.ksonnet.pkg.single-port-deployment' as YAML,
+  # placing the result in 'components/nginx-depl.yaml. Note that some templates
+  # do not have a YAML or JSON versions.
+  ksonnet prototype use deployment nginx-depl yaml \
+    --name=nginx                              \
+    --image=nginx`,
+}
+
+func bindPrototypeFlags(cmd *cobra.Command, proto *prototype.SpecificationSchema) {
+	for _, param := range proto.RequiredParams() {
+		cmd.PersistentFlags().String(param.Name, "", param.Description)
+	}
+
+	for _, param := range proto.OptionalParams() {
+		cmd.PersistentFlags().String(param.Name, *param.Default, param.Description)
+	}
+}
+
+func expandPrototype(proto *prototype.SpecificationSchema, flags *pflag.FlagSet, templateType prototype.TemplateType) (string, error) {
+	missingReqd := prototype.ParamSchemas{}
+	values := map[string]string{}
+	for _, param := range proto.RequiredParams() {
+		val, err := flags.GetString(param.Name)
+		if err != nil {
+			return "", err
+		} else if val == "" {
+			missingReqd = append(missingReqd, param)
+		} else if _, ok := values[param.Name]; ok {
+			return "", fmt.Errorf("Prototype '%s' has multiple parameters with name '%s'", proto.Name, param.Name)
+		}
+
+		quoted, err := param.Quote(val)
+		if err != nil {
+			return "", err
+		}
+		values[param.Name] = quoted
+	}
+
+	if len(missingReqd) > 0 {
+		return "", fmt.Errorf("Failed to instantiate prototype '%s'. The following required parameters are missing:\n%s", proto.Name, missingReqd.PrettyString(""))
+	}
+
+	for _, param := range proto.OptionalParams() {
+		val, err := flags.GetString(param.Name)
+		if err != nil {
+			return "", err
+		} else if _, ok := values[param.Name]; ok {
+			return "", fmt.Errorf("Prototype '%s' has multiple parameters with name '%s'", proto.Name, param.Name)
+		}
+
+		quoted, err := param.Quote(val)
+		if err != nil {
+			return "", err
+		}
+		values[param.Name] = quoted
+	}
+
+	template, err := proto.Template.Body(templateType)
+	if err != nil {
+		return "", err
+	}
+
+	tm := snippet.Parse(strings.Join(template, "\n"))
+	text, err := tm.Evaluate(values)
+	if err != nil {
+		return "", err
+	}
+
+	return text, nil
 }
 
 func fundUniquePrototype(query string) (*prototype.SpecificationSchema, error) {
