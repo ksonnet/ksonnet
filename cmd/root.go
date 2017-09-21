@@ -62,26 +62,34 @@ const (
 
 var clientConfig clientcmd.ClientConfig
 var overrides clientcmd.ConfigOverrides
+var loadingRules clientcmd.ClientConfigLoadingRules
 
 func init() {
 	RootCmd.PersistentFlags().CountP(flagVerbose, "v", "Increase verbosity. May be given multiple times.")
-	RootCmd.PersistentFlags().StringSliceP(flagJpath, "J", nil, "Additional jsonnet library search path")
-	RootCmd.PersistentFlags().StringSliceP(flagExtVar, "V", nil, "Values of external variables")
-	RootCmd.PersistentFlags().StringSlice(flagExtVarFile, nil, "Read external variable from a file")
-	RootCmd.PersistentFlags().StringSliceP(flagTlaVar, "A", nil, "Values of top level arguments")
-	RootCmd.PersistentFlags().StringSlice(flagTlaVarFile, nil, "Read top level argument from a file")
-	RootCmd.PersistentFlags().String(flagResolver, "noop", "Change implementation of resolveImage native function. One of: noop, registry")
-	RootCmd.PersistentFlags().String(flagResolvFail, "warn", "Action when resolveImage fails. One of ignore,warn,error")
 
 	// The "usual" clientcmd/kubectl flags
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	loadingRules = *clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-	kflags := clientcmd.RecommendedConfigOverrideFlags("")
-	RootCmd.PersistentFlags().StringVar(&loadingRules.ExplicitPath, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
-	clientcmd.BindOverrideFlags(&overrides, RootCmd.PersistentFlags(), kflags)
-	clientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
+	clientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(&loadingRules, &overrides, os.Stdin)
 
 	RootCmd.PersistentFlags().Set("logtostderr", "true")
+}
+
+func bindJsonnetFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringSliceP(flagJpath, "J", nil, "Additional jsonnet library search path")
+	cmd.PersistentFlags().StringSliceP(flagExtVar, "V", nil, "Values of external variables")
+	cmd.PersistentFlags().StringSlice(flagExtVarFile, nil, "Read external variable from a file")
+	cmd.PersistentFlags().StringSliceP(flagTlaVar, "A", nil, "Values of top level arguments")
+	cmd.PersistentFlags().StringSlice(flagTlaVarFile, nil, "Read top level argument from a file")
+	cmd.PersistentFlags().String(flagResolver, "noop", "Change implementation of resolveImage native function. One of: noop, registry")
+	cmd.PersistentFlags().String(flagResolvFail, "warn", "Action when resolveImage fails. One of ignore,warn,error")
+}
+
+func bindClientGoFlags(cmd *cobra.Command) {
+	kflags := clientcmd.RecommendedConfigOverrideFlags("")
+	ep := &loadingRules.ExplicitPath
+	cmd.PersistentFlags().StringVar(ep, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
+	clientcmd.BindOverrideFlags(&overrides, cmd.PersistentFlags(), kflags)
 }
 
 // RootCmd is the root of cobra subcommand tree

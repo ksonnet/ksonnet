@@ -31,6 +31,7 @@ const (
 func init() {
 	RootCmd.AddCommand(showCmd)
 	addEnvCmdFlags(showCmd)
+	bindJsonnetFlags(showCmd)
 	showCmd.PersistentFlags().StringP(flagFormat, "o", "yaml", "Output format.  Supported values are: json, yaml")
 }
 

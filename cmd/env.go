@@ -32,6 +32,8 @@ const (
 
 func init() {
 	RootCmd.AddCommand(envCmd)
+	bindClientGoFlags(envCmd)
+
 	envCmd.AddCommand(envAddCmd)
 	envCmd.AddCommand(envRmCmd)
 	envCmd.AddCommand(envListCmd)
