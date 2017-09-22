@@ -46,14 +46,18 @@ namespace.`,
 		Name:       "io.ksonnet.pkg.single-port-service",
 		Params: ParamSchemas{
 			RequiredParam("name", "serviceName", "Name of the service", String),
-			RequiredParam("targetLabelSelector", "selector", "Label for the service to target (e.g., 'app: MyApp').", Object),
+			RequiredParam("targetLabelSelector", "selector", `Label for the service to target (e.g., "{app: 'MyApp'}").`, Object),
 			RequiredParam("servicePort", "port", "Port for the service to expose.", NumberOrString),
 			RequiredParam("targetPort", "port", "Port for the service target.", NumberOrString),
 			OptionalParam("protocol", "protocol", "Protocol to use (either TCP or UDP).", "TCP", String),
 		},
 		Template: SnippetSchema{
 			Description: `A service that exposes 'servicePort', and directs traffic
-to 'targetLabelSelector', at 'targetPort'.`,
+to 'targetLabelSelector', at 'targetPort'. Since 'targetLabelSelector' is an
+object literal that specifies which labels the service is meant to target, this
+will typically look something like:
+
+  ksonnet prototype use service --targetLabelSelector "{app: 'nginx'}" [...]`,
 			ShortDescription: `Service that exposes a single port`,
 			YAMLBody: []string{
 				"kind: Service",
