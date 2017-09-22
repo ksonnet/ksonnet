@@ -26,6 +26,7 @@ import (
 
 func init() {
 	RootCmd.AddCommand(prototypeCmd)
+	prototypeCmd.AddCommand(prototypeListCmd)
 	prototypeCmd.AddCommand(prototypeDescribeCmd)
 	prototypeCmd.AddCommand(prototypeSearchCmd)
 	prototypeCmd.AddCommand(prototypeUseCmd)
@@ -75,6 +76,29 @@ Commands:
 
   # Search known prototype metadata for the string 'deployment'.
   ksonnet prototype search deployment`,
+}
+
+var prototypeListCmd = &cobra.Command{
+	Use:   "list <name-substring>",
+	Short: `List all known ksonnet prototypes`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 0 {
+			return fmt.Errorf("Command 'prototype list' does not take any arguments")
+		}
+
+		index := prototype.NewIndex([]*prototype.SpecificationSchema{})
+		protos, err := index.List()
+		if err != nil {
+			return err
+		} else if len(protos) == 0 {
+			return fmt.Errorf("No prototypes found")
+		}
+
+		fmt.Print(protos)
+
+		return nil
+	},
+	Long: `List all known ksonnet prototypes.`,
 }
 
 var prototypeDescribeCmd = &cobra.Command{
