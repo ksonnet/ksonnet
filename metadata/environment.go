@@ -246,14 +246,14 @@ func (m *manager) SetEnvironment(name string, desired *Environment) error {
 		return fmt.Errorf("Environment '%s' does not exist", name)
 	}
 
-	// ensure new environment name does not contain punctuation
-	if !isValidName(desired.Name) {
-		return fmt.Errorf("Environment name '%s' is not valid; must not contain punctuation, spaces, or begin or end with a slash", name)
-	}
-
 	// If the name has changed, the directory location needs to be moved to
 	// reflect the change.
 	if name != desired.Name && len(desired.Name) != 0 {
+		// ensure new environment name does not contain punctuation
+		if !isValidName(desired.Name) {
+			return fmt.Errorf("Environment name '%s' is not valid; must not contain punctuation, spaces, or begin or end with a slash", name)
+		}
+
 		log.Infof("Setting environment name from '%s' to '%s'", name, desired.Name)
 
 		// Ensure not overwriting another environment
