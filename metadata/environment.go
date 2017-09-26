@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -77,7 +76,7 @@ func (m *manager) createEnvironment(name, uri string, extensionsLibData, k8sLibD
 
 	// ensure environment name does not contain punctuation
 	if !isValidName(name) {
-		return fmt.Errorf("Environment '%s' is not valid; must not contain punctuation or trailing slashes", name)
+		return fmt.Errorf("Environment name '%s' is not valid; must not contain punctuation, spaces, or begin or end with a slash", name)
 	}
 
 	log.Infof("Creating environment '%s' with uri '%s'", name, uri)
@@ -249,7 +248,7 @@ func (m *manager) SetEnvironment(name string, desired *Environment) error {
 
 	// ensure new environment name does not contain punctuation
 	if !isValidName(desired.Name) {
-		return fmt.Errorf("Environment '%s' is not valid; must not contain punctuation or trailing slashes", desired.Name)
+		return fmt.Errorf("Environment name '%s' is not valid; must not contain punctuation, spaces, or begin or end with a slash", name)
 	}
 
 	// If the name has changed, the directory location needs to be moved to
@@ -348,11 +347,4 @@ func (m *manager) environmentExists(name string) (bool, error) {
 	}
 
 	return envExists, nil
-}
-
-// regex matcher to ensure environment name does not contain punctuation
-func isValidName(envName string) bool {
-	hasPunctuation := regexp.MustCompile(`[,;.':!()?"{}\[\]*&%@$]+`).MatchString
-	hasTrailingSlashes := regexp.MustCompile(`/+$`).MatchString
-	return !hasPunctuation(envName) && !hasTrailingSlashes(envName)
 }

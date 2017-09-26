@@ -17,7 +17,10 @@ package metadata
 
 import (
 	"os"
+	"regexp"
+	"strings"
 
+	"github.com/ksonnet/kubecfg/prototype"
 	"github.com/spf13/afero"
 )
 
@@ -39,6 +42,7 @@ type AbsPaths []string
 type Manager interface {
 	Root() AbsPath
 	ComponentPaths() (AbsPaths, error)
+	CreateComponent(name string, text string, templateType prototype.TemplateType) error
 	LibPaths(envName string) (libPath, envLibPath AbsPath)
 	CreateEnvironment(name, uri string, spec ClusterSpec) error
 	DeleteEnvironment(name string) error
@@ -83,6 +87,23 @@ type ClusterSpec interface {
 // with the `v1.7.1` build of Kubernetes.
 func ParseClusterSpec(specFlag string) (ClusterSpec, error) {
 	return parseClusterSpec(specFlag, appFS)
+}
+
+// isValidName returns true if a name (e.g., for an environment) is valid.
+// Broadly, this means it does not contain punctuation, whitespace, leading or
+// trailing slashes.
+func isValidName(name string) bool {
+	// No unicode whitespace is allowed. `Fields` doesn't handle trailing or
+	// leading whitespace.
+	fields := strings.Fields(name)
+	if len(fields) > 1 || len(strings.TrimSpace(name)) != len(name) {
+		return false
+	}
+
+	hasPunctuation := regexp.MustCompile(`[\\,;':!()?"{}\[\]*&%@$]+`).MatchString
+	hasTrailingSlashes := regexp.MustCompile(`/+$`).MatchString
+	hasLeadingSlashes := regexp.MustCompile(`^/+`).MatchString
+	return len(name) != 0 && !hasPunctuation(name) && !hasTrailingSlashes(name) && !hasLeadingSlashes(name)
 }
 
 func init() {
