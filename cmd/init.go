@@ -82,7 +82,7 @@ var initCmd = &cobra.Command{
 			}
 		}
 
-		c, err := kubecfg.NewInitCmd(appRoot, specFlag, currClusterURI)
+		c, err := kubecfg.NewInitCmd(appRoot, specFlag, currClusterURI, &currCtx.Namespace)
 		if err != nil {
 			return err
 		}

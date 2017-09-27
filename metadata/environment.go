@@ -43,31 +43,33 @@ const (
 
 // Environment represents all fields of a ksonnet environment
 type Environment struct {
-	Path string
-	Name string
-	URI  string
+	Path      string
+	Name      string
+	URI       string
+	Namespace string
 }
 
 // EnvironmentSpec represents the contents in spec.json.
 type EnvironmentSpec struct {
-	URI string `json:"uri"`
+	URI       string `json:"uri"`
+	Namespace string `json:"namespace"`
 }
 
-func (m *manager) CreateEnvironment(name, uri string, spec ClusterSpec) error {
+func (m *manager) CreateEnvironment(name, uri, namespace string, spec ClusterSpec) error {
 	extensionsLibData, k8sLibData, specData, err := m.generateKsonnetLibData(spec)
 	if err != nil {
 		log.Debugf("Failed to write '%s'", specFilename)
 		return err
 	}
 
-	err = m.createEnvironment(name, uri, extensionsLibData, k8sLibData, specData)
+	err = m.createEnvironment(name, uri, namespace, extensionsLibData, k8sLibData, specData)
 	if err == nil {
-		log.Infof("Environment '%s' pointing to cluster at URI '%s' successfully created", name, uri)
+		log.Infof("Environment '%s' pointing to namespace '%s' and cluster at URI '%s' successfully created", name, namespace, uri)
 	}
 	return err
 }
 
-func (m *manager) createEnvironment(name, uri string, extensionsLibData, k8sLibData, specData []byte) error {
+func (m *manager) createEnvironment(name, uri, namespace string, extensionsLibData, k8sLibData, specData []byte) error {
 	exists, err := m.environmentExists(name)
 	if err != nil {
 		log.Debug("Failed to check whether environment exists")
@@ -82,7 +84,7 @@ func (m *manager) createEnvironment(name, uri string, extensionsLibData, k8sLibD
 		return fmt.Errorf("Environment name '%s' is not valid; must not contain punctuation, spaces, or begin or end with a slash", name)
 	}
 
-	log.Infof("Creating environment '%s' with uri '%s'", name, uri)
+	log.Infof("Creating environment '%s' with namespace '%s', pointing at cluster located at uri '%s'", name, namespace, uri)
 
 	envPath := appendToAbsPath(m.environmentsPath, name)
 	err = m.appFS.MkdirAll(string(envPath), defaultFolderPermissions)
@@ -135,7 +137,7 @@ func (m *manager) createEnvironment(name, uri string, extensionsLibData, k8sLibD
 	}
 
 	// Generate the environment spec file.
-	envSpecData, err := generateSpecData(uri)
+	envSpecData, err := generateSpecData(uri, namespace)
 	if err != nil {
 		return err
 	}
@@ -225,8 +227,8 @@ func (m *manager) GetEnvironments() ([]*Environment, error) {
 					return err
 				}
 
-				log.Debugf("Found environment '%s', with uri '%s", envName, envSpec.URI)
-				envs = append(envs, &Environment{Name: envName, Path: path, URI: envSpec.URI})
+				log.Debugf("Found environment '%s', with uri '%s' and namespace '%s'", envName, envSpec.URI, envSpec.Namespace)
+				envs = append(envs, &Environment{Name: envName, Path: path, URI: envSpec.URI, Namespace: envSpec.Namespace})
 			}
 		}
 
@@ -256,14 +258,9 @@ func (m *manager) GetEnvironment(name string) (*Environment, error) {
 }
 
 func (m *manager) SetEnvironment(name string, desired *Environment) error {
-	// Check whether this environment exists
-	envExists, err := m.environmentExists(name)
+	env, err := m.GetEnvironment(name)
 	if err != nil {
-		log.Debugf("Failed to check whether '%s' exists", name)
 		return err
-	}
-	if !envExists {
-		return fmt.Errorf("Environment '%s' does not exist", name)
 	}
 
 	// If the name has changed, the directory location needs to be moved to
@@ -299,24 +296,38 @@ func (m *manager) SetEnvironment(name string, desired *Environment) error {
 		name = desired.Name
 	}
 
-	// Update fields in spec.json
+	//
+	// Update fields in spec.json.
+	//
+
+	var URI string
 	if len(desired.URI) != 0 {
 		log.Infof("Setting environment URI to '%s'", desired.URI)
+		URI = desired.URI
+	} else {
+		URI = env.URI
+	}
+	var namespace string
+	if len(desired.Namespace) != 0 {
+		log.Infof("Setting environment namespace to '%s'", desired.Namespace)
+		namespace = desired.Namespace
+	} else {
+		namespace = env.Namespace
+	}
 
-		newSpec, err := generateSpecData(desired.URI)
-		if err != nil {
-			log.Debugf("Failed to generate %s with URI '%s'", specFilename, desired.URI)
-			return err
-		}
+	newSpec, err := generateSpecData(URI, namespace)
+	if err != nil {
+		log.Debugf("Failed to generate %s with URI '%s' and namespace '%s'", specFilename, URI, namespace)
+		return err
+	}
 
-		envPath := appendToAbsPath(m.environmentsPath, name)
-		specPath := appendToAbsPath(envPath, specFilename)
+	envPath := appendToAbsPath(m.environmentsPath, name)
+	specPath := appendToAbsPath(envPath, specFilename)
 
-		err = afero.WriteFile(m.appFS, string(specPath), newSpec, defaultFilePermissions)
-		if err != nil {
-			log.Debugf("Failed to write %s at path '%s'", specFilename, specPath)
-			return err
-		}
+	err = afero.WriteFile(m.appFS, string(specPath), newSpec, defaultFilePermissions)
+	if err != nil {
+		log.Debugf("Failed to write %s at path '%s'", specFilename, specPath)
+		return err
 	}
 
 	log.Infof("Successfully updated environment '%s'", name)
@@ -358,9 +369,9 @@ func (m *manager) generateOverrideData() []byte {
 	return buf.Bytes()
 }
 
-func generateSpecData(uri string) ([]byte, error) {
+func generateSpecData(uri, namespace string) ([]byte, error) {
 	// Format the spec json and return; preface keys with 2 space idents.
-	return json.MarshalIndent(EnvironmentSpec{URI: uri}, "", "  ")
+	return json.MarshalIndent(EnvironmentSpec{URI: uri, Namespace: namespace}, "", "  ")
 }
 
 func (m *manager) environmentExists(name string) (bool, error) {

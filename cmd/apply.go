@@ -108,7 +108,7 @@ var applyCmd = &cobra.Command{
 			return err
 		}
 
-		c.DefaultNamespace, err = defaultNamespace()
+		c.Namespace, err = namespace()
 		if err != nil {
 			return err
 		}

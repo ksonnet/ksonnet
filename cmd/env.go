@@ -26,8 +26,9 @@ import (
 )
 
 const (
-	flagEnvName = "name"
-	flagEnvURI  = "uri"
+	flagEnvName      = "name"
+	flagEnvURI       = "uri"
+	flagEnvNamespace = "namespace"
 )
 
 func init() {
@@ -42,11 +43,15 @@ func init() {
 	// TODO: We need to make this default to checking the `kubeconfig` file.
 	envAddCmd.PersistentFlags().String(flagAPISpec, "version:v1.7.0",
 		"Manually specify API version from OpenAPI schema, cluster, or Kubernetes version")
+	envAddCmd.PersistentFlags().String(flagEnvNamespace, "",
+		"Specify namespace that the environment cluster should use")
 
 	envSetCmd.PersistentFlags().String(flagEnvName, "",
 		"Specify name to rename environment to. Name must not already exist")
 	envSetCmd.PersistentFlags().String(flagEnvURI, "",
 		"Specify URI to point environment cluster to a new location")
+	envSetCmd.PersistentFlags().String(flagEnvNamespace, "",
+		"Specify namespace that the environment cluster should use")
 }
 
 var envCmd = &cobra.Command{
@@ -97,6 +102,11 @@ var envAddCmd = &cobra.Command{
 		envName := args[0]
 		envURI := args[1]
 
+		envNamespace, err := flags.GetString(flagEnvNamespace)
+		if err != nil {
+			return err
+		}
+
 		appDir, err := os.Getwd()
 		if err != nil {
 			return err
@@ -113,7 +123,7 @@ var envAddCmd = &cobra.Command{
 			return err
 		}
 
-		c, err := kubecfg.NewEnvAddCmd(envName, envURI, specFlag, manager)
+		c, err := kubecfg.NewEnvAddCmd(envName, envURI, envNamespace, specFlag, manager)
 		if err != nil {
 			return err
 		}
@@ -146,9 +156,10 @@ environments/
       k8s.libsonnet
       swagger.json
       spec.json      [This will contain the uri of the environment]`,
-	Example: `  # Initialize a new staging environment at us-west. The directory
-  # structure rooted at 'us-west' in the documentation above will be generated.
-  ksonnet env add us-west/staging https://kubecfg-1.us-west.elb.amazonaws.com
+	Example: `  # Initialize a new staging environment at 'us-west'. Using the
+  # namespace 'my-namespace'. The directory structure rooted at 'us-west' in the
+  # documentation above will be generated.
+  ksonnet env add us-west/staging https://kubecfg-1.us-west.elb.amazonaws.com --namespace my-namespace
 
   # Initialize a new staging environment at us-west, using the OpenAPI specification
   # generated in the Kubernetes v1.7.1 build to generate 'ksonnet-lib'.
@@ -225,12 +236,12 @@ var envListCmd = &cobra.Command{
 
 		return c.Run(cmd.OutOrStdout())
 	}, Long: `List all environments in a ksonnet project. This will
-display the name and the URI of each environment within the ksonnet project.`,
+display the name, URI, and namespace of each environment within the ksonnet project.`,
 }
 
 var envSetCmd = &cobra.Command{
-	Use:   "set <env-name> [parameter-flags]",
-	Short: "Set environment fields such as the name, and cluster URI.",
+	Use:   "set <env-name>",
+	Short: "Set environment fields such as the name, cluster URI, and namespace.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
 		if len(args) != 1 {
@@ -260,7 +271,12 @@ var envSetCmd = &cobra.Command{
 			return err
 		}
 
-		c, err := kubecfg.NewEnvSetCmd(envName, desiredEnvName, desiredEnvURI, manager)
+		desiredEnvNamespace, err := flags.GetString(flagEnvNamespace)
+		if err != nil {
+			return err
+		}
+
+		c, err := kubecfg.NewEnvSetCmd(envName, desiredEnvName, desiredEnvURI, desiredEnvNamespace, manager)
 		if err != nil {
 			return err
 		}
@@ -272,6 +288,9 @@ the name of an environment will also update the directory structure in
 'environments'.`,
 	Example: `  # Updates the URI of the environment 'us-west/staging'.
   ksonnet env set us-west/staging --uri=http://example.com
+
+  # Updates the namespace of the environment 'us-west/staging'.
+  ksonnet env set us-west/staging --namespace=staging
 
   # Updates both the name and the URI of the environment 'us-west/staging'.
   # Updating the name will update the directory structure in 'environments'

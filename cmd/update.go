@@ -84,7 +84,7 @@ local configuration. Accepts JSON, YAML, or Jsonnet.`,
 			return err
 		}
 
-		c.DefaultNamespace, err = defaultNamespace()
+		c.Namespace, err = namespace()
 		if err != nil {
 			return err
 		}

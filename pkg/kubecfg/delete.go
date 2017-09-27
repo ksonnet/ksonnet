@@ -31,9 +31,9 @@ import (
 
 // DeleteCmd represents the delete subcommand
 type DeleteCmd struct {
-	ClientPool       dynamic.ClientPool
-	Discovery        discovery.DiscoveryInterface
-	DefaultNamespace string
+	ClientPool dynamic.ClientPool
+	Discovery  discovery.DiscoveryInterface
+	Namespace  string
 
 	GracePeriod int64
 }
@@ -64,7 +64,7 @@ func (c DeleteCmd) Run(apiObjects []*unstructured.Unstructured) error {
 		desc := fmt.Sprintf("%s %s", utils.ResourceNameFor(c.Discovery, obj), utils.FqName(obj))
 		log.Info("Deleting ", desc)
 
-		client, err := utils.ClientForResource(c.ClientPool, c.Discovery, obj, c.DefaultNamespace)
+		client, err := utils.ClientForResource(c.ClientPool, c.Discovery, obj, c.Namespace)
 		if err != nil {
 			return err
 		}

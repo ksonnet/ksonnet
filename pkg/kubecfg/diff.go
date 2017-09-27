@@ -37,9 +37,9 @@ var ErrDiffFound = fmt.Errorf("Differences found.")
 
 // DiffCmd represents the diff subcommand
 type DiffCmd struct {
-	ClientPool       dynamic.ClientPool
-	Discovery        discovery.DiscoveryInterface
-	DefaultNamespace string
+	ClientPool dynamic.ClientPool
+	Discovery  discovery.DiscoveryInterface
+	Namespace  string
 
 	DiffStrategy string
 }
@@ -52,7 +52,7 @@ func (c DiffCmd) Run(apiObjects []*unstructured.Unstructured, out io.Writer) err
 		desc := fmt.Sprintf("%s %s", utils.ResourceNameFor(c.Discovery, obj), utils.FqName(obj))
 		log.Debugf("Fetching ", desc)
 
-		client, err := utils.ClientForResource(c.ClientPool, c.Discovery, obj, c.DefaultNamespace)
+		client, err := utils.ClientForResource(c.ClientPool, c.Discovery, obj, c.Namespace)
 		if err != nil {
 			return err
 		}
