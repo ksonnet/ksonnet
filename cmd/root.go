@@ -370,7 +370,6 @@ func expandEnvCmdObjs(cmd *cobra.Command, envSpec *envSpec, cwd metadata.AbsPath
 				return nil, err
 			}
 		}
-
 	}
 
 	//

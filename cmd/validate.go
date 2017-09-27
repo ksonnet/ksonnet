@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -33,6 +34,10 @@ var validateCmd = &cobra.Command{
 	Use:   "validate [env-name] [-f <file-or-dir>]",
 	Short: "Compare generated manifest against server OpenAPI spec",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) > 1 {
+			return fmt.Errorf("'validate' takes at most a single argument, that is the name of the environment")
+		}
+
 		var err error
 
 		c := kubecfg.ValidateCmd{}

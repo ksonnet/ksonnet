@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -38,6 +39,10 @@ var showCmd = &cobra.Command{
 	Use:   "show [<env>|-f <file-or-dir>]",
 	Short: "Show expanded resource definitions",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) > 1 {
+			return fmt.Errorf("'show' takes at most a single argument, that is the name of the environment")
+		}
+
 		flags := cmd.Flags()
 		var err error
 
