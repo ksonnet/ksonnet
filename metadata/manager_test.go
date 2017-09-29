@@ -110,6 +110,14 @@ func TestInitSuccess(t *testing.T) {
 	} else if string(extensionsLibBytes) == "" {
 		t.Fatalf("Expected extension library file at '%s' to be non-empty", extensionsLibPath)
 	}
+
+	baseLibsonnetPath := appendToAbsPath(envPath, baseLibsonnetFile)
+	baseLibsonnetBytes, err := afero.ReadFile(testFS, string(baseLibsonnetPath))
+	if err != nil {
+		t.Fatalf("Failed to read base.libsonnet file at '%s':\n%v", baseLibsonnetPath, err)
+	} else if len(baseLibsonnetBytes) == 0 {
+		t.Fatalf("Expected base.libsonnet at '%s' to be non-empty", baseLibsonnetPath)
+	}
 }
 
 func TestFindSuccess(t *testing.T) {

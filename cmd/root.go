@@ -381,7 +381,7 @@ func expandEnvCmdObjs(cmd *cobra.Command, envSpec *envSpec, cwd metadata.AbsPath
 				return nil, err
 			}
 			baseObjExtCode := fmt.Sprintf("%s=%s", componentsExtCodeKey, constructBaseObj(fileNames))
-			expander.ExtCodes = append([]string{baseObjExtCode})
+			expander.ExtCodes = append([]string{baseObjExtCode}, expander.ExtCodes...)
 		}
 	}
 

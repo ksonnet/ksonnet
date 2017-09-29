@@ -38,6 +38,8 @@ const (
 	componentsDir   = "components"
 	environmentsDir = "environments"
 	vendorDir       = "vendor"
+
+	baseLibsonnetFile = "base.libsonnet"
 )
 
 type manager struct {
@@ -49,6 +51,8 @@ type manager struct {
 	componentsPath   AbsPath
 	environmentsPath AbsPath
 	vendorDir        AbsPath
+
+	baseLibsonnetPath AbsPath
 }
 
 func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
@@ -115,6 +119,8 @@ func newManager(rootPath AbsPath, appFS afero.Fs) *manager {
 		componentsPath:   appendToAbsPath(rootPath, componentsDir),
 		environmentsPath: appendToAbsPath(rootPath, environmentsDir),
 		vendorDir:        appendToAbsPath(rootPath, vendorDir),
+
+		baseLibsonnetPath: appendToAbsPath(rootPath, environmentsDir, baseLibsonnetFile),
 	}
 }
 
@@ -181,7 +187,7 @@ func (m *manager) createAppDirTree() error {
 		return fmt.Errorf("Could not create app; directory '%s' already exists", m.rootPath)
 	}
 
-	paths := []AbsPath{
+	dirPaths := []AbsPath{
 		m.rootPath,
 		m.ksonnetPath,
 		m.libPath,
@@ -190,11 +196,20 @@ func (m *manager) createAppDirTree() error {
 		m.vendorDir,
 	}
 
-	for _, p := range paths {
+	for _, p := range dirPaths {
 		if err := m.appFS.MkdirAll(string(p), defaultFolderPermissions); err != nil {
 			return err
 		}
 	}
 
-	return nil
+	return afero.WriteFile(m.appFS, string(m.baseLibsonnetPath), genBaseLibsonnetContent(), defaultFilePermissions)
+}
+
+func genBaseLibsonnetContent() []byte {
+	// TODO replace with constant ref once #164 is merged
+	return []byte(`local components = std.extVar("__ksonnet/components");
+components + {
+  // Insert user-specified overrides here.
+}
+`)
 }
