@@ -170,7 +170,7 @@ func (m *manager) CreateComponent(name string, text string, templateType prototy
 }
 
 func (m *manager) LibPaths(envName string) (libPath, envLibPath AbsPath) {
-	return m.libPath, appendToAbsPath(m.environmentsPath, envName)
+	return m.libPath, appendToAbsPath(m.environmentsPath, envName, metadataDirName)
 }
 
 func (m *manager) createAppDirTree() error {

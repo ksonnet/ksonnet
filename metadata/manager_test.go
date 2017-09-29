@@ -84,8 +84,10 @@ func TestInitSuccess(t *testing.T) {
 		}
 	}
 
-	envPath := appendToAbsPath(appPath, string(defaultEnvDir))
-	schemaPath := appendToAbsPath(envPath, schemaFilename)
+	envPath := appendToAbsPath(appPath, string(environmentsDir))
+	metadataPath := appendToAbsPath(appPath, string(defaultEnvDir), string(metadataDirName))
+
+	schemaPath := appendToAbsPath(metadataPath, schemaFilename)
 	bytes, err := afero.ReadFile(testFS, string(schemaPath))
 	if err != nil {
 		t.Fatalf("Failed to read swagger file at '%s':\n%v", schemaPath, err)
@@ -93,7 +95,7 @@ func TestInitSuccess(t *testing.T) {
 		t.Fatalf("Expected swagger file at '%s' to have value: '%s', got: '%s'", schemaPath, blankSwaggerData, actualSwagger)
 	}
 
-	k8sLibPath := appendToAbsPath(envPath, k8sLibFilename)
+	k8sLibPath := appendToAbsPath(metadataPath, k8sLibFilename)
 	k8sLibBytes, err := afero.ReadFile(testFS, string(k8sLibPath))
 	if err != nil {
 		t.Fatalf("Failed to read ksonnet-lib file at '%s':\n%v", k8sLibPath, err)
@@ -101,7 +103,7 @@ func TestInitSuccess(t *testing.T) {
 		t.Fatalf("Expected swagger file at '%s' to have value: '%s', got: '%s'", k8sLibPath, blankK8sLib, actualK8sLib)
 	}
 
-	extensionsLibPath := appendToAbsPath(envPath, extensionsLibFilename)
+	extensionsLibPath := appendToAbsPath(metadataPath, extensionsLibFilename)
 	extensionsLibBytes, err := afero.ReadFile(testFS, string(extensionsLibPath))
 	if err != nil {
 		t.Fatalf("Failed to read ksonnet-lib file at '%s':\n%v", extensionsLibPath, err)
