@@ -17,6 +17,7 @@ package metadata
 import (
 	"fmt"
 	"os"
+	"path"
 	"sort"
 	"testing"
 
@@ -207,6 +208,21 @@ func TestComponentPaths(t *testing.T) {
 
 	if len(paths) != 2 || paths[0] != string(appFile2) || paths[1] != string(appFile1) {
 		t.Fatalf("m.ComponentPaths failed; expected '%s', got '%s'", []string{string(appFile1), string(appFile2)}, paths)
+	}
+}
+
+func TestLibPaths(t *testing.T) {
+	appName := "test-lib-paths"
+	expectedLibPath := path.Join(appName, libDir)
+	expectedEnvLibPath := path.Join(appName, environmentsDir, mockEnvName, metadataDirName)
+	m := mockEnvironments(t, appName)
+
+	libPath, envLibPath := m.LibPaths(mockEnvName)
+	if string(libPath) != expectedLibPath {
+		t.Fatalf("Expected lib path to be:\n  '%s'\n, got:\n  '%s'", expectedLibPath, libPath)
+	}
+	if string(envLibPath) != expectedEnvLibPath {
+		t.Fatalf("Expected environment lib path to be:\n  '%s'\n, got:\n  '%s'", expectedEnvLibPath, envLibPath)
 	}
 }
 
