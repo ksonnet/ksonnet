@@ -180,3 +180,20 @@ func TestSetEnvironment(t *testing.T) {
 		t.Fatalf("Expected set URI to be \"%s\", got:\n  %s", set.URI, envSpec.URI)
 	}
 }
+
+func TestGenerateOverrideData(t *testing.T) {
+	m := mockEnvironments(t, "test-gen-override-data")
+
+	expected := `local base = import "test-gen-override-data/environments/base.libsonnet";
+local k = import ".metadata/k.libsonnet";
+
+base + {
+  // Insert user-specified overrides here.
+}
+`
+	result := m.generateOverrideData()
+
+	if string(result) != expected {
+		t.Fatalf("Expected to generate override file with data:\n%s\n,got:\n%s", expected, result)
+	}
+}
