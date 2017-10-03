@@ -20,6 +20,7 @@ type Expander struct {
 	ExtVarFiles []string
 	TlaVars     []string
 	TlaVarFiles []string
+	ExtCodes    []string
 
 	Resolver   string
 	FailAction string
@@ -110,6 +111,21 @@ func (spec *Expander) jsonnetVM() (*jsonnet.VM, error) {
 			return nil, err
 		}
 		vm.TlaVar(kv[0], string(v))
+	}
+
+	for _, extcode := range spec.ExtCodes {
+		kv := strings.SplitN(extcode, "=", 2)
+		switch len(kv) {
+		case 1:
+			v, present := os.LookupEnv(kv[0])
+			if present {
+				vm.ExtCode(kv[0], v)
+			} else {
+				return nil, fmt.Errorf("Missing environment variable: %s", kv[0])
+			}
+		case 2:
+			vm.ExtCode(kv[0], kv[1])
+		}
 	}
 
 	resolver, err := spec.buildResolver()

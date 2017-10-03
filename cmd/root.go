@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -58,6 +59,8 @@ const (
 	// environment or the -f flag.
 	flagFile      = "file"
 	flagFileShort = "f"
+
+	componentsExtCodeKey = "__ksonnet/components"
 )
 
 var clientConfig clientcmd.ClientConfig
@@ -369,8 +372,9 @@ func expandEnvCmdObjs(cmd *cobra.Command, envSpec *envSpec, cwd metadata.AbsPath
 			if err != nil {
 				return nil, err
 			}
+			baseObjExtCode := fmt.Sprintf("%s=%s", componentsExtCodeKey, constructBaseObj(fileNames))
+			expander.ExtCodes = append([]string{baseObjExtCode})
 		}
-
 	}
 
 	//
@@ -378,4 +382,26 @@ func expandEnvCmdObjs(cmd *cobra.Command, envSpec *envSpec, cwd metadata.AbsPath
 	//
 
 	return expander.Expand(fileNames)
+}
+
+// constructBaseObj constructs the base Jsonnet object that represents k-v
+// pairs of component name -> component imports. For example,
+//
+//   {
+//      foo: import "components/foo.jsonnet"
+//   }
+func constructBaseObj(paths []string) string {
+	var obj bytes.Buffer
+	obj.WriteString("{\n")
+	for _, p := range paths {
+		ext := path.Ext(p)
+		if path.Ext(p) != ".jsonnet" {
+			continue
+		}
+
+		name := strings.TrimSuffix(path.Base(p), ext)
+		fmt.Fprintf(&obj, "  %s: import \"%s\",\n", name, p)
+	}
+	obj.WriteString("}\n")
+	return obj.String()
 }
