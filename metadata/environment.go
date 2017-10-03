@@ -123,7 +123,7 @@ func (m *manager) createEnvironment(name, uri string, extensionsLibData, k8sLibD
 		return err
 	}
 
-	// Generate the base.libsonnet override file
+	// Generate the environment .jsonnet file
 	overrideFileName := path.Base(name) + ".jsonnet"
 	overrideData := m.generateOverrideData()
 	log.Debugf("Generating '%s', length: %d", overrideFileName, len(overrideData))
@@ -350,9 +350,10 @@ func (m *manager) generateKsonnetLibData(spec ClusterSpec) ([]byte, []byte, []by
 func (m *manager) generateOverrideData() []byte {
 	var buf bytes.Buffer
 	buf.WriteString(fmt.Sprintf("local base = import \"%s\";\n", m.baseLibsonnetPath))
-	buf.WriteString(fmt.Sprintf("local k = import \"%s\";\n\n", path.Join(metadataDirName, extensionsLibFilename)))
+	buf.WriteString(fmt.Sprintf("local k = import \"%s\";\n\n", extensionsLibFilename))
 	buf.WriteString("base + {\n")
-	buf.WriteString("  // Insert user-specified overrides here.\n")
+	buf.WriteString("  // Insert user-specified overrides here. For example if a component is named \"nginx-deployment\", you might have something like:\n")
+	buf.WriteString("  //   \"nginx-deployment\"+: k.deployment.mixin.metadata.labels({foo: \"bar\"})\n")
 	buf.WriteString("}\n")
 	return buf.Bytes()
 }
