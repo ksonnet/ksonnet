@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -36,6 +37,10 @@ var diffCmd = &cobra.Command{
 	Use:   "diff [env-name] [-f <file-or-dir>]",
 	Short: "Display differences between server and local config",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) > 1 {
+			return fmt.Errorf("'diff' takes at most a single argument, that is the name of the environment")
+		}
+
 		flags := cmd.Flags()
 		var err error
 

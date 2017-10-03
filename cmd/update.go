@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -41,6 +42,10 @@ var updateCmd = &cobra.Command{
 	Short: `[DEPRECATED] Update (or optionally create) Kubernetes resources on the cluster using the
 local configuration. Accepts JSON, YAML, or Jsonnet.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) > 1 {
+			return fmt.Errorf("'update' takes at most a single argument, that is the name of the environment")
+		}
+
 		flags := cmd.Flags()
 		var err error
 
