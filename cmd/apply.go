@@ -51,6 +51,8 @@ func init() {
 	RootCmd.AddCommand(applyCmd)
 
 	addEnvCmdFlags(applyCmd)
+	bindClientGoFlags(applyCmd)
+	bindJsonnetFlags(applyCmd)
 	applyCmd.PersistentFlags().Bool(flagCreate, true, "Create missing resources")
 	applyCmd.PersistentFlags().Bool(flagSkipGc, false, "Don't perform garbage collection, even with --"+flagGcTag)
 	applyCmd.PersistentFlags().String(flagGcTag, "", "Add this tag to updated objects, and garbage collect existing objects with this tag and not in config")

@@ -32,6 +32,8 @@ func init() {
 	// TODO: We need to make this default to checking the `kubeconfig` file.
 	initCmd.PersistentFlags().String(flagAPISpec, "version:v1.7.0",
 		"Manually specify API version from OpenAPI schema, cluster, or Kubernetes version")
+
+	bindClientGoFlags(initCmd)
 }
 
 var initCmd = &cobra.Command{

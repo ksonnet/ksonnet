@@ -29,6 +29,8 @@ const flagDiffStrategy = "diff-strategy"
 
 func init() {
 	addEnvCmdFlags(diffCmd)
+	bindClientGoFlags(diffCmd)
+	bindJsonnetFlags(diffCmd)
 	diffCmd.PersistentFlags().String(flagDiffStrategy, "all", "Diff strategy, all or subset.")
 	RootCmd.AddCommand(diffCmd)
 }

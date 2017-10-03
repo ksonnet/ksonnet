@@ -28,6 +28,8 @@ import (
 func init() {
 	RootCmd.AddCommand(validateCmd)
 	addEnvCmdFlags(validateCmd)
+	bindJsonnetFlags(validateCmd)
+	bindClientGoFlags(validateCmd)
 }
 
 var validateCmd = &cobra.Command{
