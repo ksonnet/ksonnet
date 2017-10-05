@@ -122,11 +122,11 @@ var RootCmd = &cobra.Command{
 
 // clientConfig.Namespace() is broken in client-go 3.0:
 // namespace in config erroneously overrides explicit --namespace
-func defaultNamespace(c clientcmd.ClientConfig) (string, error) {
+func defaultNamespace() (string, error) {
 	if overrides.Context.Namespace != "" {
 		return overrides.Context.Namespace, nil
 	}
-	ns, _, err := c.Namespace()
+	ns, _, err := clientConfig.Namespace()
 	return ns, err
 }
 
