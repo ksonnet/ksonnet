@@ -69,7 +69,7 @@ var diffCmd = &cobra.Command{
 			return err
 		}
 
-		c.DefaultNamespace, err = defaultNamespace(clientConfig)
+		c.DefaultNamespace, err = defaultNamespace()
 		if err != nil {
 			return err
 		}
