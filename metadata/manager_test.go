@@ -17,6 +17,7 @@ package metadata
 import (
 	"fmt"
 	"os"
+	"path"
 	"sort"
 	"testing"
 
@@ -84,8 +85,10 @@ func TestInitSuccess(t *testing.T) {
 		}
 	}
 
-	envPath := appendToAbsPath(appPath, string(defaultEnvDir))
-	schemaPath := appendToAbsPath(envPath, schemaFilename)
+	envPath := appendToAbsPath(appPath, string(environmentsDir))
+	metadataPath := appendToAbsPath(appPath, string(defaultEnvDir), string(metadataDirName))
+
+	schemaPath := appendToAbsPath(metadataPath, schemaFilename)
 	bytes, err := afero.ReadFile(testFS, string(schemaPath))
 	if err != nil {
 		t.Fatalf("Failed to read swagger file at '%s':\n%v", schemaPath, err)
@@ -93,7 +96,7 @@ func TestInitSuccess(t *testing.T) {
 		t.Fatalf("Expected swagger file at '%s' to have value: '%s', got: '%s'", schemaPath, blankSwaggerData, actualSwagger)
 	}
 
-	k8sLibPath := appendToAbsPath(envPath, k8sLibFilename)
+	k8sLibPath := appendToAbsPath(metadataPath, k8sLibFilename)
 	k8sLibBytes, err := afero.ReadFile(testFS, string(k8sLibPath))
 	if err != nil {
 		t.Fatalf("Failed to read ksonnet-lib file at '%s':\n%v", k8sLibPath, err)
@@ -101,12 +104,20 @@ func TestInitSuccess(t *testing.T) {
 		t.Fatalf("Expected swagger file at '%s' to have value: '%s', got: '%s'", k8sLibPath, blankK8sLib, actualK8sLib)
 	}
 
-	extensionsLibPath := appendToAbsPath(envPath, extensionsLibFilename)
+	extensionsLibPath := appendToAbsPath(metadataPath, extensionsLibFilename)
 	extensionsLibBytes, err := afero.ReadFile(testFS, string(extensionsLibPath))
 	if err != nil {
 		t.Fatalf("Failed to read ksonnet-lib file at '%s':\n%v", extensionsLibPath, err)
 	} else if string(extensionsLibBytes) == "" {
 		t.Fatalf("Expected extension library file at '%s' to be non-empty", extensionsLibPath)
+	}
+
+	baseLibsonnetPath := appendToAbsPath(envPath, baseLibsonnetFile)
+	baseLibsonnetBytes, err := afero.ReadFile(testFS, string(baseLibsonnetPath))
+	if err != nil {
+		t.Fatalf("Failed to read base.libsonnet file at '%s':\n%v", baseLibsonnetPath, err)
+	} else if len(baseLibsonnetBytes) == 0 {
+		t.Fatalf("Expected base.libsonnet at '%s' to be non-empty", baseLibsonnetPath)
 	}
 }
 
@@ -197,6 +208,25 @@ func TestComponentPaths(t *testing.T) {
 
 	if len(paths) != 2 || paths[0] != string(appFile2) || paths[1] != string(appFile1) {
 		t.Fatalf("m.ComponentPaths failed; expected '%s', got '%s'", []string{string(appFile1), string(appFile2)}, paths)
+	}
+}
+
+func TestLibPaths(t *testing.T) {
+	appName := "test-lib-paths"
+	expectedLibPath := path.Join(appName, libDir)
+	expectedEnvLibPath := path.Join(appName, environmentsDir, mockEnvName, metadataDirName)
+	expectedEnvComponentPath := path.Join(appName, environmentsDir, mockEnvName, path.Base(mockEnvName)+".jsonnet")
+	m := mockEnvironments(t, appName)
+
+	libPath, envLibPath, envComponentPath := m.LibPaths(mockEnvName)
+	if string(libPath) != expectedLibPath {
+		t.Fatalf("Expected lib path to be:\n  '%s'\n, got:\n  '%s'", expectedLibPath, libPath)
+	}
+	if string(envLibPath) != expectedEnvLibPath {
+		t.Fatalf("Expected environment lib path to be:\n  '%s'\n, got:\n  '%s'", expectedEnvLibPath, envLibPath)
+	}
+	if string(envComponentPath) != expectedEnvComponentPath {
+		t.Fatalf("Expected environment component path to be:\n  '%s'\n, got:\n  '%s'", expectedEnvComponentPath, envComponentPath)
 	}
 }
 

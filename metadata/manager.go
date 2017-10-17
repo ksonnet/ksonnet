@@ -38,6 +38,11 @@ const (
 	componentsDir   = "components"
 	environmentsDir = "environments"
 	vendorDir       = "vendor"
+
+	baseLibsonnetFile = "base.libsonnet"
+
+	// ComponentsExtCodeKey is the ExtCode key for component imports
+	ComponentsExtCodeKey = "__ksonnet/components"
 )
 
 type manager struct {
@@ -49,6 +54,8 @@ type manager struct {
 	componentsPath   AbsPath
 	environmentsPath AbsPath
 	vendorDir        AbsPath
+
+	baseLibsonnetPath AbsPath
 }
 
 func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
@@ -115,6 +122,8 @@ func newManager(rootPath AbsPath, appFS afero.Fs) *manager {
 		componentsPath:   appendToAbsPath(rootPath, componentsDir),
 		environmentsPath: appendToAbsPath(rootPath, environmentsDir),
 		vendorDir:        appendToAbsPath(rootPath, vendorDir),
+
+		baseLibsonnetPath: appendToAbsPath(rootPath, environmentsDir, baseLibsonnetFile),
 	}
 }
 
@@ -169,8 +178,9 @@ func (m *manager) CreateComponent(name string, text string, templateType prototy
 	return afero.WriteFile(m.appFS, componentPath, []byte(text), defaultFilePermissions)
 }
 
-func (m *manager) LibPaths(envName string) (libPath, envLibPath AbsPath) {
-	return m.libPath, appendToAbsPath(m.environmentsPath, envName)
+func (m *manager) LibPaths(envName string) (libPath, envLibPath, envComponentPath AbsPath) {
+	envPath := appendToAbsPath(m.environmentsPath, envName)
+	return m.libPath, appendToAbsPath(envPath, metadataDirName), appendToAbsPath(envPath, path.Base(envName)+".jsonnet")
 }
 
 func (m *manager) createAppDirTree() error {
@@ -181,7 +191,7 @@ func (m *manager) createAppDirTree() error {
 		return fmt.Errorf("Could not create app; directory '%s' already exists", m.rootPath)
 	}
 
-	paths := []AbsPath{
+	dirPaths := []AbsPath{
 		m.rootPath,
 		m.ksonnetPath,
 		m.libPath,
@@ -190,11 +200,19 @@ func (m *manager) createAppDirTree() error {
 		m.vendorDir,
 	}
 
-	for _, p := range paths {
+	for _, p := range dirPaths {
 		if err := m.appFS.MkdirAll(string(p), defaultFolderPermissions); err != nil {
 			return err
 		}
 	}
 
-	return nil
+	return afero.WriteFile(m.appFS, string(m.baseLibsonnetPath), genBaseLibsonnetContent(), defaultFilePermissions)
+}
+
+func genBaseLibsonnetContent() []byte {
+	return []byte(`local components = std.extVar("` + ComponentsExtCodeKey + `");
+components + {
+  // Insert user-specified overrides here.
+}
+`)
 }
