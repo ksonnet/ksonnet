@@ -1,6 +1,6 @@
 package kubecfg
 
-import "github.com/ksonnet/kubecfg/metadata"
+import "github.com/ksonnet/ksonnet/metadata"
 
 type InitCmd struct {
 	rootPath  metadata.AbsPath

@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/discovery"
 
-	"github.com/ksonnet/kubecfg/utils"
+	"github.com/ksonnet/ksonnet/utils"
 )
 
 // ValidateCmd represents the validate subcommand

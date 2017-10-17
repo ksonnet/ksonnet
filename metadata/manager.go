@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ksonnet/kubecfg/prototype"
+	"github.com/ksonnet/ksonnet/prototype"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )

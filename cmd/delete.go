@@ -21,8 +21,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/ksonnet/kubecfg/metadata"
-	"github.com/ksonnet/kubecfg/pkg/kubecfg"
+	"github.com/ksonnet/ksonnet/metadata"
+	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
 
 const (

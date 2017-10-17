@@ -22,8 +22,8 @@ import (
 
 	"k8s.io/client-go/tools/clientcmd/api"
 
-	"github.com/ksonnet/kubecfg/metadata"
-	"github.com/ksonnet/kubecfg/pkg/kubecfg"
+	"github.com/ksonnet/ksonnet/metadata"
+	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 	"github.com/spf13/cobra"
 )
 

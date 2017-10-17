@@ -23,7 +23,7 @@ import (
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/parser"
 
-	"github.com/ksonnet/kubecfg/prototype/snippet"
+	"github.com/ksonnet/ksonnet/prototype/snippet"
 )
 
 const (

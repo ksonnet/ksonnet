@@ -1503,5 +1503,5 @@
 			"versionExact": "v3.0.0"
 		}
 	],
-	"rootPath": "github.com/ksonnet/kubecfg"
+	"rootPath": "github.com/ksonnet/ksonnet"
 }

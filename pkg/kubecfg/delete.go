@@ -26,7 +26,7 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 
-	"github.com/ksonnet/kubecfg/utils"
+	"github.com/ksonnet/ksonnet/utils"
 )
 
 // DeleteCmd represents the delete subcommand

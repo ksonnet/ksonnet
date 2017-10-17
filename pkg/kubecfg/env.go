@@ -23,7 +23,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/ksonnet/kubecfg/metadata"
+	"github.com/ksonnet/ksonnet/metadata"
 )
 
 type EnvAddCmd struct {

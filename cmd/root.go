@@ -36,9 +36,9 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/ksonnet/kubecfg/metadata"
-	"github.com/ksonnet/kubecfg/template"
-	"github.com/ksonnet/kubecfg/utils"
+	"github.com/ksonnet/ksonnet/metadata"
+	"github.com/ksonnet/ksonnet/template"
+	"github.com/ksonnet/ksonnet/utils"
 
 	// Register auth plugins
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
