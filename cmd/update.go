@@ -21,8 +21,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/ksonnet/kubecfg/metadata"
-	"github.com/ksonnet/kubecfg/pkg/kubecfg"
+	"github.com/ksonnet/ksonnet/metadata"
+	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
 
 func init() {
@@ -112,16 +112,16 @@ files.`,
 	Example: `  # Create or update all resources described in a ksonnet application, and
   # running in the 'dev' environment. Can be used in any subdirectory of the
   # application.
-  ksonnet update dev
+  ks update dev
 
   # Create or update resources described in a YAML file. Automatically picks up
   # the cluster's location from '$KUBECONFIG'.
-  ksonnet appy -f ./pod.yaml
+  ks update -f ./pod.yaml
 
   # Update resources described in a YAML file, and running in cluster referred
   # to by './kubeconfig'.
-  ksonnet update --kubeconfig=./kubeconfig -f ./pod.yaml
+  ks update --kubeconfig=./kubeconfig -f ./pod.yaml
 
   # Display set of actions we will execute when we run 'update'.
-  ksonnet update dev --dry-run`,
+  ks update dev --dry-run`,
 }

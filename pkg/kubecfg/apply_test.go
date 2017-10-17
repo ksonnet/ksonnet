@@ -6,7 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/ksonnet/kubecfg/utils"
+	"github.com/ksonnet/ksonnet/utils"
 )
 
 func TestStringListContains(t *testing.T) {

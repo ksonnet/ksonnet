@@ -1,11 +1,11 @@
-# kubecfg
+# ksonnet
 
-[![Build Status](https://travis-ci.org/ksonnet/kubecfg.svg?branch=master)](https://travis-ci.org/ksonnet/kubecfg)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ksonnet/kubecfg)](https://goreportcard.com/report/github.com/ksonnet/kubecfg)
+[![Build Status](https://travis-ci.org/ksonnet/ksonnet.svg?branch=master)](https://travis-ci.org/ksonnet/ksonnet)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ksonnet/ksonnet)](https://goreportcard.com/report/github.com/ksonnet/ksonnet)
 
 A tool for managing Kubernetes resources as code.
 
-`kubecfg` allows you to express the patterns across your
+`ksonnet` allows you to express the patterns across your
 infrastructure and reuse these powerful "templates" across many
 services, and then manage those templates as files in version control.
 The more complex your infrastructure is, the more you will gain from
@@ -14,20 +14,17 @@ using kubecfg.
 Status: Basic functionality works, and the tool is usable.  The focus
 now is on clearer error reporting and advanced features.
 
-Yes, Google employees will recognise this as being very similar to a
-similarly-named internal tool ;)
-
 ## Install
 
 Pre-compiled executables exist for some platforms on
-the [Github releases](https://github.com/ksonnet/kubecfg/releases)
+the [Github releases](https://github.com/ksonnet/ksonnet/releases)
 page.
 
 To build from source:
 
 ```console
 % PATH=$PATH:$GOPATH/bin
-% go get github.com/ksonnet/kubecfg
+% go get github.com/ksonnet/ksonnet
 ```
 
 Requires golang >=1.7 and a functional cgo environment (C++ with libstdc++).
@@ -38,26 +35,26 @@ avoid an immediate `Killed: 9`.
 ## Quickstart
 
 ```console
-# Include <kubecfg.git>/lib in kubecfg/jsonnet library search path.
+# Include <ksonnet.git>/lib in ksonnet/jsonnet library search path.
 # Can also use explicit `-J` args everywhere.
-% export KUBECFG_JPATH=/path/to/kubecfg/lib
+% export KUBECFG_JPATH=/path/to/ksonnet/lib
 
 # Show generated YAML
-% kubecfg show -o yaml -f examples/guestbook.jsonnet
+% ks show -o yaml -f examples/guestbook.jsonnet
 
 # Create resources
-% kubecfg apply -f examples/guestbook.jsonnet
+% ks apply -f examples/guestbook.jsonnet
 
 # Modify configuration (downgrade gb-frontend image)
 % sed -i.bak '\,gcr.io/google-samples/gb-frontend,s/:v4/:v3/' examples/guestbook.jsonnet
 # See differences vs server
-% kubecfg diff -f examples/guestbook.jsonnet
+% ks diff -f examples/guestbook.jsonnet
 
 # Update to new config
-% kubecfg apply -f examples/guestbook.jsonnet
+% ks apply -f examples/guestbook.jsonnet
 
 # Clean up after demo
-% kubecfg delete -f examples/guestbook.jsonnet
+% ks delete -f examples/guestbook.jsonnet
 ```
 
 ## Features
@@ -80,7 +77,7 @@ or to recover from disaster.
 
 ### Jsonnet
 
-Kubecfg relies heavily on [jsonnet](http://jsonnet.org/) to describe
+ksonnet relies heavily on [jsonnet](http://jsonnet.org/) to describe
 Kubernetes resources, and is really just a thin Kubernetes-specific
 wrapper around jsonnet evaluation.  You should read the jsonnet
 [tutorial](http://jsonnet.org/docs/tutorial.html), and skim the functions available in the jsonnet [`std`](http://jsonnet.org/docs/stdlib.html)

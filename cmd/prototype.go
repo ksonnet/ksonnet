@@ -22,9 +22,9 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"github.com/ksonnet/kubecfg/metadata"
-	"github.com/ksonnet/kubecfg/prototype"
-	"github.com/ksonnet/kubecfg/prototype/snippet"
+	"github.com/ksonnet/ksonnet/metadata"
+	"github.com/ksonnet/ksonnet/prototype"
+	"github.com/ksonnet/ksonnet/prototype/snippet"
 	"github.com/spf13/cobra"
 )
 
@@ -66,21 +66,21 @@ Commands:
   # identifier to disambiguate it among other known prototypes, which is why
   # 'simple-deployment' is given as argument instead of the fully-qualified
   # name.
-  ksonnet prototype describe simple-deployment
+  ks prototype describe simple-deployment
 
   # Instantiate prototype 'io.ksonnet.pkg.prototype.simple-deployment', using
   # the 'nginx' image, and port 80 exposed.
   #
   # SEE ALSO: Note above for a description of why this subcommand can take
   # 'simple-deployment' instead of the fully-qualified prototype name.
-  ksonnet prototype use simple-deployment \
+  ks prototype use simple-deployment \
     --name=nginx                          \
     --image=nginx                         \
     --port=80                             \
     --portName=http
 
   # Search known prototype metadata for the string 'deployment'.
-  ksonnet prototype search deployment`,
+  ks prototype search deployment`,
 }
 
 var prototypeListCmd = &cobra.Command{
@@ -151,7 +151,7 @@ ambiguously, in which case 'use' will fail, while 'simple-deployment' might be
 unique enough to resolve to 'io.ksonnet.pkg.prototype.simple-deployment'.`,
 
 	Example: `  # Display documentation about prototype, including:
-  ksonnet prototype describe io.ksonnet.pkg.prototype.simple-deployment
+  ks prototype describe io.ksonnet.pkg.prototype.simple-deployment
 
   # Display documentation about prototype using a unique suffix of an
   # identifier. That is, this command only requires a long enough suffix to
@@ -159,7 +159,7 @@ unique enough to resolve to 'io.ksonnet.pkg.prototype.simple-deployment'.`,
   # 'simple-deployment' is enough to uniquely identify
   # 'io.ksonnet.pkg.prototype.simple-deployment', but 'deployment' might not
   # be, as several names end with that suffix.
-  ksonnet prototype describe simple-deployment`,
+  ks prototype describe simple-deployment`,
 }
 
 var prototypeSearchCmd = &cobra.Command{
@@ -186,7 +186,7 @@ var prototypeSearchCmd = &cobra.Command{
 	},
 	Long: `Search ksonnet for prototypes whose names contain 'name-substring'.`,
 	Example: `  # Search known prototype metadata for the string 'deployment'.
-  ksonnet prototype search deployment`,
+  ks prototype search deployment`,
 }
 
 var prototypePreviewCmd = &cobra.Command{
@@ -248,20 +248,20 @@ unique enough to resolve to 'io.ksonnet.pkg.single-port-deployment'.`,
 
 	Example: `  # Preview prototype 'io.ksonnet.pkg.single-port-deployment', using the
   # 'nginx' image, and port 80 exposed.
-  ksonnet prototype preview io.ksonnet.pkg.prototype.simple-deployment \
+  ks prototype preview io.ksonnet.pkg.prototype.simple-deployment \
     --name=nginx                                                       \
     --image=nginx
 
   # Preview prototype using a unique suffix of an identifier. See
   # introduction of help message for more information on how this works.
-  ksonnet prototype preview simple-deployment \
+  ks prototype preview simple-deployment \
     --name=nginx                              \
     --image=nginx
 
   # Preview prototype 'io.ksonnet.pkg.single-port-deployment' as YAML,
   # placing the result in 'components/nginx-depl.yaml. Note that some templates
   # do not have a YAML or JSON versions.
-  ksonnet prototype preview deployment nginx-depl yaml \
+  ks prototype preview deployment nginx-depl yaml \
     --name=nginx                                       \
     --image=nginx`,
 }
@@ -334,7 +334,7 @@ following command will expand template 'io.ksonnet.pkg.single-port-deployment'
 and place it in the file 'components/nginx-depl.jsonnet' (since by default
 ksonnet will expand templates as Jsonnet).
 
-  ksonnet prototype use io.ksonnet.pkg.single-port-deployment nginx-depl \
+  ks prototype use io.ksonnet.pkg.single-port-deployment nginx-depl \
     --name=nginx                                                         \
     --image=nginx
 
@@ -350,7 +350,7 @@ unique enough to resolve to 'io.ksonnet.pkg.single-port-deployment'.`,
 	Example: `  # Instantiate prototype 'io.ksonnet.pkg.single-port-deployment', using the
   # 'nginx' image. The expanded prototype is placed in
   # 'components/nginx-depl.jsonnet'.
-  ksonnet prototype use io.ksonnet.pkg.prototype.simple-deployment nginx-depl \
+  ks prototype use io.ksonnet.pkg.prototype.simple-deployment nginx-depl \
     --name=nginx                                                              \
     --image=nginx
 
@@ -359,14 +359,14 @@ unique enough to resolve to 'io.ksonnet.pkg.single-port-deployment'.`,
   # 'components/nginx-depl.jsonnet'. See introduction of help message for more
   # information on how this works. Note that if you have imported another
   # prototype with this suffix, this may resolve ambiguously for you.
-  ksonnet prototype use deployment nginx-depl \
+  ks prototype use deployment nginx-depl \
     --name=nginx                              \
     --image=nginx
 
   # Instantiate prototype 'io.ksonnet.pkg.single-port-deployment' as YAML,
   # placing the result in 'components/nginx-depl.yaml. Note that some templates
   # do not have a YAML or JSON versions.
-  ksonnet prototype use deployment nginx-depl yaml \
+  ks prototype use deployment nginx-depl yaml \
     --name=nginx                              \
     --image=nginx`,
 }

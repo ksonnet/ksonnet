@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ksonnet/kubecfg/utils"
+	"github.com/ksonnet/ksonnet/utils"
 	log "github.com/sirupsen/logrus"
 )
 

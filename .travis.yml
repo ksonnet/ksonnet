@@ -104,11 +104,11 @@ install:
 script:
   - make VERSION="$VERSION" EXTRA_GO_FLAGS="$EXTRA_GO_FLAGS_TEST" test
   - make vet
-  - rm -f ./kubecfg && make VERSION="$VERSION"
+  - rm -f ./ks && make VERSION="$VERSION"
   - >
-    ldd ./kubecfg || otool -L ./kubecfg || :
-  - ./kubecfg help
-  - ./kubecfg version
+    ldd ./ks || otool -L ./ks || :
+  - ./ks help
+  - ./ks version
   - |
     if [ "$DO_INTEGRATION_TEST" = 1 ]; then
        minikube update-context
@@ -120,8 +120,8 @@ after_script: set +e
 
 before_deploy:
   - echo TARGET=$TARGET OS_NAME=$TRAVIS_OS_NAME GO_VERSION=$TRAVIS_GO_VERSION
-  - EXE_NAME=kubecfg-$(go env GOOS)-$(go env GOARCH)
-  - cp kubecfg $EXE_NAME
+  - EXE_NAME=ks-$(go env GOOS)-$(go env GOARCH)
+  - cp ks $EXE_NAME
   - strip $EXE_NAME && ./$EXE_NAME version
   - >
     size $EXE_NAME || :

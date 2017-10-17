@@ -20,7 +20,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ksonnet/kubecfg/prototype"
+	"github.com/ksonnet/ksonnet/prototype"
 	"github.com/spf13/afero"
 )
 

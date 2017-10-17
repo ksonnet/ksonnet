@@ -8,7 +8,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/ksonnet/kubecfg/utils"
+	"github.com/ksonnet/ksonnet/utils"
 	log "github.com/sirupsen/logrus"
 	jsonnet "github.com/strickyak/jsonnet_cgo"
 )

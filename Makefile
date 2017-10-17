@@ -31,21 +31,21 @@ GO_PACKAGES = ./cmd/... ./utils/... ./pkg/... ./metadata/... ./prototype/...
 # Default cluster from this config is used for integration tests
 KUBECONFIG = $(HOME)/.kube/config
 
-all: kubecfg
+all: ks
 
-kubecfg:
-	$(GO) build $(GO_FLAGS) .
+ks:
+	$(GO) build -o ks $(GO_FLAGS) .
 
 test: gotest jsonnettest
 
 gotest:
 	$(GO) test $(GO_FLAGS) $(GO_PACKAGES)
 
-jsonnettest: kubecfg $(JSONNET_FILES)
-#	TODO: use `kubecfg check` once implemented
-	./kubecfg -J lib show -f $(KCFG_TEST_FILE) -f $(GUESTBOOK_FILE) >/dev/null
+jsonnettest: ks $(JSONNET_FILES)
+#	TODO: use `ks check` once implemented
+	./ks -J lib show -f $(KCFG_TEST_FILE) -f $(GUESTBOOK_FILE) >/dev/null
 
-integrationtest: kubecfg
+integrationtest: ks
 	$(GINKGO) -tags 'integration' integration -- -kubeconfig $(KUBECONFIG) -kubecfg-bin $(abspath $<)
 
 vet:
@@ -55,7 +55,7 @@ fmt:
 	$(GOFMT) -s -w $(shell $(GO) list -f '{{.Dir}}' $(GO_PACKAGES))
 
 clean:
-	$(RM) ./kubecfg
+	$(RM) ./ks
 
 .PHONY: all test clean vet fmt
-.PHONY: kubecfg
+.PHONY: ks

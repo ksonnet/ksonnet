@@ -21,8 +21,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/ksonnet/kubecfg/metadata"
-	"github.com/ksonnet/kubecfg/pkg/kubecfg"
+	"github.com/ksonnet/ksonnet/metadata"
+	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
 
 const flagDiffStrategy = "diff-strategy"
@@ -88,17 +88,17 @@ files.`,
 	Example: `  # Show diff between resources described in a local ksonnet application and
   # the cluster referenced by the 'dev' environment. Can be used in any
   # subdirectory of the application.
-  ksonnet diff dev
+  ks diff dev
 
   # Show diff between resources described in a YAML file and the cluster
   # referenced in '$KUBECONFIG'.
-  ksonnet diff -f ./pod.yaml
+  ks diff -f ./pod.yaml
 
   # Show diff between resources described in a JSON file and the cluster
   # referenced by the environment 'dev'.
-  ksonnet diff dev -f ./pod.json
+  ks diff dev -f ./pod.json
 
   # Show diff between resources described in a YAML file and the cluster
   # referred to by './kubeconfig'.
-  ksonnet diff --kubeconfig=./kubeconfig -f ./pod.yaml`,
+  ks diff --kubeconfig=./kubeconfig -f ./pod.yaml`,
 }
