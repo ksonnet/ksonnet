@@ -120,7 +120,7 @@ var RootCmd = &cobra.Command{
 
 // clientConfig.Namespace() is broken in client-go 3.0:
 // namespace in config erroneously overrides explicit --namespace
-func defaultNamespace() (string, error) {
+func namespace() (string, error) {
 	if overrides.Context.Namespace != "" {
 		return overrides.Context.Namespace, nil
 	}
@@ -295,7 +295,8 @@ func parseEnvCmd(cmd *cobra.Command, args []string) (*envSpec, error) {
 //
 // If the environment URI the user is attempting to deploy to is not the current
 // kubeconfig context, we must manually override the client-go --cluster flag
-// to ensure we are deploying to the correct cluster.
+// to ensure we are deploying to the correct cluster. The same logic applies
+// for overwriting the --namespace flag.
 func overrideCluster(envName string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -333,6 +334,10 @@ func overrideCluster(envName string) error {
 		clusterName := clusterURIs[env.URI]
 		log.Debugf("Overwriting --cluster flag with '%s'", clusterName)
 		overrides.Context.Cluster = clusterName
+		if len(env.Namespace) != 0 {
+			log.Debugf("Overwriting --namespace flag with '%s'", env.Namespace)
+			overrides.Context.Namespace = env.Namespace
+		}
 		return nil
 	}
 

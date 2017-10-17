@@ -44,7 +44,7 @@ type Manager interface {
 	ComponentPaths() (AbsPaths, error)
 	CreateComponent(name string, text string, templateType prototype.TemplateType) error
 	LibPaths(envName string) (libPath, envLibPath, envComponentPath AbsPath)
-	CreateEnvironment(name, uri string, spec ClusterSpec) error
+	CreateEnvironment(name, uri, namespace string, spec ClusterSpec) error
 	DeleteEnvironment(name string) error
 	GetEnvironments() ([]*Environment, error)
 	GetEnvironment(name string) (*Environment, error)
@@ -68,8 +68,8 @@ func Find(path AbsPath) (Manager, error) {
 // Init will retrieve a cluster API specification, generate a
 // capabilities-compliant version of ksonnet-lib, and then generate the
 // directory tree for an application.
-func Init(rootPath AbsPath, spec ClusterSpec, serverURI *string) (Manager, error) {
-	return initManager(rootPath, spec, serverURI, appFS)
+func Init(rootPath AbsPath, spec ClusterSpec, serverURI, namespace *string) (Manager, error) {
+	return initManager(rootPath, spec, serverURI, namespace, appFS)
 }
 
 // ClusterSpec represents the API supported by some cluster. There are several

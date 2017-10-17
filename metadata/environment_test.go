@@ -35,6 +35,7 @@ const (
 )
 
 var mockAPIServerURI = "http://google.com"
+var mockNamespace = "some-namespace"
 
 func mockEnvironments(t *testing.T, appName string) *manager {
 	spec, err := parseClusterSpec(fmt.Sprintf("file:%s", blankSwagger), testFS)
@@ -43,7 +44,7 @@ func mockEnvironments(t *testing.T, appName string) *manager {
 	}
 
 	appPath := AbsPath(appName)
-	m, err := initManager(appPath, spec, &mockAPIServerURI, testFS)
+	m, err := initManager(appPath, spec, &mockAPIServerURI, &mockNamespace, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
@@ -53,9 +54,9 @@ func mockEnvironments(t *testing.T, appName string) *manager {
 		envPath := appendToAbsPath(m.environmentsPath, env)
 
 		specPath := appendToAbsPath(envPath, mockSpecJSON)
-		specData, err := generateSpecData(mockSpecJSONURI)
+		specData, err := generateSpecData(mockSpecJSONURI, mockNamespace)
 		if err != nil {
-			t.Fatalf("Expected to marshal:\n%s\n, but failed", mockSpecJSONURI)
+			t.Fatalf("Expected to marshal:\nuri: %s\nnamespace: %s\n, but failed", mockSpecJSONURI, mockNamespace)
 		}
 		err = afero.WriteFile(testFS, string(specPath), specData, os.ModePerm)
 		if err != nil {
@@ -136,7 +137,8 @@ func TestSetEnvironment(t *testing.T) {
 
 	setName := "new-env"
 	setURI := "http://example.com"
-	set := Environment{Name: setName, URI: setURI}
+	setNamespace := "some-namespace"
+	set := Environment{Name: setName, URI: setURI, Namespace: setNamespace}
 
 	// Test updating an environment that doesn't exist
 	err := m.SetEnvironment("notexists", &set)
@@ -178,6 +180,9 @@ func TestSetEnvironment(t *testing.T) {
 	}
 	if envSpec.URI != set.URI {
 		t.Fatalf("Expected set URI to be \"%s\", got:\n  %s", set.URI, envSpec.URI)
+	}
+	if envSpec.Namespace != set.Namespace {
+		t.Fatalf("Expected set Namespace to be \"%s\", got:\n  %s", set.Namespace, envSpec.Namespace)
 	}
 }
 

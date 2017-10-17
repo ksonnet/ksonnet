@@ -80,7 +80,7 @@ func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
 	}
 }
 
-func initManager(rootPath AbsPath, spec ClusterSpec, serverURI *string, appFS afero.Fs) (*manager, error) {
+func initManager(rootPath AbsPath, spec ClusterSpec, serverURI, namespace *string, appFS afero.Fs) (*manager, error) {
 	m := newManager(rootPath, appFS)
 
 	// Generate the program text for ksonnet-lib.
@@ -101,9 +101,8 @@ func initManager(rootPath AbsPath, spec ClusterSpec, serverURI *string, appFS af
 	}
 
 	// Initialize environment, and cache specification data.
-	// TODO the URI for the default environment needs to be generated from KUBECONFIG
 	if serverURI != nil {
-		err := m.createEnvironment(defaultEnvName, *serverURI, extensionsLibData, k8sLibData, specData)
+		err := m.createEnvironment(defaultEnvName, *serverURI, *namespace, extensionsLibData, k8sLibData, specData)
 		if err != nil {
 			return nil, err
 		}

@@ -41,9 +41,9 @@ const (
 
 // ApplyCmd represents the apply subcommand
 type ApplyCmd struct {
-	ClientPool       dynamic.ClientPool
-	Discovery        discovery.DiscoveryInterface
-	DefaultNamespace string
+	ClientPool dynamic.ClientPool
+	Discovery  discovery.DiscoveryInterface
+	Namespace  string
 
 	Create bool
 	GcTag  string
@@ -69,7 +69,7 @@ func (c ApplyCmd) Run(apiObjects []*unstructured.Unstructured, wd metadata.AbsPa
 		desc := fmt.Sprintf("%s %s", utils.ResourceNameFor(c.Discovery, obj), utils.FqName(obj))
 		log.Info("Updating ", desc, dryRunText)
 
-		rc, err := utils.ClientForResource(c.ClientPool, c.Discovery, obj, c.DefaultNamespace)
+		rc, err := utils.ClientForResource(c.ClientPool, c.Discovery, obj, c.Namespace)
 		if err != nil {
 			return err
 		}
