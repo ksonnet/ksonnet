@@ -129,20 +129,20 @@ files.`,
 	Example: `  # Create or update all resources described in a ksonnet application, and
   # running in the 'dev' environment. Can be used in any subdirectory of the
   # application.
-  ksonnet apply dev
+  ks apply dev
 
   # Create or update resources described in a YAML file. Automatically picks up
   # the cluster's location from '$KUBECONFIG'.
-  ksonnet appy -f ./pod.yaml
+  ks appy -f ./pod.yaml
 
   # Create or update resources described in the JSON file. Changes are deployed
   # to the cluster pointed at the 'dev' environment.
-  ksonnet apply dev -f ./pod.json
+  ks apply dev -f ./pod.json
 
   # Update resources described in a YAML file, and running in cluster referred
   # to by './kubeconfig'.
-  ksonnet apply --kubeconfig=./kubeconfig -f ./pod.yaml
+  ks apply --kubeconfig=./kubeconfig -f ./pod.yaml
 
   # Display set of actions we will execute when we run 'apply'.
-  ksonnet apply dev --dry-run`,
+  ks apply dev --dry-run`,
 }

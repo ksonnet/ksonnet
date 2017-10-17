@@ -31,7 +31,7 @@ import (
 )
 
 var kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-var kubecfgBin = flag.String("kubecfg-bin", "kubecfg", "path to kubecfg executable under test")
+var kubecfgBin = flag.String("kubecfg-bin", "ks", "path to kubecfg executable under test")
 
 func init() {
 	if missingVersions := api.Registry.ValidateEnvRequestedVersions(); len(missingVersions) != 0 {

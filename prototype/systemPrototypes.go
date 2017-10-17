@@ -58,7 +58,7 @@ to 'targetLabelSelector', at 'targetPort'. Since 'targetLabelSelector' is an
 object literal that specifies which labels the service is meant to target, this
 will typically look something like:
 
-  ksonnet prototype use service --targetLabelSelector "{app: 'nginx'}" [...]`,
+  ks prototype use service --targetLabelSelector "{app: 'nginx'}" [...]`,
 			ShortDescription: `Service that exposes a single port`,
 			YAMLBody: []string{
 				`kind: Service`,

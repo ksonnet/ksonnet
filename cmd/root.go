@@ -95,7 +95,7 @@ func bindClientGoFlags(cmd *cobra.Command) {
 
 // RootCmd is the root of cobra subcommand tree
 var RootCmd = &cobra.Command{
-	Use:           "kubecfg",
+	Use:           "ks",
 	Short:         "Synchronise Kubernetes resources with config files",
 	SilenceErrors: true,
 	SilenceUsage:  true,
