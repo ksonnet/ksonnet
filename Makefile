@@ -24,6 +24,8 @@ GINKGO = ginkgo
 
 KCFG_TEST_FILE = lib/kubecfg_test.jsonnet
 GUESTBOOK_FILE = examples/guestbook.jsonnet
+DOC_GEN_FILE = ./docs/generate/update-generated-docs.sh
+DOC_TEST_FILE = ./docs/generate/verify-generated-docs.sh
 JSONNET_FILES = $(KCFG_TEST_FILE) $(GUESTBOOK_FILE)
 # TODO: Simplify this once ./... ignores ./vendor
 GO_PACKAGES = ./cmd/... ./utils/... ./pkg/... ./metadata/... ./prototype/...
@@ -31,12 +33,15 @@ GO_PACKAGES = ./cmd/... ./utils/... ./pkg/... ./metadata/... ./prototype/...
 # Default cluster from this config is used for integration tests
 KUBECONFIG = $(HOME)/.kube/config
 
-all: ks
+all: ks docs
 
 ks:
 	$(GO) build -o ks $(GO_FLAGS) .
 
-test: gotest jsonnettest
+docs:
+	$(DOC_GEN_FILE)
+
+test: gotest jsonnettest docstest
 
 gotest:
 	$(GO) test $(GO_FLAGS) $(GO_PACKAGES)
@@ -44,6 +49,9 @@ gotest:
 jsonnettest: ks $(JSONNET_FILES)
 #	TODO: use `ks check` once implemented
 	./ks -J lib show -f $(KCFG_TEST_FILE) -f $(GUESTBOOK_FILE) >/dev/null
+
+docstest:
+	$(DOC_TEST_FILE)
 
 integrationtest: ks
 	$(GINKGO) -tags 'integration' integration -- -kubeconfig $(KUBECONFIG) -kubecfg-bin $(abspath $<)
@@ -55,7 +63,7 @@ fmt:
 	$(GOFMT) -s -w $(shell $(GO) list -f '{{.Dir}}' $(GO_PACKAGES))
 
 clean:
-	$(RM) ./ks
+	$(RM) ./ks ./docs/cli-reference/ks*.md
 
-.PHONY: all test clean vet fmt
+.PHONY: all test clean vet fmt docs
 .PHONY: ks
