@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
@@ -29,6 +30,7 @@ const (
 	flagEnvName      = "name"
 	flagEnvURI       = "uri"
 	flagEnvNamespace = "namespace"
+	flagEnvContext   = "context"
 )
 
 func init() {
@@ -45,6 +47,10 @@ func init() {
 		"Manually specify API version from OpenAPI schema, cluster, or Kubernetes version")
 	envAddCmd.PersistentFlags().String(flagEnvNamespace, "",
 		"Specify namespace that the environment cluster should use")
+	envAddCmd.PersistentFlags().String(flagEnvURI, "",
+		"Specify the server URI that the environment should use")
+	envAddCmd.PersistentFlags().String(flagEnvContext, "",
+		"Specify the context in your kubecfg file that this environment should use")
 
 	envSetCmd.PersistentFlags().String(flagEnvName, "",
 		"Specify name to rename environment to. Name must not already exist")
@@ -52,6 +58,8 @@ func init() {
 		"Specify URI to point environment cluster to a new location")
 	envSetCmd.PersistentFlags().String(flagEnvNamespace, "",
 		"Specify namespace that the environment cluster should use")
+	envSetCmd.PersistentFlags().String(flagEnvContext, "",
+		"Specify the context in your kubecfg file that this environment should use. This will update the server URI for your environment")
 }
 
 var envCmd = &cobra.Command{
@@ -95,20 +103,39 @@ environments/
 }
 
 var envAddCmd = &cobra.Command{
-	Use:   "add <env-name> <env-uri>",
+	Use:   "add <env-name>",
 	Short: "Add a new environment to a ksonnet project",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
-		if len(args) != 2 {
-			return fmt.Errorf("'env add' takes two arguments, the name and the uri of the environment, respectively")
+		if len(args) != 1 {
+			return fmt.Errorf("'env add' takes exactly one argument, which is the name of the environment")
 		}
 
-		envName := args[0]
-		envURI := args[1]
+		name := args[0]
 
-		envNamespace, err := flags.GetString(flagEnvNamespace)
+		uri, namespace, context, err := commonEnvFlags(flags)
 		if err != nil {
 			return err
+		}
+
+		if len(uri) == 0 {
+			// If uri is not provided, use the provided context.
+			// If context is also not provided, use the current context.
+			var ctx *string
+			if len(context) != 0 {
+				ctx = &context
+			}
+
+			var ns string
+			uri, ns, err = resolveContext(ctx)
+			if err != nil {
+				return err
+			}
+
+			// If namespace is not provided, use the default namespace provided in the context.
+			if len(namespace) == 0 {
+				namespace = ns
+			}
 		}
 
 		appDir, err := os.Getwd()
@@ -127,7 +154,7 @@ var envAddCmd = &cobra.Command{
 			return err
 		}
 
-		c, err := kubecfg.NewEnvAddCmd(envName, envURI, envNamespace, specFlag, manager)
+		c, err := kubecfg.NewEnvAddCmd(name, uri, namespace, specFlag, manager)
 		if err != nil {
 			return err
 		}
@@ -164,17 +191,20 @@ environments/
         swagger.json
       spec.json      [This will contain the uri of the environment and other environment metadata],
       staging.jsonnet`,
-	Example: `  # Initialize a new staging environment at 'us-west'. Using the
-	# namespace 'my-namespace'. The directory structure rooted at 'us-west' in the
-	# documentation above will be generated.
-  ks env add us-west/staging https://ksonnet-1.us-west.elb.amazonaws.com --namespace=my-namespace
+	Example: `  # Initialize a new staging environment at 'us-west'.
+	# The environment will be setup using the current context in your kubecfg file. The directory
+	# structure rooted at 'us-west' in the documentation above will be generated.
+  ks env add us-west/staging
 
-  # Initialize a new staging environment at 'us-west', using the OpenAPI specification
-  # generated in the Kubernetes v1.7.1 build to generate 'ksonnet-lib'.
-  ks env add us-west/staging https://ksonnet-1.us-west.elb.amazonaws.com --api-spec=version:v1.7.1
+  # Initialize a new staging environment at 'us-west' with the namespace 'staging', using
+  # the OpenAPI specification generated in the Kubernetes v1.7.1 build to generate 'ksonnet-lib'.
+  ks env add us-west/staging --api-spec=version:v1.7.1 --namespace=staging
 
-  # Initialize a new development environment locally.
-  ks env add local localhost:8000`,
+  # Initialize a new environment using the 'dev' context in your kubeconfig file.
+  ks env add my-env --context=dev
+
+  # Initialize a new environment using a server URI.
+  ks env add my-env --uri=https://ksonnet-1.us-west.elb.amazonaws.com`,
 }
 
 var envRmCmd = &cobra.Command{
@@ -255,7 +285,7 @@ var envSetCmd = &cobra.Command{
 			return fmt.Errorf("'env set' takes a single argument, that is the name of the environment")
 		}
 
-		envName := args[0]
+		originalName := args[0]
 
 		appDir, err := os.Getwd()
 		if err != nil {
@@ -268,22 +298,24 @@ var envSetCmd = &cobra.Command{
 			return err
 		}
 
-		desiredEnvName, err := flags.GetString(flagEnvName)
+		name, err := flags.GetString(flagEnvName)
 		if err != nil {
 			return err
 		}
 
-		desiredEnvURI, err := flags.GetString(flagEnvURI)
+		uri, namespace, context, err := commonEnvFlags(flags)
 		if err != nil {
 			return err
 		}
 
-		desiredEnvNamespace, err := flags.GetString(flagEnvNamespace)
-		if err != nil {
-			return err
+		if len(context) != 0 {
+			uri, _, err = resolveContext(&context)
+			if err != nil {
+				return err
+			}
 		}
 
-		c, err := kubecfg.NewEnvSetCmd(envName, desiredEnvName, desiredEnvURI, desiredEnvNamespace, manager)
+		c, err := kubecfg.NewEnvSetCmd(originalName, name, uri, namespace, manager)
 		if err != nil {
 			return err
 		}
@@ -300,6 +332,34 @@ the name of an environment will also update the directory structure in
   ks env set us-west/staging --namespace=staging
 
   # Updates both the name and the URI of the environment 'us-west/staging'.
-  # Updating the name will update the directory structure in 'environments'
-  ks env set us-west/staging --uri=http://example.com --name=us-east/staging`,
+  # Updating the name will update the directory structure in 'environments'.
+  ks env set us-west/staging --uri=http://example.com --name=us-east/staging
+  
+  # Updates URI of the environment 'us-west/staging' based on the server URI
+  # in the context 'staging-west' in your kubeconfig file.
+  ks env set us-west/staging --context=staging-west`,
+}
+
+func commonEnvFlags(flags *pflag.FlagSet) (uri, namespace, context string, err error) {
+	uri, err = flags.GetString(flagEnvURI)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	namespace, err = flags.GetString(flagEnvNamespace)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	context, err = flags.GetString(flagEnvContext)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	if len(context) != 0 && len(uri) != 0 {
+		return "", "", "", fmt.Errorf("flags '%s' and '%s' are mutually exclusive, because '%s' has a URI. Try setting '%s', '%s' to the desired values",
+			flagEnvContext, flagEnvURI, flagEnvContext, flagEnvURI, flagEnvNamespace)
+	}
+
+	return uri, namespace, context, nil
 }
