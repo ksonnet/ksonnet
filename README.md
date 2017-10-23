@@ -16,10 +16,6 @@ now is on clearer error reporting and advanced features.
 
 ## Install
 
-Pre-compiled executables exist for some platforms on
-the [Github releases](https://github.com/ksonnet/ksonnet/releases)
-page.
-
 To build from source:
 
 ```console
