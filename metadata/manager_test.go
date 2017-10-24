@@ -112,6 +112,14 @@ func TestInitSuccess(t *testing.T) {
 		t.Fatalf("Expected extension library file at '%s' to be non-empty", extensionsLibPath)
 	}
 
+	componentParamsPath := appendToAbsPath(appPath, string(componentsDir), componentParamsFile)
+	componentParamsBytes, err := afero.ReadFile(testFS, string(componentParamsPath))
+	if err != nil {
+		t.Fatalf("Failed to read params.libsonnet file at '%s':\n%v", componentParamsPath, err)
+	} else if len(componentParamsBytes) == 0 {
+		t.Fatalf("Expected params.libsonnet at '%s' to be non-empty", componentParamsPath)
+	}
+
 	baseLibsonnetPath := appendToAbsPath(envPath, baseLibsonnetFile)
 	baseLibsonnetBytes, err := afero.ReadFile(testFS, string(baseLibsonnetPath))
 	if err != nil {
@@ -206,7 +214,7 @@ func TestComponentPaths(t *testing.T) {
 
 	sort.Slice(paths, func(i, j int) bool { return paths[i] < paths[j] })
 
-	if len(paths) != 2 || paths[0] != string(appFile2) || paths[1] != string(appFile1) {
+	if len(paths) != 3 || paths[0] != string(appFile2) || paths[1] != string(appFile1) {
 		t.Fatalf("m.ComponentPaths failed; expected '%s', got '%s'", []string{string(appFile1), string(appFile2)}, paths)
 	}
 }
@@ -260,5 +268,23 @@ func TestDoubleNewFailure(t *testing.T) {
 	_, err = initManager(appPath, spec, &mockAPIServer, &mockNamespace, testFS)
 	if err == nil || err.Error() != targetErr {
 		t.Fatalf("Expected to fail to create app with message '%s', got '%s'", targetErr, err.Error())
+	}
+}
+
+func TestGenComponentParamsContent(t *testing.T) {
+	expected := `{
+  global: {
+    // User-defined global parameters; accessible to all component and environments, Ex:
+    // replicas: 4,
+  },
+  components: {
+    // Component-level parameters, defined initially from 'ks prototype use ...'
+    // Each object below should correspond to a component in the components/ directory
+  },
+}
+`
+	content := string(genComponentParamsContent())
+	if content != expected {
+		t.Fatalf("Expected to generate:\n%s\n, got:\n%s", expected, content)
 	}
 }

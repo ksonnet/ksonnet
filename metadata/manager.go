@@ -39,7 +39,8 @@ const (
 	environmentsDir = "environments"
 	vendorDir       = "vendor"
 
-	baseLibsonnetFile = "base.libsonnet"
+	componentParamsFile = "params.libsonnet"
+	baseLibsonnetFile   = "base.libsonnet"
 
 	// ComponentsExtCodeKey is the ExtCode key for component imports
 	ComponentsExtCodeKey = "__ksonnet/components"
@@ -55,7 +56,8 @@ type manager struct {
 	environmentsPath AbsPath
 	vendorDir        AbsPath
 
-	baseLibsonnetPath AbsPath
+	componentParamsPath AbsPath
+	baseLibsonnetPath   AbsPath
 }
 
 func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
@@ -122,7 +124,8 @@ func newManager(rootPath AbsPath, appFS afero.Fs) *manager {
 		environmentsPath: appendToAbsPath(rootPath, environmentsDir),
 		vendorDir:        appendToAbsPath(rootPath, vendorDir),
 
-		baseLibsonnetPath: appendToAbsPath(rootPath, environmentsDir, baseLibsonnetFile),
+		componentParamsPath: appendToAbsPath(rootPath, componentsDir, componentParamsFile),
+		baseLibsonnetPath:   appendToAbsPath(rootPath, environmentsDir, baseLibsonnetFile),
 	}
 }
 
@@ -205,7 +208,41 @@ func (m *manager) createAppDirTree() error {
 		}
 	}
 
-	return afero.WriteFile(m.appFS, string(m.baseLibsonnetPath), genBaseLibsonnetContent(), defaultFilePermissions)
+	filePaths := []struct {
+		path    AbsPath
+		content []byte
+	}{
+		{
+			m.componentParamsPath,
+			genComponentParamsContent(),
+		},
+		{
+			m.baseLibsonnetPath,
+			genBaseLibsonnetContent(),
+		},
+	}
+
+	for _, f := range filePaths {
+		if err := afero.WriteFile(m.appFS, string(f.path), f.content, defaultFilePermissions); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func genComponentParamsContent() []byte {
+	return []byte(`{
+  global: {
+    // User-defined global parameters; accessible to all component and environments, Ex:
+    // replicas: 4,
+  },
+  components: {
+    // Component-level parameters, defined initially from 'ks prototype use ...'
+    // Each object below should correspond to a component in the components/ directory
+  },
+}
+`)
 }
 
 func genBaseLibsonnetContent() []byte {
