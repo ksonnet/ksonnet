@@ -203,3 +203,24 @@ base + {
 		t.Fatalf("Expected to generate override file with data:\n%s\n,got:\n%s", expected, result)
 	}
 }
+
+func TestGenerateParamsData(t *testing.T) {
+	m := mockEnvironments(t, "test-gen-params-data")
+
+	expected := `local params = import "test-gen-params-data/components/params.libsonnet";
+params + {
+  components +: {
+    // Insert component parameter overrides here. Ex:
+    // guestbook +: {
+    //   name: "guestbook-dev",
+    //   replicas: params.global.replicas,
+    // },
+  },
+}
+`
+	result := string(m.generateParamsData())
+
+	if result != expected {
+		t.Fatalf("Expected to generate params file with data:\n%s\n, got:\n%s", expected, result)
+	}
+}
