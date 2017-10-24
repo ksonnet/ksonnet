@@ -121,6 +121,10 @@ var RootCmd = &cobra.Command{
 // clientConfig.Namespace() is broken in client-go 3.0:
 // namespace in config erroneously overrides explicit --namespace
 func namespace() (string, error) {
+	return namespaceFor(clientConfig, overrides)
+}
+
+func namespaceFor(c clientcmd.ClientConfig, overrides clientcmd.ConfigOverrides) (string, error) {
 	if overrides.Context.Namespace != "" {
 		return overrides.Context.Namespace, nil
 	}
@@ -256,15 +260,15 @@ func dumpJSON(v interface{}) string {
 	return string(buf.Bytes())
 }
 
-func restClientPool(cmd *cobra.Command, envName *string) (dynamic.ClientPool, discovery.DiscoveryInterface, error) {
+func restClient(cmd *cobra.Command, envName *string, config clientcmd.ClientConfig, overrides clientcmd.ConfigOverrides) (dynamic.ClientPool, discovery.DiscoveryInterface, error) {
 	if envName != nil {
-		err := overrideCluster(*envName)
+		err := overrideCluster(*envName, config, overrides)
 		if err != nil {
 			return nil, nil, err
 		}
 	}
 
-	conf, err := clientConfig.ClientConfig()
+	conf, err := config.ClientConfig()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -280,6 +284,10 @@ func restClientPool(cmd *cobra.Command, envName *string) (dynamic.ClientPool, di
 
 	pool := dynamic.NewClientPool(conf, mapper, pathresolver)
 	return pool, discoCache, nil
+}
+
+func restClientPool(cmd *cobra.Command, envName *string) (dynamic.ClientPool, discovery.DiscoveryInterface, error) {
+	return restClient(cmd, envName, clientConfig, overrides)
 }
 
 type envSpec struct {
@@ -317,9 +325,8 @@ func parseEnvCmd(cmd *cobra.Command, args []string) (*envSpec, error) {
 //
 // If the environment URI the user is attempting to deploy to is not the current
 // kubeconfig context, we must manually override the client-go --cluster flag
-// to ensure we are deploying to the correct cluster. The same logic applies
-// for overwriting the --namespace flag.
-func overrideCluster(envName string) error {
+// to ensure we are deploying to the correct cluster.
+func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overrides clientcmd.ConfigOverrides) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -363,7 +370,7 @@ func overrideCluster(envName string) error {
 		return nil
 	}
 
-	return fmt.Errorf("Attempting to deploy to environment '%s' at %s, but there are no clusters with that URI", envName, env.URI)
+	return fmt.Errorf("Attempting to operate on environment '%s' at %s, but there are no clusters with that URI", envName, env.URI)
 }
 
 // expandEnvCmdObjs finds and expands templates for the family of commands of
@@ -405,8 +412,9 @@ func expandEnvCmdObjs(cmd *cobra.Command, envSpec *envSpec, cwd metadata.AbsPath
 			if err != nil {
 				return nil, err
 			}
-			baseObjExtCode := fmt.Sprintf("%s=%s", metadata.ComponentsExtCodeKey, constructBaseObj(componentPaths))
-			expander.ExtCodes = append([]string{baseObjExtCode}, expander.ExtCodes...)
+
+			baseObj := constructBaseObj(componentPaths)
+			expander.ExtCodes = append([]string{baseObj}, expander.ExtCodes...)
 			fileNames = []string{string(envComponentPath)}
 		}
 	}
@@ -437,5 +445,5 @@ func constructBaseObj(paths []string) string {
 		fmt.Fprintf(&obj, "  %s: import \"%s\",\n", name, p)
 	}
 	obj.WriteString("}\n")
-	return obj.String()
+	return fmt.Sprintf("%s=%s", metadata.ComponentsExtCodeKey, obj.String())
 }

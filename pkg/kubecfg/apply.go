@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/diff"
+	kdiff "k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
@@ -100,7 +100,7 @@ func (c ApplyCmd) Run(apiObjects []*unstructured.Unstructured, wd metadata.AbsPa
 			return fmt.Errorf("Error updating %s: %s", desc, err)
 		}
 
-		log.Debug("Updated object: ", diff.ObjectDiff(obj, newobj))
+		log.Debug("Updated object: ", kdiff.ObjectDiff(obj, newobj))
 
 		// Some objects appear under multiple kinds
 		// (eg: Deployment is both extensions/v1beta1
