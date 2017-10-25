@@ -3,16 +3,16 @@
 [![Build Status](https://travis-ci.org/ksonnet/ksonnet.svg?branch=master)](https://travis-ci.org/ksonnet/ksonnet)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ksonnet/ksonnet)](https://goreportcard.com/report/github.com/ksonnet/ksonnet)
 
-A tool for managing Kubernetes resources as code.
+*ksonnet* is a framework for writing, sharing, and deploying Kubernetes application manifests. With its CLI, you can generate a complete application from scratch in only a few commands, or manage a complex system at scale.
 
-`ksonnet` allows you to express the patterns across your
-infrastructure and reuse these powerful "templates" across many
-services, and then manage those templates as files in version control.
-The more complex your infrastructure is, the more you will gain from
-using kubecfg.
+Specifically, ksonnet allows you to:
+* *Reuse* common manifest patterns (within your app or from external libraries)
+* *Customize* manifests directly with powerful object concatenation syntax
+* *Deploy* app manifests to multiple environments
+* *Diff* across environments to compare two running versions of your app
+* *Track* the entire state of your app manifests in version control
 
-Status: Basic functionality works, and the tool is usable.  The focus
-now is on clearer error reporting and advanced features.
+*STATUS: Development is ongoing—this tool is pre-alpha.*
 
 ## Install
 
