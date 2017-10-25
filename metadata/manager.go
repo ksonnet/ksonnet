@@ -44,6 +44,8 @@ const (
 
 	// ComponentsExtCodeKey is the ExtCode key for component imports
 	ComponentsExtCodeKey = "__ksonnet/components"
+	// ParamsExtCodeKey is the ExtCode key for importing environment parameters
+	ParamsExtCodeKey = "__ksonnet/params"
 )
 
 type manager struct {
@@ -180,9 +182,10 @@ func (m *manager) CreateComponent(name string, text string, templateType prototy
 	return afero.WriteFile(m.appFS, componentPath, []byte(text), defaultFilePermissions)
 }
 
-func (m *manager) LibPaths(envName string) (libPath, envLibPath, envComponentPath AbsPath) {
+func (m *manager) LibPaths(envName string) (libPath, envLibPath, envComponentPath, envParamsPath AbsPath) {
 	envPath := appendToAbsPath(m.environmentsPath, envName)
-	return m.libPath, appendToAbsPath(envPath, metadataDirName), appendToAbsPath(envPath, path.Base(envName)+".jsonnet")
+	return m.libPath, appendToAbsPath(envPath, metadataDirName),
+		appendToAbsPath(envPath, path.Base(envName)+".jsonnet"), appendToAbsPath(envPath, componentParamsFile)
 }
 
 func (m *manager) createAppDirTree() error {
