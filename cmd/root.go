@@ -128,6 +128,28 @@ func namespace() (string, error) {
 	return ns, err
 }
 
+// resolveContext returns the server URI and namespace of the cluster at the provided
+// context. If context is nil, the current context is used.
+func resolveContext(context *string) (uri, namespace string, err error) {
+	rawConfig, err := clientConfig.RawConfig()
+	if err != nil {
+		return "", "", err
+	}
+
+	ctxName := rawConfig.CurrentContext
+	if context != nil {
+		ctxName = *context
+	}
+	ctx := rawConfig.Contexts[ctxName]
+	if ctx == nil {
+		return "", "", fmt.Errorf("context '%s' does not exist in the kubeconfig file", *context)
+	}
+
+	log.Infof("Using context '%s'", ctxName)
+	cluster := rawConfig.Clusters[ctx.Cluster]
+	return cluster.Server, ctx.Namespace, nil
+}
+
 func logLevel(verbosity int) log.Level {
 	switch verbosity {
 	case 0:
