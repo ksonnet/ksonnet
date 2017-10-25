@@ -18,8 +18,8 @@ package cmd
 import (
 	"fmt"
 
+	jsonnet "github.com/google/go-jsonnet"
 	"github.com/spf13/cobra"
-	jsonnet "github.com/strickyak/jsonnet_cgo"
 	"k8s.io/client-go/pkg/version"
 )
 

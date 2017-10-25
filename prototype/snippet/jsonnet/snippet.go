@@ -72,16 +72,23 @@ func visit(node ast.Node, imports *[]ast.Import) error {
 	switch n := node.(type) {
 	case *ast.Import:
 		// Add parameter-type imports to the list of replacements.
-		if strings.HasPrefix(n.File, paramPrefix) {
-			param := strings.TrimPrefix(n.File, paramPrefix)
+		if strings.HasPrefix(n.File.Value, paramPrefix) {
+			param := strings.TrimPrefix(n.File.Value, paramPrefix)
 			if len(param) < 1 {
 				return errors.New("There must be a parameter following import param://")
 			}
 			*imports = append(*imports, *n)
 		}
 	case *ast.Apply:
-		for _, arg := range n.Arguments {
+		for _, arg := range n.Arguments.Positional {
 			err := visit(arg, imports)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, arg := range n.Arguments.Named {
+			err := visit(arg.Arg, imports)
 			if err != nil {
 				return err
 			}
@@ -101,11 +108,9 @@ func visit(node ast.Node, imports *[]ast.Import) error {
 			}
 		}
 	case *ast.ArrayComp:
-		for _, spec := range n.Specs {
-			err := visitCompSpec(spec, imports)
-			if err != nil {
-				return err
-			}
+		err := visitCompSpec(n.Spec, imports)
+		if err != nil {
+			return err
 		}
 		return visit(n.Body, imports)
 	case *ast.Assert:
@@ -137,6 +142,13 @@ func visit(node ast.Node, imports *[]ast.Import) error {
 	case *ast.Error:
 		return visit(n.Expr, imports)
 	case *ast.Function:
+		for _, p := range n.Parameters.Optional {
+			err := visit(p.DefaultArg, imports)
+			if err != nil {
+				return err
+			}
+		}
+
 		return visit(n.Body, imports)
 	case *ast.Index:
 		err := visit(n.Target, imports)
@@ -193,22 +205,10 @@ func visit(node ast.Node, imports *[]ast.Import) error {
 				return err
 			}
 		}
-		for _, spec := range n.Specs {
-			err := visitCompSpec(spec, imports)
-			if err != nil {
-				return err
-			}
-		}
-	case *ast.ObjectComprehensionSimple:
-		err := visit(n.Field, imports)
+		err := visitCompSpec(n.Spec, imports)
 		if err != nil {
 			return err
 		}
-		err = visit(n.Value, imports)
-		if err != nil {
-			return err
-		}
-		return visit(n.Array, imports)
 	case *ast.SuperIndex:
 		return visit(n.Index, imports)
 	case *ast.InSuper:
@@ -235,11 +235,40 @@ func visit(node ast.Node, imports *[]ast.Import) error {
 	return nil
 }
 
-func visitCompSpec(node ast.CompSpec, imports *[]ast.Import) error {
+func visitCompSpec(node ast.ForSpec, imports *[]ast.Import) error {
+	if node.Outer != nil {
+		err := visitCompSpec(*node.Outer, imports)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, ifspec := range node.Conditions {
+		err := visit(ifspec.Expr, imports)
+		if err != nil {
+			return err
+		}
+	}
 	return visit(node.Expr, imports)
 }
 
 func visitObjectField(node ast.ObjectField, imports *[]ast.Import) error {
+	if node.Method != nil {
+		err := visit(node.Method, imports)
+		if err != nil {
+			return err
+		}
+	}
+
+	if node.Params != nil {
+		for _, p := range node.Params.Optional {
+			err := visit(p.DefaultArg, imports)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	err := visit(node.Expr1, imports)
 	if err != nil {
 		return err
@@ -260,6 +289,12 @@ func visitDesugaredObjectField(node ast.DesugaredObjectField, imports *[]ast.Imp
 }
 
 func visitLocalBind(node ast.LocalBind, imports *[]ast.Import) error {
+	if node.Fun != nil {
+		err := visit(node.Fun, imports)
+		if err != nil {
+			return err
+		}
+	}
 	return visit(node.Body, imports)
 }
 
@@ -280,7 +315,7 @@ func replace(jsonnet string, imports []ast.Import) string {
 	})
 
 	for _, im := range imports {
-		param := paramReplacementPrefix + strings.TrimPrefix(im.File, paramPrefix) + paramReplacementSuffix
+		param := paramReplacementPrefix + strings.TrimPrefix(im.File.Value, paramPrefix) + paramReplacementSuffix
 
 		lineStart := im.Loc().Begin.Line
 		lineEnd := im.Loc().End.Line
