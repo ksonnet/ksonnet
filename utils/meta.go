@@ -95,6 +95,12 @@ func ResourceNameFor(disco discovery.ServerResourcesInterface, o runtime.Object)
 	return strings.ToLower(gvk.Kind)
 }
 
+// GroupVersionKindFor returns a lowercased kind for an Kubernete's object
+func GroupVersionKindFor(o runtime.Object) string {
+	gvk := o.GetObjectKind().GroupVersionKind()
+	return strings.ToLower(gvk.Kind)
+}
+
 // FqName returns "namespace.name"
 func FqName(o metav1.Object) string {
 	if o.GetNamespace() == "" {

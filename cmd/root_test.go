@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -68,7 +69,7 @@ func TestConstructBaseObj(t *testing.T) {
 
 	for _, s := range tests {
 		res := constructBaseObj(s.inputPaths)
-		if res != s.expected {
+		if res != fmt.Sprintf("__ksonnet/components=%s", s.expected) {
 			t.Errorf("Wrong object constructed\n  expected: %v\n  got: %v", s.expected, res)
 		}
 	}
