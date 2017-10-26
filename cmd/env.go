@@ -47,21 +47,9 @@ func init() {
 	// TODO: We need to make this default to checking the `kubeconfig` file.
 	envAddCmd.PersistentFlags().String(flagAPISpec, "version:v1.7.0",
 		"Manually specify API version from OpenAPI schema, cluster, or Kubernetes version")
-	envAddCmd.PersistentFlags().String(flagEnvNamespace, "",
-		"Specify namespace that the environment cluster should use")
-	envAddCmd.PersistentFlags().String(flagEnvServer, "",
-		"Specify the address and port of the Kubernetes API server")
-	envAddCmd.PersistentFlags().String(flagEnvContext, "",
-		"Specify the context in your kubecfg file that this environment should use")
 
 	envSetCmd.PersistentFlags().String(flagEnvName, "",
 		"Specify name to rename environment to. Name must not already exist")
-	envSetCmd.PersistentFlags().String(flagEnvServer, "",
-		"Specify the address and port of the Kubernetes API server")
-	envSetCmd.PersistentFlags().String(flagEnvNamespace, "",
-		"Specify namespace that the environment cluster should use")
-	envSetCmd.PersistentFlags().String(flagEnvContext, "",
-		"Specify the context in your kubecfg file that this environment should use. This will update the server address for your environment")
 }
 
 var envCmd = &cobra.Command{
