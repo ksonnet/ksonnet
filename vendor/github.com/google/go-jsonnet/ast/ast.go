@@ -30,10 +30,14 @@ type Identifiers []Identifier
 
 // ---------------------------------------------------------------------------
 
+type Context *string
+
 type Node interface {
+	Context() Context
 	Loc() *LocationRange
 	FreeVariables() Identifiers
 	SetFreeVariables(Identifiers)
+	SetContext(Context)
 }
 type Nodes []Node
 
@@ -41,6 +45,7 @@ type Nodes []Node
 
 type NodeBase struct {
 	loc           LocationRange
+	context       Context
 	freeVariables Identifiers
 }
 
@@ -70,24 +75,44 @@ func (n *NodeBase) SetFreeVariables(idents Identifiers) {
 	n.freeVariables = idents
 }
 
+func (n *NodeBase) Context() Context {
+	return n.context
+}
+
+func (n *NodeBase) SetContext(context Context) {
+	n.context = context
+}
+
 // ---------------------------------------------------------------------------
 
-// +gen stringer
-type CompKind int
-
-const (
-	CompFor CompKind = iota
-	CompIf
-)
-
-// TODO(sbarzowski) separate types for two kinds
-// TODO(sbarzowski) bonus points for attaching ifs to the previous for
-type CompSpec struct {
-	Kind    CompKind
-	VarName *Identifier // nil when kind != compSpecFor
-	Expr    Node
+type IfSpec struct {
+	Expr Node
 }
-type CompSpecs []CompSpec
+
+// Example:
+// expr for x in arr1 for y in arr2 for z in arr3
+// The order is the same as in python, i.e. the leftmost is the outermost.
+//
+// Our internal representation reflects how they are semantically nested:
+// ForSpec(z, outer=ForSpec(y, outer=ForSpec(x, outer=nil)))
+// Any ifspecs are attached to the relevant ForSpec.
+//
+// Ifs are attached to the one on the left, for example:
+// expr for x in arr1 for y in arr2 if x % 2 == 0 for z in arr3
+// The if is attached to the y forspec.
+//
+// It desugares to:
+// flatMap(\x ->
+//         flatMap(\y ->
+//                 flatMap(\z -> [expr], arr3)
+//                 arr2)
+//         arr3)
+type ForSpec struct {
+	VarName    Identifier
+	Expr       Node
+	Conditions []IfSpec
+	Outer      *ForSpec
+}
 
 // ---------------------------------------------------------------------------
 
@@ -95,10 +120,19 @@ type CompSpecs []CompSpec
 type Apply struct {
 	NodeBase
 	Target        Node
-	Arguments     Nodes
+	Arguments     Arguments
 	TrailingComma bool
 	TailStrict    bool
-	// TODO(sbarzowski) support named arguments
+}
+
+type NamedArgument struct {
+	Name Identifier
+	Arg  Node
+}
+
+type Arguments struct {
+	Positional Nodes
+	Named      []NamedArgument
 }
 
 // ---------------------------------------------------------------------------
@@ -127,7 +161,7 @@ type ArrayComp struct {
 	NodeBase
 	Body          Node
 	TrailingComma bool
-	Specs         CompSpecs
+	Spec          ForSpec
 }
 
 // ---------------------------------------------------------------------------
@@ -277,9 +311,19 @@ type Error struct {
 // Function represents a function definition
 type Function struct {
 	NodeBase
-	Parameters    Identifiers // TODO(sbarzowski) support default arguments
+	Parameters    Parameters
 	TrailingComma bool
 	Body          Node
+}
+
+type NamedParameter struct {
+	Name       Identifier
+	DefaultArg Node
+}
+
+type Parameters struct {
+	Required Identifiers
+	Optional []NamedParameter
 }
 
 // ---------------------------------------------------------------------------
@@ -287,7 +331,7 @@ type Function struct {
 // Import represents import "file".
 type Import struct {
 	NodeBase
-	File string
+	File *LiteralString
 }
 
 // ---------------------------------------------------------------------------
@@ -295,7 +339,7 @@ type Import struct {
 // ImportStr represents importstr "file".
 type ImportStr struct {
 	NodeBase
-	File string
+	File *LiteralString
 }
 
 // ---------------------------------------------------------------------------
@@ -325,11 +369,9 @@ type Slice struct {
 
 // LocalBind is a helper struct for astLocal
 type LocalBind struct {
-	Variable      Identifier
-	Body          Node
-	FunctionSugar bool
-	Params        Identifiers // if functionSugar is true
-	TrailingComma bool
+	Variable Identifier
+	Body     Node
+	Fun      *Function
 }
 type LocalBinds []LocalBind
 
@@ -364,7 +406,6 @@ type LiteralNumber struct {
 
 // ---------------------------------------------------------------------------
 
-// +gen stringer
 type LiteralStringKind int
 
 const (
@@ -374,6 +415,16 @@ const (
 	VerbatimStringDouble
 	VerbatimStringSingle
 )
+
+func (k LiteralStringKind) FullyEscaped() bool {
+	switch k {
+	case StringSingle, StringDouble:
+		return true
+	case StringBlock, VerbatimStringDouble, VerbatimStringSingle:
+		return false
+	}
+	panic(fmt.Sprintf("Unknown string kind: %v", k))
+}
 
 // LiteralString represents a JSON string
 type LiteralString struct {
@@ -385,7 +436,6 @@ type LiteralString struct {
 
 // ---------------------------------------------------------------------------
 
-// +gen stringer
 type ObjectFieldKind int
 
 const (
@@ -396,7 +446,6 @@ const (
 	ObjectLocal                            // local id = expr2
 )
 
-// +gen stringer
 type ObjectFieldHide int
 
 const (
@@ -411,21 +460,16 @@ type ObjectField struct {
 	Hide          ObjectFieldHide // (ignore if kind != astObjectField*)
 	SuperSugar    bool            // +:  (ignore if kind != astObjectField*)
 	MethodSugar   bool            // f(x, y, z): ...  (ignore if kind  == astObjectAssert)
-	Expr1         Node            // Not in scope of the object
+	Method        *Function
+	Expr1         Node // Not in scope of the object
 	Id            *Identifier
-	Ids           Identifiers // If methodSugar == true then holds the params.
+	Params        *Parameters // If methodSugar == true then holds the params.
 	TrailingComma bool        // If methodSugar == true then remembers the trailing comma
 	Expr2, Expr3  Node        // In scope of the object (can see self).
 }
 
-// TODO(jbeda): Add the remaining constructor helpers here
-
-func ObjectFieldLocal(methodSugar bool, id *Identifier, ids Identifiers, trailingComma bool, body Node) ObjectField {
-	return ObjectField{ObjectLocal, ObjectFieldVisible, false, methodSugar, nil, id, ids, trailingComma, body, nil}
-}
-
 func ObjectFieldLocalNoMethod(id *Identifier, body Node) ObjectField {
-	return ObjectField{ObjectLocal, ObjectFieldVisible, false, false, nil, id, Identifiers{}, false, body, nil}
+	return ObjectField{ObjectLocal, ObjectFieldVisible, false, false, nil, nil, id, nil, false, body, nil}
 }
 
 type ObjectFields []ObjectField
@@ -443,9 +487,10 @@ type Object struct {
 // ---------------------------------------------------------------------------
 
 type DesugaredObjectField struct {
-	Hide ObjectFieldHide
-	Name Node
-	Body Node
+	Hide      ObjectFieldHide
+	Name      Node
+	Body      Node
+	PlusSuper bool
 }
 type DesugaredObjectFields []DesugaredObjectField
 
@@ -467,19 +512,7 @@ type ObjectComp struct {
 	NodeBase
 	Fields        ObjectFields
 	TrailingComma bool
-	Specs         CompSpecs
-}
-
-// ---------------------------------------------------------------------------
-
-// ObjectComprehensionSimple represents post-desugaring object
-// comprehension { [e]: e for x in e }.
-type ObjectComprehensionSimple struct {
-	NodeBase
-	Field Node
-	Value Node
-	Id    Identifier
-	Array Node
+	Spec          ForSpec
 }
 
 // ---------------------------------------------------------------------------

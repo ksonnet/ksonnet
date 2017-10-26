@@ -24,8 +24,8 @@ import (
 	"os"
 	"path/filepath"
 
+	jsonnet "github.com/google/go-jsonnet"
 	log "github.com/sirupsen/logrus"
-	jsonnet "github.com/strickyak/jsonnet_cgo"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -126,7 +126,12 @@ func jsonWalk(obj interface{}) ([]interface{}, error) {
 }
 
 func jsonnetReader(vm *jsonnet.VM, path string) ([]runtime.Object, error) {
-	jsonstr, err := vm.EvaluateFile(path)
+	jsonnetBytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonstr, err := vm.EvaluateSnippet(path, string(jsonnetBytes))
 	if err != nil {
 		return nil, err
 	}

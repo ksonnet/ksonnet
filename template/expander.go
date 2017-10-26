@@ -8,9 +8,9 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
+	jsonnet "github.com/google/go-jsonnet"
 	"github.com/ksonnet/ksonnet/utils"
 	log "github.com/sirupsen/logrus"
-	jsonnet "github.com/strickyak/jsonnet_cgo"
 )
 
 type Expander struct {
@@ -31,7 +31,6 @@ func (spec *Expander) Expand(paths []string) ([]*unstructured.Unstructured, erro
 	if err != nil {
 		return nil, err
 	}
-	defer vm.Destroy()
 
 	res := []*unstructured.Unstructured{}
 	for _, path := range paths {
@@ -47,17 +46,22 @@ func (spec *Expander) Expand(paths []string) ([]*unstructured.Unstructured, erro
 // JsonnetVM constructs a new jsonnet.VM, according to command line
 // flags
 func (spec *Expander) jsonnetVM() (*jsonnet.VM, error) {
-	vm := jsonnet.Make()
+	vm := jsonnet.MakeVM()
+	importer := jsonnet.FileImporter{
+		JPaths: []string{},
+	}
 
 	for _, p := range spec.EnvJPath {
 		log.Debugln("Adding jsonnet search path", p)
-		vm.JpathAdd(p)
+		importer.JPaths = append(importer.JPaths, p)
 	}
 
 	for _, p := range spec.FlagJpath {
 		log.Debugln("Adding jsonnet search path", p)
-		vm.JpathAdd(p)
+		importer.JPaths = append(importer.JPaths, p)
 	}
+
+	vm.Importer(&importer)
 
 	for _, extvar := range spec.ExtVars {
 		kv := strings.SplitN(extvar, "=", 2)
@@ -92,12 +96,12 @@ func (spec *Expander) jsonnetVM() (*jsonnet.VM, error) {
 		case 1:
 			v, present := os.LookupEnv(kv[0])
 			if present {
-				vm.TlaVar(kv[0], v)
+				vm.TLAVar(kv[0], v)
 			} else {
 				return nil, fmt.Errorf("Missing environment variable: %s", kv[0])
 			}
 		case 2:
-			vm.TlaVar(kv[0], kv[1])
+			vm.TLAVar(kv[0], kv[1])
 		}
 	}
 
@@ -110,7 +114,7 @@ func (spec *Expander) jsonnetVM() (*jsonnet.VM, error) {
 		if err != nil {
 			return nil, err
 		}
-		vm.TlaVar(kv[0], string(v))
+		vm.TLAVar(kv[0], string(v))
 	}
 
 	for _, extcode := range spec.ExtCodes {

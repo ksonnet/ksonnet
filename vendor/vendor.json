@@ -21,6 +21,30 @@
 			"revisionTime": "2017-03-24T14:02:28Z"
 		},
 		{
+			"checksumSHA1": "BlfYVRUk8gVLCXtbqy4JBVFMPTg=",
+			"path": "github.com/clipperhouse/set",
+			"revision": "c425a638bbb3034eaa3dfe8c2f0f4bc29129b7fc",
+			"revisionTime": "2015-03-04T20:45:47Z"
+		},
+		{
+			"checksumSHA1": "C+JncsAI7+mxsVAvx/7lo1p9Pvs=",
+			"path": "github.com/clipperhouse/slice",
+			"revision": "3ae82e00044e045370183e264317ec785b8f0da3",
+			"revisionTime": "2015-03-01T17:33:39Z"
+		},
+		{
+			"checksumSHA1": "NM+gxNbuon8DgHMmdVwHUhwmMyI=",
+			"path": "github.com/clipperhouse/stringer",
+			"revision": "a8382ce6af9a129cab27e7595ef44a4c2b817360",
+			"revisionTime": "2016-04-10T22:32:32Z"
+		},
+		{
+			"checksumSHA1": "APx+deQijXJSBgYle3eao7O+yLE=",
+			"path": "github.com/clipperhouse/typewriter",
+			"revision": "c1a48da378ebb7db1db9f35981b5cc24bf2e5b85",
+			"revisionTime": "2016-12-20T22:28:20Z"
+		},
+		{
 			"checksumSHA1": "vM0AXBjMyPUVF7sLxjXX0to78l0=",
 			"path": "github.com/coreos/go-oidc/http",
 			"revision": "d68c0e2fef598f5bbf15edd34905f4bf551a54ec",
@@ -107,6 +131,12 @@
 			"versionExact": "v1.2"
 		},
 		{
+			"checksumSHA1": "p5z5hdUt68Z3tK7Is+yLGrCNzoA=",
+			"path": "github.com/fatih/color",
+			"revision": "5df930a27be2502f99b292b7cc09ebad4d0891f4",
+			"revisionTime": "2017-09-26T11:14:11Z"
+		},
+		{
 			"checksumSHA1": "ImX1uv6O09ggFeBPUJJ2nu7MPSA=",
 			"path": "github.com/ghodss/yaml",
 			"revision": "0ca9ea5df5451ffdf184b4428c902747c2c11cd7",
@@ -155,22 +185,22 @@
 			"revisionTime": "2016-01-25T20:49:56Z"
 		},
 		{
-			"checksumSHA1": "yqF125xVSkmfLpIVGrLlfE05IUk=",
-			"path": "github.com/golang/protobuf/proto",
-			"revision": "ab9f9a6dab164b7d1246e0e688b0ab7b94d8553e",
-			"revisionTime": "2017-08-16T00:15:14Z"
+			"checksumSHA1": "cDO97b41LeLcrTxo4kSBTu2EXLo=",
+			"path": "github.com/google/go-jsonnet",
+			"revision": "e8f6d25f61d163deee16a78b545f4aaa0f295c01",
+			"revisionTime": "2017-10-25T22:39:20Z"
 		},
 		{
-			"checksumSHA1": "pks4vOMGe/SWJkCPDraWp6B4kZQ=",
+			"checksumSHA1": "TWB9bLGW9VSQZYw5eZUKg4RZlr4=",
 			"path": "github.com/google/go-jsonnet/ast",
-			"revision": "5cd467fd1885ca5527a3ab19c45baf9ddc786249",
-			"revisionTime": "2017-08-24T19:11:05Z"
+			"revision": "968ae23435fca7e3c2f4e8396dc49497ee96e0e2",
+			"revisionTime": "2017-10-25T03:00:40Z"
 		},
 		{
-			"checksumSHA1": "FdqrqmPqoaxcw2O22+/l2HXv9Zg=",
+			"checksumSHA1": "uG3PovrccCfWMZBI0guARaKzbYU=",
 			"path": "github.com/google/go-jsonnet/parser",
-			"revision": "5cd467fd1885ca5527a3ab19c45baf9ddc786249",
-			"revisionTime": "2017-08-24T19:11:05Z"
+			"revision": "968ae23435fca7e3c2f4e8396dc49497ee96e0e2",
+			"revisionTime": "2017-10-25T03:00:40Z"
 		},
 		{
 			"checksumSHA1": "fgPBEKvm7D7y4IMxGaxHsPmtYtU=",
@@ -249,6 +279,12 @@
 			"path": "github.com/mailru/easyjson/jwriter",
 			"revision": "3f09c2282fc5ad74b3d04a485311f3173c2431d3",
 			"revisionTime": "2017-04-26T07:38:02Z"
+		},
+		{
+			"checksumSHA1": "i+X88NaP9sqkBeCn8s9dPb+ET2Y=",
+			"path": "github.com/mattn/go-colorable",
+			"revision": "ad5389df28cdac544c99bd7b9161a0b5b6ca9d1b",
+			"revisionTime": "2017-08-16T03:18:13Z"
 		},
 		{
 			"checksumSHA1": "U6lX43KDDlNOn+Z0Yyww+ZzHfFo=",
@@ -497,12 +533,6 @@
 			"revisionTime": "2017-06-01T20:57:54Z"
 		},
 		{
-			"checksumSHA1": "zHXKW3VTfu4Dswo3GTsCGVCZuw4=",
-			"path": "github.com/strickyak/jsonnet_cgo",
-			"revision": "04f8990f6dd09242167d7320e3267a4326ffdcfb",
-			"revisionTime": "2017-06-22T22:16:47Z"
-		},
-		{
 			"checksumSHA1": "MxLnUmfrP+r5HfCZM29+WPKebn8=",
 			"path": "github.com/ugorji/go/codec",
 			"revision": "708a42d246822952f38190a8d8c4e6b16a0e600c",
@@ -737,52 +767,22 @@
 			"revisionTime": "2017-04-21T08:09:44Z"
 		},
 		{
-			"checksumSHA1": "WPEbk80NB3Esdh4Yk0PXr2K7xVU=",
-			"path": "google.golang.org/appengine",
-			"revision": "d9a072cfa7b9736e44311ef77b3e09d804bfa599",
-			"revisionTime": "2017-08-14T19:09:42Z"
+			"checksumSHA1": "8bP6iLolDGDRKAnx89Qb/OatWDE=",
+			"path": "golang.org/x/tools/go/ast/astutil",
+			"revision": "9b61fcc4c548d69663d915801fc4b42a43b6cd9c",
+			"revisionTime": "2017-10-24T20:47:09Z"
 		},
 		{
-			"checksumSHA1": "/XD6hF+tqSNrfPrFmukDeHKFVVA=",
-			"path": "google.golang.org/appengine/internal",
-			"revision": "d9a072cfa7b9736e44311ef77b3e09d804bfa599",
-			"revisionTime": "2017-08-14T19:09:42Z"
+			"checksumSHA1": "o6uoZozSLnj3Ph+hj399ZPqJYhE=",
+			"path": "golang.org/x/tools/go/gcimporter15",
+			"revision": "9b61fcc4c548d69663d915801fc4b42a43b6cd9c",
+			"revisionTime": "2017-10-24T20:47:09Z"
 		},
 		{
-			"checksumSHA1": "x6Thdfyasqd68dWZWqzWWeIfAfI=",
-			"path": "google.golang.org/appengine/internal/app_identity",
-			"revision": "d9a072cfa7b9736e44311ef77b3e09d804bfa599",
-			"revisionTime": "2017-08-14T19:09:42Z"
-		},
-		{
-			"checksumSHA1": "TsNO8P0xUlLNyh3Ic/tzSp/fDWM=",
-			"path": "google.golang.org/appengine/internal/base",
-			"revision": "d9a072cfa7b9736e44311ef77b3e09d804bfa599",
-			"revisionTime": "2017-08-14T19:09:42Z"
-		},
-		{
-			"checksumSHA1": "5QsV5oLGSfKZqTCVXP6NRz5T4Tw=",
-			"path": "google.golang.org/appengine/internal/datastore",
-			"revision": "d9a072cfa7b9736e44311ef77b3e09d804bfa599",
-			"revisionTime": "2017-08-14T19:09:42Z"
-		},
-		{
-			"checksumSHA1": "Gep2T9zmVYV8qZfK2gu3zrmG6QE=",
-			"path": "google.golang.org/appengine/internal/log",
-			"revision": "d9a072cfa7b9736e44311ef77b3e09d804bfa599",
-			"revisionTime": "2017-08-14T19:09:42Z"
-		},
-		{
-			"checksumSHA1": "eLZVX1EHLclFtQnjDIszsdyWRHo=",
-			"path": "google.golang.org/appengine/internal/modules",
-			"revision": "d9a072cfa7b9736e44311ef77b3e09d804bfa599",
-			"revisionTime": "2017-08-14T19:09:42Z"
-		},
-		{
-			"checksumSHA1": "a1XY7rz3BieOVqVI2Et6rKiwQCk=",
-			"path": "google.golang.org/appengine/internal/remote_api",
-			"revision": "d9a072cfa7b9736e44311ef77b3e09d804bfa599",
-			"revisionTime": "2017-08-14T19:09:42Z"
+			"checksumSHA1": "nTSuDBk95d0rNSqK8YF72I9orHA=",
+			"path": "golang.org/x/tools/imports",
+			"revision": "9b61fcc4c548d69663d915801fc4b42a43b6cd9c",
+			"revisionTime": "2017-10-24T20:47:09Z"
 		},
 		{
 			"checksumSHA1": "6f8MEU31llHM1sLM/GGH4/Qxu0A=",
