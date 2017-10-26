@@ -356,10 +356,8 @@ func overrideCluster(envName string) error {
 		clusterName := clusterURIs[env.URI]
 		log.Debugf("Overwriting --cluster flag with '%s'", clusterName)
 		overrides.Context.Cluster = clusterName
-		if len(env.Namespace) != 0 {
-			log.Debugf("Overwriting --namespace flag with '%s'", env.Namespace)
-			overrides.Context.Namespace = env.Namespace
-		}
+		log.Debugf("Overwriting --namespace flag with '%s'", env.Namespace)
+		overrides.Context.Namespace = env.Namespace
 		return nil
 	}
 

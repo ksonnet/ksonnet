@@ -31,6 +31,8 @@ const (
 	flagEnvURI       = "uri"
 	flagEnvNamespace = "namespace"
 	flagEnvContext   = "context"
+
+	defaultNamespace = "default"
 )
 
 func init() {
@@ -118,6 +120,10 @@ var envAddCmd = &cobra.Command{
 			return err
 		}
 
+		if len(namespace) == 0 {
+			namespace = defaultNamespace
+		}
+
 		if len(uri) == 0 {
 			// If uri is not provided, use the provided context.
 			// If context is also not provided, use the current context.
@@ -133,7 +139,7 @@ var envAddCmd = &cobra.Command{
 			}
 
 			// If namespace is not provided, use the default namespace provided in the context.
-			if len(namespace) == 0 {
+			if !flags.Changed(flagEnvNamespace) {
 				namespace = ns
 			}
 		}
@@ -308,6 +314,11 @@ var envSetCmd = &cobra.Command{
 			return err
 		}
 
+		// If namespace flag is provided but without a value, use the default namespace.
+		if flags.Changed(flagEnvNamespace) && len(namespace) == 0 {
+			namespace = defaultNamespace
+		}
+
 		if len(context) != 0 {
 			uri, _, err = resolveContext(&context)
 			if err != nil {
@@ -356,7 +367,7 @@ func commonEnvFlags(flags *pflag.FlagSet) (uri, namespace, context string, err e
 		return "", "", "", err
 	}
 
-	if len(context) != 0 && len(uri) != 0 {
+	if flags.Changed(flagEnvContext) && flags.Changed(flagEnvURI) {
 		return "", "", "", fmt.Errorf("flags '%s' and '%s' are mutually exclusive, because '%s' has a URI. Try setting '%s', '%s' to the desired values",
 			flagEnvContext, flagEnvURI, flagEnvContext, flagEnvURI, flagEnvNamespace)
 	}
