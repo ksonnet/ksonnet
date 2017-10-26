@@ -60,7 +60,7 @@ func TestInitSuccess(t *testing.T) {
 	}
 
 	appPath := AbsPath("/fromEmptySwagger")
-	_, err = initManager(appPath, spec, &mockAPIServerURI, &mockNamespace, testFS)
+	_, err = initManager(appPath, spec, &mockAPIServer, &mockNamespace, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
@@ -137,7 +137,7 @@ func TestFindSuccess(t *testing.T) {
 	}
 
 	appPath := AbsPath("/findSuccess")
-	_, err = initManager(appPath, spec, &mockAPIServerURI, &mockNamespace, testFS)
+	_, err = initManager(appPath, spec, &mockAPIServer, &mockNamespace, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
@@ -165,7 +165,7 @@ func TestComponentPaths(t *testing.T) {
 	}
 
 	appPath := AbsPath("/componentPaths")
-	m, err := initManager(appPath, spec, &mockAPIServerURI, &mockNamespace, testFS)
+	m, err := initManager(appPath, spec, &mockAPIServer, &mockNamespace, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
@@ -251,13 +251,13 @@ func TestDoubleNewFailure(t *testing.T) {
 
 	appPath := AbsPath("/doubleNew")
 
-	_, err = initManager(appPath, spec, &mockAPIServerURI, &mockNamespace, testFS)
+	_, err = initManager(appPath, spec, &mockAPIServer, &mockNamespace, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
 
 	targetErr := fmt.Sprintf("Could not create app; directory '%s' already exists", appPath)
-	_, err = initManager(appPath, spec, &mockAPIServerURI, &mockNamespace, testFS)
+	_, err = initManager(appPath, spec, &mockAPIServer, &mockNamespace, testFS)
 	if err == nil || err.Error() != targetErr {
 		t.Fatalf("Expected to fail to create app with message '%s', got '%s'", targetErr, err.Error())
 	}

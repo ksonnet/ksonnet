@@ -28,25 +28,25 @@ import (
 
 type EnvAddCmd struct {
 	name      string
-	uri       string
+	server    string
 	namespace string
 
 	spec    metadata.ClusterSpec
 	manager metadata.Manager
 }
 
-func NewEnvAddCmd(name, uri, namespace, specFlag string, manager metadata.Manager) (*EnvAddCmd, error) {
+func NewEnvAddCmd(name, server, namespace, specFlag string, manager metadata.Manager) (*EnvAddCmd, error) {
 	spec, err := metadata.ParseClusterSpec(specFlag)
 	if err != nil {
 		return nil, err
 	}
 	log.Debugf("Generating ksonnetLib data with spec: %s", specFlag)
 
-	return &EnvAddCmd{name: name, uri: uri, namespace: namespace, spec: spec, manager: manager}, nil
+	return &EnvAddCmd{name: name, server: server, namespace: namespace, spec: spec, manager: manager}, nil
 }
 
 func (c *EnvAddCmd) Run() error {
-	return c.manager.CreateEnvironment(c.name, c.uri, c.namespace, c.spec)
+	return c.manager.CreateEnvironment(c.name, c.server, c.namespace, c.spec)
 }
 
 // ==================================================================
@@ -79,7 +79,7 @@ func (c *EnvListCmd) Run(out io.Writer) error {
 	const (
 		nameHeader      = "NAME"
 		namespaceHeader = "NAMESPACE"
-		uriHeader       = "URI"
+		serverHeader    = "SERVER"
 	)
 
 	envs, err := c.manager.GetEnvironments()
@@ -93,7 +93,7 @@ func (c *EnvListCmd) Run(out io.Writer) error {
 	// Format each environment information for pretty printing.
 	// Each environment should be outputted like the following:
 	//
-	//   NAME            NAMESPACE URI
+	//   NAME            NAMESPACE SERVER
 	//   minikube        dev       localhost:8080
 	//   us-west/staging staging   http://example.com
 	//
@@ -118,12 +118,12 @@ func (c *EnvListCmd) Run(out io.Writer) error {
 
 	headerNameSpacing := strings.Repeat(" ", maxNameLen-len(nameHeader)+1)
 	headerNamespaceSpacing := strings.Repeat(" ", maxNamespaceLen-maxNameLen-len(namespaceHeader))
-	lines = append(lines, nameHeader+headerNameSpacing+namespaceHeader+headerNamespaceSpacing+uriHeader+"\n")
+	lines = append(lines, nameHeader+headerNameSpacing+namespaceHeader+headerNamespaceSpacing+serverHeader+"\n")
 
 	for _, env := range envs {
 		nameSpacing := strings.Repeat(" ", maxNameLen-len(env.Name)+1)
 		namespaceSpacing := strings.Repeat(" ", maxNamespaceLen-maxNameLen-len(env.Namespace))
-		lines = append(lines, env.Name+nameSpacing+env.Namespace+namespaceSpacing+env.URI+"\n")
+		lines = append(lines, env.Name+nameSpacing+env.Namespace+namespaceSpacing+env.Server+"\n")
 	}
 
 	formattedEnvsList := strings.Join(lines, "")
@@ -138,18 +138,18 @@ type EnvSetCmd struct {
 	name string
 
 	desiredName      string
-	desiredURI       string
+	desiredServer    string
 	desiredNamespace string
 
 	manager metadata.Manager
 }
 
-func NewEnvSetCmd(name, desiredName, desiredURI, desiredNamespace string, manager metadata.Manager) (*EnvSetCmd, error) {
-	return &EnvSetCmd{name: name, desiredName: desiredName, desiredURI: desiredURI, desiredNamespace: desiredNamespace,
+func NewEnvSetCmd(name, desiredName, desiredServer, desiredNamespace string, manager metadata.Manager) (*EnvSetCmd, error) {
+	return &EnvSetCmd{name: name, desiredName: desiredName, desiredServer: desiredServer, desiredNamespace: desiredNamespace,
 		manager: manager}, nil
 }
 
 func (c *EnvSetCmd) Run() error {
-	desired := metadata.Environment{Name: c.desiredName, URI: c.desiredURI, Namespace: c.desiredNamespace}
+	desired := metadata.Environment{Name: c.desiredName, Server: c.desiredServer, Namespace: c.desiredNamespace}
 	return c.manager.SetEnvironment(c.name, &desired)
 }

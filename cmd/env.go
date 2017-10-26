@@ -28,7 +28,7 @@ import (
 
 const (
 	flagEnvName      = "name"
-	flagEnvURI       = "uri"
+	flagEnvServer    = "server"
 	flagEnvNamespace = "namespace"
 	flagEnvContext   = "context"
 
@@ -49,19 +49,19 @@ func init() {
 		"Manually specify API version from OpenAPI schema, cluster, or Kubernetes version")
 	envAddCmd.PersistentFlags().String(flagEnvNamespace, "",
 		"Specify namespace that the environment cluster should use")
-	envAddCmd.PersistentFlags().String(flagEnvURI, "",
-		"Specify the server URI that the environment should use")
+	envAddCmd.PersistentFlags().String(flagEnvServer, "",
+		"Specify the address and port of the Kubernetes API server")
 	envAddCmd.PersistentFlags().String(flagEnvContext, "",
 		"Specify the context in your kubecfg file that this environment should use")
 
 	envSetCmd.PersistentFlags().String(flagEnvName, "",
 		"Specify name to rename environment to. Name must not already exist")
-	envSetCmd.PersistentFlags().String(flagEnvURI, "",
-		"Specify URI to point environment cluster to a new location")
+	envSetCmd.PersistentFlags().String(flagEnvServer, "",
+		"Specify the address and port of the Kubernetes API server")
 	envSetCmd.PersistentFlags().String(flagEnvNamespace, "",
 		"Specify namespace that the environment cluster should use")
 	envSetCmd.PersistentFlags().String(flagEnvContext, "",
-		"Specify the context in your kubecfg file that this environment should use. This will update the server URI for your environment")
+		"Specify the context in your kubecfg file that this environment should use. This will update the server address for your environment")
 }
 
 var envCmd = &cobra.Command{
@@ -80,7 +80,7 @@ often contained in a kubeconfig file), and
 Environments are represented as a hierarchy in the 'environments' directory of a
 ksonnet application. For example, in the example below, there are two
 environments: 'default' and 'us-west/staging'. Each contains a cached version of
-ksonnet-lib, and a 'spec.json' that contains the URI and server cert that
+ksonnet-lib, and a 'spec.json' that contains the server and server cert that
 uniquely identifies the cluster.
 
 environments/
@@ -97,7 +97,7 @@ environments/
         k.libsonnet
         k8s.libsonnet
         swagger.json
-      spec.json      [This will contain the uri of the environment and other environment metadata]
+      spec.json      [This will contain the API server address of the environment and other environment metadata]
       staging.jsonnet`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Command 'env' requires a subcommand\n\n%s", cmd.UsageString())
@@ -115,7 +115,7 @@ var envAddCmd = &cobra.Command{
 
 		name := args[0]
 
-		uri, namespace, context, err := commonEnvFlags(flags)
+		server, namespace, context, err := commonEnvFlags(flags)
 		if err != nil {
 			return err
 		}
@@ -124,8 +124,8 @@ var envAddCmd = &cobra.Command{
 			namespace = defaultNamespace
 		}
 
-		if len(uri) == 0 {
-			// If uri is not provided, use the provided context.
+		if len(server) == 0 {
+			// If server is not provided, use the provided context.
 			// If context is also not provided, use the current context.
 			var ctx *string
 			if len(context) != 0 {
@@ -133,7 +133,7 @@ var envAddCmd = &cobra.Command{
 			}
 
 			var ns string
-			uri, ns, err = resolveContext(ctx)
+			server, ns, err = resolveContext(ctx)
 			if err != nil {
 				return err
 			}
@@ -160,7 +160,7 @@ var envAddCmd = &cobra.Command{
 			return err
 		}
 
-		c, err := kubecfg.NewEnvAddCmd(name, uri, namespace, specFlag, manager)
+		c, err := kubecfg.NewEnvAddCmd(name, server, namespace, specFlag, manager)
 		if err != nil {
 			return err
 		}
@@ -195,7 +195,7 @@ environments/
         k.libsonnet
         k8s.libsonnet
         swagger.json
-      spec.json      [This will contain the uri of the environment and other environment metadata],
+      spec.json      [This will contain the API server address of the environment and other environment metadata],
       staging.jsonnet`,
 	Example: `  # Initialize a new staging environment at 'us-west'.
 	# The environment will be setup using the current context in your kubecfg file. The directory
@@ -209,8 +209,8 @@ environments/
   # Initialize a new environment using the 'dev' context in your kubeconfig file.
   ks env add my-env --context=dev
 
-  # Initialize a new environment using a server URI.
-  ks env add my-env --uri=https://ksonnet-1.us-west.elb.amazonaws.com`,
+  # Initialize a new environment using a server address.
+  ks env add my-env --server=https://ksonnet-1.us-west.elb.amazonaws.com`,
 }
 
 var envRmCmd = &cobra.Command{
@@ -279,12 +279,12 @@ var envListCmd = &cobra.Command{
 
 		return c.Run(cmd.OutOrStdout())
 	}, Long: `List all environments in a ksonnet project. This will
-display the name, URI, and namespace of each environment within the ksonnet project.`,
+display the name, server, and namespace of each environment within the ksonnet project.`,
 }
 
 var envSetCmd = &cobra.Command{
 	Use:   "set <env-name>",
-	Short: "Set environment fields such as the name, cluster URI, and namespace.",
+	Short: "Set environment fields such as the name, server, and namespace.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
 		if len(args) != 1 {
@@ -309,7 +309,7 @@ var envSetCmd = &cobra.Command{
 			return err
 		}
 
-		uri, namespace, context, err := commonEnvFlags(flags)
+		server, namespace, context, err := commonEnvFlags(flags)
 		if err != nil {
 			return err
 		}
@@ -320,39 +320,39 @@ var envSetCmd = &cobra.Command{
 		}
 
 		if len(context) != 0 {
-			uri, _, err = resolveContext(&context)
+			server, _, err = resolveContext(&context)
 			if err != nil {
 				return err
 			}
 		}
 
-		c, err := kubecfg.NewEnvSetCmd(originalName, name, uri, namespace, manager)
+		c, err := kubecfg.NewEnvSetCmd(originalName, name, server, namespace, manager)
 		if err != nil {
 			return err
 		}
 
 		return c.Run()
 	},
-	Long: `Set environment fields such as the name, and cluster URI. Changing
+	Long: `Set environment fields such as the name, and server. Changing
 the name of an environment will also update the directory structure in
 'environments'.`,
-	Example: `  # Updates the URI of the environment 'us-west/staging'.
-  ks env set us-west/staging --uri=http://example.com
+	Example: `  # Updates the API server address of the environment 'us-west/staging'.
+  ks env set us-west/staging --server=http://example.com
 
   # Updates the namespace of the environment 'us-west/staging'.
   ks env set us-west/staging --namespace=staging
 
-  # Updates both the name and the URI of the environment 'us-west/staging'.
+  # Updates both the name and the server of the environment 'us-west/staging'.
   # Updating the name will update the directory structure in 'environments'.
-  ks env set us-west/staging --uri=http://example.com --name=us-east/staging
+  ks env set us-west/staging --server=http://example.com --name=us-east/staging
   
-  # Updates URI of the environment 'us-west/staging' based on the server URI
-  # in the context 'staging-west' in your kubeconfig file.
+  # Updates API server address of the environment 'us-west/staging' based on the
+  # server in the context 'staging-west' in your kubeconfig file.
   ks env set us-west/staging --context=staging-west`,
 }
 
-func commonEnvFlags(flags *pflag.FlagSet) (uri, namespace, context string, err error) {
-	uri, err = flags.GetString(flagEnvURI)
+func commonEnvFlags(flags *pflag.FlagSet) (server, namespace, context string, err error) {
+	server, err = flags.GetString(flagEnvServer)
 	if err != nil {
 		return "", "", "", err
 	}
@@ -367,10 +367,10 @@ func commonEnvFlags(flags *pflag.FlagSet) (uri, namespace, context string, err e
 		return "", "", "", err
 	}
 
-	if flags.Changed(flagEnvContext) && flags.Changed(flagEnvURI) {
-		return "", "", "", fmt.Errorf("flags '%s' and '%s' are mutually exclusive, because '%s' has a URI. Try setting '%s', '%s' to the desired values",
-			flagEnvContext, flagEnvURI, flagEnvContext, flagEnvURI, flagEnvNamespace)
+	if flags.Changed(flagEnvContext) && flags.Changed(flagEnvServer) {
+		return "", "", "", fmt.Errorf("flags '%s' and '%s' are mutually exclusive, because '%s' has a server. Try setting '%s', '%s' to the desired values",
+			flagEnvContext, flagEnvServer, flagEnvContext, flagEnvServer, flagEnvNamespace)
 	}
 
-	return uri, namespace, context, nil
+	return server, namespace, context, nil
 }
