@@ -49,9 +49,9 @@ func TestParse(t *testing.T) {
 			
 			local service = k.core.v1.service;
 			local servicePort = k.core.v1.service.mixin.spec.portsType;
-			local port = servicePort.new((${port}), (${portName}));
+			local port = servicePort.new((params.port), (params.portName));
 			
-			local name = ${name};
+			local name = params.name;
 			k.core.v1.service.new('%s-service' % [name], {app: name}, port)`,
 		},
 		// Test where an import param is split over multiple lines.
@@ -66,7 +66,7 @@ func TestParse(t *testing.T) {
 
 			`
 			local f = (
-				${f}
+				params.f
 
 
 			);

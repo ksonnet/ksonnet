@@ -28,8 +28,7 @@ import (
 
 const (
 	paramPrefix            = "param://"
-	paramReplacementPrefix = "${"
-	paramReplacementSuffix = "}"
+	paramReplacementPrefix = "params."
 )
 
 // Parse rewrites the imports in a Jsonnet file before returning the parsed
@@ -301,7 +300,7 @@ func visitLocalBind(node ast.LocalBind, imports *[]ast.Import) error {
 // ---------------------------------------------------------------------------
 
 // replace converts all parameters in the passed Jsonnet of form
-// `import 'param://port'` into `${port}`.
+// `import 'param://port'` into `params.port`.
 func replace(jsonnet string, imports []ast.Import) string {
 	lines := strings.Split(jsonnet, "\n")
 
@@ -315,7 +314,7 @@ func replace(jsonnet string, imports []ast.Import) string {
 	})
 
 	for _, im := range imports {
-		param := paramReplacementPrefix + strings.TrimPrefix(im.File.Value, paramPrefix) + paramReplacementSuffix
+		param := paramReplacementPrefix + strings.TrimPrefix(im.File.Value, paramPrefix)
 
 		lineStart := im.Loc().Begin.Line
 		lineEnd := im.Loc().End.Line
