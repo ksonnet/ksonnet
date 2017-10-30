@@ -18,6 +18,7 @@ package metadata
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"path"
 	"path/filepath"
 	"strings"
@@ -47,11 +48,16 @@ const (
 	ComponentsExtCodeKey = "__ksonnet/components"
 	// ParamsExtCodeKey is the ExtCode key for importing environment parameters
 	ParamsExtCodeKey = "__ksonnet/params"
+
+	// User-level ksonnet directories.
+	userKsonnetRootDir = ".ksonnet"
+	pkgSrcCacheDir     = "src"
 )
 
 type manager struct {
 	appFS afero.Fs
 
+	// Application paths.
 	rootPath         AbsPath
 	ksonnetPath      AbsPath
 	libPath          AbsPath
@@ -61,6 +67,10 @@ type manager struct {
 
 	componentParamsPath AbsPath
 	baseLibsonnetPath   AbsPath
+
+	// User-level paths.
+	userKsonnetRootPath AbsPath
+	pkgSrcCachePath     AbsPath
 }
 
 func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
@@ -74,7 +84,7 @@ func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
 			return nil, err
 		}
 		if exists {
-			return newManager(AbsPath(currBase), appFS), nil
+			return newManager(AbsPath(currBase), appFS)
 		}
 
 		lastBase = currBase
@@ -86,7 +96,10 @@ func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
 }
 
 func initManager(rootPath AbsPath, spec ClusterSpec, serverURI, namespace *string, appFS afero.Fs) (*manager, error) {
-	m := newManager(rootPath, appFS)
+	m, err := newManager(rootPath, appFS)
+	if err != nil {
+		return nil, err
+	}
 
 	// Generate the program text for ksonnet-lib.
 	//
@@ -105,6 +118,11 @@ func initManager(rootPath AbsPath, spec ClusterSpec, serverURI, namespace *strin
 		return nil, err
 	}
 
+	// Initialize user dir structure.
+	if err := m.createUserDirTree(); err != nil {
+		return nil, err
+	}
+
 	// Initialize environment, and cache specification data.
 	if serverURI != nil {
 		err := m.createEnvironment(defaultEnvName, *serverURI, *namespace, extensionsLibData, k8sLibData, specData)
@@ -116,10 +134,17 @@ func initManager(rootPath AbsPath, spec ClusterSpec, serverURI, namespace *strin
 	return m, nil
 }
 
-func newManager(rootPath AbsPath, appFS afero.Fs) *manager {
+func newManager(rootPath AbsPath, appFS afero.Fs) (*manager, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return nil, err
+	}
+	userRootPath := appendToAbsPath(AbsPath(usr.HomeDir), userKsonnetRootDir)
+
 	return &manager{
 		appFS: appFS,
 
+		// Application paths.
 		rootPath:         rootPath,
 		ksonnetPath:      appendToAbsPath(rootPath, ksonnetDir),
 		libPath:          appendToAbsPath(rootPath, libDir),
@@ -129,7 +154,11 @@ func newManager(rootPath AbsPath, appFS afero.Fs) *manager {
 
 		componentParamsPath: appendToAbsPath(rootPath, componentsDir, componentParamsFile),
 		baseLibsonnetPath:   appendToAbsPath(rootPath, environmentsDir, baseLibsonnetFile),
-	}
+
+		// User-level paths.
+		userKsonnetRootPath: userRootPath,
+		pkgSrcCachePath:     appendToAbsPath(userRootPath, pkgSrcCacheDir),
+	}, nil
 }
 
 func (m *manager) Root() AbsPath {
@@ -224,6 +253,21 @@ func (m *manager) SetComponentParams(component string, params param.Params) erro
 	}
 
 	return afero.WriteFile(m.appFS, string(m.componentParamsPath), []byte(jsonnet), defaultFilePermissions)
+}
+
+func (m *manager) createUserDirTree() error {
+	dirPaths := []AbsPath{
+		m.userKsonnetRootPath,
+		m.pkgSrcCachePath,
+	}
+
+	for _, p := range dirPaths {
+		if err := m.appFS.MkdirAll(string(p), defaultFolderPermissions); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (m *manager) createAppDirTree() error {

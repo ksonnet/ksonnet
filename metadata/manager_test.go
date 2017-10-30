@@ -17,6 +17,7 @@ package metadata
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"path"
 	"sort"
 	"testing"
@@ -65,6 +66,7 @@ func TestInitSuccess(t *testing.T) {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
 
+	// Verify path locations.
 	defaultEnvDir := appendToAbsPath(environmentsDir, defaultEnvName)
 	paths := []AbsPath{
 		ksonnetDir,
@@ -85,6 +87,27 @@ func TestInitSuccess(t *testing.T) {
 		}
 	}
 
+	paths = []AbsPath{
+		pkgSrcCacheDir,
+	}
+
+	usr, err := user.Current()
+	if err != nil {
+		t.Fatalf("Could not get user information:\n%v", err)
+	}
+	userRootPath := appendToAbsPath(AbsPath(usr.HomeDir), userKsonnetRootDir)
+
+	for _, p := range paths {
+		path := appendToAbsPath(userRootPath, string(p))
+		exists, err := afero.DirExists(testFS, string(path))
+		if err != nil {
+			t.Fatalf("Expected to create directory '%s', but failed:\n%v", p, err)
+		} else if !exists {
+			t.Fatalf("Expected to create directory '%s', but failed", path)
+		}
+	}
+
+	// Verify contents of metadata.
 	envPath := appendToAbsPath(appPath, string(environmentsDir))
 	metadataPath := appendToAbsPath(appPath, string(defaultEnvDir), string(metadataDirName))
 
