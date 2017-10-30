@@ -61,7 +61,7 @@ func TestInitSuccess(t *testing.T) {
 	}
 
 	appPath := AbsPath("/fromEmptySwagger")
-	_, err = initManager(appPath, spec, &mockAPIServer, &mockNamespace, testFS)
+	_, err = initManager("fromEmptySwagger", appPath, spec, &mockAPIServer, &mockNamespace, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
@@ -150,6 +150,14 @@ func TestInitSuccess(t *testing.T) {
 	} else if len(baseLibsonnetBytes) == 0 {
 		t.Fatalf("Expected base.libsonnet at '%s' to be non-empty", baseLibsonnetPath)
 	}
+
+	appYAMLPath := appendToAbsPath(appPath, appYAMLFile)
+	appYAMLBytes, err := afero.ReadFile(testFS, string(appYAMLPath))
+	if err != nil {
+		t.Fatalf("Failed to read app.yaml file at '%s':\n%v", appYAMLPath, err)
+	} else if len(appYAMLBytes) == 0 {
+		t.Fatalf("Expected app.yaml at '%s' to be non-empty", appYAMLPath)
+	}
 }
 
 func TestFindSuccess(t *testing.T) {
@@ -168,7 +176,7 @@ func TestFindSuccess(t *testing.T) {
 	}
 
 	appPath := AbsPath("/findSuccess")
-	_, err = initManager(appPath, spec, &mockAPIServer, &mockNamespace, testFS)
+	_, err = initManager("findSuccess", appPath, spec, &mockAPIServer, &mockNamespace, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
@@ -196,7 +204,7 @@ func TestComponentPaths(t *testing.T) {
 	}
 
 	appPath := AbsPath("/componentPaths")
-	m, err := initManager(appPath, spec, &mockAPIServer, &mockNamespace, testFS)
+	m, err := initManager("componentPaths", appPath, spec, &mockAPIServer, &mockNamespace, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
@@ -286,13 +294,13 @@ func TestDoubleNewFailure(t *testing.T) {
 
 	appPath := AbsPath("/doubleNew")
 
-	_, err = initManager(appPath, spec, &mockAPIServer, &mockNamespace, testFS)
+	_, err = initManager("doubleNew", appPath, spec, &mockAPIServer, &mockNamespace, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
 
 	targetErr := fmt.Sprintf("Could not create app; directory '%s' already exists", appPath)
-	_, err = initManager(appPath, spec, &mockAPIServer, &mockNamespace, testFS)
+	_, err = initManager("doubleNew", appPath, spec, &mockAPIServer, &mockNamespace, testFS)
 	if err == nil || err.Error() != targetErr {
 		t.Fatalf("Expected to fail to create app with message '%s', got '%s'", targetErr, err.Error())
 	}
