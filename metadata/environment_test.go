@@ -26,15 +26,15 @@ import (
 )
 
 const (
-	mockSpecJSON    = "spec.json"
-	mockSpecJSONURI = "localhost:8080"
+	mockSpecJSON       = "spec.json"
+	mockSpecJSONServer = "localhost:8080"
 
 	mockEnvName  = "us-west/test"
 	mockEnvName2 = "us-west/prod"
 	mockEnvName3 = "us-east/test"
 )
 
-var mockAPIServerURI = "http://google.com"
+var mockAPIServer = "http://example.com"
 var mockNamespace = "some-namespace"
 
 func mockEnvironments(t *testing.T, appName string) *manager {
@@ -44,7 +44,7 @@ func mockEnvironments(t *testing.T, appName string) *manager {
 	}
 
 	appPath := AbsPath(appName)
-	m, err := initManager(appPath, spec, &mockAPIServerURI, &mockNamespace, testFS)
+	m, err := initManager(appPath, spec, &mockAPIServer, &mockNamespace, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
@@ -54,9 +54,9 @@ func mockEnvironments(t *testing.T, appName string) *manager {
 		envPath := appendToAbsPath(m.environmentsPath, env)
 
 		specPath := appendToAbsPath(envPath, mockSpecJSON)
-		specData, err := generateSpecData(mockSpecJSONURI, mockNamespace)
+		specData, err := generateSpecData(mockSpecJSONServer, mockNamespace)
 		if err != nil {
-			t.Fatalf("Expected to marshal:\nuri: %s\nnamespace: %s\n, but failed", mockSpecJSONURI, mockNamespace)
+			t.Fatalf("Expected to marshal:\nserver: %s\nnamespace: %s\n, but failed", mockSpecJSONServer, mockNamespace)
 		}
 		err = afero.WriteFile(testFS, string(specPath), specData, os.ModePerm)
 		if err != nil {
@@ -126,8 +126,8 @@ func TestGetEnvironments(t *testing.T) {
 		t.Fatalf("Expected to get %d environments, got %d", 4, len(envs))
 	}
 
-	if envs[0].URI != mockSpecJSONURI {
-		t.Fatalf("Expected env URI to be %s, got %s", mockSpecJSONURI, envs[0].URI)
+	if envs[0].Server != mockSpecJSONServer {
+		t.Fatalf("Expected env server to be %s, got %s", mockSpecJSONServer, envs[0].Server)
 	}
 }
 
@@ -136,9 +136,9 @@ func TestSetEnvironment(t *testing.T) {
 	m := mockEnvironments(t, appName)
 
 	setName := "new-env"
-	setURI := "http://example.com"
+	setServer := "http://example.com"
 	setNamespace := "some-namespace"
-	set := Environment{Name: setName, URI: setURI, Namespace: setNamespace}
+	set := Environment{Name: setName, Server: setServer, Namespace: setNamespace}
 
 	// Test updating an environment that doesn't exist
 	err := m.SetEnvironment("notexists", &set)
@@ -152,9 +152,9 @@ func TestSetEnvironment(t *testing.T) {
 		t.Fatalf("Expected error when setting \"%s\" to \"%s\", because env already exists", mockEnvName, mockEnvName2)
 	}
 
-	// Test changing the name and URI of a an existing environment.
+	// Test changing the name and server of a an existing environment.
 	// Ensure new env directory is created, and old directory no longer exists.
-	// Also ensure URI is set in spec.json
+	// Also ensure server is set in spec.json
 	err = m.SetEnvironment(mockEnvName, &set)
 	if err != nil {
 		t.Fatalf("Could not set \"%s\", got:\n  %s", mockEnvName, err)
@@ -178,11 +178,11 @@ func TestSetEnvironment(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read spec file:\n  %s", err)
 	}
-	if envSpec.URI != set.URI {
-		t.Fatalf("Expected set URI to be \"%s\", got:\n  %s", set.URI, envSpec.URI)
+	if envSpec.Server != set.Server {
+		t.Fatalf("Expected server to be set to '%s', got: '%s'", set.Server, envSpec.Server)
 	}
 	if envSpec.Namespace != set.Namespace {
-		t.Fatalf("Expected set Namespace to be \"%s\", got:\n  %s", set.Namespace, envSpec.Namespace)
+		t.Fatalf("Expected namespace to be set to '%s', got: '%s'", set.Namespace, envSpec.Namespace)
 	}
 }
 

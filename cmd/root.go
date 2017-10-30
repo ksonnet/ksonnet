@@ -132,9 +132,9 @@ func namespaceFor(c clientcmd.ClientConfig, overrides clientcmd.ConfigOverrides)
 	return ns, err
 }
 
-// resolveContext returns the server URI and namespace of the cluster at the provided
+// resolveContext returns the server and namespace of the cluster at the provided
 // context. If context is nil, the current context is used.
-func resolveContext(context *string) (uri, namespace string, err error) {
+func resolveContext(context *string) (server, namespace string, err error) {
 	rawConfig, err := clientConfig.RawConfig()
 	if err != nil {
 		return "", "", err
@@ -319,11 +319,11 @@ func parseEnvCmd(cmd *cobra.Command, args []string) (*envSpec, error) {
 	return &envSpec{env: env, files: files}, nil
 }
 
-// overrideCluster ensures that the cluster URI specified in the environment is
+// overrideCluster ensures that the server specified in the environment is
 // associated in the user's kubeconfig file during deployment to a ksonnet
 // environment. We will error out if it is not.
 //
-// If the environment URI the user is attempting to deploy to is not the current
+// If the environment server the user is attempting to deploy to is not the current
 // kubeconfig context, we must manually override the client-go --cluster flag
 // to ensure we are deploying to the correct cluster.
 func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overrides clientcmd.ConfigOverrides) error {
@@ -343,24 +343,24 @@ func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overri
 		return err
 	}
 
-	var clusterURIs = make(map[string]string)
+	var servers = make(map[string]string)
 	for name, cluster := range rawConfig.Clusters {
-		clusterURIs[cluster.Server] = name
+		servers[cluster.Server] = name
 	}
 
 	//
 	// check to ensure that the environment we are trying to deploy to is
-	// created, and that the environment URI is located in kubeconfig.
+	// created, and that the server is located in kubeconfig.
 	//
 
-	log.Debugf("Validating deployment at '%s' with cluster URIs '%v'", envName, reflect.ValueOf(clusterURIs).MapKeys())
+	log.Debugf("Validating deployment at '%s' with server '%v'", envName, reflect.ValueOf(servers).MapKeys())
 	env, err := metadataManager.GetEnvironment(envName)
 	if err != nil {
 		return err
 	}
 
-	if _, ok := clusterURIs[env.URI]; ok {
-		clusterName := clusterURIs[env.URI]
+	if _, ok := servers[env.Server]; ok {
+		clusterName := servers[env.Server]
 		log.Debugf("Overwriting --cluster flag with '%s'", clusterName)
 		overrides.Context.Cluster = clusterName
 		log.Debugf("Overwriting --namespace flag with '%s'", env.Namespace)
@@ -368,7 +368,7 @@ func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overri
 		return nil
 	}
 
-	return fmt.Errorf("Attempting to operate on environment '%s' at %s, but there are no clusters with that URI", envName, env.URI)
+	return fmt.Errorf("Attempting to deploy to environment '%s' at '%s', but cannot locate a server at that address", envName, env.Server)
 }
 
 // expandEnvCmdObjs finds and expands templates for the family of commands of
