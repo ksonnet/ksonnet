@@ -13,7 +13,7 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package prototype
+package jsonnet
 
 import (
 	"testing"
@@ -53,6 +53,62 @@ func TestParse(t *testing.T) {
 			
 			local name = params.name;
 			k.core.v1.service.new('%s-service' % [name], {app: name}, port)`,
+		},
+		// Test another complex case.
+		{
+			`
+			local params = std.extVar("__ksonnet/params").components.guestbook;
+			local k = import "k.libsonnet";
+			local deployment = k.apps.v1beta1.deployment;
+			local container = k.apps.v1beta1.deployment.mixin.spec.template.spec.containersType;
+			local containerPort = container.portsType;
+			local service = k.core.v1.service;
+			local servicePort = k.core.v1.service.mixin.spec.portsType;
+			
+			local targetPort = import 'param://containerPort';
+			local labels = {app: import 'param://name'};
+			
+			local appService = service.new(
+			  import 'param://name',
+			  labels,
+			  servicePort.new(import 'param://servicePort', targetPort)) +
+			service.mixin.spec.type(import 'param://type');
+			
+			local appDeployment = deployment.new(
+			  import 'param://name',
+			  import 'param://replicas',
+			  container.new(import 'param://name', import 'param://replicas') +
+				container.ports(containerPort.new(targetPort)),
+			  labels);
+			
+			k.core.v1.list.new([appService, appDeployment])`,
+
+			`
+			local params = std.extVar("__ksonnet/params").components.guestbook;
+			local k = import "k.libsonnet";
+			local deployment = k.apps.v1beta1.deployment;
+			local container = k.apps.v1beta1.deployment.mixin.spec.template.spec.containersType;
+			local containerPort = container.portsType;
+			local service = k.core.v1.service;
+			local servicePort = k.core.v1.service.mixin.spec.portsType;
+			
+			local targetPort = params.containerPort;
+			local labels = {app: params.name};
+			
+			local appService = service.new(
+			  params.name,
+			  labels,
+			  servicePort.new(params.servicePort, targetPort)) +
+			service.mixin.spec.type(params.type);
+			
+			local appDeployment = deployment.new(
+			  params.name,
+			  params.replicas,
+			  container.new(params.name, params.replicas) +
+				container.ports(containerPort.new(targetPort)),
+			  labels);
+			
+			k.core.v1.list.new([appService, appDeployment])`,
 		},
 		// Test where an import param is split over multiple lines.
 		{

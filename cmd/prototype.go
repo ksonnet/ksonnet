@@ -24,7 +24,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/prototype"
-	"github.com/ksonnet/ksonnet/prototype/snippet"
+	"github.com/ksonnet/ksonnet/prototype/snippet/jsonnet"
 	"github.com/spf13/cobra"
 )
 
@@ -229,7 +229,7 @@ var prototypePreviewCmd = &cobra.Command{
 			return fmt.Errorf("Incorrect number of arguments supplied to 'prototype preview'\n\n%s", cmd.UsageString())
 		}
 
-		text, err := expandPrototype(proto, flags, templateType)
+		text, err := expandPrototype(proto, flags, templateType, "preview")
 		if err != nil {
 			return err
 		}
@@ -320,7 +320,7 @@ var prototypeUseCmd = &cobra.Command{
 			return fmt.Errorf("'prototype use' has too many arguments (takes a prototype name and a component name)\n\n%s", cmd.UsageString())
 		}
 
-		text, err := expandPrototype(proto, flags, templateType)
+		text, err := expandPrototype(proto, flags, templateType, componentName)
 		if err != nil {
 			return err
 		}
@@ -381,7 +381,7 @@ func bindPrototypeFlags(cmd *cobra.Command, proto *prototype.SpecificationSchema
 	}
 }
 
-func expandPrototype(proto *prototype.SpecificationSchema, flags *pflag.FlagSet, templateType prototype.TemplateType) (string, error) {
+func expandPrototype(proto *prototype.SpecificationSchema, flags *pflag.FlagSet, templateType prototype.TemplateType, componentName string) (string, error) {
 	missingReqd := prototype.ParamSchemas{}
 	values := map[string]string{}
 	for _, param := range proto.RequiredParams() {
@@ -424,8 +424,9 @@ func expandPrototype(proto *prototype.SpecificationSchema, flags *pflag.FlagSet,
 	if err != nil {
 		return "", err
 	}
+	template = append([]string{`local params = std.extVar("__ksonnet/params").components.` + componentName + ";"}, template...)
 
-	tm := snippet.Parse(strings.Join(template, "\n"))
+	tm, err := jsonnet.Parse(componentName, strings.Join(template, "\n"))
 	text, err := tm.Evaluate(values)
 	if err != nil {
 		return "", err
