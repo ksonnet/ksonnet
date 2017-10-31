@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ksonnet/ksonnet/metadata/snippet"
 	"github.com/ksonnet/ksonnet/prototype"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -154,7 +155,7 @@ func (m *manager) ComponentPaths() (AbsPaths, error) {
 	return paths, nil
 }
 
-func (m *manager) CreateComponent(name string, text string, templateType prototype.TemplateType) error {
+func (m *manager) CreateComponent(name string, text string, params map[string]string, templateType prototype.TemplateType) error {
 	if !isValidName(name) || strings.Contains(name, "/") {
 		return fmt.Errorf("Component name '%s' is not valid; must not contain punctuation, spaces, or begin or end with a slash", name)
 	}
@@ -178,8 +179,13 @@ func (m *manager) CreateComponent(name string, text string, templateType prototy
 	}
 
 	log.Infof("Writing component at '%s/%s'", componentsDir, name)
+	err := afero.WriteFile(m.appFS, componentPath, []byte(text), defaultFilePermissions)
+	if err != nil {
+		return err
+	}
 
-	return afero.WriteFile(m.appFS, componentPath, []byte(text), defaultFilePermissions)
+	log.Debugf("Writing component parameters at '%s/%s", componentsDir, name)
+	return m.writeComponentParams(name, params)
 }
 
 func (m *manager) LibPaths(envName string) (libPath, envLibPath, envComponentPath, envParamsPath AbsPath) {
@@ -232,6 +238,20 @@ func (m *manager) createAppDirTree() error {
 	}
 
 	return nil
+}
+
+func (m *manager) writeComponentParams(componentName string, params map[string]string) error {
+	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
+	if err != nil {
+		return err
+	}
+
+	appended, err := snippet.AppendComponent(componentName, string(text), params)
+	if err != nil {
+		return err
+	}
+
+	return afero.WriteFile(m.appFS, string(m.componentParamsPath), []byte(appended), defaultFilePermissions)
 }
 
 func genComponentParamsContent() []byte {

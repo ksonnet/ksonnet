@@ -229,7 +229,12 @@ var prototypePreviewCmd = &cobra.Command{
 			return fmt.Errorf("Incorrect number of arguments supplied to 'prototype preview'\n\n%s", cmd.UsageString())
 		}
 
-		text, err := expandPrototype(proto, flags, templateType, "preview")
+		params, err := getParameters(proto, flags)
+		if err != nil {
+			return err
+		}
+
+		text, err := expandPrototype(proto, templateType, params, "preview")
 		if err != nil {
 			return err
 		}
@@ -320,12 +325,17 @@ var prototypeUseCmd = &cobra.Command{
 			return fmt.Errorf("'prototype use' has too many arguments (takes a prototype name and a component name)\n\n%s", cmd.UsageString())
 		}
 
-		text, err := expandPrototype(proto, flags, templateType, componentName)
+		params, err := getParameters(proto, flags)
 		if err != nil {
 			return err
 		}
 
-		return manager.CreateComponent(componentName, text, templateType)
+		text, err := expandPrototype(proto, templateType, params, componentName)
+		if err != nil {
+			return err
+		}
+
+		return manager.CreateComponent(componentName, text, params, templateType)
 	},
 	Long: `Expand prototype uniquely identified by (possibly partial) 'prototype-name',
 filling in parameters from flags, and placing it into the file
@@ -381,58 +391,58 @@ func bindPrototypeFlags(cmd *cobra.Command, proto *prototype.SpecificationSchema
 	}
 }
 
-func expandPrototype(proto *prototype.SpecificationSchema, flags *pflag.FlagSet, templateType prototype.TemplateType, componentName string) (string, error) {
+func expandPrototype(proto *prototype.SpecificationSchema, templateType prototype.TemplateType, params map[string]string, componentName string) (string, error) {
+	template, err := proto.Template.Body(templateType)
+	if err != nil {
+		return "", err
+	}
+	if templateType == prototype.Jsonnet {
+		template = append([]string{`local params = std.extVar("` + metadata.ParamsExtCodeKey + `").components.` + componentName + ";"}, template...)
+	}
+
+	return jsonnet.Parse(componentName, strings.Join(template, "\n"))
+}
+
+func getParameters(proto *prototype.SpecificationSchema, flags *pflag.FlagSet) (map[string]string, error) {
 	missingReqd := prototype.ParamSchemas{}
 	values := map[string]string{}
 	for _, param := range proto.RequiredParams() {
 		val, err := flags.GetString(param.Name)
 		if err != nil {
-			return "", err
+			return nil, err
 		} else if val == "" {
 			missingReqd = append(missingReqd, param)
 		} else if _, ok := values[param.Name]; ok {
-			return "", fmt.Errorf("Prototype '%s' has multiple parameters with name '%s'", proto.Name, param.Name)
+			return nil, fmt.Errorf("Prototype '%s' has multiple parameters with name '%s'", proto.Name, param.Name)
 		}
 
 		quoted, err := param.Quote(val)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		values[param.Name] = quoted
 	}
 
 	if len(missingReqd) > 0 {
-		return "", fmt.Errorf("Failed to instantiate prototype '%s'. The following required parameters are missing:\n%s", proto.Name, missingReqd.PrettyString(""))
+		return nil, fmt.Errorf("Failed to instantiate prototype '%s'. The following required parameters are missing:\n%s", proto.Name, missingReqd.PrettyString(""))
 	}
 
 	for _, param := range proto.OptionalParams() {
 		val, err := flags.GetString(param.Name)
 		if err != nil {
-			return "", err
+			return nil, err
 		} else if _, ok := values[param.Name]; ok {
-			return "", fmt.Errorf("Prototype '%s' has multiple parameters with name '%s'", proto.Name, param.Name)
+			return nil, fmt.Errorf("Prototype '%s' has multiple parameters with name '%s'", proto.Name, param.Name)
 		}
 
 		quoted, err := param.Quote(val)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		values[param.Name] = quoted
 	}
 
-	template, err := proto.Template.Body(templateType)
-	if err != nil {
-		return "", err
-	}
-	template = append([]string{`local params = std.extVar("__ksonnet/params").components.` + componentName + ";"}, template...)
-
-	tm, err := jsonnet.Parse(componentName, strings.Join(template, "\n"))
-	text, err := tm.Evaluate(values)
-	if err != nil {
-		return "", err
-	}
-
-	return text, nil
+	return values, nil
 }
 
 func fundUniquePrototype(query string) (*prototype.SpecificationSchema, error) {

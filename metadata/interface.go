@@ -42,7 +42,7 @@ type AbsPaths []string
 type Manager interface {
 	Root() AbsPath
 	ComponentPaths() (AbsPaths, error)
-	CreateComponent(name string, text string, templateType prototype.TemplateType) error
+	CreateComponent(name string, text string, params map[string]string, templateType prototype.TemplateType) error
 	LibPaths(envName string) (libPath, envLibPath, envComponentPath, envParamsPath AbsPath)
 	CreateEnvironment(name, uri, namespace string, spec ClusterSpec) error
 	DeleteEnvironment(name string) error

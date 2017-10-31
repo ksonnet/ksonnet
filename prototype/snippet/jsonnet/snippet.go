@@ -22,8 +22,6 @@ import (
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/parser"
-
-	"github.com/ksonnet/ksonnet/prototype/snippet"
 )
 
 const (
@@ -31,15 +29,14 @@ const (
 	paramReplacementPrefix = "params."
 )
 
-// Parse rewrites the imports in a Jsonnet file before returning the parsed
-// TextMate snippet.
-func Parse(fn string, jsonnet string) (snippet.Template, error) {
+// Parse rewrites the imports in a Jsonnet file before returning the snippet.
+func Parse(fn string, jsonnet string) (string, error) {
 	s, err := parse(fn, jsonnet)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return snippet.Parse(s), nil
+	return s, nil
 }
 
 func parse(fn string, jsonnet string) (string, error) {
