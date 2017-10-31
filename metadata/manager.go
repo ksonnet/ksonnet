@@ -194,6 +194,15 @@ func (m *manager) LibPaths(envName string) (libPath, envLibPath, envComponentPat
 		appendToAbsPath(envPath, path.Base(envName)+".jsonnet"), appendToAbsPath(envPath, componentParamsFile)
 }
 
+func (m *manager) GetComponentParams(component string) (map[string]string, error) {
+	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
+	if err != nil {
+		return nil, err
+	}
+
+	return snippet.GetComponentParams(component, string(text))
+}
+
 func (m *manager) SetComponentParams(component string, params map[string]string) error {
 	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
 	if err != nil {

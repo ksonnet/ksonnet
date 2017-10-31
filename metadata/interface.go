@@ -45,6 +45,7 @@ type Manager interface {
 	CreateComponent(name string, text string, params map[string]string, templateType prototype.TemplateType) error
 	LibPaths(envName string) (libPath, envLibPath, envComponentPath, envParamsPath AbsPath)
 	SetComponentParams(component string, params map[string]string) error
+	GetComponentParams(name string) (map[string]string, error)
 	CreateEnvironment(name, uri, namespace string, spec ClusterSpec) error
 	DeleteEnvironment(name string) error
 	GetEnvironments() ([]*Environment, error)
@@ -57,7 +58,6 @@ type Manager interface {
 	// GetPrototype(id string) Protoype
 	// SearchPrototypes(query string) []Protoype
 	// VendorLibrary(uri, version string) error
-	// GetComponentParams(name string) map[string]string
 	// SetEnvironmentParams(component, env string, params map[string]string) error
 	// GetEnvironmentParams(env string) (map[string]map[string]string, error)
 }

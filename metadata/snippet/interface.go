@@ -26,6 +26,19 @@ func AppendComponent(component, snippet string, params map[string]string) (strin
 	return appendComponent(component, snippet, params)
 }
 
+// GetComponentParams takes
+//
+//  component: the name of the component to retrieve params for.
+//  snippet: the jsonnet snippet containing the component parameters.
+//
+// and returns a map of key-value param pairs corresponding to that component.
+//
+// An error will be returned if the component is not found in the snippet.
+func GetComponentParams(component, snippet string) (map[string]string, error) {
+	params, _, err := getComponentParams(component, snippet)
+	return params, err
+}
+
 // SetComponentParams takes
 //
 //   component: the name of the new component to be modified.

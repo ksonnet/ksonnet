@@ -148,31 +148,30 @@ func appendComponent(component, snippet string, params map[string]string) (strin
 	return strings.Join(lines, "\n"), nil
 }
 
-func setComponentParams(component, snippet string, params map[string]string) (string, error) {
+func getComponentParams(component, snippet string) (map[string]string, *ast.LocationRange, error) {
 	componentsNode, err := visitComponentsObj(component, snippet)
 	if err != nil {
-		return "", err
+		return nil, nil, err
 	}
-
-	var loc *ast.LocationRange
-	var currentParams map[string]string
 
 	switch n := (*componentsNode).(type) {
 	case *ast.Object:
 		for _, field := range n.Fields {
 			if field.Id != nil && string(*field.Id) == component {
-				currentParams, loc, err = visitComponentParams(field.Expr2)
-				if err != nil {
-					return "", err
-				}
+				return visitComponentParams(field.Expr2)
 			}
 		}
 	default:
-		return "", fmt.Errorf("Expected component node type to be object")
+		return nil, nil, fmt.Errorf("Expected component node type to be object")
 	}
 
-	if loc == nil {
-		return "", fmt.Errorf("Could not find component identifier '%s' when attempting to set params", component)
+	return nil, nil, fmt.Errorf("Could not find component identifier '%s' when attempting to set params", component)
+}
+
+func setComponentParams(component, snippet string, params map[string]string) (string, error) {
+	currentParams, loc, err := getComponentParams(component, snippet)
+	if err != nil {
+		return "", err
 	}
 
 	for k, v := range currentParams {

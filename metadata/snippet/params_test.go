@@ -16,6 +16,7 @@
 package snippet
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -171,6 +172,96 @@ func TestAppendComponentParams(t *testing.T) {
 		parsed, err := AppendComponent(e.componentName, e.jsonnet, e.params)
 		if err == nil {
 			t.Errorf("Expected error but not found\n  input: %v  got: %v", e, parsed)
+		}
+	}
+}
+
+func TestGetComponentParams(t *testing.T) {
+	tests := []struct {
+		componentName string
+		jsonnet       string
+		expected      map[string]string
+	}{
+		// Test getting the parameters where there is a single component
+		{
+			"foo",
+			`
+{
+  global: {},
+  components: {
+    foo: {
+      name: "foo",
+      replicas: 1,
+    },
+  },
+}`,
+			map[string]string{"name": `"foo"`, "replicas": "1"},
+		},
+		// Test getting the parameters where there are multiple components
+		{
+			"foo",
+			`
+{
+  global: {},
+  components: {
+    bar: {
+      replicas: 5
+    },
+    foo: {
+      name: "foo",
+      replicas: 1,
+    },
+  },
+}`,
+			map[string]string{"name": `"foo"`, "replicas": "1"},
+		},
+	}
+
+	errors := []struct {
+		componentName string
+		jsonnet       string
+	}{
+		// Test case where component doesn't exist
+		{
+			"baz",
+			`
+{
+  components: {
+    foo: {
+      name: "foo",
+    },
+  },
+}`,
+		},
+		// Test case where components isn't a top level object
+		{
+			"baz",
+			`
+{
+  global: {
+    // User-defined global parameters; accessible to all component and environments, Ex:
+    // replicas: 4,
+		components: {},
+  },
+}`,
+		},
+	}
+
+	for _, s := range tests {
+		params, err := GetComponentParams(s.componentName, s.jsonnet)
+		if err != nil {
+			t.Errorf("Unexpected error\n  input: %v\n  error: %v", s.jsonnet, err)
+		}
+
+		if !reflect.DeepEqual(params, s.expected) {
+			t.Errorf("Wrong conversion\n  expected:%v\n  got:%v", s.expected, params)
+		}
+	}
+
+	for _, e := range errors {
+		params, err := GetComponentParams(e.componentName, e.jsonnet)
+		if err == nil {
+			t.Errorf("Expected error but not found\n  input: %v  got: %v", e, params)
 		}
 	}
 }
