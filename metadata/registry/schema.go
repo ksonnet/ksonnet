@@ -15,6 +15,8 @@
 
 package registry
 
+import "encoding/json"
+
 const (
 	DefaultApiVersion = "0.1"
 	DefaultKind       = "ksonnet.io/registry"
@@ -25,6 +27,10 @@ type Spec struct {
 	Kind       string            `json:"kind"`
 	Prototypes PrototypeRefSpecs `json:"prototypes"`
 	Libraries  LibraryRefSpecs   `json:"libraries"`
+}
+
+func (s *Spec) Marshal() ([]byte, error) {
+	return json.MarshalIndent(s, "", "  ")
 }
 
 type Specs []*Spec

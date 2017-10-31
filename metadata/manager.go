@@ -38,6 +38,7 @@ func appendToAbsPath(originalPath AbsPath, toAppend ...string) AbsPath {
 
 const (
 	ksonnetDir      = ".ksonnet"
+	registriesDir   = ksonnetDir + "/registries"
 	libDir          = "lib"
 	componentsDir   = "components"
 	environmentsDir = "environments"
@@ -46,6 +47,7 @@ const (
 	componentParamsFile = "params.libsonnet"
 	baseLibsonnetFile   = "base.libsonnet"
 	appYAMLFile         = "app.yaml"
+	registryYAMLFile    = "registry.yaml"
 
 	// ComponentsExtCodeKey is the ExtCode key for component imports
 	ComponentsExtCodeKey = "__ksonnet/components"
@@ -63,6 +65,7 @@ type manager struct {
 	// Application paths.
 	rootPath         AbsPath
 	ksonnetPath      AbsPath
+	registriesPath   AbsPath
 	libPath          AbsPath
 	componentsPath   AbsPath
 	environmentsPath AbsPath
@@ -151,6 +154,7 @@ func newManager(rootPath AbsPath, appFS afero.Fs) (*manager, error) {
 		// Application paths.
 		rootPath:         rootPath,
 		ksonnetPath:      appendToAbsPath(rootPath, ksonnetDir),
+		registriesPath:   appendToAbsPath(rootPath, registriesDir),
 		libPath:          appendToAbsPath(rootPath, libDir),
 		componentsPath:   appendToAbsPath(rootPath, componentsDir),
 		environmentsPath: appendToAbsPath(rootPath, environmentsDir),
@@ -260,6 +264,23 @@ func (m *manager) SetComponentParams(component string, params param.Params) erro
 	return afero.WriteFile(m.appFS, string(m.componentParamsPath), []byte(jsonnet), defaultFilePermissions)
 }
 
+// AppSpec will return the specification for a ksonnet application
+// (typically stored in `app.yaml`)
+func (m *manager) AppSpec() (*app.Spec, error) {
+	bytes, err := afero.ReadFile(m.appFS, string(m.appYAMLPath))
+	if err != nil {
+		return nil, err
+	}
+
+	schema := app.Spec{}
+	err = json.Unmarshal(bytes, &schema)
+	if err != nil {
+		return nil, err
+	}
+
+	return &schema, nil
+}
+
 func (m *manager) createUserDirTree() error {
 	dirPaths := []AbsPath{
 		m.userKsonnetRootPath,
@@ -286,6 +307,7 @@ func (m *manager) createAppDirTree(name string) error {
 	dirPaths := []AbsPath{
 		m.rootPath,
 		m.ksonnetPath,
+		m.registriesPath,
 		m.libPath,
 		m.componentsPath,
 		m.environmentsPath,
@@ -366,7 +388,7 @@ func genAppYAMLContent(name string) ([]byte, error) {
 		Version:    app.DefaultVersion,
 	}
 
-	return json.MarshalIndent(&content, "", "  ")
+	return content.Marshal()
 }
 
 func genBaseLibsonnetContent() []byte {
