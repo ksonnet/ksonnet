@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/google/go-jsonnet/ast"
@@ -47,11 +48,48 @@ func visitComponentsObj(component, snippet string) (*ast.Node, error) {
 				return &field.Expr2, nil
 			}
 		}
-	default:
-		return nil, fmt.Errorf("Expected node type to be object")
 	}
 	// If this point has been reached, it means we weren't able to find a top-level components object.
 	return nil, fmt.Errorf("Invalid format; expected to find a top-level components object")
+}
+
+func visitComponentParams(component ast.Node) (map[string]string, *ast.LocationRange, error) {
+	params := make(map[string]string)
+	var loc *ast.LocationRange
+
+	switch n := component.(type) {
+	case *ast.Object:
+		loc = n.Loc()
+		for _, field := range n.Fields {
+			if field.Id != nil {
+				key := string(*field.Id)
+				val, err := visitParamValue(field.Expr2)
+				if err != nil {
+					return nil, nil, err
+				}
+				params[key] = val
+			}
+		}
+	default:
+		return nil, nil, fmt.Errorf("Expected component node type to be object")
+	}
+
+	return params, loc, nil
+}
+
+// visitParamValue returns a string representation of the param value, quoted
+// where necessary. Currently only handles trivial types, ex: string, int, bool
+func visitParamValue(param ast.Node) (string, error) {
+	switch n := param.(type) {
+	case *ast.LiteralNumber:
+		return strconv.FormatFloat(n.Value, 'f', -1, 64), nil
+	case *ast.LiteralBoolean:
+		return strconv.FormatBool(n.Value), nil
+	case *ast.LiteralString:
+		return fmt.Sprintf(`"%s"`, n.Value), nil
+	default:
+		return "", fmt.Errorf("Found an unsupported param value type: %T", n)
+	}
 }
 
 func writeParams(params map[string]string) string {
@@ -95,13 +133,6 @@ func appendComponent(component, snippet string, params map[string]string) (strin
 
 	lines := strings.Split(snippet, "\n")
 
-	// Get an alphabetically sorted list of the param keys
-	keys := make([]string, 0, len(params))
-	for key := range params {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-
 	// Create the jsonnet resembling the component params
 	var buffer bytes.Buffer
 	buffer.WriteString("    " + component + ": {")
@@ -115,4 +146,47 @@ func appendComponent(component, snippet string, params map[string]string) (strin
 	lines[insertLine] = buffer.String()
 
 	return strings.Join(lines, "\n"), nil
+}
+
+func setComponentParams(component, snippet string, params map[string]string) (string, error) {
+	componentsNode, err := visitComponentsObj(component, snippet)
+	if err != nil {
+		return "", err
+	}
+
+	var loc *ast.LocationRange
+	var currentParams map[string]string
+
+	switch n := (*componentsNode).(type) {
+	case *ast.Object:
+		for _, field := range n.Fields {
+			if field.Id != nil && string(*field.Id) == component {
+				currentParams, loc, err = visitComponentParams(field.Expr2)
+				if err != nil {
+					return "", err
+				}
+			}
+		}
+	default:
+		return "", fmt.Errorf("Expected component node type to be object")
+	}
+
+	if loc == nil {
+		return "", fmt.Errorf("Could not find component identifier '%s' when attempting to set params", component)
+	}
+
+	for k, v := range currentParams {
+		if _, ok := params[k]; !ok {
+			params[k] = v
+		}
+	}
+
+	// Replace the component param fields
+	lines := strings.Split(snippet, "\n")
+	paramsSnippet := writeParams(params)
+	newSnippet := strings.Join(lines[:loc.Begin.Line], "\n") + paramsSnippet + strings.Join(lines[loc.End.Line-1:], "\n")
+	//newSnippet := append(lines[:loc.Begin.Line], paramsSnippet)
+	//newSnippet = append(newSnippet, strings.Join(lines[loc.End.Line-1:], "\n"))
+
+	return newSnippet, nil
 }

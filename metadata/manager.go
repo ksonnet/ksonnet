@@ -194,6 +194,20 @@ func (m *manager) LibPaths(envName string) (libPath, envLibPath, envComponentPat
 		appendToAbsPath(envPath, path.Base(envName)+".jsonnet"), appendToAbsPath(envPath, componentParamsFile)
 }
 
+func (m *manager) SetComponentParams(component string, params map[string]string) error {
+	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
+	if err != nil {
+		return err
+	}
+
+	jsonnet, err := snippet.SetComponentParams(component, string(text), params)
+	if err != nil {
+		return err
+	}
+
+	return afero.WriteFile(m.appFS, string(m.componentParamsPath), []byte(jsonnet), defaultFilePermissions)
+}
+
 func (m *manager) createAppDirTree() error {
 	exists, err := afero.DirExists(m.appFS, string(m.rootPath))
 	if err != nil {

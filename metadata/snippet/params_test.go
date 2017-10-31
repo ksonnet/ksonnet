@@ -174,3 +174,140 @@ func TestAppendComponentParams(t *testing.T) {
 		}
 	}
 }
+
+func TestSetComponentParams(t *testing.T) {
+	tests := []struct {
+		componentName string
+		jsonnet       string
+		params        map[string]string
+		expected      string
+	}{
+		// Test setting one parameter
+		{
+			"foo",
+			`
+{
+  global: {},
+  components: {
+    foo: {
+      name: "foo",
+      replicas: 1,
+    },
+    bar: {
+      name: "bar",
+    },
+  },
+}`,
+			map[string]string{"replicas": "5"},
+			`
+{
+  global: {},
+  components: {
+    foo: {
+      name: "foo",
+      replicas: 5,
+    },
+    bar: {
+      name: "bar",
+    },
+  },
+}`,
+		},
+		// Test setting multiple parameters
+		{
+			"foo",
+			`
+{
+  components: {
+    foo: {
+      name: "foo",
+      replicas: 1,
+    },
+  },
+}`,
+			map[string]string{"replicas": "5", "name": `"foobar"`},
+			`
+{
+  components: {
+    foo: {
+      name: "foobar",
+      replicas: 5,
+    },
+  },
+}`,
+		},
+		// Test setting parameter that does not exist -- this should add the param
+		{
+			"foo",
+			`
+{
+  components: {
+    foo: {
+      name: "foo",
+    },
+  },
+}`,
+			map[string]string{"replicas": "5"},
+			`
+{
+  components: {
+    foo: {
+      name: "foo",
+      replicas: 5,
+    },
+  },
+}`,
+		},
+	}
+
+	errors := []struct {
+		componentName string
+		jsonnet       string
+		params        map[string]string
+	}{
+		// Test case where component doesn't exist
+		{
+			"baz",
+			`
+{
+  components: {
+    foo: {
+      name: "foo",
+    },
+  },
+}`,
+			map[string]string{"name": `"baz"`},
+		},
+		// Test case where components isn't a top level object
+		{
+			"baz",
+			`
+{
+  global: {
+    // User-defined global parameters; accessible to all component and environments, Ex:
+    // replicas: 4,
+		components: {},
+  },
+}`,
+			map[string]string{"replicas": "5", "name": `"baz"`},
+		},
+	}
+
+	for _, s := range tests {
+		parsed, err := SetComponentParams(s.componentName, s.jsonnet, s.params)
+		if err != nil {
+			t.Errorf("Unexpected error\n  input: %v\n  error: %v", s.jsonnet, err)
+		}
+
+		if parsed != s.expected {
+			t.Errorf("Wrong conversion\n  expected:%v\n  got:%v", s.expected, parsed)
+		}
+	}
+
+	for _, e := range errors {
+		parsed, err := SetComponentParams(e.componentName, e.jsonnet, e.params)
+		if err == nil {
+			t.Errorf("Expected error but not found\n  input: %v  got: %v", e, parsed)
+		}
+	}
+}

@@ -25,3 +25,14 @@ package snippet
 func AppendComponent(component, snippet string, params map[string]string) (string, error) {
 	return appendComponent(component, snippet, params)
 }
+
+// SetComponentParams takes
+//
+//   component: the name of the new component to be modified.
+//   snippet: a jsonnet snippet resembling the current component parameters.
+//   params: the parameters to be set for 'component'.
+//
+// and returns the jsonnet snippet with the modified set of component parameters.
+func SetComponentParams(component, snippet string, params map[string]string) (string, error) {
+	return setComponentParams(component, snippet, params)
+}
