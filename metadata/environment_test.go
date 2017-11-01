@@ -19,9 +19,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
+	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/spf13/afero"
 )
 
@@ -222,5 +224,60 @@ params + {
 
 	if result != expected {
 		t.Fatalf("Expected to generate params file with data:\n%s\n, got:\n%s", expected, result)
+	}
+}
+
+func TestMergeParamMaps(t *testing.T) {
+	tests := []struct {
+		base      map[string]param.Params
+		overrides map[string]param.Params
+		expected  map[string]param.Params
+	}{
+		{
+			map[string]param.Params{
+				"bar": param.Params{"replicas": "5"},
+			},
+			map[string]param.Params{
+				"foo": param.Params{"name": `"foo"`, "replicas": "1"},
+			},
+			map[string]param.Params{
+				"bar": param.Params{"replicas": "5"},
+				"foo": param.Params{"name": `"foo"`, "replicas": "1"},
+			},
+		},
+		{
+			map[string]param.Params{
+				"bar": param.Params{"replicas": "5"},
+			},
+			map[string]param.Params{
+				"bar": param.Params{"name": `"foo"`},
+			},
+			map[string]param.Params{
+				"bar": param.Params{"name": `"foo"`, "replicas": "5"},
+			},
+		},
+		{
+			map[string]param.Params{
+				"bar": param.Params{"name": `"bar"`, "replicas": "5"},
+				"foo": param.Params{"name": `"foo"`, "replicas": "4"},
+				"baz": param.Params{"name": `"baz"`, "replicas": "3"},
+			},
+			map[string]param.Params{
+				"foo": param.Params{"replicas": "1"},
+				"baz": param.Params{"name": `"foobaz"`},
+			},
+			map[string]param.Params{
+				"bar": param.Params{"name": `"bar"`, "replicas": "5"},
+				"foo": param.Params{"name": `"foo"`, "replicas": "1"},
+				"baz": param.Params{"name": `"foobaz"`, "replicas": "3"},
+			},
+		},
+	}
+
+	for _, s := range tests {
+		result := mergeParamMaps(s.base, s.overrides)
+		if !reflect.DeepEqual(s.expected, result) {
+			t.Errorf("Wrong merge\n  expected:\n%v\n  got:\n%v", s.expected, result)
+		}
 	}
 }

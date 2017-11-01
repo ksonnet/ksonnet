@@ -13,7 +13,7 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package snippet
+package params
 
 import (
 	"reflect"
@@ -24,7 +24,7 @@ func TestAppendComponentParams(t *testing.T) {
 	tests := []struct {
 		componentName string
 		jsonnet       string
-		params        map[string]string
+		params        Params
 		expected      string
 	}{
 		// Test case with existing components
@@ -48,7 +48,7 @@ func TestAppendComponentParams(t *testing.T) {
     },
   },
 }`,
-			map[string]string{"replicas": "5", "name": `"baz"`},
+			Params{"replicas": "5", "name": `"baz"`},
 			`
 {
   global: {
@@ -86,7 +86,7 @@ func TestAppendComponentParams(t *testing.T) {
     // Each object below should correspond to a component in the components/ directory
   },
 }`,
-			map[string]string{"replicas": "5", "name": `"baz"`},
+			Params{"replicas": "5", "name": `"baz"`},
 			`
 {
   global: {
@@ -108,7 +108,7 @@ func TestAppendComponentParams(t *testing.T) {
 	errors := []struct {
 		componentName string
 		jsonnet       string
-		params        map[string]string
+		params        Params
 	}{
 		// Test case where there isn't a components object
 		{
@@ -120,7 +120,7 @@ func TestAppendComponentParams(t *testing.T) {
     // replicas: 4,
   },
 }`,
-			map[string]string{"replicas": "5", "name": `"baz"`},
+			Params{"replicas": "5", "name": `"baz"`},
 		},
 		// Test case where components isn't a top level object
 		{
@@ -133,7 +133,7 @@ func TestAppendComponentParams(t *testing.T) {
 		components: {},
   },
 }`,
-			map[string]string{"replicas": "5", "name": `"baz"`},
+			Params{"replicas": "5", "name": `"baz"`},
 		},
 		// Test case where component already exists
 		{
@@ -153,7 +153,7 @@ func TestAppendComponentParams(t *testing.T) {
     },
   },	
 }`,
-			map[string]string{"replicas": "5", "name": `"baz"`},
+			Params{"replicas": "5", "name": `"baz"`},
 		},
 	}
 
@@ -180,7 +180,7 @@ func TestGetComponentParams(t *testing.T) {
 	tests := []struct {
 		componentName string
 		jsonnet       string
-		expected      map[string]string
+		expected      Params
 	}{
 		// Test getting the parameters where there is a single component
 		{
@@ -195,7 +195,7 @@ func TestGetComponentParams(t *testing.T) {
     },
   },
 }`,
-			map[string]string{"name": `"foo"`, "replicas": "1"},
+			Params{"name": `"foo"`, "replicas": "1"},
 		},
 		// Test getting the parameters where there are multiple components
 		{
@@ -213,7 +213,7 @@ func TestGetComponentParams(t *testing.T) {
     },
   },
 }`,
-			map[string]string{"name": `"foo"`, "replicas": "1"},
+			Params{"name": `"foo"`, "replicas": "1"},
 		},
 	}
 
@@ -266,11 +266,75 @@ func TestGetComponentParams(t *testing.T) {
 	}
 }
 
+func TestGetAllComponentParams(t *testing.T) {
+	tests := []struct {
+		jsonnet  string
+		expected map[string]Params
+	}{
+		// Test getting the parameters where there are zero components
+		{
+			`
+{
+  global: {},
+  components: {
+  },
+}`,
+			map[string]Params{},
+		},
+		// Test getting the parameters where there is a single component
+		{
+			`
+{
+  global: {},
+  components: {
+    bar: {
+      replicas: 5
+    },
+  },
+}`,
+			map[string]Params{
+				"bar": Params{"replicas": "5"},
+			},
+		},
+		// Test getting the parameters where there are multiple components
+		{
+			`
+{
+  global: {},
+  components: {
+    bar: {
+      replicas: 5
+    },
+    foo: {
+      name: "foo",
+      replicas: 1,
+    },
+  },
+}`,
+			map[string]Params{
+				"bar": Params{"replicas": "5"},
+				"foo": Params{"name": `"foo"`, "replicas": "1"},
+			},
+		},
+	}
+
+	for _, s := range tests {
+		params, err := GetAllComponentParams(s.jsonnet)
+		if err != nil {
+			t.Errorf("Unexpected error\n  input: %v\n  error: %v", s.jsonnet, err)
+		}
+
+		if !reflect.DeepEqual(params, s.expected) {
+			t.Errorf("Wrong conversion\n  expected:%v\n  got:%v", s.expected, params)
+		}
+	}
+}
+
 func TestSetComponentParams(t *testing.T) {
 	tests := []struct {
 		componentName string
 		jsonnet       string
-		params        map[string]string
+		params        Params
 		expected      string
 	}{
 		// Test setting one parameter
@@ -289,7 +353,7 @@ func TestSetComponentParams(t *testing.T) {
     },
   },
 }`,
-			map[string]string{"replicas": "5"},
+			Params{"replicas": "5"},
 			`
 {
   global: {},
@@ -316,7 +380,7 @@ func TestSetComponentParams(t *testing.T) {
     },
   },
 }`,
-			map[string]string{"replicas": "5", "name": `"foobar"`},
+			Params{"replicas": "5", "name": `"foobar"`},
 			`
 {
   components: {
@@ -338,7 +402,7 @@ func TestSetComponentParams(t *testing.T) {
     },
   },
 }`,
-			map[string]string{"replicas": "5"},
+			Params{"replicas": "5"},
 			`
 {
   components: {
@@ -354,7 +418,7 @@ func TestSetComponentParams(t *testing.T) {
 	errors := []struct {
 		componentName string
 		jsonnet       string
-		params        map[string]string
+		params        Params
 	}{
 		// Test case where component doesn't exist
 		{
@@ -367,7 +431,7 @@ func TestSetComponentParams(t *testing.T) {
     },
   },
 }`,
-			map[string]string{"name": `"baz"`},
+			Params{"name": `"baz"`},
 		},
 		// Test case where components isn't a top level object
 		{
@@ -380,7 +444,7 @@ func TestSetComponentParams(t *testing.T) {
 		components: {},
   },
 }`,
-			map[string]string{"replicas": "5", "name": `"baz"`},
+			Params{"replicas": "5", "name": `"baz"`},
 		},
 	}
 
@@ -403,11 +467,77 @@ func TestSetComponentParams(t *testing.T) {
 	}
 }
 
+func TestGetAllEnvironmentParams(t *testing.T) {
+	tests := []struct {
+		jsonnet  string
+		expected map[string]Params
+	}{
+		// Test getting the parameters where there are zero components
+		{
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+  },
+}`,
+			map[string]Params{},
+		},
+		// Test getting the parameters where there is a single component
+		{
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+    bar +: {
+      name: "bar",
+      replicas: 1,
+    },
+  },
+}`,
+			map[string]Params{
+				"bar": Params{"name": `"bar"`, "replicas": "1"},
+			},
+		},
+		// Test getting the parameters where there are multiple components
+		{
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+    bar +: {
+      name: "bar",
+      replicas: 1,
+    },
+    foo +: {
+      name: "foo",
+      replicas: 5,
+    },
+  },
+}`,
+			map[string]Params{
+				"bar": Params{"name": `"bar"`, "replicas": "1"},
+				"foo": Params{"name": `"foo"`, "replicas": "5"},
+			},
+		},
+	}
+
+	for _, s := range tests {
+		params, err := GetAllEnvironmentParams(s.jsonnet)
+		if err != nil {
+			t.Errorf("Unexpected error\n  input: %v\n  error: %v", s.jsonnet, err)
+		}
+
+		if !reflect.DeepEqual(params, s.expected) {
+			t.Errorf("Wrong conversion\n  expected:%v\n  got:%v", s.expected, params)
+		}
+	}
+}
+
 func TestSetEnvironmentParams(t *testing.T) {
 	tests := []struct {
 		componentName string
 		jsonnet       string
-		params        map[string]string
+		params        Params
 		expected      string
 	}{
 		// Test environment param case
@@ -423,7 +553,7 @@ params + {
     },
   },
 }`,
-			map[string]string{"replicas": "5"},
+			Params{"replicas": "5"},
 			`
 local params = import "/fake/path";
 params + {
@@ -452,7 +582,7 @@ params + {
     },
   },
 }`,
-			map[string]string{"name": `"foobar"`, "replicas": "5"},
+			Params{"name": `"foobar"`, "replicas": "5"},
 			`
 local params = import "/fake/path";
 params + {
@@ -477,7 +607,7 @@ params + {
   components +: {
   },
 }`,
-			map[string]string{"replicas": "5"},
+			Params{"replicas": "5"},
 			`
 local params = import "/fake/path";
 params + {
@@ -493,7 +623,7 @@ params + {
 	errors := []struct {
 		componentName string
 		jsonnet       string
-		params        map[string]string
+		params        Params
 	}{
 		// Test bad schema
 		{
@@ -504,7 +634,7 @@ params + {
   badobj +: {
   },
 }`,
-			map[string]string{"replicas": "5"},
+			Params{"replicas": "5"},
 		},
 	}
 

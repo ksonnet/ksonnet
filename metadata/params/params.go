@@ -13,7 +13,7 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package snippet
+package params
 
 import (
 	"bytes"
@@ -39,28 +39,42 @@ func astRoot(component, snippet string) (ast.Node, error) {
 	return parser.Parse(tokens)
 }
 
-func visitParams(component ast.Node) (map[string]string, *ast.LocationRange, error) {
-	params := make(map[string]string)
+func visitParams(component ast.Node) (Params, *ast.LocationRange, error) {
+	params := make(Params)
 	var loc *ast.LocationRange
 
-	switch n := component.(type) {
-	case *ast.Object:
-		loc = n.Loc()
-		for _, field := range n.Fields {
-			if field.Id != nil {
-				key := string(*field.Id)
-				val, err := visitParamValue(field.Expr2)
-				if err != nil {
-					return nil, nil, err
-				}
-				params[key] = val
-			}
-		}
-	default:
+	n, isObj := component.(*ast.Object)
+	if !isObj {
 		return nil, nil, fmt.Errorf("Expected component node type to be object")
 	}
 
+	loc = n.Loc()
+	for _, field := range n.Fields {
+		if field.Id != nil {
+			key := string(*field.Id)
+			val, err := visitParamValue(field.Expr2)
+			if err != nil {
+				return nil, nil, err
+			}
+			params[key] = val
+		}
+	}
+
 	return params, loc, nil
+}
+
+func visitAllParams(components ast.Object) (map[string]Params, error) {
+	params := make(map[string]Params)
+
+	for _, f := range components.Fields {
+		p, _, err := visitParams(f.Expr2)
+		if err != nil {
+			return nil, err
+		}
+		params[string(*f.Id)] = p
+	}
+
+	return params, nil
 }
 
 // visitParamValue returns a string representation of the param value, quoted
@@ -78,7 +92,7 @@ func visitParamValue(param ast.Node) (string, error) {
 	}
 }
 
-func writeParams(indent int, params map[string]string) string {
+func writeParams(indent int, params Params) string {
 	// keys maintains an alphabetically sorted list of the param keys
 	keys := make([]string, 0, len(params))
 	for key := range params {
@@ -106,41 +120,41 @@ func writeParams(indent int, params map[string]string) string {
 // ---------------------------------------------------------------------------
 // Component Parameter-specific functionality
 
-func visitComponentsObj(component, snippet string) (*ast.Node, error) {
+func visitComponentsObj(component, snippet string) (*ast.Object, error) {
 	root, err := astRoot(component, snippet)
 	if err != nil {
 		return nil, err
 	}
 
-	switch n := root.(type) {
-	case *ast.Object:
-		for _, field := range n.Fields {
-			if field.Id != nil && *field.Id == componentsID {
-				return &field.Expr2, nil
+	n, isObj := root.(*ast.Object)
+	if !isObj {
+		return nil, fmt.Errorf("Invalid format; expected to find a top-level object")
+	}
+
+	for _, field := range n.Fields {
+		if field.Id != nil && *field.Id == componentsID {
+			c, isObj := field.Expr2.(*ast.Object)
+			if !isObj {
+				return nil, fmt.Errorf("Expected components node type to be object")
 			}
+			return c, nil
 		}
 	}
 	// If this point has been reached, it means we weren't able to find a top-level components object.
 	return nil, fmt.Errorf("Invalid format; expected to find a top-level components object")
 }
 
-func appendComponent(component, snippet string, params map[string]string) (string, error) {
+func appendComponent(component, snippet string, params Params) (string, error) {
 	componentsNode, err := visitComponentsObj(component, snippet)
 	if err != nil {
 		return "", err
 	}
 
-	// Find the location to append the next component
-	switch n := (*componentsNode).(type) {
-	case *ast.Object:
-		// Ensure that the component we are trying to create params for does not already exist.
-		for _, field := range n.Fields {
-			if field.Id != nil && string(*field.Id) == component {
-				return "", fmt.Errorf("Component parameters for '%s' already exists", component)
-			}
+	// Ensure that the component we are trying to create params for does not already exist.
+	for _, field := range componentsNode.Fields {
+		if field.Id != nil && string(*field.Id) == component {
+			return "", fmt.Errorf("Component parameters for '%s' already exists", component)
 		}
-	default:
-		return "", fmt.Errorf("Expected components node type to be object")
 	}
 
 	lines := strings.Split(snippet, "\n")
@@ -160,27 +174,31 @@ func appendComponent(component, snippet string, params map[string]string) (strin
 	return strings.Join(lines, "\n"), nil
 }
 
-func getComponentParams(component, snippet string) (map[string]string, *ast.LocationRange, error) {
+func getComponentParams(component, snippet string) (Params, *ast.LocationRange, error) {
 	componentsNode, err := visitComponentsObj(component, snippet)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	switch n := (*componentsNode).(type) {
-	case *ast.Object:
-		for _, field := range n.Fields {
-			if field.Id != nil && string(*field.Id) == component {
-				return visitParams(field.Expr2)
-			}
+	for _, field := range componentsNode.Fields {
+		if field.Id != nil && string(*field.Id) == component {
+			return visitParams(field.Expr2)
 		}
-	default:
-		return nil, nil, fmt.Errorf("Expected component node type to be object")
 	}
 
 	return nil, nil, fmt.Errorf("Could not find component identifier '%s' when attempting to set params", component)
 }
 
-func setComponentParams(component, snippet string, params map[string]string) (string, error) {
+func getAllComponentParams(snippet string) (map[string]Params, error) {
+	componentsNode, err := visitComponentsObj("", snippet)
+	if err != nil {
+		return nil, err
+	}
+
+	return visitAllParams(*componentsNode)
+}
+
+func setComponentParams(component, snippet string, params Params) (string, error) {
 	currentParams, loc, err := getComponentParams(component, snippet)
 	if err != nil {
 		return "", err
@@ -203,7 +221,7 @@ func setComponentParams(component, snippet string, params map[string]string) (st
 // ---------------------------------------------------------------------------
 // Environment Parameter-specific functionality
 
-func findEnvComponentsObj(node ast.Node) (ast.Node, error) {
+func findEnvComponentsObj(node ast.Node) (*ast.Object, error) {
 	switch n := node.(type) {
 	case *ast.Local:
 		return findEnvComponentsObj(n.Body)
@@ -212,7 +230,11 @@ func findEnvComponentsObj(node ast.Node) (ast.Node, error) {
 	case *ast.Object:
 		for _, f := range n.Fields {
 			if *f.Id == "components" {
-				return f.Expr2, nil
+				c, isObj := f.Expr2.(*ast.Object)
+				if !isObj {
+					return nil, fmt.Errorf("Expected components node type to be object")
+				}
+				return c, nil
 			}
 		}
 		return nil, fmt.Errorf("Invalid params schema -- found %T that is not 'components'", n)
@@ -220,40 +242,49 @@ func findEnvComponentsObj(node ast.Node) (ast.Node, error) {
 	return nil, fmt.Errorf("Invalid params schema -- did not expect type: %T", node)
 }
 
-func getEnvironmentParams(component, snippet string) (map[string]string, *ast.LocationRange, bool, error) {
+func getEnvironmentParams(component, snippet string) (Params, *ast.LocationRange, bool, error) {
 	root, err := astRoot(component, snippet)
 	if err != nil {
 		return nil, nil, false, err
 	}
 
-	componentsNode, err := findEnvComponentsObj(root)
+	n, err := findEnvComponentsObj(root)
 	if err != nil {
 		return nil, nil, false, err
 	}
 
-	switch n := componentsNode.(type) {
-	case *ast.Object:
-		for _, f := range n.Fields {
-			if f.Id != nil && string(*f.Id) == component {
-				params, loc, err := visitParams(f.Expr2)
-				return params, loc, true, err
-			}
+	for _, f := range n.Fields {
+		if f.Id != nil && string(*f.Id) == component {
+			params, loc, err := visitParams(f.Expr2)
+			return params, loc, true, err
 		}
-		// If this point has been reached, it's because we don't have the
-		// component in the list of params, return the location after the
-		// last field of the components obj
-		loc := ast.LocationRange{
-			Begin: ast.Location{Line: n.Loc().End.Line - 1, Column: n.Loc().End.Column},
-			End:   ast.Location{Line: n.Loc().End.Line, Column: n.Loc().End.Column},
-		}
-
-		return make(map[string]string), &loc, false, nil
+	}
+	// If this point has been reached, it's because we don't have the
+	// component in the list of params, return the location after the
+	// last field of the components obj
+	loc := ast.LocationRange{
+		Begin: ast.Location{Line: n.Loc().End.Line - 1, Column: n.Loc().End.Column},
+		End:   ast.Location{Line: n.Loc().End.Line, Column: n.Loc().End.Column},
 	}
 
-	return nil, nil, false, fmt.Errorf("Could not find component identifier '%s' when attempting to set params", component)
+	return make(Params), &loc, false, nil
 }
 
-func setEnvironmentParams(component, snippet string, params map[string]string) (string, error) {
+func getAllEnvironmentParams(snippet string) (map[string]Params, error) {
+	root, err := astRoot("", snippet)
+	if err != nil {
+		return nil, err
+	}
+
+	componentsNode, err := findEnvComponentsObj(root)
+	if err != nil {
+		return nil, err
+	}
+
+	return visitAllParams(*componentsNode)
+}
+
+func setEnvironmentParams(component, snippet string, params Params) (string, error) {
 	currentParams, loc, hasComponent, err := getEnvironmentParams(component, snippet)
 	if err != nil {
 		return "", err

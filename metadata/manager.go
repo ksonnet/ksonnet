@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ksonnet/ksonnet/metadata/snippet"
+	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/prototype"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -155,7 +155,7 @@ func (m *manager) ComponentPaths() (AbsPaths, error) {
 	return paths, nil
 }
 
-func (m *manager) CreateComponent(name string, text string, params map[string]string, templateType prototype.TemplateType) error {
+func (m *manager) CreateComponent(name string, text string, params param.Params, templateType prototype.TemplateType) error {
 	if !isValidName(name) || strings.Contains(name, "/") {
 		return fmt.Errorf("Component name '%s' is not valid; must not contain punctuation, spaces, or begin or end with a slash", name)
 	}
@@ -194,22 +194,31 @@ func (m *manager) LibPaths(envName string) (libPath, envLibPath, envComponentPat
 		appendToAbsPath(envPath, path.Base(envName)+".jsonnet"), appendToAbsPath(envPath, componentParamsFile)
 }
 
-func (m *manager) GetComponentParams(component string) (map[string]string, error) {
+func (m *manager) GetComponentParams(component string) (param.Params, error) {
 	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
 	if err != nil {
 		return nil, err
 	}
 
-	return snippet.GetComponentParams(component, string(text))
+	return param.GetComponentParams(component, string(text))
 }
 
-func (m *manager) SetComponentParams(component string, params map[string]string) error {
+func (m *manager) GetAllComponentParams() (map[string]param.Params, error) {
+	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
+	if err != nil {
+		return nil, err
+	}
+
+	return param.GetAllComponentParams(string(text))
+}
+
+func (m *manager) SetComponentParams(component string, params param.Params) error {
 	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
 	if err != nil {
 		return err
 	}
 
-	jsonnet, err := snippet.SetComponentParams(component, string(text), params)
+	jsonnet, err := param.SetComponentParams(component, string(text), params)
 	if err != nil {
 		return err
 	}
@@ -263,13 +272,13 @@ func (m *manager) createAppDirTree() error {
 	return nil
 }
 
-func (m *manager) writeComponentParams(componentName string, params map[string]string) error {
+func (m *manager) writeComponentParams(componentName string, params param.Params) error {
 	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
 	if err != nil {
 		return err
 	}
 
-	appended, err := snippet.AppendComponent(componentName, string(text), params)
+	appended, err := param.AppendComponent(componentName, string(text), params)
 	if err != nil {
 		return err
 	}

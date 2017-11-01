@@ -13,7 +13,9 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package snippet
+package params
+
+type Params map[string]string
 
 // AppendComponent takes the following params
 //
@@ -22,7 +24,7 @@ package snippet
 //   params: the parameters for the new component.
 //
 // and returns the jsonnet snippet with the appended component and parameters.
-func AppendComponent(component, snippet string, params map[string]string) (string, error) {
+func AppendComponent(component, snippet string, params Params) (string, error) {
 	return appendComponent(component, snippet, params)
 }
 
@@ -34,9 +36,18 @@ func AppendComponent(component, snippet string, params map[string]string) (strin
 // and returns a map of key-value param pairs corresponding to that component.
 //
 // An error will be returned if the component is not found in the snippet.
-func GetComponentParams(component, snippet string) (map[string]string, error) {
+func GetComponentParams(component, snippet string) (Params, error) {
 	params, _, err := getComponentParams(component, snippet)
 	return params, err
+}
+
+// GetAllComponentParams takes
+//
+//  snippet: the jsonnet snippet containing the component params.
+//
+// and returns a map of key-value param pairs for each component identified.
+func GetAllComponentParams(snippet string) (map[string]Params, error) {
+	return getAllComponentParams(snippet)
 }
 
 // SetComponentParams takes
@@ -46,8 +57,19 @@ func GetComponentParams(component, snippet string) (map[string]string, error) {
 //   params: the parameters to be set for 'component'.
 //
 // and returns the jsonnet snippet with the modified set of component parameters.
-func SetComponentParams(component, snippet string, params map[string]string) (string, error) {
+func SetComponentParams(component, snippet string, params Params) (string, error) {
 	return setComponentParams(component, snippet, params)
+}
+
+// GetAllEnvironmentParams takes
+//
+//  snippet: the jsonnet snippet containing the environment params. This is
+//           expected to be non-expanded schema; i.e. does not include the
+//           component params
+//
+// and returns a map of key-value param pairs for each component identified.
+func GetAllEnvironmentParams(snippet string) (map[string]Params, error) {
+	return getAllEnvironmentParams(snippet)
 }
 
 // SetEnvironmentParams takes
@@ -57,6 +79,6 @@ func SetComponentParams(component, snippet string, params map[string]string) (st
 //   params: the parameters to be set for 'component'.
 //
 // and returns the jsonnet snippet with the modified set of environment parameters.
-func SetEnvironmentParams(component, snippet string, params map[string]string) (string, error) {
+func SetEnvironmentParams(component, snippet string, params Params) (string, error) {
 	return setEnvironmentParams(component, snippet, params)
 }

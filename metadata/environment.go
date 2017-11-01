@@ -29,7 +29,7 @@ import (
 
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/ksonnet"
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubespec"
-	"github.com/ksonnet/ksonnet/metadata/snippet"
+	param "github.com/ksonnet/ksonnet/metadata/params"
 )
 
 const (
@@ -343,7 +343,37 @@ func (m *manager) SetEnvironment(name string, desired *Environment) error {
 	return nil
 }
 
-func (m *manager) SetEnvironmentParams(env, component string, params map[string]string) error {
+func (m *manager) GetEnvironmentParams(name string) (map[string]param.Params, error) {
+	exists, err := m.environmentExists(name)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, fmt.Errorf("Environment '%s' does not exist", name)
+	}
+
+	// Get the environment specific params
+	envParamsPath := appendToAbsPath(m.environmentsPath, name, paramsFileName)
+	envParamsText, err := afero.ReadFile(m.appFS, string(envParamsPath))
+	if err != nil {
+		return nil, err
+	}
+	envParams, err := param.GetAllEnvironmentParams(string(envParamsText))
+	if err != nil {
+		return nil, err
+	}
+
+	// Get all component params
+	componentParams, err := m.GetAllComponentParams()
+	if err != nil {
+		return nil, err
+	}
+
+	// Merge the param sets, replacing the component params if the environment params override
+	return mergeParamMaps(componentParams, envParams), nil
+}
+
+func (m *manager) SetEnvironmentParams(env, component string, params param.Params) error {
 	exists, err := m.environmentExists(env)
 	if err != nil {
 		return err
@@ -359,7 +389,7 @@ func (m *manager) SetEnvironmentParams(env, component string, params map[string]
 		return err
 	}
 
-	appended, err := snippet.SetEnvironmentParams(component, string(text), params)
+	appended, err := param.SetEnvironmentParams(component, string(text), params)
 	if err != nil {
 		return err
 	}
@@ -442,4 +472,17 @@ func (m *manager) environmentExists(name string) (bool, error) {
 	}
 
 	return envExists, nil
+}
+
+func mergeParamMaps(base, overrides map[string]param.Params) map[string]param.Params {
+	for component, params := range overrides {
+		if _, contains := base[component]; !contains {
+			base[component] = params
+		} else {
+			for k, v := range params {
+				base[component][k] = v
+			}
+		}
+	}
+	return base
 }
