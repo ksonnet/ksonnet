@@ -30,30 +30,16 @@ const (
 	componentsID = "components"
 )
 
-func visitComponentsObj(component, snippet string) (*ast.Node, error) {
+func astRoot(component, snippet string) (ast.Node, error) {
 	tokens, err := parser.Lex(component, snippet)
 	if err != nil {
 		return nil, err
 	}
 
-	root, err := parser.Parse(tokens)
-	if err != nil {
-		return nil, err
-	}
-
-	switch n := root.(type) {
-	case *ast.Object:
-		for _, field := range n.Fields {
-			if field.Id != nil && *field.Id == componentsID {
-				return &field.Expr2, nil
-			}
-		}
-	}
-	// If this point has been reached, it means we weren't able to find a top-level components object.
-	return nil, fmt.Errorf("Invalid format; expected to find a top-level components object")
+	return parser.Parse(tokens)
 }
 
-func visitComponentParams(component ast.Node) (map[string]string, *ast.LocationRange, error) {
+func visitParams(component ast.Node) (map[string]string, *ast.LocationRange, error) {
 	params := make(map[string]string)
 	var loc *ast.LocationRange
 
@@ -88,11 +74,11 @@ func visitParamValue(param ast.Node) (string, error) {
 	case *ast.LiteralString:
 		return fmt.Sprintf(`"%s"`, n.Value), nil
 	default:
-		return "", fmt.Errorf("Found an unsupported param value type: %T", n)
+		return "", fmt.Errorf("Found an unsupported param AST node type: %T", n)
 	}
 }
 
-func writeParams(params map[string]string) string {
+func writeParams(indent int, params map[string]string) string {
 	// keys maintains an alphabetically sorted list of the param keys
 	keys := make([]string, 0, len(params))
 	for key := range params {
@@ -100,16 +86,42 @@ func writeParams(params map[string]string) string {
 	}
 	sort.Strings(keys)
 
+	var indentBuffer bytes.Buffer
+	for i := 0; i < indent; i++ {
+		indentBuffer.WriteByte(' ')
+	}
+
 	var buffer bytes.Buffer
 	buffer.WriteString("\n")
 	for i, key := range keys {
-		buffer.WriteString(fmt.Sprintf("      %s: %s,", key, params[key]))
+		buffer.WriteString(fmt.Sprintf("%s%s: %s,", indentBuffer.String(), key, params[key]))
 		if i < len(keys)-1 {
 			buffer.WriteString("\n")
 		}
 	}
 	buffer.WriteString("\n")
 	return buffer.String()
+}
+
+// ---------------------------------------------------------------------------
+// Component Parameter-specific functionality
+
+func visitComponentsObj(component, snippet string) (*ast.Node, error) {
+	root, err := astRoot(component, snippet)
+	if err != nil {
+		return nil, err
+	}
+
+	switch n := root.(type) {
+	case *ast.Object:
+		for _, field := range n.Fields {
+			if field.Id != nil && *field.Id == componentsID {
+				return &field.Expr2, nil
+			}
+		}
+	}
+	// If this point has been reached, it means we weren't able to find a top-level components object.
+	return nil, fmt.Errorf("Invalid format; expected to find a top-level components object")
 }
 
 func appendComponent(component, snippet string, params map[string]string) (string, error) {
@@ -136,7 +148,7 @@ func appendComponent(component, snippet string, params map[string]string) (strin
 	// Create the jsonnet resembling the component params
 	var buffer bytes.Buffer
 	buffer.WriteString("    " + component + ": {")
-	buffer.WriteString(writeParams(params))
+	buffer.WriteString(writeParams(6, params))
 	buffer.WriteString("    },")
 
 	// Insert the new component to the end of the list of components
@@ -158,7 +170,7 @@ func getComponentParams(component, snippet string) (map[string]string, *ast.Loca
 	case *ast.Object:
 		for _, field := range n.Fields {
 			if field.Id != nil && string(*field.Id) == component {
-				return visitComponentParams(field.Expr2)
+				return visitParams(field.Expr2)
 			}
 		}
 	default:
@@ -182,10 +194,90 @@ func setComponentParams(component, snippet string, params map[string]string) (st
 
 	// Replace the component param fields
 	lines := strings.Split(snippet, "\n")
-	paramsSnippet := writeParams(params)
+	paramsSnippet := writeParams(6, params)
 	newSnippet := strings.Join(lines[:loc.Begin.Line], "\n") + paramsSnippet + strings.Join(lines[loc.End.Line-1:], "\n")
-	//newSnippet := append(lines[:loc.Begin.Line], paramsSnippet)
-	//newSnippet = append(newSnippet, strings.Join(lines[loc.End.Line-1:], "\n"))
+
+	return newSnippet, nil
+}
+
+// ---------------------------------------------------------------------------
+// Environment Parameter-specific functionality
+
+func findEnvComponentsObj(node ast.Node) (ast.Node, error) {
+	switch n := node.(type) {
+	case *ast.Local:
+		return findEnvComponentsObj(n.Body)
+	case *ast.Binary:
+		return findEnvComponentsObj(n.Right)
+	case *ast.Object:
+		for _, f := range n.Fields {
+			if *f.Id == "components" {
+				return f.Expr2, nil
+			}
+		}
+		return nil, fmt.Errorf("Invalid params schema -- found %T that is not 'components'", n)
+	}
+	return nil, fmt.Errorf("Invalid params schema -- did not expect type: %T", node)
+}
+
+func getEnvironmentParams(component, snippet string) (map[string]string, *ast.LocationRange, bool, error) {
+	root, err := astRoot(component, snippet)
+	if err != nil {
+		return nil, nil, false, err
+	}
+
+	componentsNode, err := findEnvComponentsObj(root)
+	if err != nil {
+		return nil, nil, false, err
+	}
+
+	switch n := componentsNode.(type) {
+	case *ast.Object:
+		for _, f := range n.Fields {
+			if f.Id != nil && string(*f.Id) == component {
+				params, loc, err := visitParams(f.Expr2)
+				return params, loc, true, err
+			}
+		}
+		// If this point has been reached, it's because we don't have the
+		// component in the list of params, return the location after the
+		// last field of the components obj
+		loc := ast.LocationRange{
+			Begin: ast.Location{Line: n.Loc().End.Line - 1, Column: n.Loc().End.Column},
+			End:   ast.Location{Line: n.Loc().End.Line, Column: n.Loc().End.Column},
+		}
+
+		return make(map[string]string), &loc, false, nil
+	}
+
+	return nil, nil, false, fmt.Errorf("Could not find component identifier '%s' when attempting to set params", component)
+}
+
+func setEnvironmentParams(component, snippet string, params map[string]string) (string, error) {
+	currentParams, loc, hasComponent, err := getEnvironmentParams(component, snippet)
+	if err != nil {
+		return "", err
+	}
+
+	for k, v := range currentParams {
+		if _, ok := params[k]; !ok {
+			params[k] = v
+		}
+	}
+
+	// Replace the component param fields
+	var paramsSnippet string
+	lines := strings.Split(snippet, "\n")
+	if !hasComponent {
+		var buffer bytes.Buffer
+		buffer.WriteString(fmt.Sprintf("\n    %s +: {", component))
+		buffer.WriteString(writeParams(6, params))
+		buffer.WriteString("    },\n")
+		paramsSnippet = buffer.String()
+	} else {
+		paramsSnippet = writeParams(6, params)
+	}
+	newSnippet := strings.Join(lines[:loc.Begin.Line], "\n") + paramsSnippet + strings.Join(lines[loc.End.Line-1:], "\n")
 
 	return newSnippet, nil
 }

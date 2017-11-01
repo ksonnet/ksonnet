@@ -29,6 +29,7 @@ import (
 
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/ksonnet"
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubespec"
+	"github.com/ksonnet/ksonnet/metadata/snippet"
 )
 
 const (
@@ -339,6 +340,36 @@ func (m *manager) SetEnvironment(name string, desired *Environment) error {
 	}
 
 	log.Infof("Successfully updated environment '%s'", name)
+	return nil
+}
+
+func (m *manager) SetEnvironmentParams(env, component string, params map[string]string) error {
+	exists, err := m.environmentExists(env)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("Environment '%s' does not exist", env)
+	}
+
+	path := appendToAbsPath(m.environmentsPath, env, paramsFileName)
+
+	text, err := afero.ReadFile(m.appFS, string(path))
+	if err != nil {
+		return err
+	}
+
+	appended, err := snippet.SetEnvironmentParams(component, string(text), params)
+	if err != nil {
+		return err
+	}
+
+	err = afero.WriteFile(m.appFS, string(path), []byte(appended), defaultFilePermissions)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("Successfully set parameters for component '%s' at environment '%s'", component, env)
 	return nil
 }
 

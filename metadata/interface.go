@@ -51,6 +51,7 @@ type Manager interface {
 	GetEnvironments() ([]*Environment, error)
 	GetEnvironment(name string) (*Environment, error)
 	SetEnvironment(name string, desired *Environment) error
+	SetEnvironmentParams(env, component string, params map[string]string) error
 
 	//
 	// TODO: Fill in methods as we need them.
@@ -58,7 +59,6 @@ type Manager interface {
 	// GetPrototype(id string) Protoype
 	// SearchPrototypes(query string) []Protoype
 	// VendorLibrary(uri, version string) error
-	// SetEnvironmentParams(component, env string, params map[string]string) error
 	// GetEnvironmentParams(env string) (map[string]map[string]string, error)
 }
 

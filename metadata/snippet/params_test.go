@@ -402,3 +402,127 @@ func TestSetComponentParams(t *testing.T) {
 		}
 	}
 }
+
+func TestSetEnvironmentParams(t *testing.T) {
+	tests := []struct {
+		componentName string
+		jsonnet       string
+		params        map[string]string
+		expected      string
+	}{
+		// Test environment param case
+		{
+			"foo",
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+    foo +: {
+      name: "foo",
+      replicas: 1,
+    },
+  },
+}`,
+			map[string]string{"replicas": "5"},
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+    foo +: {
+      name: "foo",
+      replicas: 5,
+    },
+  },
+}`,
+		},
+		// Test environment param case with multiple components
+		{
+			"foo",
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+    bar +: {
+      name: "bar",
+      replicas: 1,
+    },
+    foo +: {
+      name: "foo",
+      replicas: 1,
+    },
+  },
+}`,
+			map[string]string{"name": `"foobar"`, "replicas": "5"},
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+    bar +: {
+      name: "bar",
+      replicas: 1,
+    },
+    foo +: {
+      name: "foobar",
+      replicas: 5,
+    },
+  },
+}`,
+		},
+		// Test setting environment param case where component isn't in the snippet
+		{
+			"foo",
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+  },
+}`,
+			map[string]string{"replicas": "5"},
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+    foo +: {
+      replicas: 5,
+    },
+  },
+}`,
+		},
+	}
+
+	errors := []struct {
+		componentName string
+		jsonnet       string
+		params        map[string]string
+	}{
+		// Test bad schema
+		{
+			"foo",
+			`
+local params = import "/fake/path";
+params + {
+  badobj +: {
+  },
+}`,
+			map[string]string{"replicas": "5"},
+		},
+	}
+
+	for _, s := range tests {
+		parsed, err := SetEnvironmentParams(s.componentName, s.jsonnet, s.params)
+		if err != nil {
+			t.Errorf("Unexpected error\n  input: %v\n  error: %v", s.jsonnet, err)
+		}
+
+		if parsed != s.expected {
+			t.Errorf("Wrong conversion\n  expected:%v\n  got:%v", s.expected, parsed)
+		}
+	}
+
+	for _, e := range errors {
+		parsed, err := SetEnvironmentParams(e.componentName, e.jsonnet, e.params)
+		if err == nil {
+			t.Errorf("Expected error but not found\n  input: %v  got: %v", e, parsed)
+		}
+	}
+}

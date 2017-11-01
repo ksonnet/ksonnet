@@ -49,3 +49,14 @@ func GetComponentParams(component, snippet string) (map[string]string, error) {
 func SetComponentParams(component, snippet string, params map[string]string) (string, error) {
 	return setComponentParams(component, snippet, params)
 }
+
+// SetEnvironmentParams takes
+//
+//   component: the name of the new component to be modified.
+//   snippet: a jsonnet snippet resembling the current environment parameters (not expanded).
+//   params: the parameters to be set for 'component'.
+//
+// and returns the jsonnet snippet with the modified set of environment parameters.
+func SetEnvironmentParams(component, snippet string, params map[string]string) (string, error) {
+	return setEnvironmentParams(component, snippet, params)
+}
