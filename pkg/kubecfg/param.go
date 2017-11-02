@@ -18,12 +18,14 @@ package kubecfg
 import (
 	"fmt"
 	"io"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 
 	param "github.com/ksonnet/ksonnet/metadata/params"
 
+	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -239,4 +241,176 @@ func outputParams(params map[string]param.Params, out io.Writer) error {
 
 	_, err := fmt.Fprint(out, strings.Join(lines, ""))
 	return err
+}
+
+// ----------------------------------------------------------------------------
+
+// ParamDiffCmd stores the information necessary to diff between environment
+// parameters.
+type ParamDiffCmd struct {
+	env1 string
+	env2 string
+
+	component string
+}
+
+// NewParamDiffCmd acts as a constructor for ParamDiffCmd.
+func NewParamDiffCmd(env1, env2, component string) *ParamDiffCmd {
+	return &ParamDiffCmd{env1: env1, env2: env2, component: component}
+}
+
+type paramDiffRecord struct {
+	component string
+	param     string
+	value1    string
+	value2    string
+}
+
+// Run executes the diffing of environment params.
+func (c *ParamDiffCmd) Run(out io.Writer) error {
+	manager, err := manager()
+	if err != nil {
+		return err
+	}
+
+	params1, err := manager.GetEnvironmentParams(c.env1)
+	if err != nil {
+		return err
+	}
+
+	params2, err := manager.GetEnvironmentParams(c.env2)
+	if err != nil {
+		return err
+	}
+
+	if len(c.component) != 0 {
+		params1 = map[string]param.Params{c.component: params1[c.component]}
+		params2 = map[string]param.Params{c.component: params2[c.component]}
+	}
+
+	if reflect.DeepEqual(params1, params2) {
+		log.Info("No differences found.")
+		return nil
+	}
+
+	records := diffParams(params1, params2)
+
+	//
+	// Format each component parameter information for pretty printing.
+	// Each component will be outputted alphabetically like the following:
+	//
+	//   COMPONENT PARAM     dev       prod
+	//   bar       name      "bar-dev" "bar"
+	//   foo       replicas  1
+	//
+
+	maxComponentLen := len(paramComponentHeader)
+	for _, k := range records {
+		if l := len(k.component); l > maxComponentLen {
+			maxComponentLen = l
+		}
+	}
+
+	maxParamLen := len(paramNameHeader) + maxComponentLen + 1
+	for _, k := range records {
+		if l := len(k.param) + maxComponentLen + 1; l > maxParamLen {
+			maxParamLen = l
+		}
+	}
+
+	maxEnvLen := len(c.env1) + maxParamLen + 1
+	for _, k := range records {
+		if l := len(k.value1) + maxParamLen + 1; l > maxEnvLen {
+			maxEnvLen = l
+		}
+	}
+
+	componentSpacing := strings.Repeat(" ", maxComponentLen-len(paramComponentHeader)+1)
+	nameSpacing := strings.Repeat(" ", maxParamLen-maxComponentLen-len(paramNameHeader))
+	envSpacing := strings.Repeat(" ", maxEnvLen-maxParamLen-len(c.env1))
+
+	// print headers
+	color.New(color.FgBlack).Fprintln(out, paramComponentHeader+componentSpacing+
+		paramNameHeader+nameSpacing+c.env1+envSpacing+c.env2)
+	color.New(color.FgBlack).Fprintln(out, strings.Repeat("=", len(paramComponentHeader))+componentSpacing+
+		strings.Repeat("=", len(paramNameHeader))+nameSpacing+
+		strings.Repeat("=", len(c.env1))+envSpacing+
+		strings.Repeat("=", len(c.env2)))
+
+	// print body
+	for _, k := range records {
+		componentSpacing = strings.Repeat(" ", maxComponentLen-len(k.component)+1)
+		nameSpacing = strings.Repeat(" ", maxParamLen-maxComponentLen-len(k.param))
+		envSpacing = strings.Repeat(" ", maxEnvLen-maxParamLen-len(k.value1))
+		line := fmt.Sprint(k.component + componentSpacing + k.param + nameSpacing + k.value1 + envSpacing + k.value2)
+		if len(k.value1) == 0 {
+			color.New(color.FgGreen).Fprintln(out, line)
+		} else if len(k.value2) == 0 {
+			color.New(color.FgRed).Fprintln(out, line)
+		} else if k.value1 != k.value2 {
+			color.New(color.FgYellow).Fprintln(out, line)
+		} else {
+			color.New(color.FgBlack).Fprintln(out, line)
+		}
+	}
+
+	return nil
+}
+
+func diffParams(params1, params2 map[string]param.Params) []*paramDiffRecord {
+	var records []*paramDiffRecord
+
+	for c := range params1 {
+		if _, contains := params2[c]; !contains {
+			// env2 doesn't have this component, add all params from env1 for this component
+			for p := range params2[c] {
+				records = addRecord(records, c, p, params1[c][p], "")
+			}
+		} else {
+			// has same component -- need to compare params
+			for p := range params1[c] {
+				if _, hasParam := params2[c][p]; !hasParam {
+					// env2 doesn't have this param, add a record with the param value from env1
+					records = addRecord(records, c, p, params1[c][p], "")
+				} else {
+					// env2 has this param too, add a record with both param values
+					records = addRecord(records, c, p, params1[c][p], params2[c][p])
+				}
+			}
+			// add remaining records for params that env2 has that env1 does not for this component
+			for p := range params2[c] {
+				if _, hasParam := params1[c][p]; !hasParam {
+					records = addRecord(records, c, p, "", params2[c][p])
+				}
+			}
+		}
+	}
+
+	// add remaining records where env2 contains a component that env1 does not
+	for c := range params2 {
+		if _, contains := params1[c]; !contains {
+			for p := range params2[c] {
+				records = addRecord(records, c, p, "", params2[c][p])
+			}
+		}
+	}
+
+	sort.Slice(records, func(i, j int) bool {
+		if records[i].component == records[j].component {
+			return records[i].param < records[j].param
+		}
+		return records[i].component < records[j].component
+	})
+
+	return records
+}
+
+func addRecord(records []*paramDiffRecord, component, param, value1, value2 string) []*paramDiffRecord {
+	records = append(records, &paramDiffRecord{
+		component: component,
+		param:     param,
+		value1:    value1,
+		value2:    value2,
+	})
+	return records
 }

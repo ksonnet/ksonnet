@@ -24,7 +24,8 @@ import (
 )
 
 const (
-	flagParamEnv = "env"
+	flagParamEnv       = "env"
+	flagParamComponent = "component"
 )
 
 func init() {
@@ -32,9 +33,11 @@ func init() {
 
 	paramCmd.AddCommand(paramSetCmd)
 	paramCmd.AddCommand(paramListCmd)
+	paramCmd.AddCommand(paramDiffCmd)
 
 	paramSetCmd.PersistentFlags().String(flagParamEnv, "", "Specify environment to set parameters for")
 	paramListCmd.PersistentFlags().String(flagParamEnv, "", "Specify environment to list parameters for")
+	paramDiffCmd.PersistentFlags().String(flagParamComponent, "", "Specify the component to diff against")
 }
 
 var paramCmd = &cobra.Command{
@@ -97,7 +100,7 @@ of environment parameters, we suggest modifying the
 }
 
 var paramListCmd = &cobra.Command{
-	Use:   "list [component-name]",
+	Use:   "list <component-name>",
 	Short: "List all parameters for a component(s)",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
@@ -137,4 +140,37 @@ Furthermore, parameters can be listed on a per-environment basis.
 
   # List all parameters for the component "guestbook" in the environment "dev"
   ks param list guestbook --env=dev`,
+}
+
+var paramDiffCmd = &cobra.Command{
+	Use:   "diff <env1> <env2>",
+	Short: "Display differences between the component parameters of two environments",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		flags := cmd.Flags()
+		if len(args) != 2 {
+			return fmt.Errorf("'param diff' takes exactly two arguments, that is the name of the environments to diff against")
+		}
+
+		env1 := args[0]
+		env2 := args[1]
+
+		component, err := flags.GetString(flagParamComponent)
+		if err != nil {
+			return err
+		}
+
+		c := kubecfg.NewParamDiffCmd(env1, env2, component)
+
+		return c.Run(cmd.OutOrStdout())
+	},
+	Long: `"Pretty prints differences between the component parameters of two environments.
+
+A component flag is accepted to diff against a single component. By default, the
+diff is performed against all components.
+`,
+	Example: `  # Diff between the component parameters on environments 'dev' and 'prod'
+  ks param diff dev prod
+
+  # Diff between the component 'guestbook' on environments 'dev' and 'prod'
+  ks param diff dev prod --component=guestbook`,
 }

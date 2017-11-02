@@ -206,7 +206,7 @@ func (m *manager) DeleteEnvironment(name string) error {
 func (m *manager) GetEnvironments() ([]*Environment, error) {
 	envs := []*Environment{}
 
-	log.Info("Retrieving all environments")
+	log.Debug("Retrieving all environments")
 	err := afero.Walk(m.appFS, string(m.environmentsPath), func(path string, f os.FileInfo, err error) error {
 		isDir, err := afero.IsDir(m.appFS, path)
 		if err != nil {
