@@ -31,8 +31,10 @@ func init() {
 	RootCmd.AddCommand(paramCmd)
 
 	paramCmd.AddCommand(paramSetCmd)
+	paramCmd.AddCommand(paramListCmd)
 
 	paramSetCmd.PersistentFlags().String(flagParamEnv, "", "Specify environment to set parameters for")
+	paramListCmd.PersistentFlags().String(flagParamEnv, "", "Specify environment to list parameters for")
 }
 
 var paramCmd = &cobra.Command{
@@ -92,4 +94,47 @@ of environment parameters, we suggest modifying the
   # Updates the replica count of the 'guestbook' component to 2 for the environment
   # 'dev'
   ks param set guestbook replicas 2 --env=dev`,
+}
+
+var paramListCmd = &cobra.Command{
+	Use:   "list [component-name]",
+	Short: "List all parameters for a component(s)",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		flags := cmd.Flags()
+		if len(args) > 1 {
+			return fmt.Errorf("'param list' takes at most one argument, that is the name of the component")
+		}
+
+		component := ""
+		if len(args) == 1 {
+			component = args[0]
+		}
+
+		env, err := flags.GetString(flagParamEnv)
+		if err != nil {
+			return err
+		}
+
+		c := kubecfg.NewParamListCmd(component, env)
+
+		return c.Run(cmd.OutOrStdout())
+	},
+	Long: `"List all component parameters or environment parameters.
+
+This command will display all parameters for the component specified. If a
+component is not specified, parameters for all components will be listed.
+
+Furthermore, parameters can be listed on a per-environment basis.
+`,
+	Example: `  # List all component parameters
+  ks param list
+
+  # List all parameters for the component "guestbook"
+  ks param list guestbook
+
+  # List all parameters for the environment "dev"
+  ks param list --env=dev
+
+  # List all parameters for the component "guestbook" in the environment "dev"
+  ks param list guestbook --env=dev`,
 }

@@ -17,10 +17,37 @@ package kubecfg
 
 import (
 	"fmt"
+	"io"
+	"sort"
 	"strconv"
+	"strings"
+
+	param "github.com/ksonnet/ksonnet/metadata/params"
 
 	log "github.com/sirupsen/logrus"
 )
+
+func sortedKeys(params map[string]param.Params) []string {
+	// keys maintains an alphabetically sorted list of the components
+	keys := make([]string, 0, len(params))
+	for key := range params {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func sortedParams(params param.Params) []string {
+	// keys maintains an alphabetically sorted list of the params
+	keys := make([]string, 0, len(params))
+	for key := range params {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+// ----------------------------------------------------------------------------
 
 // ParamSetCmd stores the information necessary to set component and
 // environment params.
@@ -72,4 +99,144 @@ func sanitizeParamValue(value string) string {
 	}
 	// string
 	return fmt.Sprintf(`"%s"`, value)
+}
+
+// ----------------------------------------------------------------------------
+
+const (
+	paramComponentHeader = "COMPONENT"
+	paramNameHeader      = "PARAM"
+	paramValueHeader     = "VALUE"
+)
+
+// ParamListCmd stores the information necessary display component or
+// environment parameters
+type ParamListCmd struct {
+	component string
+	env       string
+}
+
+// NewParamListCmd acts as a constructor for ParamListCmd.
+func NewParamListCmd(component, env string) *ParamListCmd {
+	return &ParamListCmd{component: component, env: env}
+}
+
+// Run executes the displaying of params.
+func (c *ParamListCmd) Run(out io.Writer) error {
+	manager, err := manager()
+	if err != nil {
+		return err
+	}
+
+	var params map[string]param.Params
+	if len(c.env) != 0 {
+		params, err = manager.GetEnvironmentParams(c.env)
+		if err != nil {
+			return err
+		}
+	} else {
+		params, err = manager.GetAllComponentParams()
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(c.component) != 0 {
+		if _, ok := params[c.component]; !ok {
+			return fmt.Errorf("No such component '%s' found", c.component)
+		}
+
+		p := params[c.component]
+		return outputParamsFor(c.component, p, out)
+	}
+
+	return outputParams(params, out)
+}
+
+func outputParamsFor(component string, params param.Params, out io.Writer) error {
+	keys := sortedParams(params)
+
+	//
+	// Format each parameter information for pretty printing.
+	// Each parameter will be outputted alphabetically like the following:
+	//
+	//   PARAM    VALUE
+	//   name     "foo"
+	//   replicas 1
+	//
+
+	maxParamLen := len(paramNameHeader)
+	for _, k := range keys {
+		if l := len(k); l > maxParamLen {
+			maxParamLen = l
+		}
+	}
+
+	nameSpacing := strings.Repeat(" ", maxParamLen-len(paramNameHeader)+1)
+
+	lines := []string{}
+	lines = append(lines, paramNameHeader+nameSpacing+paramValueHeader+"\n")
+	lines = append(lines, strings.Repeat("=", len(paramNameHeader))+nameSpacing+
+		strings.Repeat("=", len(paramValueHeader))+"\n")
+
+	for _, k := range keys {
+		nameSpacing = strings.Repeat(" ", maxParamLen-len(k)+1)
+		lines = append(lines, k+nameSpacing+params[k]+"\n")
+	}
+
+	_, err := fmt.Fprint(out, strings.Join(lines, ""))
+	return err
+}
+
+func outputParams(params map[string]param.Params, out io.Writer) error {
+	keys := sortedKeys(params)
+
+	//
+	// Format each component parameter information for pretty printing.
+	// Each component will be outputted alphabetically like the following:
+	//
+	//   COMPONENT PARAM     VALUE
+	//   bar       name      "bar"
+	//   bar       replicas  2
+	//   foo       name      "foo"
+	//   foo       replicas  1
+	//
+
+	maxComponentLen := len(paramComponentHeader)
+	for _, k := range keys {
+		if l := len(k); l > maxComponentLen {
+			maxComponentLen = l
+		}
+	}
+
+	maxParamLen := len(paramNameHeader) + maxComponentLen + 1
+	for _, k := range keys {
+		for p := range params[k] {
+			if l := len(p) + maxComponentLen + 1; l > maxParamLen {
+				maxParamLen = l
+			}
+		}
+	}
+
+	componentSpacing := strings.Repeat(" ", maxComponentLen-len(paramComponentHeader)+1)
+	nameSpacing := strings.Repeat(" ", maxParamLen-maxComponentLen-len(paramNameHeader))
+
+	lines := []string{}
+	lines = append(lines, paramComponentHeader+componentSpacing+paramNameHeader+nameSpacing+paramValueHeader+"\n")
+	lines = append(lines, strings.Repeat("=", len(paramComponentHeader))+componentSpacing+
+		strings.Repeat("=", len(paramNameHeader))+nameSpacing+strings.Repeat("=", len(paramValueHeader))+"\n")
+
+	for _, k := range keys {
+		// sort params to display alphabetically
+		ps := sortedParams(params[k])
+
+		for _, p := range ps {
+			componentSpacing = strings.Repeat(" ", maxComponentLen-len(k)+1)
+			nameSpacing = strings.Repeat(" ", maxParamLen-maxComponentLen-len(p))
+			lines = append(lines, k+componentSpacing+p+nameSpacing+params[k][p]+"\n")
+		}
+	}
+
+	_, err := fmt.Fprint(out, strings.Join(lines, ""))
+	return err
 }
