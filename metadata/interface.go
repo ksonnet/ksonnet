@@ -22,6 +22,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
+	"github.com/ksonnet/ksonnet/metadata/parts"
 	"github.com/ksonnet/ksonnet/metadata/registry"
 	"github.com/ksonnet/ksonnet/prototype"
 	"github.com/spf13/afero"
@@ -72,7 +73,9 @@ type Manager interface {
 	AppSpec() (*app.Spec, error)
 
 	// Registry API.
-	AddRegistry(name, protocol, uri string) (*registry.Spec, error)
+	AddRegistry(name, protocol, uri, version string) (*registry.Spec, error)
+	GetRegistry(name string) (*registry.Spec, string, error)
+	CacheDependency(registryName, libID, libName, libVersion string) (*parts.Spec, error)
 }
 
 // Find will recursively search the current directory and its parents for a
@@ -91,16 +94,12 @@ func Init(name string, rootPath AbsPath, spec ClusterSpec, serverURI, namespace 
 	const (
 		defaultIncubatorRegName = "incubator"
 		defaultIncubatorURI     = "github.com/ksonnet/parts/tree/test-reg/" + defaultIncubatorRegName
-		defaultIncubatorRefSpec = "test-reg"
 	)
 
 	gh, err := makeGitHubRegistryManager(&app.RegistryRefSpec{
+		Name:     "incubator",
 		Protocol: "github",
-		Spec: map[string]interface{}{
-			uriField:     defaultIncubatorURI,
-			refSpecField: defaultIncubatorRefSpec,
-		},
-		Name: "incubator",
+		URI:      defaultIncubatorURI,
 	})
 	if err != nil {
 		return nil, err

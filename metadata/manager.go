@@ -50,6 +50,7 @@ const (
 	baseLibsonnetFile   = "base.libsonnet"
 	appYAMLFile         = "app.yaml"
 	registryYAMLFile    = "registry.yaml"
+	partsYAMLFile       = "parts.yaml"
 
 	// ComponentsExtCodeKey is the ExtCode key for component imports
 	ComponentsExtCodeKey = "__ksonnet/components"
@@ -123,18 +124,23 @@ func initManager(name string, rootPath AbsPath, spec ClusterSpec, serverURI, nam
 		return nil, err
 	}
 
-	regSpec, err := incubatorReg.FindSpec()
+	// Retrieve `registry.yaml`.
+	registryYAMLData, err := generateRegistryYAMLData(incubatorReg)
 	if err != nil {
 		return nil, err
 	}
 
-	registrySpecBytes, err := regSpec.Marshal()
+	// Generate data for `app.yaml`.
+	appYAMLData, err := generateAppYAMLData(name, incubatorReg.MakeRegistryRefSpec())
 	if err != nil {
 		return nil, err
 	}
+
+	// Generate data for `base.libsonnet`.
+	baseLibData := genBaseLibsonnetContent()
 
 	// Initialize directory structure.
-	if err := m.createAppDirTree(name, incubatorReg); err != nil {
+	if err := m.createAppDirTree(name, appYAMLData, baseLibData, incubatorReg); err != nil {
 		return nil, err
 	}
 
@@ -152,7 +158,8 @@ func initManager(name string, rootPath AbsPath, spec ClusterSpec, serverURI, nam
 	}
 
 	// Write out `incubator` registry spec.
-	err = afero.WriteFile(m.appFS, string(m.registryPath(incubatorReg)), registrySpecBytes, defaultFilePermissions)
+	registryPath := string(m.registryPath(incubatorReg))
+	err = afero.WriteFile(m.appFS, registryPath, registryYAMLData, defaultFilePermissions)
 	if err != nil {
 		return nil, err
 	}
@@ -297,6 +304,18 @@ func (m *manager) AppSpec() (*app.Spec, error) {
 		return nil, err
 	}
 
+	if schema.Contributors == nil {
+		schema.Contributors = app.ContributorSpecs{}
+	}
+
+	if schema.Registries == nil {
+		schema.Registries = app.RegistryRefSpecs{}
+	}
+
+	if schema.Libraries == nil {
+		schema.Libraries = app.LibraryRefSpecs{}
+	}
+
 	return &schema, nil
 }
 
@@ -315,7 +334,7 @@ func (m *manager) createUserDirTree() error {
 	return nil
 }
 
-func (m *manager) createAppDirTree(name string, gh registry.Manager) error {
+func (m *manager) createAppDirTree(name string, appYAMLData, baseLibData []byte, gh registry.Manager) error {
 	exists, err := afero.DirExists(m.appFS, string(m.rootPath))
 	if err != nil {
 		return fmt.Errorf("Could not check existance of directory '%s':\n%v", m.rootPath, err)
@@ -340,11 +359,6 @@ func (m *manager) createAppDirTree(name string, gh registry.Manager) error {
 		}
 	}
 
-	appYAML, err := genAppYAMLContent(name)
-	if err != nil {
-		return err
-	}
-
 	filePaths := []struct {
 		path    AbsPath
 		content []byte
@@ -359,7 +373,11 @@ func (m *manager) createAppDirTree(name string, gh registry.Manager) error {
 		},
 		{
 			m.appYAMLPath,
-			appYAML,
+			appYAMLData,
+		},
+		{
+			m.baseLibsonnetPath,
+			baseLibData,
 		},
 	}
 
@@ -400,12 +418,29 @@ func genComponentParamsContent() []byte {
 `)
 }
 
-func genAppYAMLContent(name string) ([]byte, error) {
+func generateRegistryYAMLData(incubatorReg registry.Manager) ([]byte, error) {
+	regSpec, err := incubatorReg.FetchRegistrySpec()
+	if err != nil {
+		return nil, err
+	}
+
+	return regSpec.Marshal()
+}
+
+func generateAppYAMLData(name string, refs ...*app.RegistryRefSpec) ([]byte, error) {
 	content := app.Spec{
 		APIVersion: app.DefaultAPIVersion,
 		Kind:       app.Kind,
 		Name:       name,
 		Version:    app.DefaultVersion,
+		Registries: app.RegistryRefSpecs{},
+	}
+
+	for _, ref := range refs {
+		err := content.AddRegistryRef(ref)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return content.Marshal()

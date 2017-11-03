@@ -15,7 +15,11 @@
 
 package registry
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/ksonnet/ksonnet/metadata/app"
+)
 
 const (
 	DefaultApiVersion = "0.1"
@@ -23,10 +27,10 @@ const (
 )
 
 type Spec struct {
-	APIVersion string            `json:"apiVersion"`
-	Kind       string            `json:"kind"`
-	Prototypes PrototypeRefSpecs `json:"prototypes"`
-	Libraries  LibraryRefSpecs   `json:"libraries"`
+	APIVersion string              `json:"apiVersion"`
+	Kind       string              `json:"kind"`
+	GitVersion *app.GitVersionSpec `json:"gitVersion"`
+	Libraries  LibraryRefSpecs     `json:"libraries"`
 }
 
 func (s *Spec) Marshal() ([]byte, error) {
@@ -35,6 +39,9 @@ func (s *Spec) Marshal() ([]byte, error) {
 
 type Specs []*Spec
 
-type LibraryRefSpecs map[string]string
+type LibraryRef struct {
+	Version string `json:"version"`
+	Path    string `json:"path"`
+}
 
-type PrototypeRefSpecs map[string]string
+type LibraryRefSpecs map[string]*LibraryRef

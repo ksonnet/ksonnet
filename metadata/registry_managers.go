@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/go-github/github"
 	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/metadata/parts"
 	"github.com/ksonnet/ksonnet/metadata/registry"
 )
 
@@ -29,10 +30,9 @@ const (
 type gitHubRegistryManager struct {
 	*app.RegistryRefSpec
 	registryDir          string
-	RefSpec              string `json:"refSpec"`
-	ResolvedSHA          string `json:"resolvedSHA"`
 	org                  string
 	repo                 string
+	registryRepoPath     string
 	registrySpecRepoPath string
 }
 
@@ -42,50 +42,52 @@ func makeGitHubRegistryManager(registryRef *app.RegistryRefSpec) (*gitHubRegistr
 	var err error
 
 	// Set registry path.
-	// NOTE: Resolve this to a specific commit.
 	gh.registryDir = gh.Name
 
-	rawURI, uriExists := gh.Spec[uriField]
-	uri, isString := rawURI.(string)
-	if !uriExists || !isString {
-		return nil, fmt.Errorf("GitHub app registry '%s' is missing a 'uri' in field 'spec'", gh.Name)
-	}
-
-	gh.org, gh.repo, gh.RefSpec, gh.registrySpecRepoPath, err = parseGitHubURI(uri)
+	// Parse GitHub URI.
+	var refspec string
+	gh.org, gh.repo, refspec, gh.registryRepoPath, gh.registrySpecRepoPath, err = parseGitHubURI(gh.URI)
 	if err != nil {
 		return nil, err
+	}
+
+	// Resolve the refspec to a commit SHA.
+	client := github.NewClient(nil)
+	ctx := context.Background()
+
+	sha, _, err := client.Repositories.GetCommitSHA1(ctx, gh.org, gh.repo, refspec, "")
+	if err != nil {
+		return nil, err
+	}
+	gh.GitVersion = &app.GitVersionSpec{
+		RefSpec:   refspec,
+		CommitSHA: sha,
 	}
 
 	return &gh, nil
 }
 
-func (gh *gitHubRegistryManager) VersionsDir() string {
+func (gh *gitHubRegistryManager) RegistrySpecDir() string {
 	return gh.registryDir
 }
 
-func (gh *gitHubRegistryManager) SpecPath() string {
-	if gh.ResolvedSHA != "" {
-		return path.Join(gh.registryDir, gh.ResolvedSHA+".yaml")
+func (gh *gitHubRegistryManager) RegistrySpecFilePath() string {
+	if gh.GitVersion.CommitSHA != "" {
+		return path.Join(gh.registryDir, gh.GitVersion.CommitSHA+".yaml")
 	}
-	return path.Join(gh.registryDir, gh.RefSpec+".yaml")
+	return path.Join(gh.registryDir, gh.GitVersion.RefSpec+".yaml")
 }
 
-func (gh *gitHubRegistryManager) FindSpec() (*registry.Spec, error) {
+func (gh *gitHubRegistryManager) FetchRegistrySpec() (*registry.Spec, error) {
 	// Fetch app spec at specific commit.
 	client := github.NewClient(nil)
 	ctx := context.Background()
 
-	sha, _, err := client.Repositories.GetCommitSHA1(ctx, gh.org, gh.repo, gh.RefSpec, "")
-	if err != nil {
-		return nil, err
-	}
-	gh.ResolvedSHA = sha
-
 	// Get contents.
-	getOpts := github.RepositoryContentGetOptions{Ref: gh.ResolvedSHA}
+	getOpts := github.RepositoryContentGetOptions{Ref: gh.GitVersion.CommitSHA}
 	file, _, _, err := client.Repositories.GetContents(ctx, gh.org, gh.repo, gh.registrySpecRepoPath, &getOpts)
 	if file == nil {
-		return nil, fmt.Errorf("Could not find valid registry at uri '%s/%s/%s' and refspec '%s' (resolves to sha '%s')", gh.org, gh.repo, gh.registrySpecRepoPath, gh.RefSpec, gh.ResolvedSHA)
+		return nil, fmt.Errorf("Could not find valid registry at uri '%s/%s/%s' and refspec '%s' (resolves to sha '%s')", gh.org, gh.repo, gh.registrySpecRepoPath, gh.GitVersion.RefSpec, gh.GitVersion.CommitSHA)
 	} else if err != nil {
 		return nil, err
 	}
@@ -102,14 +104,114 @@ func (gh *gitHubRegistryManager) FindSpec() (*registry.Spec, error) {
 		return nil, err
 	}
 
+	registrySpec.GitVersion = &app.GitVersionSpec{
+		RefSpec:   gh.GitVersion.RefSpec,
+		CommitSHA: gh.GitVersion.CommitSHA,
+	}
+
 	return &registrySpec, nil
 }
 
-func (gh *gitHubRegistryManager) registrySpecRawURL() string {
-	return strings.Join([]string{rawGitHubRoot, gh.org, gh.repo, gh.RefSpec, gh.registrySpecRepoPath}, "/")
+func (gh *gitHubRegistryManager) MakeRegistryRefSpec() *app.RegistryRefSpec {
+	return gh.RegistryRefSpec
 }
 
-func parseGitHubURI(uri string) (org, repo, refSpec, regSpecRepoPath string, err error) {
+func (gh *gitHubRegistryManager) ResolveLibrary(libID, libAlias, libRefSpec string, onFile registry.ResolveFile, onDir registry.ResolveDirectory) (*parts.Spec, *app.LibraryRefSpec, error) {
+	client := github.NewClient(nil)
+
+	// Resolve `version` (a git refspec) to a specific SHA.
+	ctx := context.Background()
+	resolvedSHA, _, err := client.Repositories.GetCommitSHA1(ctx, gh.org, gh.repo, libRefSpec, "")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Resolve directories and files.
+	path := strings.Join([]string{gh.registryRepoPath, libID}, "/")
+	err = gh.resolveDir(client, libID, path, resolvedSHA, onFile, onDir)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Resolve app spec.
+	appSpecPath := strings.Join([]string{path, partsYAMLFile}, "/")
+	ctx = context.Background()
+	getOpts := &github.RepositoryContentGetOptions{Ref: resolvedSHA}
+	file, directory, _, err := client.Repositories.GetContents(ctx, gh.org, gh.repo, appSpecPath, getOpts)
+	if err != nil {
+		return nil, nil, err
+	} else if directory != nil {
+		return nil, nil, fmt.Errorf("Can't download library specification; resource '%s' points at a file", gh.registrySpecRawURL())
+	}
+
+	partsSpecText, err := file.GetContent()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	parts := parts.Spec{}
+	json.Unmarshal([]byte(partsSpecText), &parts)
+
+	refSpec := app.LibraryRefSpec{
+		Name: libAlias,
+		GitVersion: &app.GitVersionSpec{
+			RefSpec:   libRefSpec,
+			CommitSHA: resolvedSHA,
+		},
+	}
+
+	return &parts, &refSpec, nil
+}
+
+func (gh *gitHubRegistryManager) resolveDir(client *github.Client, libID, path, version string, onFile registry.ResolveFile, onDir registry.ResolveDirectory) error {
+	ctx := context.Background()
+	getOpts := &github.RepositoryContentGetOptions{Ref: version}
+	file, directory, _, err := client.Repositories.GetContents(ctx, gh.org, gh.repo, path, getOpts)
+	if err != nil {
+		return err
+	} else if file != nil {
+		return fmt.Errorf("Lib ID '%s' resolves to a file in registry '%s'", libID, gh.Name)
+	}
+
+	for _, item := range directory {
+		switch item.GetType() {
+		case "file":
+			itemPath := item.GetPath()
+			file, directory, _, err := client.Repositories.GetContents(ctx, gh.org, gh.repo, itemPath, getOpts)
+			if err != nil {
+				return err
+			} else if directory != nil {
+				return fmt.Errorf("INTERNAL ERROR: GitHub API reported resource '%s' of type file, but returned type dir", itemPath)
+			}
+			contents, err := file.GetContent()
+			if err != nil {
+				return err
+			}
+			if err := onFile(itemPath, []byte(contents)); err != nil {
+				return err
+			}
+		case "dir":
+			itemPath := item.GetPath()
+			if err := onDir(itemPath); err != nil {
+				return err
+			}
+			if err := gh.resolveDir(client, libID, itemPath, version, onFile, onDir); err != nil {
+				return err
+			}
+		case "symlink":
+		case "submodule":
+			return fmt.Errorf("Invalid library '%s'; ksonnet doesn't support libraries with symlinks or submodules", libID)
+		}
+	}
+
+	return nil
+}
+
+func (gh *gitHubRegistryManager) registrySpecRawURL() string {
+	return strings.Join([]string{rawGitHubRoot, gh.org, gh.repo, gh.GitVersion.RefSpec, gh.registrySpecRepoPath}, "/")
+}
+
+func parseGitHubURI(uri string) (org, repo, refSpec, regRepoPath, regSpecRepoPath string, err error) {
 	// Normalize URI.
 	uri = strings.TrimSpace(uri)
 	if strings.HasPrefix(uri, "http://github.com") || strings.HasPrefix(uri, "https://github.com") || strings.HasPrefix(uri, "http://www.github.com") || strings.HasPrefix(uri, "https://www.github.com") {
@@ -117,21 +219,21 @@ func parseGitHubURI(uri string) (org, repo, refSpec, regSpecRepoPath string, err
 	} else if strings.HasPrefix(uri, "github.com") || strings.HasPrefix(uri, "www.github.com") {
 		uri = "http://" + uri
 	} else {
-		return "", "", "", "", fmt.Errorf("Registries using protocol 'github' must provide URIs beginning with 'github.com' (optionally prefaced with 'http', 'https', 'www', and so on")
+		return "", "", "", "", "", fmt.Errorf("Registries using protocol 'github' must provide URIs beginning with 'github.com' (optionally prefaced with 'http', 'https', 'www', and so on")
 	}
 
 	parsed, err := url.Parse(uri)
 	if err != nil {
-		return "", "", "", "", err
+		return "", "", "", "", "", err
 	}
 
 	if len(parsed.Query()) != 0 {
-		return "", "", "", "", fmt.Errorf("No query strings allowed in registry URI:\n%s", uri)
+		return "", "", "", "", "", fmt.Errorf("No query strings allowed in registry URI:\n%s", uri)
 	}
 
 	components := strings.Split(parsed.Path, "/")
 	if len(components) < 3 {
-		return "", "", "", "", fmt.Errorf("GitHub URI must point at a respository:\n%s", uri)
+		return "", "", "", "", "", fmt.Errorf("GitHub URI must point at a respository:\n%s", uri)
 	}
 
 	// NOTE: The first component is always blank, because the path
@@ -158,6 +260,8 @@ func parseGitHubURI(uri string) (org, repo, refSpec, regSpecRepoPath string, err
 
 		// See note above about first component being blank.
 		if components[3] == "tree" {
+			regRepoPath = strings.Join(components[5:], "/")
+
 			// If we have a trailing '/' character, last component will be
 			// blank.
 			if components[len-1] == "" {
@@ -168,11 +272,12 @@ func parseGitHubURI(uri string) (org, repo, refSpec, regSpecRepoPath string, err
 			regSpecRepoPath = strings.Join(components[5:], "/")
 			return
 		} else if components[3] == "blob" && components[len-1] == registryYAMLFile {
+			regRepoPath = strings.Join(components[5:len-1], "/")
 			// Path to the `registry.yaml` (may or may not exist).
 			regSpecRepoPath = strings.Join(components[5:], "/")
 			return
 		} else {
-			return "", "", "", "", fmt.Errorf("Invalid GitHub URI: try navigating in GitHub to the URI of the folder containing the 'app.yaml', and using that URI instead. Generally, this URI should be of the form 'github.com/{organization}/{repository}/tree/{branch}/[path-to-directory]'")
+			return "", "", "", "", "", fmt.Errorf("Invalid GitHub URI: try navigating in GitHub to the URI of the folder containing the 'app.yaml', and using that URI instead. Generally, this URI should be of the form 'github.com/{organization}/{repository}/tree/{branch}/[path-to-directory]'")
 		}
 	} else {
 		refSpec = defaultGitHubBranch
@@ -185,38 +290,8 @@ func parseGitHubURI(uri string) (org, repo, refSpec, regSpecRepoPath string, err
 			components = append(components, defaultGitHubBranch, registryYAMLFile)
 		}
 
+		regRepoPath = ""
 		regSpecRepoPath = registryYAMLFile
 		return
 	}
-}
-
-//
-// Mock registry manager.
-//
-
-type mockRegistryManager struct {
-	registryDir string
-}
-
-func newMockRegistryManager(name string) *mockRegistryManager {
-	return &mockRegistryManager{
-		registryDir: name,
-	}
-}
-
-func (m *mockRegistryManager) VersionsDir() string {
-	return m.registryDir
-}
-
-func (m *mockRegistryManager) SpecPath() string {
-	return path.Join(m.registryDir, "master.yaml")
-}
-
-func (m *mockRegistryManager) FindSpec() (*registry.Spec, error) {
-	registrySpec := registry.Spec{
-		APIVersion: registry.DefaultApiVersion,
-		Kind:       registry.DefaultKind,
-	}
-
-	return &registrySpec, nil
 }

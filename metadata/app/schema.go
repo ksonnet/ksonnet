@@ -27,7 +27,7 @@ const (
 )
 
 var ErrRegistryNameInvalid = fmt.Errorf("Registry name is invalid")
-var ErrRegistryExists = fmt.Errorf("Registry with name already exists, but has different URL or protocol")
+var ErrRegistryExists = fmt.Errorf("Registry with name already exists")
 
 type Spec struct {
 	APIVersion   string           `json:"apiVersion,omitempty"`
@@ -41,6 +41,7 @@ type Spec struct {
 	Bugs         string           `json:"bugs,omitempty"`
 	Keywords     []string         `json:"keywords,omitempty"`
 	Registries   RegistryRefSpecs `json:"registries,omitempty"`
+	Libraries    LibraryRefSpecs  `json:"libraries,omitempty"`
 	License      string           `json:"license,omitempty"`
 }
 
@@ -54,35 +55,22 @@ func (s *Spec) GetRegistryRef(name string) (*RegistryRefSpec, bool) {
 		// Populate name, which we do not include in the deserialization
 		// process.
 		registryRefSpec.Name = name
-		return registryRefSpec, true
 	}
-
-	return nil, false
+	return registryRefSpec, ok
 }
 
-func (s *Spec) AddRegistryRef(name, protocol, uri string) (*RegistryRefSpec, error) {
-	if name == "" {
-		return nil, ErrRegistryNameInvalid
+func (s *Spec) AddRegistryRef(registryRefSpec *RegistryRefSpec) error {
+	if registryRefSpec.Name == "" {
+		return ErrRegistryNameInvalid
 	}
 
-	registryRefSpec, registryRefExists := s.Registries[name]
+	_, registryRefExists := s.Registries[registryRefSpec.Name]
 	if registryRefExists {
-		storedURI, uriExists := registryRefSpec.Spec["uri"]
-		if registryRefSpec.Protocol != protocol || !uriExists || storedURI != uri {
-			return nil, ErrRegistryExists
-		}
-	} else {
-		registryRefSpec = &RegistryRefSpec{
-			Protocol: protocol,
-			Spec: map[string]interface{}{
-				"uri": uri,
-			},
-			Name: name,
-		}
+		return ErrRegistryExists
 	}
 
-	s.Registries[name] = registryRefSpec
-	return registryRefSpec, nil
+	s.Registries[registryRefSpec.Name] = registryRefSpec
+	return nil
 }
 
 type RepositorySpec struct {
@@ -91,12 +79,25 @@ type RepositorySpec struct {
 }
 
 type RegistryRefSpec struct {
-	Protocol string                 `json:"protocol"`
-	Spec     map[string]interface{} `json:"spec"`
-	Name     string
+	Name       string
+	Protocol   string          `json:"protocol"`
+	URI        string          `json:"uri"`
+	GitVersion *GitVersionSpec `json:"gitVersion"`
 }
 
 type RegistryRefSpecs map[string]*RegistryRefSpec
+
+type LibraryRefSpec struct {
+	Name       string          `json:"name"`
+	GitVersion *GitVersionSpec `json:"gitVersion"`
+}
+
+type GitVersionSpec struct {
+	RefSpec   string `json:"refSpec"`
+	CommitSHA string `json:"commitSha"`
+}
+
+type LibraryRefSpecs map[string]*LibraryRefSpec
 
 type ContributorSpec struct {
 	Name  string `json:"name"`
