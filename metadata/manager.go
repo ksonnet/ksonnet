@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/prototype"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -39,10 +40,13 @@ const (
 	environmentsDir = "environments"
 	vendorDir       = "vendor"
 
-	baseLibsonnetFile = "base.libsonnet"
+	componentParamsFile = "params.libsonnet"
+	baseLibsonnetFile   = "base.libsonnet"
 
 	// ComponentsExtCodeKey is the ExtCode key for component imports
 	ComponentsExtCodeKey = "__ksonnet/components"
+	// ParamsExtCodeKey is the ExtCode key for importing environment parameters
+	ParamsExtCodeKey = "__ksonnet/params"
 )
 
 type manager struct {
@@ -55,7 +59,8 @@ type manager struct {
 	environmentsPath AbsPath
 	vendorDir        AbsPath
 
-	baseLibsonnetPath AbsPath
+	componentParamsPath AbsPath
+	baseLibsonnetPath   AbsPath
 }
 
 func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
@@ -122,7 +127,8 @@ func newManager(rootPath AbsPath, appFS afero.Fs) *manager {
 		environmentsPath: appendToAbsPath(rootPath, environmentsDir),
 		vendorDir:        appendToAbsPath(rootPath, vendorDir),
 
-		baseLibsonnetPath: appendToAbsPath(rootPath, environmentsDir, baseLibsonnetFile),
+		componentParamsPath: appendToAbsPath(rootPath, componentsDir, componentParamsFile),
+		baseLibsonnetPath:   appendToAbsPath(rootPath, environmentsDir, baseLibsonnetFile),
 	}
 }
 
@@ -149,7 +155,7 @@ func (m *manager) ComponentPaths() (AbsPaths, error) {
 	return paths, nil
 }
 
-func (m *manager) CreateComponent(name string, text string, templateType prototype.TemplateType) error {
+func (m *manager) CreateComponent(name string, text string, params param.Params, templateType prototype.TemplateType) error {
 	if !isValidName(name) || strings.Contains(name, "/") {
 		return fmt.Errorf("Component name '%s' is not valid; must not contain punctuation, spaces, or begin or end with a slash", name)
 	}
@@ -173,13 +179,51 @@ func (m *manager) CreateComponent(name string, text string, templateType prototy
 	}
 
 	log.Infof("Writing component at '%s/%s'", componentsDir, name)
+	err := afero.WriteFile(m.appFS, componentPath, []byte(text), defaultFilePermissions)
+	if err != nil {
+		return err
+	}
 
-	return afero.WriteFile(m.appFS, componentPath, []byte(text), defaultFilePermissions)
+	log.Debugf("Writing component parameters at '%s/%s", componentsDir, name)
+	return m.writeComponentParams(name, params)
 }
 
-func (m *manager) LibPaths(envName string) (libPath, envLibPath, envComponentPath AbsPath) {
+func (m *manager) LibPaths(envName string) (libPath, envLibPath, envComponentPath, envParamsPath AbsPath) {
 	envPath := appendToAbsPath(m.environmentsPath, envName)
-	return m.libPath, appendToAbsPath(envPath, metadataDirName), appendToAbsPath(envPath, path.Base(envName)+".jsonnet")
+	return m.libPath, appendToAbsPath(envPath, metadataDirName),
+		appendToAbsPath(envPath, path.Base(envName)+".jsonnet"), appendToAbsPath(envPath, componentParamsFile)
+}
+
+func (m *manager) GetComponentParams(component string) (param.Params, error) {
+	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
+	if err != nil {
+		return nil, err
+	}
+
+	return param.GetComponentParams(component, string(text))
+}
+
+func (m *manager) GetAllComponentParams() (map[string]param.Params, error) {
+	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
+	if err != nil {
+		return nil, err
+	}
+
+	return param.GetAllComponentParams(string(text))
+}
+
+func (m *manager) SetComponentParams(component string, params param.Params) error {
+	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
+	if err != nil {
+		return err
+	}
+
+	jsonnet, err := param.SetComponentParams(component, string(text), params)
+	if err != nil {
+		return err
+	}
+
+	return afero.WriteFile(m.appFS, string(m.componentParamsPath), []byte(jsonnet), defaultFilePermissions)
 }
 
 func (m *manager) createAppDirTree() error {
@@ -205,7 +249,55 @@ func (m *manager) createAppDirTree() error {
 		}
 	}
 
-	return afero.WriteFile(m.appFS, string(m.baseLibsonnetPath), genBaseLibsonnetContent(), defaultFilePermissions)
+	filePaths := []struct {
+		path    AbsPath
+		content []byte
+	}{
+		{
+			m.componentParamsPath,
+			genComponentParamsContent(),
+		},
+		{
+			m.baseLibsonnetPath,
+			genBaseLibsonnetContent(),
+		},
+	}
+
+	for _, f := range filePaths {
+		if err := afero.WriteFile(m.appFS, string(f.path), f.content, defaultFilePermissions); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (m *manager) writeComponentParams(componentName string, params param.Params) error {
+	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
+	if err != nil {
+		return err
+	}
+
+	appended, err := param.AppendComponent(componentName, string(text), params)
+	if err != nil {
+		return err
+	}
+
+	return afero.WriteFile(m.appFS, string(m.componentParamsPath), []byte(appended), defaultFilePermissions)
+}
+
+func genComponentParamsContent() []byte {
+	return []byte(`{
+  global: {
+    // User-defined global parameters; accessible to all component and environments, Ex:
+    // replicas: 4,
+  },
+  components: {
+    // Component-level parameters, defined initially from 'ks prototype use ...'
+    // Each object below should correspond to a component in the components/ directory
+  },
+}
+`)
 }
 
 func genBaseLibsonnetContent() []byte {

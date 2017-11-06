@@ -13,7 +13,7 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package prototype
+package jsonnet
 
 import (
 	"errors"
@@ -22,25 +22,21 @@ import (
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/parser"
-
-	"github.com/ksonnet/ksonnet/prototype/snippet"
 )
 
 const (
 	paramPrefix            = "param://"
-	paramReplacementPrefix = "${"
-	paramReplacementSuffix = "}"
+	paramReplacementPrefix = "params."
 )
 
-// Parse rewrites the imports in a Jsonnet file before returning the parsed
-// TextMate snippet.
-func Parse(fn string, jsonnet string) (snippet.Template, error) {
+// Parse rewrites the imports in a Jsonnet file before returning the snippet.
+func Parse(fn string, jsonnet string) (string, error) {
 	s, err := parse(fn, jsonnet)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return snippet.Parse(s), nil
+	return s, nil
 }
 
 func parse(fn string, jsonnet string) (string, error) {
@@ -301,7 +297,7 @@ func visitLocalBind(node ast.LocalBind, imports *[]ast.Import) error {
 // ---------------------------------------------------------------------------
 
 // replace converts all parameters in the passed Jsonnet of form
-// `import 'param://port'` into `${port}`.
+// `import 'param://port'` into `params.port`.
 func replace(jsonnet string, imports []ast.Import) string {
 	lines := strings.Split(jsonnet, "\n")
 
@@ -315,7 +311,7 @@ func replace(jsonnet string, imports []ast.Import) string {
 	})
 
 	for _, im := range imports {
-		param := paramReplacementPrefix + strings.TrimPrefix(im.File.Value, paramPrefix) + paramReplacementSuffix
+		param := paramReplacementPrefix + strings.TrimPrefix(im.File.Value, paramPrefix)
 
 		lineStart := im.Loc().Begin.Line
 		lineEnd := im.Loc().End.Line

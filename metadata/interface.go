@@ -20,6 +20,7 @@ import (
 	"regexp"
 	"strings"
 
+	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/prototype"
 	"github.com/spf13/afero"
 )
@@ -42,20 +43,29 @@ type AbsPaths []string
 type Manager interface {
 	Root() AbsPath
 	ComponentPaths() (AbsPaths, error)
-	CreateComponent(name string, text string, templateType prototype.TemplateType) error
-	LibPaths(envName string) (libPath, envLibPath, envComponentPath AbsPath)
+	CreateComponent(name string, text string, params param.Params, templateType prototype.TemplateType) error
+	LibPaths(envName string) (libPath, envLibPath, envComponentPath, envParamsPath AbsPath)
+	SetComponentParams(component string, params param.Params) error
+	GetComponentParams(name string) (param.Params, error)
+	GetAllComponentParams() (map[string]param.Params, error)
 	CreateEnvironment(name, uri, namespace string, spec ClusterSpec) error
 	DeleteEnvironment(name string) error
 	GetEnvironments() ([]*Environment, error)
 	GetEnvironment(name string) (*Environment, error)
 	SetEnvironment(name string, desired *Environment) error
+	// GetEnvironmentParams will take the name of an environment and return a
+	// mapping of parameters of the form:
+	// componentName => {param key => param val}
+	// i.e.: "nginx" => {"replicas" => 1, "name": "nginx"}
+	GetEnvironmentParams(name string) (map[string]param.Params, error)
+	SetEnvironmentParams(env, component string, params param.Params) error
+
 	//
 	// TODO: Fill in methods as we need them.
 	//
 	// GetPrototype(id string) Protoype
 	// SearchPrototypes(query string) []Protoype
 	// VendorLibrary(uri, version string) error
-	//
 }
 
 // Find will recursively search the current directory and its parents for a

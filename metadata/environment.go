@@ -29,6 +29,7 @@ import (
 
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/ksonnet"
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubespec"
+	param "github.com/ksonnet/ksonnet/metadata/params"
 )
 
 const (
@@ -38,6 +39,7 @@ const (
 	schemaFilename        = "swagger.json"
 	extensionsLibFilename = "k.libsonnet"
 	k8sLibFilename        = "k8s.libsonnet"
+	paramsFileName        = "params.libsonnet"
 	specFilename          = "spec.json"
 )
 
@@ -100,51 +102,58 @@ func (m *manager) createEnvironment(name, server, namespace string, extensionsLi
 
 	log.Infof("Generating environment metadata at path '%s'", envPath)
 
-	// Generate the schema file.
-	log.Debugf("Generating '%s', length: %d", schemaFilename, len(specData))
-	schemaPath := appendToAbsPath(metadataPath, schemaFilename)
-	err = afero.WriteFile(m.appFS, string(schemaPath), specData, defaultFilePermissions)
-	if err != nil {
-		log.Debugf("Failed to write '%s'", schemaFilename)
-		return err
-	}
-
-	log.Debugf("Generating '%s', length: %d", k8sLibFilename, len(k8sLibData))
-	k8sLibPath := appendToAbsPath(metadataPath, k8sLibFilename)
-	err = afero.WriteFile(m.appFS, string(k8sLibPath), k8sLibData, defaultFilePermissions)
-	if err != nil {
-		log.Debugf("Failed to write '%s'", k8sLibFilename)
-		return err
-	}
-
-	log.Debugf("Generating '%s', length: %d", extensionsLibFilename, len(extensionsLibData))
-	extensionsLibPath := appendToAbsPath(metadataPath, extensionsLibFilename)
-	err = afero.WriteFile(m.appFS, string(extensionsLibPath), extensionsLibData, defaultFilePermissions)
-	if err != nil {
-		log.Debugf("Failed to write '%s'", extensionsLibFilename)
-		return err
-	}
-
-	// Generate the environment .jsonnet file
-	overrideFileName := path.Base(name) + ".jsonnet"
-	overrideData := m.generateOverrideData()
-	log.Debugf("Generating '%s', length: %d", overrideFileName, len(overrideData))
-	overrideLibPath := appendToAbsPath(envPath, overrideFileName)
-	err = afero.WriteFile(m.appFS, string(overrideLibPath), overrideData, defaultFilePermissions)
-	if err != nil {
-		log.Debugf("Failed to write '%s'", overrideFileName)
-		return err
-	}
-
 	// Generate the environment spec file.
 	envSpecData, err := generateSpecData(server, namespace)
 	if err != nil {
 		return err
 	}
 
-	log.Debugf("Generating '%s', length: %d", specFilename, len(envSpecData))
-	envSpecPath := appendToAbsPath(envPath, specFilename)
-	return afero.WriteFile(m.appFS, string(envSpecPath), envSpecData, defaultFilePermissions)
+	metadata := []struct {
+		path AbsPath
+		data []byte
+	}{
+		{
+			// schema file
+			appendToAbsPath(metadataPath, schemaFilename),
+			specData,
+		},
+		{
+			// k8s file
+			appendToAbsPath(metadataPath, k8sLibFilename),
+			k8sLibData,
+		},
+		{
+			// extensions file
+			appendToAbsPath(metadataPath, extensionsLibFilename),
+			extensionsLibData,
+		},
+		{
+			// environment base override file
+			appendToAbsPath(envPath, path.Base(name)+".jsonnet"),
+			m.generateOverrideData(),
+		},
+		{
+			// params file
+			appendToAbsPath(envPath, paramsFileName),
+			m.generateParamsData(),
+		},
+		{
+			// spec file
+			appendToAbsPath(envPath, specFilename),
+			envSpecData,
+		},
+	}
+
+	for _, a := range metadata {
+		fileName := path.Base(string(a.path))
+		log.Debugf("Generating '%s', length: %d", fileName, len(a.data))
+		if err = afero.WriteFile(m.appFS, string(a.path), a.data, defaultFilePermissions); err != nil {
+			log.Debugf("Failed to write '%s'", fileName)
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (m *manager) DeleteEnvironment(name string) error {
@@ -197,7 +206,7 @@ func (m *manager) DeleteEnvironment(name string) error {
 func (m *manager) GetEnvironments() ([]*Environment, error) {
 	envs := []*Environment{}
 
-	log.Info("Retrieving all environments")
+	log.Debug("Retrieving all environments")
 	err := afero.Walk(m.appFS, string(m.environmentsPath), func(path string, f os.FileInfo, err error) error {
 		isDir, err := afero.IsDir(m.appFS, path)
 		if err != nil {
@@ -334,6 +343,66 @@ func (m *manager) SetEnvironment(name string, desired *Environment) error {
 	return nil
 }
 
+func (m *manager) GetEnvironmentParams(name string) (map[string]param.Params, error) {
+	exists, err := m.environmentExists(name)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, fmt.Errorf("Environment '%s' does not exist", name)
+	}
+
+	// Get the environment specific params
+	envParamsPath := appendToAbsPath(m.environmentsPath, name, paramsFileName)
+	envParamsText, err := afero.ReadFile(m.appFS, string(envParamsPath))
+	if err != nil {
+		return nil, err
+	}
+	envParams, err := param.GetAllEnvironmentParams(string(envParamsText))
+	if err != nil {
+		return nil, err
+	}
+
+	// Get all component params
+	componentParams, err := m.GetAllComponentParams()
+	if err != nil {
+		return nil, err
+	}
+
+	// Merge the param sets, replacing the component params if the environment params override
+	return mergeParamMaps(componentParams, envParams), nil
+}
+
+func (m *manager) SetEnvironmentParams(env, component string, params param.Params) error {
+	exists, err := m.environmentExists(env)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("Environment '%s' does not exist", env)
+	}
+
+	path := appendToAbsPath(m.environmentsPath, env, paramsFileName)
+
+	text, err := afero.ReadFile(m.appFS, string(path))
+	if err != nil {
+		return err
+	}
+
+	appended, err := param.SetEnvironmentParams(component, string(text), params)
+	if err != nil {
+		return err
+	}
+
+	err = afero.WriteFile(m.appFS, string(path), []byte(appended), defaultFilePermissions)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("Successfully set parameters for component '%s' at environment '%s'", component, env)
+	return nil
+}
+
 func (m *manager) generateKsonnetLibData(spec ClusterSpec) ([]byte, []byte, []byte, error) {
 	// Get cluster specification data, possibly from the network.
 	text, err := spec.data()
@@ -369,6 +438,20 @@ func (m *manager) generateOverrideData() []byte {
 	return buf.Bytes()
 }
 
+func (m *manager) generateParamsData() []byte {
+	return []byte(`local params = import "` + m.componentParamsPath + `";
+params + {
+  components +: {
+    // Insert component parameter overrides here. Ex:
+    // guestbook +: {
+    //   name: "guestbook-dev",
+    //   replicas: params.global.replicas,
+    // },
+  },
+}
+`)
+}
+
 func generateSpecData(server, namespace string) ([]byte, error) {
 	// Format the spec json and return; preface keys with 2 space idents.
 	return json.MarshalIndent(EnvironmentSpec{Server: server, Namespace: namespace}, "", "  ")
@@ -389,4 +472,17 @@ func (m *manager) environmentExists(name string) (bool, error) {
 	}
 
 	return envExists, nil
+}
+
+func mergeParamMaps(base, overrides map[string]param.Params) map[string]param.Params {
+	for component, params := range overrides {
+		if _, contains := base[component]; !contains {
+			base[component] = params
+		} else {
+			for k, v := range params {
+				base[component][k] = v
+			}
+		}
+	}
+	return base
 }

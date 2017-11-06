@@ -145,18 +145,13 @@ func initDiffCmd(cmd *cobra.Command, wd metadata.AbsPath, envFq1, envFq2 *string
 	if err != nil {
 		return nil, err
 	}
-	componentPaths, err := manager.ComponentPaths()
-	if err != nil {
-		return nil, err
-	}
-	baseObj := constructBaseObj(componentPaths)
 
 	if env1[0] == local && env2[0] == local {
-		return initDiffLocalCmd(env1[1], env2[1], diffStrategy, baseObj, cmd, manager)
+		return initDiffLocalCmd(env1[1], env2[1], diffStrategy, cmd, manager)
 	}
 
 	if env1[0] == remote && env2[0] == remote {
-		return initDiffRemotesCmd(env1[1], env2[1], diffStrategy, baseObj, cmd, manager)
+		return initDiffRemotesCmd(env1[1], env2[1], diffStrategy, cmd, manager)
 	}
 
 	localEnv := env1[1]
@@ -165,7 +160,7 @@ func initDiffCmd(cmd *cobra.Command, wd metadata.AbsPath, envFq1, envFq2 *string
 		localEnv = env2[1]
 		remoteEnv = env1[1]
 	}
-	return initDiffRemoteCmd(localEnv, remoteEnv, diffStrategy, baseObj, cmd, manager)
+	return initDiffRemoteCmd(localEnv, remoteEnv, diffStrategy, cmd, manager)
 }
 
 // initDiffSingleEnv sets up configurations for diffing using one environment
@@ -199,21 +194,21 @@ func initDiffSingleEnv(env, diffStrategy string, files []string, cmd *cobra.Comm
 }
 
 // initDiffLocalCmd sets up configurations for diffing between two sets of expanded Kubernetes objects locally
-func initDiffLocalCmd(env1, env2, diffStrategy, baseObj string, cmd *cobra.Command, m metadata.Manager) (kubecfg.DiffCmd, error) {
+func initDiffLocalCmd(env1, env2, diffStrategy string, cmd *cobra.Command, m metadata.Manager) (kubecfg.DiffCmd, error) {
 	c := kubecfg.DiffLocalCmd{}
 	c.DiffStrategy = diffStrategy
 	var err error
 
 	c.Env1 = &kubecfg.LocalEnv{}
 	c.Env1.Name = env1
-	c.Env1.APIObjects, err = expandEnvObjs(cmd, c.Env1.Name, baseObj, m)
+	c.Env1.APIObjects, err = expandEnvObjs(cmd, c.Env1.Name, m)
 	if err != nil {
 		return nil, err
 	}
 
 	c.Env2 = &kubecfg.LocalEnv{}
 	c.Env2.Name = env2
-	c.Env2.APIObjects, err = expandEnvObjs(cmd, c.Env2.Name, baseObj, m)
+	c.Env2.APIObjects, err = expandEnvObjs(cmd, c.Env2.Name, m)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +217,7 @@ func initDiffLocalCmd(env1, env2, diffStrategy, baseObj string, cmd *cobra.Comma
 }
 
 // initDiffRemotesCmd sets up configurations for diffing between objects on two remote clusters
-func initDiffRemotesCmd(env1, env2, diffStrategy, baseObj string, cmd *cobra.Command, m metadata.Manager) (kubecfg.DiffCmd, error) {
+func initDiffRemotesCmd(env1, env2, diffStrategy string, cmd *cobra.Command, m metadata.Manager) (kubecfg.DiffCmd, error) {
 	c := kubecfg.DiffRemotesCmd{}
 	c.DiffStrategy = diffStrategy
 
@@ -233,11 +228,11 @@ func initDiffRemotesCmd(env1, env2, diffStrategy, baseObj string, cmd *cobra.Com
 	c.ClientB.Name = env2
 
 	var err error
-	c.ClientA.APIObjects, err = expandEnvObjs(cmd, c.ClientA.Name, baseObj, m)
+	c.ClientA.APIObjects, err = expandEnvObjs(cmd, c.ClientA.Name, m)
 	if err != nil {
 		return nil, err
 	}
-	c.ClientB.APIObjects, err = expandEnvObjs(cmd, c.ClientB.Name, baseObj, m)
+	c.ClientB.APIObjects, err = expandEnvObjs(cmd, c.ClientB.Name, m)
 	if err != nil {
 		return nil, err
 	}
@@ -255,13 +250,13 @@ func initDiffRemotesCmd(env1, env2, diffStrategy, baseObj string, cmd *cobra.Com
 }
 
 // initDiffRemoteCmd sets up configurations for diffing between local objects and objects on a remote cluster
-func initDiffRemoteCmd(localEnv, remoteEnv, diffStrategy, baseObj string, cmd *cobra.Command, m metadata.Manager) (kubecfg.DiffCmd, error) {
+func initDiffRemoteCmd(localEnv, remoteEnv, diffStrategy string, cmd *cobra.Command, m metadata.Manager) (kubecfg.DiffCmd, error) {
 	c := kubecfg.DiffRemoteCmd{}
 	c.DiffStrategy = diffStrategy
 	c.Client = &kubecfg.Client{}
 
 	var err error
-	c.Client.APIObjects, err = expandEnvObjs(cmd, localEnv, baseObj, m)
+	c.Client.APIObjects, err = expandEnvObjs(cmd, localEnv, m)
 	if err != nil {
 		return nil, err
 	}
@@ -294,15 +289,23 @@ func setupClientConfig(env *string, cmd *cobra.Command) (dynamic.ClientPool, dis
 }
 
 // expandEnvObjs finds and expands templates for an environment
-func expandEnvObjs(cmd *cobra.Command, env, baseObj string, manager metadata.Manager) ([]*unstructured.Unstructured, error) {
+func expandEnvObjs(cmd *cobra.Command, env string, manager metadata.Manager) ([]*unstructured.Unstructured, error) {
 	expander, err := newExpander(cmd)
 	if err != nil {
 		return nil, err
 	}
 
-	libPath, envLibPath, envComponentPath := manager.LibPaths(env)
+	libPath, envLibPath, envComponentPath, envParamsPath := manager.LibPaths(env)
+
+	componentPaths, err := manager.ComponentPaths()
+	if err != nil {
+		return nil, err
+	}
+	baseObj := constructBaseObj(componentPaths)
+	params := importParams(string(envParamsPath))
+
 	expander.FlagJpath = append([]string{string(libPath), string(envLibPath)}, expander.FlagJpath...)
-	expander.ExtCodes = append([]string{baseObj}, expander.ExtCodes...)
+	expander.ExtCodes = append([]string{baseObj, params}, expander.ExtCodes...)
 
 	envFiles := []string{string(envComponentPath)}
 
