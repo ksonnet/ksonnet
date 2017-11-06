@@ -27,6 +27,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/ksonnet/ksonnet/metadata/params"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	log "github.com/sirupsen/logrus"
@@ -430,6 +432,7 @@ func expandEnvCmdObjs(cmd *cobra.Command, envSpec *envSpec, cwd metadata.AbsPath
 //
 //   {
 //      foo: import "components/foo.jsonnet"
+//      "foo-bar": import "components/foo-bar.jsonnet"
 //   }
 func constructBaseObj(paths []string) string {
 	var obj bytes.Buffer
@@ -441,6 +444,7 @@ func constructBaseObj(paths []string) string {
 		}
 
 		name := strings.TrimSuffix(path.Base(p), ext)
+		name = params.SanitizeComponent(name)
 		fmt.Fprintf(&obj, "  %s: import \"%s\",\n", name, p)
 	}
 	obj.WriteString("}\n")

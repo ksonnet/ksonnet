@@ -25,6 +25,7 @@ import (
 	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/prototype"
 	"github.com/ksonnet/ksonnet/prototype/snippet/jsonnet"
+	"github.com/ksonnet/ksonnet/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -397,7 +398,11 @@ func expandPrototype(proto *prototype.SpecificationSchema, templateType prototyp
 		return "", err
 	}
 	if templateType == prototype.Jsonnet {
-		template = append([]string{`local params = std.extVar("` + metadata.ParamsExtCodeKey + `").components.` + componentName + ";"}, template...)
+		componentsText := "components." + componentName
+		if !utils.IsASCIIIdentifier(componentName) {
+			componentsText = fmt.Sprintf(`components["%s"]`, componentName)
+		}
+		template = append([]string{`local params = std.extVar("` + metadata.ParamsExtCodeKey + `").` + componentsText + ";"}, template...)
 	}
 
 	return jsonnet.Parse(componentName, strings.Join(template, "\n"))
