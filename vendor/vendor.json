@@ -185,6 +185,12 @@
 			"revisionTime": "2016-01-25T20:49:56Z"
 		},
 		{
+			"checksumSHA1": "Ao2L3301Cd7e7VwmiJe23Zhpe5M=",
+			"path": "github.com/google/go-github/github",
+			"revision": "996760c56486beb81e91bb7bdb816f8c6f29284e",
+			"revisionTime": "2017-10-31T16:17:51Z"
+		},
+		{
 			"checksumSHA1": "cDO97b41LeLcrTxo4kSBTu2EXLo=",
 			"path": "github.com/google/go-jsonnet",
 			"revision": "e8f6d25f61d163deee16a78b545f4aaa0f295c01",
@@ -201,6 +207,12 @@
 			"path": "github.com/google/go-jsonnet/parser",
 			"revision": "968ae23435fca7e3c2f4e8396dc49497ee96e0e2",
 			"revisionTime": "2017-10-25T03:00:40Z"
+		},
+		{
+			"checksumSHA1": "p3IB18uJRs4dL2K5yx24MrLYE9A=",
+			"path": "github.com/google/go-querystring/query",
+			"revision": "53e6ce116135b80d037921a7fdd5138cf32d7a8a",
+			"revisionTime": "2017-01-11T10:11:55Z"
 		},
 		{
 			"checksumSHA1": "fgPBEKvm7D7y4IMxGaxHsPmtYtU=",

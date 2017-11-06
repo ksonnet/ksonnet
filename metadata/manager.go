@@ -16,13 +16,17 @@
 package metadata
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"os/user"
 	"path"
 	"path/filepath"
 	"strings"
 
+	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
+	"github.com/ksonnet/ksonnet/metadata/registry"
 	"github.com/ksonnet/ksonnet/prototype"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -35,32 +39,48 @@ func appendToAbsPath(originalPath AbsPath, toAppend ...string) AbsPath {
 
 const (
 	ksonnetDir      = ".ksonnet"
+	registriesDir   = ksonnetDir + "/registries"
 	libDir          = "lib"
 	componentsDir   = "components"
 	environmentsDir = "environments"
 	vendorDir       = "vendor"
 
+	// Files names.
 	componentParamsFile = "params.libsonnet"
 	baseLibsonnetFile   = "base.libsonnet"
+	appYAMLFile         = "app.yaml"
+	registryYAMLFile    = "registry.yaml"
+	partsYAMLFile       = "parts.yaml"
 
 	// ComponentsExtCodeKey is the ExtCode key for component imports
 	ComponentsExtCodeKey = "__ksonnet/components"
 	// ParamsExtCodeKey is the ExtCode key for importing environment parameters
 	ParamsExtCodeKey = "__ksonnet/params"
+
+	// User-level ksonnet directories.
+	userKsonnetRootDir = ".ksonnet"
+	pkgSrcCacheDir     = "src"
 )
 
 type manager struct {
 	appFS afero.Fs
 
+	// Application paths.
 	rootPath         AbsPath
 	ksonnetPath      AbsPath
+	registriesPath   AbsPath
 	libPath          AbsPath
 	componentsPath   AbsPath
 	environmentsPath AbsPath
-	vendorDir        AbsPath
+	vendorPath       AbsPath
 
 	componentParamsPath AbsPath
 	baseLibsonnetPath   AbsPath
+	appYAMLPath         AbsPath
+
+	// User-level paths.
+	userKsonnetRootPath AbsPath
+	pkgSrcCachePath     AbsPath
 }
 
 func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
@@ -74,7 +94,7 @@ func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
 			return nil, err
 		}
 		if exists {
-			return newManager(AbsPath(currBase), appFS), nil
+			return newManager(AbsPath(currBase), appFS)
 		}
 
 		lastBase = currBase
@@ -85,9 +105,13 @@ func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
 	}
 }
 
-func initManager(rootPath AbsPath, spec ClusterSpec, serverURI, namespace *string, appFS afero.Fs) (*manager, error) {
-	m := newManager(rootPath, appFS)
+func initManager(name string, rootPath AbsPath, spec ClusterSpec, serverURI, namespace *string, incubatorReg registry.Manager, appFS afero.Fs) (*manager, error) {
+	m, err := newManager(rootPath, appFS)
+	if err != nil {
+		return nil, err
+	}
 
+	//
 	// Generate the program text for ksonnet-lib.
 	//
 	// IMPLEMENTATION NOTE: We get the cluster specification and generate
@@ -100,8 +124,28 @@ func initManager(rootPath AbsPath, spec ClusterSpec, serverURI, namespace *strin
 		return nil, err
 	}
 
+	// Retrieve `registry.yaml`.
+	registryYAMLData, err := generateRegistryYAMLData(incubatorReg)
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate data for `app.yaml`.
+	appYAMLData, err := generateAppYAMLData(name, incubatorReg.MakeRegistryRefSpec())
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate data for `base.libsonnet`.
+	baseLibData := genBaseLibsonnetContent()
+
 	// Initialize directory structure.
-	if err := m.createAppDirTree(); err != nil {
+	if err := m.createAppDirTree(name, appYAMLData, baseLibData, incubatorReg); err != nil {
+		return nil, err
+	}
+
+	// Initialize user dir structure.
+	if err := m.createUserDirTree(); err != nil {
 		return nil, err
 	}
 
@@ -113,23 +157,43 @@ func initManager(rootPath AbsPath, spec ClusterSpec, serverURI, namespace *strin
 		}
 	}
 
+	// Write out `incubator` registry spec.
+	registryPath := string(m.registryPath(incubatorReg))
+	err = afero.WriteFile(m.appFS, registryPath, registryYAMLData, defaultFilePermissions)
+	if err != nil {
+		return nil, err
+	}
+
 	return m, nil
 }
 
-func newManager(rootPath AbsPath, appFS afero.Fs) *manager {
+func newManager(rootPath AbsPath, appFS afero.Fs) (*manager, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return nil, err
+	}
+	userRootPath := appendToAbsPath(AbsPath(usr.HomeDir), userKsonnetRootDir)
+
 	return &manager{
 		appFS: appFS,
 
+		// Application paths.
 		rootPath:         rootPath,
 		ksonnetPath:      appendToAbsPath(rootPath, ksonnetDir),
+		registriesPath:   appendToAbsPath(rootPath, registriesDir),
 		libPath:          appendToAbsPath(rootPath, libDir),
 		componentsPath:   appendToAbsPath(rootPath, componentsDir),
 		environmentsPath: appendToAbsPath(rootPath, environmentsDir),
-		vendorDir:        appendToAbsPath(rootPath, vendorDir),
+		vendorPath:       appendToAbsPath(rootPath, vendorDir),
 
 		componentParamsPath: appendToAbsPath(rootPath, componentsDir, componentParamsFile),
 		baseLibsonnetPath:   appendToAbsPath(rootPath, environmentsDir, baseLibsonnetFile),
-	}
+		appYAMLPath:         appendToAbsPath(rootPath, appYAMLFile),
+
+		// User-level paths.
+		userKsonnetRootPath: userRootPath,
+		pkgSrcCachePath:     appendToAbsPath(userRootPath, pkgSrcCacheDir),
+	}, nil
 }
 
 func (m *manager) Root() AbsPath {
@@ -226,7 +290,51 @@ func (m *manager) SetComponentParams(component string, params param.Params) erro
 	return afero.WriteFile(m.appFS, string(m.componentParamsPath), []byte(jsonnet), defaultFilePermissions)
 }
 
-func (m *manager) createAppDirTree() error {
+// AppSpec will return the specification for a ksonnet application
+// (typically stored in `app.yaml`)
+func (m *manager) AppSpec() (*app.Spec, error) {
+	bytes, err := afero.ReadFile(m.appFS, string(m.appYAMLPath))
+	if err != nil {
+		return nil, err
+	}
+
+	schema := app.Spec{}
+	err = json.Unmarshal(bytes, &schema)
+	if err != nil {
+		return nil, err
+	}
+
+	if schema.Contributors == nil {
+		schema.Contributors = app.ContributorSpecs{}
+	}
+
+	if schema.Registries == nil {
+		schema.Registries = app.RegistryRefSpecs{}
+	}
+
+	if schema.Libraries == nil {
+		schema.Libraries = app.LibraryRefSpecs{}
+	}
+
+	return &schema, nil
+}
+
+func (m *manager) createUserDirTree() error {
+	dirPaths := []AbsPath{
+		m.userKsonnetRootPath,
+		m.pkgSrcCachePath,
+	}
+
+	for _, p := range dirPaths {
+		if err := m.appFS.MkdirAll(string(p), defaultFolderPermissions); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (m *manager) createAppDirTree(name string, appYAMLData, baseLibData []byte, gh registry.Manager) error {
 	exists, err := afero.DirExists(m.appFS, string(m.rootPath))
 	if err != nil {
 		return fmt.Errorf("Could not check existance of directory '%s':\n%v", m.rootPath, err)
@@ -237,10 +345,12 @@ func (m *manager) createAppDirTree() error {
 	dirPaths := []AbsPath{
 		m.rootPath,
 		m.ksonnetPath,
+		m.registriesPath,
 		m.libPath,
 		m.componentsPath,
 		m.environmentsPath,
-		m.vendorDir,
+		m.vendorPath,
+		m.registryDir(gh),
 	}
 
 	for _, p := range dirPaths {
@@ -260,6 +370,14 @@ func (m *manager) createAppDirTree() error {
 		{
 			m.baseLibsonnetPath,
 			genBaseLibsonnetContent(),
+		},
+		{
+			m.appYAMLPath,
+			appYAMLData,
+		},
+		{
+			m.baseLibsonnetPath,
+			baseLibData,
 		},
 	}
 
@@ -298,6 +416,34 @@ func genComponentParamsContent() []byte {
   },
 }
 `)
+}
+
+func generateRegistryYAMLData(incubatorReg registry.Manager) ([]byte, error) {
+	regSpec, err := incubatorReg.FetchRegistrySpec()
+	if err != nil {
+		return nil, err
+	}
+
+	return regSpec.Marshal()
+}
+
+func generateAppYAMLData(name string, refs ...*app.RegistryRefSpec) ([]byte, error) {
+	content := app.Spec{
+		APIVersion: app.DefaultAPIVersion,
+		Kind:       app.Kind,
+		Name:       name,
+		Version:    app.DefaultVersion,
+		Registries: app.RegistryRefSpecs{},
+	}
+
+	for _, ref := range refs {
+		err := content.AddRegistryRef(ref)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return content.Marshal()
 }
 
 func genBaseLibsonnetContent() []byte {

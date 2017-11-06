@@ -46,7 +46,8 @@ func mockEnvironments(t *testing.T, appName string) *manager {
 	}
 
 	appPath := AbsPath(appName)
-	m, err := initManager(appPath, spec, &mockAPIServer, &mockNamespace, testFS)
+	reg := newMockRegistryManager("incubator")
+	m, err := initManager(appName, appPath, spec, &mockAPIServer, &mockNamespace, reg, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
