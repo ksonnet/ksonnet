@@ -26,6 +26,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
+	"github.com/ksonnet/ksonnet/metadata/registry"
 	"github.com/ksonnet/ksonnet/prototype"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -44,6 +45,7 @@ const (
 	environmentsDir = "environments"
 	vendorDir       = "vendor"
 
+	// Files names.
 	componentParamsFile = "params.libsonnet"
 	baseLibsonnetFile   = "base.libsonnet"
 	appYAMLFile         = "app.yaml"
@@ -102,12 +104,13 @@ func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
 	}
 }
 
-func initManager(name string, rootPath AbsPath, spec ClusterSpec, serverURI, namespace *string, appFS afero.Fs) (*manager, error) {
+func initManager(name string, rootPath AbsPath, spec ClusterSpec, serverURI, namespace *string, incubatorReg registry.Manager, appFS afero.Fs) (*manager, error) {
 	m, err := newManager(rootPath, appFS)
 	if err != nil {
 		return nil, err
 	}
 
+	//
 	// Generate the program text for ksonnet-lib.
 	//
 	// IMPLEMENTATION NOTE: We get the cluster specification and generate
@@ -120,8 +123,18 @@ func initManager(name string, rootPath AbsPath, spec ClusterSpec, serverURI, nam
 		return nil, err
 	}
 
+	regSpec, err := incubatorReg.FindSpec()
+	if err != nil {
+		return nil, err
+	}
+
+	registrySpecBytes, err := regSpec.Marshal()
+	if err != nil {
+		return nil, err
+	}
+
 	// Initialize directory structure.
-	if err := m.createAppDirTree(name); err != nil {
+	if err := m.createAppDirTree(name, incubatorReg); err != nil {
 		return nil, err
 	}
 
@@ -136,6 +149,12 @@ func initManager(name string, rootPath AbsPath, spec ClusterSpec, serverURI, nam
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// Write out `incubator` registry spec.
+	err = afero.WriteFile(m.appFS, string(m.registryPath(incubatorReg)), registrySpecBytes, defaultFilePermissions)
+	if err != nil {
+		return nil, err
 	}
 
 	return m, nil
@@ -296,7 +315,7 @@ func (m *manager) createUserDirTree() error {
 	return nil
 }
 
-func (m *manager) createAppDirTree(name string) error {
+func (m *manager) createAppDirTree(name string, gh registry.Manager) error {
 	exists, err := afero.DirExists(m.appFS, string(m.rootPath))
 	if err != nil {
 		return fmt.Errorf("Could not check existance of directory '%s':\n%v", m.rootPath, err)
@@ -312,6 +331,7 @@ func (m *manager) createAppDirTree(name string) error {
 		m.componentsPath,
 		m.environmentsPath,
 		m.vendorPath,
+		m.registryDir(gh),
 	}
 
 	for _, p := range dirPaths {

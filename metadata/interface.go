@@ -86,7 +86,27 @@ func Find(path AbsPath) (Manager, error) {
 // capabilities-compliant version of ksonnet-lib, and then generate the
 // directory tree for an application.
 func Init(name string, rootPath AbsPath, spec ClusterSpec, serverURI, namespace *string) (Manager, error) {
-	return initManager(name, rootPath, spec, serverURI, namespace, appFS)
+	// Generate `incubator` registry. We do this before before creating
+	// directory tree, in case the network call fails.
+	const (
+		defaultIncubatorRegName = "incubator"
+		defaultIncubatorURI     = "github.com/ksonnet/parts/tree/test-reg/" + defaultIncubatorRegName
+		defaultIncubatorRefSpec = "test-reg"
+	)
+
+	gh, err := makeGitHubRegistryManager(&app.RegistryRefSpec{
+		Protocol: "github",
+		Spec: map[string]interface{}{
+			uriField:     defaultIncubatorURI,
+			refSpecField: defaultIncubatorRefSpec,
+		},
+		Name: "incubator",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return initManager(name, rootPath, spec, serverURI, namespace, gh, appFS)
 }
 
 // ClusterSpec represents the API supported by some cluster. There are several
