@@ -30,6 +30,7 @@ import (
 
 func init() {
 	RootCmd.AddCommand(prototypeCmd)
+	RootCmd.AddCommand(generateCmd)
 	prototypeCmd.AddCommand(prototypeListCmd)
 	prototypeCmd.AddCommand(prototypeDescribeCmd)
 	prototypeCmd.AddCommand(prototypeSearchCmd)
@@ -271,6 +272,15 @@ unique enough to resolve to 'io.ksonnet.pkg.single-port-deployment'.`,
     --image=nginx`,
 }
 
+// generateCmd acts as an alias for `prototype use`
+var generateCmd = &cobra.Command{
+	Use:                "generate <prototype-name> <component-name> [type] [parameter-flags]",
+	Short:              prototypeUseCmd.Short,
+	DisableFlagParsing: prototypeUseCmd.DisableFlagParsing,
+	RunE:               prototypeUseCmd.RunE,
+	Long:               prototypeUseCmd.Long,
+}
+
 var prototypeUseCmd = &cobra.Command{
 	Use:                "use <prototype-name> <componentName> [type] [parameter-flags]",
 	Short:              `Expand prototype, place in components/ directory of ksonnet app`,
@@ -282,11 +292,11 @@ var prototypeUseCmd = &cobra.Command{
 		}
 		manager, err := metadata.Find(metadata.AbsPath(cwd))
 		if err != nil {
-			return fmt.Errorf("'prototype use' can only be run in a ksonnet application directory:\n\n%v", err)
+			return fmt.Errorf("Command can only be run in a ksonnet application directory:\n\n%v", err)
 		}
 
 		if len(rawArgs) < 1 {
-			return fmt.Errorf("Command 'prototype preview' requires a prototype name\n\n%s", cmd.UsageString())
+			return fmt.Errorf("Command requires a prototype name\n\n%s", cmd.UsageString())
 		}
 
 		query := rawArgs[0]
@@ -311,7 +321,7 @@ var prototypeUseCmd = &cobra.Command{
 		var componentName string
 		var templateType prototype.TemplateType
 		if args := flags.Args(); len(args) == 1 {
-			return fmt.Errorf("'prototype use' is missing argument 'componentName'\n\n%s", cmd.UsageString())
+			return fmt.Errorf("Command is missing argument 'componentName'\n\n%s", cmd.UsageString())
 		} else if len(args) == 2 {
 			componentName = args[1]
 			templateType = prototype.Jsonnet
@@ -322,7 +332,7 @@ var prototypeUseCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			return fmt.Errorf("'prototype use' has too many arguments (takes a prototype name and a component name)\n\n%s", cmd.UsageString())
+			return fmt.Errorf("Command has too many arguments (takes a prototype name and a component name)\n\n%s", cmd.UsageString())
 		}
 
 		params, err := getParameters(proto, flags)
