@@ -89,6 +89,7 @@ type RegistryRefSpecs map[string]*RegistryRefSpec
 
 type LibraryRefSpec struct {
 	Name       string          `json:"name"`
+	Registry   string          `json:"registry"`
 	GitVersion *GitVersionSpec `json:"gitVersion"`
 }
 

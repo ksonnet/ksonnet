@@ -1,6 +1,7 @@
 package prototype
 
 import (
+	"bytes"
 	"fmt"
 	"sort"
 	"strconv"
@@ -12,6 +13,108 @@ import (
 // but because Go requires public structs for un/marshalling, it is more
 // convenient to simply expose all of them.
 //
+
+const (
+	apiVersionTag  = "@apiVersion"
+	nameTag        = "@name"
+	descriptionTag = "@description"
+	paramTag       = "@param"
+)
+
+func FromJsonnet(data string) (*SpecificationSchema, error) {
+	// Get comment block at the top of the file.
+	seenCommentLine := false
+	commentBlock := []string{}
+	text := strings.Split(data, "\n")
+	lastCommentLine := 0
+	for i, line := range text {
+		const commentPrefix = "// "
+		line = strings.TrimSpace(line)
+
+		// Skip blank lines
+		if line == "" && !seenCommentLine {
+			continue
+		}
+
+		if !strings.HasPrefix(line, "//") {
+			lastCommentLine = i
+			break
+		}
+
+		seenCommentLine = true
+
+		// Reject comments formatted like this, with no space between '//'
+		// and the first word:
+		//
+		//   //Foo
+		//
+		// But not the empty comment line:
+		//
+		//   //
+		//
+		// Also, trim any leading space between the '//' characters and
+		// the first word, and place that in `commentBlock`.
+		if !strings.HasPrefix(line, commentPrefix) {
+			if len(line) > 3 {
+				return nil, fmt.Errorf("Prototype heading comments are required to have a space after the '//' that begins the line")
+			}
+			commentBlock = append(commentBlock, strings.TrimPrefix(line, "//"))
+		} else {
+			commentBlock = append(commentBlock, strings.TrimPrefix(line, commentPrefix))
+		}
+	}
+
+	// Parse the prototypeInfo from the heading comment block.
+	pinfo := SpecificationSchema{}
+	pinfo.Template.JsonnetBody = text[lastCommentLine+1:]
+	firstPass := true
+	openTag := ""
+	var openText bytes.Buffer
+	for _, line := range commentBlock {
+		split := strings.SplitN(line, " ", 2)
+		if len(split) < 1 {
+			continue
+		}
+
+		if len(line) == 0 || strings.HasPrefix(line, " ") {
+			if openTag == "" {
+				return nil, fmt.Errorf("Free text is not allowed in heading comment of prototype spec, all text must be in a field. The line of the error:\n'%s'", line)
+			}
+			openText.WriteString(strings.TrimSpace(line) + "\n")
+			continue
+		} else if len(split) < 2 {
+			return nil, fmt.Errorf("Invalid field '%s', fields must have a non-whitespace value", line)
+		}
+
+		if err := pinfo.addField(openTag, openText.String()); !firstPass && err != nil {
+			return nil, err
+		}
+		openTag = split[0]
+		openText = bytes.Buffer{}
+		openText.WriteString(strings.TrimSpace(split[1]))
+		switch split[0] {
+		case apiVersionTag, nameTag, descriptionTag, paramTag: // Do nothing.
+		default:
+			return nil, fmt.Errorf(`Line in prototype heading comment is formatted incorrectly; '%s' is not
+recognized as a tag. Only tags can begin lines, and text that is wrapped must
+be indented. For example:
+  // @description This is a long description
+  //   that we are wrapping on two lines`, split[0])
+		}
+
+		firstPass = false
+	}
+
+	if err := pinfo.addField(openTag, openText.String()); !firstPass && err != nil {
+		return nil, err
+	}
+
+	if pinfo.Name == "" || pinfo.Template.JsonnetBody == nil || pinfo.Template.Description == "" {
+		return nil, fmt.Errorf("Invalid prototype specification, all fields are required. Object:\n%v", pinfo)
+	}
+
+	return &pinfo, nil
+}
 
 // SpecificationSchema is the JSON-serializable representation of a prototype
 // specification.
@@ -83,6 +186,51 @@ func (s *SpecificationSchema) RequiredParams() ParamSchemas {
 	}
 
 	return reqd
+}
+
+func (s *SpecificationSchema) addField(tag, text string) error {
+	switch tag {
+	case apiVersionTag:
+	case nameTag:
+		if s.Name != "" {
+			return fmt.Errorf("Prototype heading comment has two '@name' fields")
+		}
+		s.Name = text
+	case descriptionTag:
+		if s.Template.Description != "" {
+			return fmt.Errorf("Prototype heading comment has two '@description' fields")
+		}
+		s.Template.Description = text
+	case paramTag:
+		// NOTE: There is usually more than one `@param`, so we don't
+		// check length here.
+
+		split := strings.SplitN(text, " ", 3)
+		if len(split) < 3 {
+			return fmt.Errorf("Param fields must have '<name> <type> <description>, but got:\n%s", text)
+		}
+
+		pt, err := parseParamType(split[1])
+		if err != nil {
+			return err
+		}
+
+		s.Params = append(s.Params, &ParamSchema{
+			Name:        split[0],
+			Alias:       &split[0],
+			Description: split[2],
+			Default:     nil,
+			Type:        pt,
+		})
+	default:
+		return fmt.Errorf(`Line in prototype heading comment is formatted incorrectly; '%s' is not
+recognized as a tag. Only tags can begin lines, and text that is wrapped must
+be indented. For example:
+// @description This is a long description
+//   that we are wrapping on two lines`, tag)
+	}
+
+	return nil
 }
 
 // OptionalParams retrieves all parameters that can optionally be provided to a
@@ -206,6 +354,23 @@ const (
 	// Array represents a prototype parameter that must be a array.
 	Array ParamType = "array"
 )
+
+func parseParamType(t string) (ParamType, error) {
+	switch t {
+	case "number":
+		return Number, nil
+	case "string":
+		return String, nil
+	case "numberOrString":
+		return NumberOrString, nil
+	case "object":
+		return Object, nil
+	case "array":
+		return Array, nil
+	default:
+		return "", fmt.Errorf("Unknown param type '%s'", t)
+	}
+}
 
 func (pt ParamType) String() string {
 	switch pt {

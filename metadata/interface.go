@@ -72,10 +72,11 @@ type Manager interface {
 	// Spec API.
 	AppSpec() (*app.Spec, error)
 
-	// Registry API.
+	// Dependency/registry API.
 	AddRegistry(name, protocol, uri, version string) (*registry.Spec, error)
 	GetRegistry(name string) (*registry.Spec, string, error)
 	CacheDependency(registryName, libID, libName, libVersion string) (*parts.Spec, error)
+	GetAllPrototypes() (prototype.SpecificationSchemas, error)
 }
 
 // Find will recursively search the current directory and its parents for a
