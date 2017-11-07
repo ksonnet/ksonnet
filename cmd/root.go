@@ -121,10 +121,10 @@ var RootCmd = &cobra.Command{
 // clientConfig.Namespace() is broken in client-go 3.0:
 // namespace in config erroneously overrides explicit --namespace
 func namespace() (string, error) {
-	return namespaceFor(clientConfig, overrides)
+	return namespaceFor(clientConfig, &overrides)
 }
 
-func namespaceFor(c clientcmd.ClientConfig, overrides clientcmd.ConfigOverrides) (string, error) {
+func namespaceFor(c clientcmd.ClientConfig, overrides *clientcmd.ConfigOverrides) (string, error) {
 	if overrides.Context.Namespace != "" {
 		return overrides.Context.Namespace, nil
 	}
@@ -260,7 +260,7 @@ func dumpJSON(v interface{}) string {
 	return string(buf.Bytes())
 }
 
-func restClient(cmd *cobra.Command, envName *string, config clientcmd.ClientConfig, overrides clientcmd.ConfigOverrides) (dynamic.ClientPool, discovery.DiscoveryInterface, error) {
+func restClient(cmd *cobra.Command, envName *string, config clientcmd.ClientConfig, overrides *clientcmd.ConfigOverrides) (dynamic.ClientPool, discovery.DiscoveryInterface, error) {
 	if envName != nil {
 		err := overrideCluster(*envName, config, overrides)
 		if err != nil {
@@ -287,7 +287,7 @@ func restClient(cmd *cobra.Command, envName *string, config clientcmd.ClientConf
 }
 
 func restClientPool(cmd *cobra.Command, envName *string) (dynamic.ClientPool, discovery.DiscoveryInterface, error) {
-	return restClient(cmd, envName, clientConfig, overrides)
+	return restClient(cmd, envName, clientConfig, &overrides)
 }
 
 type envSpec struct {
@@ -326,7 +326,7 @@ func parseEnvCmd(cmd *cobra.Command, args []string) (*envSpec, error) {
 // If the environment server the user is attempting to deploy to is not the current
 // kubeconfig context, we must manually override the client-go --cluster flag
 // to ensure we are deploying to the correct cluster.
-func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overrides clientcmd.ConfigOverrides) error {
+func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overrides *clientcmd.ConfigOverrides) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err
