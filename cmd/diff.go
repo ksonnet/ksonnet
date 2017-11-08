@@ -270,10 +270,10 @@ func initDiffRemoteCmd(localEnv, remoteEnv, diffStrategy string, cmd *cobra.Comm
 }
 
 func setupClientConfig(env *string, cmd *cobra.Command) (dynamic.ClientPool, discovery.DiscoveryInterface, string, error) {
-	overrides := clientcmd.ConfigOverrides{}
+	overrides := &clientcmd.ConfigOverrides{}
 	loadingRules := *clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-	config := clientcmd.NewInteractiveDeferredLoadingClientConfig(&loadingRules, &overrides, os.Stdin)
+	config := clientcmd.NewInteractiveDeferredLoadingClientConfig(&loadingRules, overrides, os.Stdin)
 
 	clientPool, discovery, err := restClient(cmd, env, config, overrides)
 	if err != nil {
