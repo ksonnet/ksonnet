@@ -65,6 +65,16 @@ func TestConstructBaseObj(t *testing.T) {
 }
 `,
 		},
+		// test special character case
+		{
+			[]string{
+				"another/fake/path/foo-bar.jsonnet",
+			},
+			`{
+  "foo-bar": import "another/fake/path/foo-bar.jsonnet",
+}
+`,
+		},
 	}
 
 	for _, s := range tests {

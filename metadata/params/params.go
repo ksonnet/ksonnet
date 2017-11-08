@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/parser"
+	"github.com/ksonnet/ksonnet/utils"
 )
 
 const (
@@ -37,6 +38,38 @@ func astRoot(component, snippet string) (ast.Node, error) {
 	}
 
 	return parser.Parse(tokens)
+}
+
+// SanitizeComponent puts quotes around a component name if it contains special
+// characters.
+func SanitizeComponent(component string) string {
+	if !utils.IsASCIIIdentifier(component) {
+		return fmt.Sprintf(`"%s"`, component)
+	}
+	return component
+}
+
+func getFieldId(field ast.ObjectField) (string, error) {
+	switch field.Kind {
+	case ast.ObjectFieldStr:
+		// case "foo-bar": {...}
+		c, _ := field.Expr1.(*ast.LiteralString)
+		switch c.Kind {
+		case ast.StringSingle, ast.StringDouble:
+			return c.Value, nil
+		default:
+			return "", fmt.Errorf("Found unsupported LiteralString type %T", c)
+		}
+	case ast.ObjectFieldID:
+		// case foo: {...}
+		return string(*field.Id), nil
+	}
+	return "", fmt.Errorf("Found unsupported ObjectField.Kind, type %T", field)
+}
+
+func hasComponent(component string, field ast.ObjectField) (bool, error) {
+	id, err := getFieldId(field)
+	return id == component, err
 }
 
 func visitParams(component ast.Node) (Params, *ast.LocationRange, error) {
@@ -71,7 +104,11 @@ func visitAllParams(components ast.Object) (map[string]Params, error) {
 		if err != nil {
 			return nil, err
 		}
-		params[string(*f.Id)] = p
+		id, err := getFieldId(f)
+		if err != nil {
+			return nil, err
+		}
+		params[id] = p
 	}
 
 	return params, nil
@@ -86,7 +123,12 @@ func visitParamValue(param ast.Node) (string, error) {
 	case *ast.LiteralBoolean:
 		return strconv.FormatBool(n.Value), nil
 	case *ast.LiteralString:
-		return fmt.Sprintf(`"%s"`, n.Value), nil
+		switch n.Kind {
+		case ast.StringSingle, ast.StringDouble:
+			return fmt.Sprintf(`"%s"`, n.Value), nil
+		default:
+			return "", fmt.Errorf("Found unsupported LiteralString type %T", n)
+		}
 	default:
 		return "", fmt.Errorf("Found an unsupported param AST node type: %T", n)
 	}
@@ -145,6 +187,7 @@ func visitComponentsObj(component, snippet string) (*ast.Object, error) {
 }
 
 func appendComponent(component, snippet string, params Params) (string, error) {
+	component = SanitizeComponent(component)
 	componentsNode, err := visitComponentsObj(component, snippet)
 	if err != nil {
 		return "", err
@@ -152,7 +195,11 @@ func appendComponent(component, snippet string, params Params) (string, error) {
 
 	// Ensure that the component we are trying to create params for does not already exist.
 	for _, field := range componentsNode.Fields {
-		if field.Id != nil && string(*field.Id) == component {
+		hasComponent, err := hasComponent(component, field)
+		if err != nil {
+			return "", err
+		}
+		if hasComponent {
 			return "", fmt.Errorf("Component parameters for '%s' already exists", component)
 		}
 	}
@@ -181,7 +228,11 @@ func getComponentParams(component, snippet string) (Params, *ast.LocationRange, 
 	}
 
 	for _, field := range componentsNode.Fields {
-		if field.Id != nil && string(*field.Id) == component {
+		hasComponent, err := hasComponent(component, field)
+		if err != nil {
+			return nil, nil, err
+		}
+		if hasComponent {
 			return visitParams(field.Expr2)
 		}
 	}
@@ -229,7 +280,7 @@ func findEnvComponentsObj(node ast.Node) (*ast.Object, error) {
 		return findEnvComponentsObj(n.Right)
 	case *ast.Object:
 		for _, f := range n.Fields {
-			if *f.Id == "components" {
+			if *f.Id == componentsID {
 				c, isObj := f.Expr2.(*ast.Object)
 				if !isObj {
 					return nil, fmt.Errorf("Expected components node type to be object")
@@ -254,7 +305,11 @@ func getEnvironmentParams(component, snippet string) (Params, *ast.LocationRange
 	}
 
 	for _, f := range n.Fields {
-		if f.Id != nil && string(*f.Id) == component {
+		hasComponent, err := hasComponent(component, f)
+		if err != nil {
+			return nil, nil, false, err
+		}
+		if hasComponent {
 			params, loc, err := visitParams(f.Expr2)
 			return params, loc, true, err
 		}
@@ -285,6 +340,7 @@ func getAllEnvironmentParams(snippet string) (map[string]Params, error) {
 }
 
 func setEnvironmentParams(component, snippet string, params Params) (string, error) {
+	component = SanitizeComponent(component)
 	currentParams, loc, hasComponent, err := getEnvironmentParams(component, snippet)
 	if err != nil {
 		return "", err

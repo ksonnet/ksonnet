@@ -103,6 +103,37 @@ func TestAppendComponentParams(t *testing.T) {
   },
 }`,
 		},
+		// Test appending a component with a hyphenated name
+		{
+			"foo-bar",
+			`
+{
+  global: {
+    // User-defined global parameters; accessible to all component and environments, Ex:
+    // replicas: 4,
+  },
+  components: {
+    // Component-level parameters, defined initially from 'ks prototype use ...'
+    // Each object below should correspond to a component in the components/ directory
+  },
+}`,
+			Params{"replicas": "5", "name": `"foo-bar"`},
+			`
+{
+  global: {
+    // User-defined global parameters; accessible to all component and environments, Ex:
+    // replicas: 4,
+  },
+  components: {
+    // Component-level parameters, defined initially from 'ks prototype use ...'
+    // Each object below should correspond to a component in the components/ directory
+    "foo-bar": {
+      name: "foo-bar",
+      replicas: 5,
+    },
+  },
+}`,
+		},
 	}
 
 	errors := []struct {
@@ -215,6 +246,21 @@ func TestGetComponentParams(t *testing.T) {
 }`,
 			Params{"name": `"foo"`, "replicas": "1"},
 		},
+		// Test getting the parameters for a component name with special characters
+		{
+			"foo-bar",
+			`
+{
+  global: {},
+  components: {
+    "foo-bar": {
+      name: "foo-bar",
+      replicas: 1,
+    },
+  },
+}`,
+			Params{"name": `"foo-bar"`, "replicas": "1"},
+		},
 	}
 
 	errors := []struct {
@@ -243,6 +289,30 @@ func TestGetComponentParams(t *testing.T) {
     // replicas: 4,
 		components: {},
   },
+}`,
+		},
+		// Test case where one of the component names is a block string
+		{
+			"foo",
+			`
+{
+	components: {
+		|||foo|||: {
+			name: "foo",
+		}
+	},
+}`,
+		},
+		// Test case where one of the param values is a block string
+		{
+			"foo",
+			`
+{
+	components: {
+		"foo": {
+			name: |||name is foo|||,
+		}
+	},
 }`,
 		},
 	}
@@ -305,15 +375,15 @@ func TestGetAllComponentParams(t *testing.T) {
     bar: {
       replicas: 5
     },
-    foo: {
-      name: "foo",
+    "foo-bar": {
+      name: "foo-bar",
       replicas: 1,
     },
   },
 }`,
 			map[string]Params{
-				"bar": Params{"replicas": "5"},
-				"foo": Params{"name": `"foo"`, "replicas": "1"},
+				"bar":     Params{"replicas": "5"},
+				"foo-bar": Params{"name": `"foo-bar"`, "replicas": "1"},
 			},
 		},
 	}
@@ -408,6 +478,28 @@ func TestSetComponentParams(t *testing.T) {
   components: {
     foo: {
       name: "foo",
+      replicas: 5,
+    },
+  },
+}`,
+		},
+		// Test setting parameter for a component with a special character in name
+		{
+			"foo-bar",
+			`
+{
+  components: {
+    "foo-bar": {
+      name: "foo-bar",
+    },
+  },
+}`,
+			Params{"replicas": "5"},
+			`
+{
+  components: {
+    "foo-bar": {
+      name: "foo-bar",
       replicas: 5,
     },
   },
@@ -508,7 +600,7 @@ params + {
       name: "bar",
       replicas: 1,
     },
-    foo +: {
+    "foo" +: {
       name: "foo",
       replicas: 5,
     },
@@ -613,6 +705,27 @@ local params = import "/fake/path";
 params + {
   components +: {
     foo +: {
+      replicas: 5,
+    },
+  },
+}`,
+		},
+		// Test setting environment param case where component isn't in the snippet
+		// and the component name has special characters
+		{
+			"foo-bar",
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+  },
+}`,
+			Params{"replicas": "5"},
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+    "foo-bar" +: {
       replicas: 5,
     },
   },
