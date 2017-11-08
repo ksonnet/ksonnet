@@ -295,7 +295,7 @@ func expandEnvObjs(cmd *cobra.Command, env string, manager metadata.Manager) ([]
 		return nil, err
 	}
 
-	libPath, envLibPath, envComponentPath, envParamsPath := manager.LibPaths(env)
+	libPath, vendorPath, envLibPath, envComponentPath, envParamsPath := manager.LibPaths(env)
 
 	componentPaths, err := manager.ComponentPaths()
 	if err != nil {
@@ -304,7 +304,7 @@ func expandEnvObjs(cmd *cobra.Command, env string, manager metadata.Manager) ([]
 	baseObj := constructBaseObj(componentPaths)
 	params := importParams(string(envParamsPath))
 
-	expander.FlagJpath = append([]string{string(libPath), string(envLibPath)}, expander.FlagJpath...)
+	expander.FlagJpath = append([]string{string(libPath), string(vendorPath), string(envLibPath)}, expander.FlagJpath...)
 	expander.ExtCodes = append([]string{baseObj, params}, expander.ExtCodes...)
 
 	envFiles := []string{string(envComponentPath)}

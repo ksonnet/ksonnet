@@ -263,15 +263,19 @@ func TestComponentPaths(t *testing.T) {
 
 func TestLibPaths(t *testing.T) {
 	appName := "test-lib-paths"
+	expectedVendorPath := path.Join(appName, vendorDir)
 	expectedLibPath := path.Join(appName, libDir)
 	expectedEnvLibPath := path.Join(appName, environmentsDir, mockEnvName, metadataDirName)
 	expectedEnvComponentPath := path.Join(appName, environmentsDir, mockEnvName, path.Base(mockEnvName)+".jsonnet")
 	expectedEnvParamsPath := path.Join(appName, environmentsDir, mockEnvName, paramsFileName)
 	m := mockEnvironments(t, appName)
 
-	libPath, envLibPath, envComponentPath, envParamsPath := m.LibPaths(mockEnvName)
+	libPath, vendorPath, envLibPath, envComponentPath, envParamsPath := m.LibPaths(mockEnvName)
 	if string(libPath) != expectedLibPath {
 		t.Fatalf("Expected lib path to be:\n  '%s'\n, got:\n  '%s'", expectedLibPath, libPath)
+	}
+	if string(vendorPath) != expectedVendorPath {
+		t.Fatalf("Expected vendor lib path to be:\n  '%s'\n, got:\n  '%s'", expectedVendorPath, vendorPath)
 	}
 	if string(envLibPath) != expectedEnvLibPath {
 		t.Fatalf("Expected environment lib path to be:\n  '%s'\n, got:\n  '%s'", expectedEnvLibPath, envLibPath)
