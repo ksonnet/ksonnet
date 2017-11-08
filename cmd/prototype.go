@@ -92,7 +92,23 @@ var prototypeListCmd = &cobra.Command{
 			return fmt.Errorf("Command 'prototype list' does not take any arguments")
 		}
 
-		index := prototype.NewIndex([]*prototype.SpecificationSchema{})
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		wd := metadata.AbsPath(cwd)
+
+		manager, err := metadata.Find(wd)
+		if err != nil {
+			return err
+		}
+
+		extProtos, err := manager.GetAllPrototypes()
+		if err != nil {
+			return err
+		}
+
+		index := prototype.NewIndex(extProtos)
 		protos, err := index.List()
 		if err != nil {
 			return err
@@ -115,9 +131,24 @@ var prototypeDescribeCmd = &cobra.Command{
 			return fmt.Errorf("Command 'prototype describe' requires a prototype name\n\n%s", cmd.UsageString())
 		}
 
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		wd := metadata.AbsPath(cwd)
+
+		extProtos := prototype.SpecificationSchemas{}
+		manager, err := metadata.Find(wd)
+		if err == nil {
+			extProtos, err = manager.GetAllPrototypes()
+			if err != nil {
+				return err
+			}
+		}
+
 		query := args[0]
 
-		proto, err := fundUniquePrototype(query)
+		proto, err := fundUniquePrototype(query, extProtos)
 		if err != nil {
 			return err
 		}
@@ -199,9 +230,24 @@ var prototypePreviewCmd = &cobra.Command{
 			return fmt.Errorf("Command 'prototype preview' requires a prototype name\n\n%s", cmd.UsageString())
 		}
 
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		wd := metadata.AbsPath(cwd)
+
+		extProtos := prototype.SpecificationSchemas{}
+		manager, err := metadata.Find(wd)
+		if err == nil {
+			extProtos, err = manager.GetAllPrototypes()
+			if err != nil {
+				return err
+			}
+		}
+
 		query := rawArgs[0]
 
-		proto, err := fundUniquePrototype(query)
+		proto, err := fundUniquePrototype(query, extProtos)
 		if err != nil {
 			return err
 		}
@@ -295,13 +341,18 @@ var prototypeUseCmd = &cobra.Command{
 			return fmt.Errorf("Command can only be run in a ksonnet application directory:\n\n%v", err)
 		}
 
+		extProtos, err := manager.GetAllPrototypes()
+		if err != nil {
+			return err
+		}
+
 		if len(rawArgs) < 1 {
 			return fmt.Errorf("Command requires a prototype name\n\n%s", cmd.UsageString())
 		}
 
 		query := rawArgs[0]
 
-		proto, err := fundUniquePrototype(query)
+		proto, err := fundUniquePrototype(query, extProtos)
 		if err != nil {
 			return err
 		}
@@ -455,8 +506,8 @@ func getParameters(proto *prototype.SpecificationSchema, flags *pflag.FlagSet) (
 	return values, nil
 }
 
-func fundUniquePrototype(query string) (*prototype.SpecificationSchema, error) {
-	index := prototype.NewIndex([]*prototype.SpecificationSchema{})
+func fundUniquePrototype(query string, extProtos prototype.SpecificationSchemas) (*prototype.SpecificationSchema, error) {
+	index := prototype.NewIndex(extProtos)
 
 	suffixProtos, err := index.SearchNames(query, prototype.Suffix)
 	if err != nil {

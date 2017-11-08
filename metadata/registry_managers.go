@@ -153,7 +153,8 @@ func (gh *gitHubRegistryManager) ResolveLibrary(libID, libAlias, libRefSpec stri
 	json.Unmarshal([]byte(partsSpecText), &parts)
 
 	refSpec := app.LibraryRefSpec{
-		Name: libAlias,
+		Name:     libAlias,
+		Registry: gh.Name,
 		GitVersion: &app.GitVersionSpec{
 			RefSpec:   libRefSpec,
 			CommitSHA: resolvedSHA,

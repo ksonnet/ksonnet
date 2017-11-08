@@ -3,10 +3,13 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/metadata/parts"
 	"github.com/ksonnet/ksonnet/metadata/registry"
+	"github.com/ksonnet/ksonnet/prototype"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
@@ -141,6 +144,50 @@ func (m *manager) CacheDependency(registryName, libID, libName, libVersion strin
 	}
 
 	return parts, nil
+}
+
+func (m *manager) GetAllPrototypes() (prototype.SpecificationSchemas, error) {
+	appSpec, err := m.AppSpec()
+	if err != nil {
+		return nil, err
+	}
+
+	specs := prototype.SpecificationSchemas{}
+	for _, lib := range appSpec.Libraries {
+		protos := string(appendToAbsPath(m.vendorPath, lib.Registry, lib.Name, "prototypes"))
+		exists, err := afero.DirExists(m.appFS, protos)
+		if err != nil {
+			return nil, err
+		} else if !exists {
+			return prototype.SpecificationSchemas{}, nil // No prototypes to report.
+		}
+
+		err = afero.Walk(
+			m.appFS,
+			protos,
+			func(path string, info os.FileInfo, err error) error {
+				if info.IsDir() || filepath.Ext(path) != ".jsonnet" {
+					return nil
+				}
+
+				protoJsonnet, err := afero.ReadFile(m.appFS, path)
+				if err != nil {
+					return err
+				}
+
+				protoSpec, err := prototype.FromJsonnet(string(protoJsonnet))
+				if err != nil {
+					return err
+				}
+				specs = append(specs, protoSpec)
+				return nil
+			})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return specs, nil
 }
 
 func (m *manager) registryDir(regManager registry.Manager) AbsPath {
