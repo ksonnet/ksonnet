@@ -45,7 +45,7 @@ type AbsPaths []string
 // libraries; and other non-core-application tasks.
 type Manager interface {
 	Root() AbsPath
-	LibPaths(envName string) (libPath, envLibPath, envComponentPath, envParamsPath AbsPath)
+	LibPaths(envName string) (libPath, vendorPath, envLibPath, envComponentPath, envParamsPath AbsPath)
 
 	// Components API.
 	ComponentPaths() (AbsPaths, error)
