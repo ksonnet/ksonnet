@@ -16,7 +16,6 @@
 package metadata
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/user"
@@ -24,6 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ghodss/yaml"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/metadata/registry"
@@ -299,7 +299,7 @@ func (m *manager) AppSpec() (*app.Spec, error) {
 	}
 
 	schema := app.Spec{}
-	err = json.Unmarshal(bytes, &schema)
+	err = yaml.Unmarshal(bytes, &schema)
 	if err != nil {
 		return nil, err
 	}

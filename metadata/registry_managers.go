@@ -2,12 +2,12 @@ package metadata
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"path"
 	"strings"
 
+	"github.com/ghodss/yaml"
 	"github.com/google/go-github/github"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/metadata/parts"
@@ -99,7 +99,7 @@ func (gh *gitHubRegistryManager) FetchRegistrySpec() (*registry.Spec, error) {
 
 	// Deserialize, return.
 	registrySpec := registry.Spec{}
-	err = json.Unmarshal([]byte(registrySpecText), &registrySpec)
+	err = yaml.Unmarshal([]byte(registrySpecText), &registrySpec)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +150,7 @@ func (gh *gitHubRegistryManager) ResolveLibrary(libID, libAlias, libRefSpec stri
 	}
 
 	parts := parts.Spec{}
-	json.Unmarshal([]byte(partsSpecText), &parts)
+	yaml.Unmarshal([]byte(partsSpecText), &parts)
 
 	refSpec := app.LibraryRefSpec{
 		Name:     libAlias,
