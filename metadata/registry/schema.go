@@ -16,8 +16,7 @@
 package registry
 
 import (
-	"encoding/json"
-
+	"github.com/ghodss/yaml"
 	"github.com/ksonnet/ksonnet/metadata/app"
 )
 
@@ -34,7 +33,7 @@ type Spec struct {
 }
 
 func (s *Spec) Marshal() ([]byte, error) {
-	return json.MarshalIndent(s, "", "  ")
+	return yaml.Marshal(s)
 }
 
 type Specs []*Spec

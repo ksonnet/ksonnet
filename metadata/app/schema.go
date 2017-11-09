@@ -16,12 +16,13 @@
 package app
 
 import (
-	"encoding/json"
 	"fmt"
+
+	"github.com/ghodss/yaml"
 )
 
 const (
-	DefaultAPIVersion = "0.1"
+	DefaultAPIVersion = "0.0.1"
 	Kind              = "ksonnet.io/app"
 	DefaultVersion    = "0.0.1"
 )
@@ -46,7 +47,7 @@ type Spec struct {
 }
 
 func (s *Spec) Marshal() ([]byte, error) {
-	return json.MarshalIndent(s, "", "  ")
+	return yaml.Marshal(s)
 }
 
 func (s *Spec) GetRegistryRef(name string) (*RegistryRefSpec, bool) {
@@ -79,7 +80,7 @@ type RepositorySpec struct {
 }
 
 type RegistryRefSpec struct {
-	Name       string
+	Name       string          `json:"-"`
 	Protocol   string          `json:"protocol"`
 	URI        string          `json:"uri"`
 	GitVersion *GitVersionSpec `json:"gitVersion"`

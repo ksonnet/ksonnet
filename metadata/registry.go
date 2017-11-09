@@ -1,11 +1,11 @@
 package metadata
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/ghodss/yaml"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/metadata/parts"
 	"github.com/ksonnet/ksonnet/metadata/registry"
@@ -254,7 +254,7 @@ func (m *manager) registrySpecFromFile(path AbsPath) (*registry.Spec, bool, erro
 		}
 
 		registrySpec := registry.Spec{}
-		err = json.Unmarshal(registrySpecBytes, &registrySpec)
+		err = yaml.Unmarshal(registrySpecBytes, &registrySpec)
 		if err != nil {
 			return nil, false, err
 		}

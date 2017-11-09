@@ -15,7 +15,9 @@
 
 package parts
 
-import "encoding/json"
+import (
+	"github.com/ghodss/yaml"
+)
 
 const (
 	DefaultApiVersion = "0.1"
@@ -40,7 +42,7 @@ type Spec struct {
 }
 
 func (s *Spec) Marshal() ([]byte, error) {
-	return json.MarshalIndent(s, "", "  ")
+	return yaml.Marshal(s)
 }
 
 type ContributorSpec struct {

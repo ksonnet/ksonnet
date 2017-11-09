@@ -1,12 +1,12 @@
 package prototype
 
-import "encoding/json"
+import "github.com/ghodss/yaml"
 
 // Unmarshal takes the bytes of a JSON-encoded prototype specification, and
 // deserializes them to a `SpecificationSchema`.
 func Unmarshal(bytes []byte) (*SpecificationSchema, error) {
 	var p SpecificationSchema
-	err := json.Unmarshal(bytes, &p)
+	err := yaml.Unmarshal(bytes, &p)
 	if err != nil {
 		return nil, err
 	}
