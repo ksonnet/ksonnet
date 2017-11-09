@@ -19,6 +19,7 @@ const (
 	nameTag        = "@name"
 	descriptionTag = "@description"
 	paramTag       = "@param"
+	optParamTag    = "@optionalParam"
 )
 
 func FromJsonnet(data string) (*SpecificationSchema, error) {
@@ -93,7 +94,7 @@ func FromJsonnet(data string) (*SpecificationSchema, error) {
 		openText = bytes.Buffer{}
 		openText.WriteString(strings.TrimSpace(split[1]))
 		switch split[0] {
-		case apiVersionTag, nameTag, descriptionTag, paramTag: // Do nothing.
+		case apiVersionTag, nameTag, descriptionTag, paramTag, optParamTag: // Do nothing.
 		default:
 			return nil, fmt.Errorf(`Line in prototype heading comment is formatted incorrectly; '%s' is not
 recognized as a tag. Only tags can begin lines, and text that is wrapped must
@@ -220,6 +221,27 @@ func (s *SpecificationSchema) addField(tag, text string) error {
 			Alias:       &split[0],
 			Description: split[2],
 			Default:     nil,
+			Type:        pt,
+		})
+	case optParamTag:
+		// NOTE: There is usually more than one `@optionalParam`, so we
+		// don't check length here.
+
+		split := strings.SplitN(text, " ", 4)
+		if len(split) < 4 {
+			return fmt.Errorf("Optional param fields must have '<name> <type> <default-val> <description> (<default-val> currently cannot contain spaces), but got:\n%s", text)
+		}
+
+		pt, err := parseParamType(split[1])
+		if err != nil {
+			return err
+		}
+
+		s.Params = append(s.Params, &ParamSchema{
+			Name:        split[0],
+			Alias:       &split[0],
+			Description: split[2],
+			Default:     &split[3],
 			Type:        pt,
 		})
 	default:
