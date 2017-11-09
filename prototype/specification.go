@@ -240,8 +240,8 @@ func (s *SpecificationSchema) addField(tag, text string) error {
 		s.Params = append(s.Params, &ParamSchema{
 			Name:        split[0],
 			Alias:       &split[0],
-			Description: split[2],
-			Default:     &split[3],
+			Default:     &split[2],
+			Description: split[3],
 			Type:        pt,
 		})
 	default:
