@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	param "github.com/ksonnet/ksonnet/metadata/params"
+	"github.com/ksonnet/ksonnet/utils"
 
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
@@ -158,88 +159,46 @@ func (c *ParamListCmd) Run(out io.Writer) error {
 func outputParamsFor(component string, params param.Params, out io.Writer) error {
 	keys := sortedParams(params)
 
-	//
-	// Format each parameter information for pretty printing.
-	// Each parameter will be outputted alphabetically like the following:
-	//
-	//   PARAM    VALUE
-	//   name     "foo"
-	//   replicas 1
-	//
-
-	maxParamLen := len(paramNameHeader)
+	rows := [][]string{
+		[]string{paramNameHeader, paramValueHeader},
+		[]string{strings.Repeat("=", len(paramNameHeader)), strings.Repeat("=", len(paramValueHeader))},
+	}
 	for _, k := range keys {
-		if l := len(k); l > maxParamLen {
-			maxParamLen = l
-		}
+		rows = append(rows, []string{k, params[k]})
 	}
 
-	nameSpacing := strings.Repeat(" ", maxParamLen-len(paramNameHeader)+1)
-
-	lines := []string{}
-	lines = append(lines, paramNameHeader+nameSpacing+paramValueHeader+"\n")
-	lines = append(lines, strings.Repeat("=", len(paramNameHeader))+nameSpacing+
-		strings.Repeat("=", len(paramValueHeader))+"\n")
-
-	for _, k := range keys {
-		nameSpacing = strings.Repeat(" ", maxParamLen-len(k)+1)
-		lines = append(lines, k+nameSpacing+params[k]+"\n")
+	formatted, err := utils.PadRows(rows)
+	if err != nil {
+		return err
 	}
-
-	_, err := fmt.Fprint(out, strings.Join(lines, ""))
+	_, err = fmt.Fprint(out, formatted)
 	return err
 }
 
 func outputParams(params map[string]param.Params, out io.Writer) error {
 	keys := sortedKeys(params)
 
-	//
-	// Format each component parameter information for pretty printing.
-	// Each component will be outputted alphabetically like the following:
-	//
-	//   COMPONENT PARAM     VALUE
-	//   bar       name      "bar"
-	//   bar       replicas  2
-	//   foo       name      "foo"
-	//   foo       replicas  1
-	//
-
-	maxComponentLen := len(paramComponentHeader)
-	for _, k := range keys {
-		if l := len(k); l > maxComponentLen {
-			maxComponentLen = l
-		}
+	rows := [][]string{
+		[]string{paramComponentHeader, paramNameHeader, paramValueHeader},
+		[]string{
+			strings.Repeat("=", len(paramComponentHeader)),
+			strings.Repeat("=", len(paramNameHeader)),
+			strings.Repeat("=", len(paramValueHeader))},
 	}
-
-	maxParamLen := len(paramNameHeader) + maxComponentLen + 1
-	for _, k := range keys {
-		for p := range params[k] {
-			if l := len(p) + maxComponentLen + 1; l > maxParamLen {
-				maxParamLen = l
-			}
-		}
-	}
-
-	componentSpacing := strings.Repeat(" ", maxComponentLen-len(paramComponentHeader)+1)
-	nameSpacing := strings.Repeat(" ", maxParamLen-maxComponentLen-len(paramNameHeader))
-
-	lines := []string{}
-	lines = append(lines, paramComponentHeader+componentSpacing+paramNameHeader+nameSpacing+paramValueHeader+"\n")
-	lines = append(lines, strings.Repeat("=", len(paramComponentHeader))+componentSpacing+
-		strings.Repeat("=", len(paramNameHeader))+nameSpacing+strings.Repeat("=", len(paramValueHeader))+"\n")
-
 	for _, k := range keys {
 		// sort params to display alphabetically
 		ps := sortedParams(params[k])
 
 		for _, p := range ps {
-			componentSpacing = strings.Repeat(" ", maxComponentLen-len(k)+1)
-			nameSpacing = strings.Repeat(" ", maxParamLen-maxComponentLen-len(p))
-			lines = append(lines, k+componentSpacing+p+nameSpacing+params[k][p]+"\n")
+			rows = append(rows, []string{k, p, params[k][p]})
 		}
 	}
 
-	_, err := fmt.Fprint(out, strings.Join(lines, ""))
+	formatted, err := utils.PadRows(rows)
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprint(out, formatted)
 	return err
 }
 

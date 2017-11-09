@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/ksonnet/ksonnet/metadata"
+	"github.com/ksonnet/ksonnet/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -105,6 +106,13 @@ var depListCmd = &cobra.Command{
 	Use:   "list",
 	Short: `Lists information about all dependencies known to the current ksonnet app`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		const (
+			nameHeader      = "NAME"
+			registryHeader  = "REGISTRY"
+			installedHeader = "INSTALLED"
+			installed       = "*"
+		)
+
 		if len(args) != 0 {
 			return fmt.Errorf("Command 'dep list' does not take arguments")
 		}
@@ -125,6 +133,13 @@ var depListCmd = &cobra.Command{
 			return err
 		}
 
+		rows := [][]string{
+			[]string{nameHeader, registryHeader, installedHeader},
+			[]string{
+				strings.Repeat("=", len(nameHeader)),
+				strings.Repeat("=", len(registryHeader)),
+				strings.Repeat("=", len(installedHeader))},
+		}
 		for name := range app.Registries {
 			reg, _, err := manager.GetRegistry(name)
 			if err != nil {
@@ -132,10 +147,20 @@ var depListCmd = &cobra.Command{
 			}
 
 			for libName := range reg.Libraries {
-				fmt.Println(libName)
+				_, isInstalled := app.Libraries[libName]
+				if isInstalled {
+					rows = append(rows, []string{libName, name, installed})
+				} else {
+					rows = append(rows, []string{libName, name})
+				}
 			}
 		}
 
+		formatted, err := utils.PadRows(rows)
+		if err != nil {
+			return err
+		}
+		fmt.Print(formatted)
 		return nil
 	},
 }

@@ -16,6 +16,7 @@
 package utils
 
 import (
+	"bytes"
 	"strings"
 )
 
@@ -29,4 +30,60 @@ func IsASCIIIdentifier(s string) bool {
 		return false
 	}
 	return true
+}
+
+func PadRows(rows [][]string) (string, error) {
+	maxRowLen := 0
+	for _, row := range rows {
+		if rowLen := len(row); rowLen > maxRowLen {
+			maxRowLen = rowLen
+		}
+	}
+
+	colMaxes := make([]int, maxRowLen)
+	for currCol := 0; currCol < maxRowLen; currCol++ {
+		for _, row := range rows {
+			rowLen := len(row)
+			if currCol >= rowLen {
+				continue
+			}
+
+			cellLen := len(row[currCol])
+			if currCol < rowLen && colMaxes[currCol] < cellLen {
+				colMaxes[currCol] = cellLen
+			}
+		}
+	}
+
+	var err error
+	var buf bytes.Buffer
+	for _, row := range rows {
+		rowLen := len(row)
+		for j, col := range row {
+			_, err = buf.WriteString(col)
+			if err != nil {
+				return "", err
+			}
+
+			// Don't add space to the end of the last column.
+			if j >= rowLen-1 {
+				continue
+			}
+
+			padSize := colMaxes[j] + 1 - len(col)
+			_, err = buf.WriteString(strings.Repeat(" ", padSize))
+			if err != nil {
+				return "", err
+			}
+		}
+
+		// Add a newline to the end of the row (but only if there is more
+		// than 0 rows).
+		_, err = buf.WriteString("\n")
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return buf.String(), nil
 }

@@ -6,6 +6,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/ksonnet/ksonnet/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 //
@@ -135,46 +138,27 @@ type SpecificationSchema struct {
 type SpecificationSchemas []*SpecificationSchema
 
 func (ss SpecificationSchemas) String() string {
-	//
-	// We want output that's lined up, like:
-	//
-	//   io.whatever.pkg.foo    Foo's main template    [jsonnet, yaml]
-	//   io.whatever.pkg.foobar Foobar's main template [jsonnet, yaml, json]
-	//
-	// To accomplish this we find (1) the longest prototype name, and (2) the
-	// longest description, so that we can properly pad the output.
-	//
+	const (
+		nameHeader        = "NAME"
+		descriptionHeader = "DESCRIPTION"
+	)
 
-	maxNameLen := 0
+	sort.Slice(ss, func(i, j int) bool { return ss[i].Name < ss[j].Name })
+
+	rows := [][]string{
+		[]string{nameHeader, descriptionHeader},
+		[]string{strings.Repeat("=", len(nameHeader)), strings.Repeat("=", len(descriptionHeader))},
+	}
 	for _, proto := range ss {
-		if l := len(proto.Name); l > maxNameLen {
-			maxNameLen = l
-		}
+		rows = append(rows, []string{proto.Name, proto.Template.ShortDescription})
 	}
 
-	maxNameDescLen := 0
-	for _, proto := range ss {
-		nameDescLen := maxNameLen + 1 + len(proto.Template.ShortDescription)
-		if nameDescLen > maxNameDescLen {
-			maxNameDescLen = nameDescLen
-		}
+	formatted, err := utils.PadRows(rows)
+	if err != nil {
+		log.Errorf("Failed to print spec rows:\n%v", err)
 	}
 
-	lines := []string{}
-	for _, proto := range ss {
-		// NOTE: If we don't add 1 below, the longest name will look like :
-		// `io.whatever.pkg.fooDescription is here.`
-		nameSpace := strings.Repeat(" ", maxNameLen-len(proto.Name)+1)
-		descSpace := strings.Repeat(" ", maxNameDescLen-maxNameLen-len(proto.Template.ShortDescription)+2)
-
-		avail := fmt.Sprintf("%s", proto.Template.AvailableTemplates())
-
-		lines = append(lines, proto.Name+nameSpace+proto.Template.ShortDescription+descSpace+avail+"\n")
-	}
-
-	sort.Slice(lines, func(i, j int) bool { return lines[i] < lines[j] })
-
-	return strings.Join(lines, "")
+	return formatted
 }
 
 // RequiredParams retrieves all parameters that are required by a prototype.

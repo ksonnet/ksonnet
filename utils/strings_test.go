@@ -16,6 +16,7 @@
 package utils
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -49,5 +50,76 @@ func TestIsASCIIIdentifier(t *testing.T) {
 	}
 	for _, test := range tests {
 		require.EqualValues(t, test.expected, IsASCIIIdentifier(test.input))
+	}
+}
+
+func TestPadRows(t *testing.T) {
+	tests := []struct {
+		input    [][]string
+		expected string
+	}{
+		{
+			input:    [][]string{},
+			expected: ``,
+		},
+		{
+			input: [][]string{
+				[]string{"Hello", "World"},
+			},
+			expected: "Hello World\n",
+		},
+		{
+			input: [][]string{
+				[]string{"Hello", "World"},
+				[]string{"Hi", "World"},
+			},
+			expected: `Hello World
+Hi    World
+`,
+		},
+		{
+			input: [][]string{
+				[]string{"Hello"},
+				[]string{"Hi", "World"},
+			},
+			expected: `Hello
+Hi    World
+`,
+		},
+		{
+			input: [][]string{
+				[]string{},
+				[]string{"Hi", "World"},
+			},
+			expected: `
+Hi World
+`,
+		},
+		{
+			input: [][]string{
+				[]string{"Hello", "World"},
+				[]string{""},
+			},
+			expected: `Hello World
+
+`,
+		},
+		{
+			input: [][]string{
+				[]string{""},
+				[]string{""},
+			},
+			expected: `
+
+`,
+		},
+	}
+	for _, test := range tests {
+		fmt.Println(test.expected)
+		padded, err := PadRows(test.input)
+		if err != nil {
+			t.Error(err)
+		}
+		require.EqualValues(t, test.expected, padded)
 	}
 }

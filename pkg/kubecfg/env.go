@@ -24,6 +24,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/ksonnet/ksonnet/metadata"
+	"github.com/ksonnet/ksonnet/utils"
 )
 
 type EnvAddCmd struct {
@@ -90,43 +91,21 @@ func (c *EnvListCmd) Run(out io.Writer) error {
 	// Sort environments by ascending alphabetical name
 	sort.Slice(envs, func(i, j int) bool { return envs[i].Name < envs[j].Name })
 
-	// Format each environment information for pretty printing.
-	// Each environment should be outputted like the following:
-	//
-	//   NAME            NAMESPACE SERVER
-	//   minikube        dev       localhost:8080
-	//   us-west/staging staging   http://example.com
-	//
-	// To accomplish this, need to find the longest env name and the longest
-	// env namespace for proper padding.
-
-	maxNameLen := len(nameHeader)
+	rows := [][]string{
+		[]string{nameHeader, namespaceHeader, serverHeader},
+		[]string{
+			strings.Repeat("=", len(nameHeader)),
+			strings.Repeat("=", len(namespaceHeader)),
+			strings.Repeat("=", len(serverHeader))},
+	}
 	for _, env := range envs {
-		if l := len(env.Name); l > maxNameLen {
-			maxNameLen = l
-		}
+		rows = append(rows, []string{env.Name, env.Namespace, env.Server})
 	}
 
-	maxNamespaceLen := len(namespaceHeader) + maxNameLen + 1
-	for _, env := range envs {
-		if l := len(env.Namespace) + maxNameLen + 1; l > maxNamespaceLen {
-			maxNamespaceLen = l
-		}
+	formattedEnvsList, err := utils.PadRows(rows)
+	if err != nil {
+		return err
 	}
-
-	lines := []string{}
-
-	headerNameSpacing := strings.Repeat(" ", maxNameLen-len(nameHeader)+1)
-	headerNamespaceSpacing := strings.Repeat(" ", maxNamespaceLen-maxNameLen-len(namespaceHeader))
-	lines = append(lines, nameHeader+headerNameSpacing+namespaceHeader+headerNamespaceSpacing+serverHeader+"\n")
-
-	for _, env := range envs {
-		nameSpacing := strings.Repeat(" ", maxNameLen-len(env.Name)+1)
-		namespaceSpacing := strings.Repeat(" ", maxNamespaceLen-maxNameLen-len(env.Namespace))
-		lines = append(lines, env.Name+nameSpacing+env.Namespace+namespaceSpacing+env.Server+"\n")
-	}
-
-	formattedEnvsList := strings.Join(lines, "")
 
 	_, err = fmt.Fprint(out, formattedEnvsList)
 	return err
