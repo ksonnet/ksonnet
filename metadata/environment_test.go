@@ -18,7 +18,7 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
-	"os"
+	"path"
 	"reflect"
 	"strings"
 	"testing"
@@ -55,18 +55,26 @@ func mockEnvironments(t *testing.T, appName string) *manager {
 	envNames := []string{defaultEnvName, mockEnvName, mockEnvName2, mockEnvName3}
 	for _, env := range envNames {
 		envPath := appendToAbsPath(m.environmentsPath, env)
+		testFS.Mkdir(string(envPath), defaultFolderPermissions)
+		testDirExists(t, string(envPath))
+
+		jsonnetPath := appendToAbsPath(envPath, path.Base(env)+".jsonnet")
+		jsonnetData := m.generateOverrideData()
+		err = afero.WriteFile(testFS, string(jsonnetPath), jsonnetData, defaultFilePermissions)
+		if err != nil {
+			t.Fatalf("Could not write file at path: %s", jsonnetPath)
+		}
+		testFileExists(t, string(jsonnetPath))
 
 		specPath := appendToAbsPath(envPath, mockSpecJSON)
 		specData, err := generateSpecData(mockSpecJSONServer, mockNamespace)
 		if err != nil {
 			t.Fatalf("Expected to marshal:\nserver: %s\nnamespace: %s\n, but failed", mockSpecJSONServer, mockNamespace)
 		}
-		err = afero.WriteFile(testFS, string(specPath), specData, os.ModePerm)
+		err = afero.WriteFile(testFS, string(specPath), specData, defaultFilePermissions)
 		if err != nil {
 			t.Fatalf("Could not write file at path: %s", specPath)
 		}
-
-		testDirExists(t, string(envPath))
 	}
 
 	return m
@@ -87,6 +95,15 @@ func testDirNotExists(t *testing.T, path string) {
 		t.Fatalf("Expected directory at '%s' to be removed, but failed:\n%v", path, err)
 	} else if exists {
 		t.Fatalf("Expected directory at '%s' to be removed, but it exists", path)
+	}
+}
+
+func testFileExists(t *testing.T, path string) {
+	exists, err := afero.Exists(testFS, path)
+	if err != nil {
+		t.Fatalf("Expected file at '%s' to exist, but failed:\n%v", path, err)
+	} else if !exists {
+		t.Fatalf("Expected file at '%s' to exist, but it does not", path)
 	}
 }
 
@@ -166,7 +183,6 @@ func TestSetEnvironment(t *testing.T) {
 	envPath := appendToAbsPath(AbsPath(appName), environmentsDir)
 	expectedPathExists := appendToAbsPath(envPath, set.Name)
 	expectedPathNotExists := appendToAbsPath(envPath, mockEnvName)
-
 	testDirExists(t, string(expectedPathExists))
 	testDirNotExists(t, string(expectedPathNotExists))
 

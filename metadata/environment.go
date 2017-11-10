@@ -180,23 +180,9 @@ func (m *manager) DeleteEnvironment(name string) error {
 
 	// Need to ensure empty parent directories are also removed.
 	log.Debug("Removing empty parent directories, if any")
-	parentDir := name
-	for parentDir != "." {
-		parentDir = filepath.Dir(parentDir)
-		parentPath := string(appendToAbsPath(m.environmentsPath, parentDir))
-
-		isEmpty, err := afero.IsEmpty(m.appFS, parentPath)
-		if err != nil {
-			log.Debugf("Failed to check whether parent directory at path '%s' is empty", parentPath)
-			return err
-		}
-		if isEmpty {
-			log.Debugf("Failed to remove parent directory at path '%s'", parentPath)
-			err := m.appFS.RemoveAll(parentPath)
-			if err != nil {
-				return err
-			}
-		}
+	err = m.cleanEmptyParentDirs(name)
+	if err != nil {
+		return err
 	}
 
 	log.Infof("Successfully removed environment '%s'", name)
@@ -292,16 +278,45 @@ func (m *manager) SetEnvironment(name string, desired *Environment) error {
 			return fmt.Errorf("Can not update '%s' to '%s', it already exists", name, desired.Name)
 		}
 
+		//
 		// Move the directory
-		pathOld := string(appendToAbsPath(m.environmentsPath, name))
-		pathNew := string(appendToAbsPath(m.environmentsPath, desired.Name))
-		log.Debugf("Moving directory at path '%s' to '%s'", pathOld, pathNew)
-		err = m.appFS.Rename(pathOld, pathNew)
+		//
+		pathOld := appendToAbsPath(m.environmentsPath, name)
+		pathNew := appendToAbsPath(m.environmentsPath, desired.Name)
+		jsonnetPathOld := string(appendToAbsPath(pathOld, path.Base(name)+".jsonnet"))
+		jsonnetPathNew := string(appendToAbsPath(pathOld, path.Base(desired.Name)+".jsonnet"))
+		exists, err := afero.DirExists(m.appFS, string(pathNew))
 		if err != nil {
-			log.Debugf("Failed to move path '%s' to '%s", pathOld, pathNew)
 			return err
 		}
-
+		if exists {
+			return fmt.Errorf("Failed to create environment, directory exists at path: %s", string(pathNew))
+		}
+		// Need to first create subdirectories that don't exist
+		intermediatePath := path.Dir(string(pathNew))
+		log.Debugf("Moving directory at path '%s' to '%s'", string(pathOld), string(pathNew))
+		err = m.appFS.MkdirAll(intermediatePath, defaultFolderPermissions)
+		if err != nil {
+			return err
+		}
+		// note: we have to move the jsonnet file first because of a bug with afero: spf13/afero:#141
+		log.Debugf("Renaming jsonnet file from '%s' to '%s'", path.Base(jsonnetPathOld), path.Base(jsonnetPathNew))
+		err = m.appFS.Rename(jsonnetPathOld, jsonnetPathNew)
+		if err != nil {
+			log.Debugf("Failed to move path '%s' to '%s", jsonnetPathOld, jsonnetPathNew)
+			return err
+		}
+		// finally, move the directory
+		err = m.appFS.Rename(string(pathOld), string(pathNew))
+		if err != nil {
+			log.Debugf("Failed to move path '%s' to '%s", string(pathOld), string(pathNew))
+			return err
+		}
+		// clean up any empty parent directory paths
+		err = m.cleanEmptyParentDirs(name)
+		if err != nil {
+			return err
+		}
 		name = desired.Name
 	}
 
@@ -400,6 +415,30 @@ func (m *manager) SetEnvironmentParams(env, component string, params param.Param
 	}
 
 	log.Debugf("Successfully set parameters for component '%s' at environment '%s'", component, env)
+	return nil
+}
+
+func (m *manager) cleanEmptyParentDirs(name string) error {
+	// clean up any empty parent directory paths
+	log.Debug("Removing empty parent directories, if any")
+	parentDir := name
+	for parentDir != "." {
+		parentDir = filepath.Dir(parentDir)
+		parentPath := string(appendToAbsPath(m.environmentsPath, parentDir))
+
+		isEmpty, err := afero.IsEmpty(m.appFS, parentPath)
+		if err != nil {
+			log.Debugf("Failed to check whether parent directory at path '%s' is empty", parentPath)
+			return err
+		}
+		if isEmpty {
+			log.Debugf("Failed to remove parent directory at path '%s'", parentPath)
+			err := m.appFS.RemoveAll(parentPath)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
