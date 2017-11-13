@@ -187,7 +187,6 @@ func visitComponentsObj(component, snippet string) (*ast.Object, error) {
 }
 
 func appendComponent(component, snippet string, params Params) (string, error) {
-	component = SanitizeComponent(component)
 	componentsNode, err := visitComponentsObj(component, snippet)
 	if err != nil {
 		return "", err
@@ -208,7 +207,7 @@ func appendComponent(component, snippet string, params Params) (string, error) {
 
 	// Create the jsonnet resembling the component params
 	var buffer bytes.Buffer
-	buffer.WriteString("    " + component + ": {")
+	buffer.WriteString("    " + SanitizeComponent(component) + ": {")
 	buffer.WriteString(writeParams(6, params))
 	buffer.WriteString("    },")
 
@@ -340,7 +339,6 @@ func getAllEnvironmentParams(snippet string) (map[string]Params, error) {
 }
 
 func setEnvironmentParams(component, snippet string, params Params) (string, error) {
-	component = SanitizeComponent(component)
 	currentParams, loc, hasComponent, err := getEnvironmentParams(component, snippet)
 	if err != nil {
 		return "", err
@@ -357,7 +355,7 @@ func setEnvironmentParams(component, snippet string, params Params) (string, err
 	lines := strings.Split(snippet, "\n")
 	if !hasComponent {
 		var buffer bytes.Buffer
-		buffer.WriteString(fmt.Sprintf("\n    %s +: {", component))
+		buffer.WriteString(fmt.Sprintf("\n    %s +: {", SanitizeComponent(component)))
 		buffer.WriteString(writeParams(6, params))
 		buffer.WriteString("    },\n")
 		paramsSnippet = buffer.String()

@@ -657,6 +657,29 @@ params + {
   },
 }`,
 		},
+		// Test setting environment param case where component name is a string identifier
+		{
+			"foo-bar",
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+    "foo-bar" +: {
+      name: "foo-bar",
+    },
+  },
+}`,
+			Params{"name": `"foo"`},
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+    "foo-bar" +: {
+      name: "foo",
+    },
+  },
+}`,
+		},
 		// Test environment param case with multiple components
 		{
 			"foo",
