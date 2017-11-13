@@ -20,8 +20,8 @@ import (
 	"strings"
 )
 
-// HasSpecialCharacter takes a string and returns true if the string contains
-// any special characters.
+// IsASCIIIdentifier takes a string and returns true if the string does not
+// contain any special characters.
 func IsASCIIIdentifier(s string) bool {
 	f := func(r rune) bool {
 		return r < 'A' || r > 'z'
