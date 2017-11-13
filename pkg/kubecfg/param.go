@@ -289,9 +289,9 @@ func (c *ParamDiffCmd) Run(out io.Writer) error {
 	envSpacing := strings.Repeat(" ", maxEnvLen-maxParamLen-len(c.env1))
 
 	// print headers
-	color.New(color.FgBlack).Fprintln(out, paramComponentHeader+componentSpacing+
+	fmt.Fprintln(out, paramComponentHeader+componentSpacing+
 		paramNameHeader+nameSpacing+c.env1+envSpacing+c.env2)
-	color.New(color.FgBlack).Fprintln(out, strings.Repeat("=", len(paramComponentHeader))+componentSpacing+
+	fmt.Fprintln(out, strings.Repeat("=", len(paramComponentHeader))+componentSpacing+
 		strings.Repeat("=", len(paramNameHeader))+nameSpacing+
 		strings.Repeat("=", len(c.env1))+envSpacing+
 		strings.Repeat("=", len(c.env2)))
@@ -303,13 +303,16 @@ func (c *ParamDiffCmd) Run(out io.Writer) error {
 		envSpacing = strings.Repeat(" ", maxEnvLen-maxParamLen-len(k.value1))
 		line := fmt.Sprint(k.component + componentSpacing + k.param + nameSpacing + k.value1 + envSpacing + k.value2)
 		if len(k.value1) == 0 {
-			color.New(color.FgGreen).Fprintln(out, line)
+			color.New(color.BgGreen).Fprint(out, line)
+			fmt.Fprintln(out)
 		} else if len(k.value2) == 0 {
-			color.New(color.FgRed).Fprintln(out, line)
+			color.New(color.BgRed).Fprint(out, line)
+			fmt.Fprintln(out)
 		} else if k.value1 != k.value2 {
-			color.New(color.FgYellow).Fprintln(out, line)
+			color.New(color.BgYellow).Fprint(out, line)
+			fmt.Fprintln(out)
 		} else {
-			color.New(color.FgBlack).Fprintln(out, line)
+			fmt.Fprintln(out, line)
 		}
 	}
 
