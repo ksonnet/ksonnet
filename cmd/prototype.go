@@ -333,6 +333,10 @@ var prototypeUseCmd = &cobra.Command{
 	Short:              `Expand prototype, place in components/ directory of ksonnet app`,
 	DisableFlagParsing: true,
 	RunE: func(cmd *cobra.Command, rawArgs []string) error {
+		if len(rawArgs) == 1 && (rawArgs[0] == "--help" || rawArgs[0] == "-h") {
+			return cmd.Help()
+		}
+
 		cwd, err := os.Getwd()
 		if err != nil {
 			return err
