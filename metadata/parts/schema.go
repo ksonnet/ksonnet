@@ -70,4 +70,4 @@ type QuickStartSpec struct {
 
 type Specs []*Spec
 
-type PrototypeRefSpecs map[string]string
+type PrototypeRefSpecs []string

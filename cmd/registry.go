@@ -73,13 +73,10 @@ var registryListCmd = &cobra.Command{
 		fmt.Print(formatted)
 		return nil
 	},
-	Long: ``,
-
-	Example: ``,
 }
 
 var registryDescribeCmd = &cobra.Command{
-	Use:   "describe",
+	Use:   "describe <registry-name>",
 	Short: `Manage registries for current project`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -130,7 +127,7 @@ var registryDescribeCmd = &cobra.Command{
 
 		return nil
 	},
-	Long: ``,
 
-	Example: ``,
+	Long: `Output documentation for some ksonnet registry prototype uniquely identified in
+the current ksonnet project by some 'registry-name'.`,
 }

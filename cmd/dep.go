@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/ksonnet/ksonnet/metadata"
+	"github.com/ksonnet/ksonnet/metadata/parts"
 	"github.com/ksonnet/ksonnet/utils"
 	"github.com/spf13/cobra"
 )
@@ -29,10 +30,13 @@ const (
 	flagName = "name"
 )
 
+var errInvalidSpec = fmt.Errorf("Command 'dep add' requires a single argument of the form <registry>/<library>@<version>")
+
 func init() {
 	RootCmd.AddCommand(depCmd)
 	depCmd.AddCommand(depAddCmd)
 	depCmd.AddCommand(depListCmd)
+	depCmd.AddCommand(depDescribeCmd)
 	depAddCmd.PersistentFlags().String(flagName, "", "Name to give the dependency")
 }
 
@@ -102,6 +106,65 @@ With these commands, a user can 'import "kspkg://nginx1"', and
 'import "kspkg://nginx2"' with no conflict.`,
 }
 
+var depDescribeCmd = &cobra.Command{
+	Use:   "describe [<registry-name/]<package-name>",
+	Short: `Describe a ksonnet package`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("Command 'dep describe' requires a package name\n\n%s", cmd.UsageString())
+		}
+
+		registryName, libID, err := parsePkgSpec(args[0])
+		if err == errInvalidSpec {
+			registryName = ""
+			libID = args[0]
+		} else if err != nil {
+			return err
+		}
+
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		wd := metadata.AbsPath(cwd)
+
+		manager, err := metadata.Find(wd)
+		if err != nil {
+			return err
+		}
+
+		var lib *parts.Spec
+		if registryName == "" {
+			lib, err = manager.GetDependency(libID)
+			if err != nil {
+				return err
+			}
+		} else {
+			lib, err = manager.GetPackage(registryName, libID)
+			if err != nil {
+				return err
+			}
+		}
+
+		fmt.Println(`LIBRARY NAME:`)
+		fmt.Println(lib.Name)
+		fmt.Println()
+		fmt.Println(`DESCRIPTION:`)
+		fmt.Println(lib.Description)
+		fmt.Println()
+		fmt.Println(`PROTOTYPES:`)
+		for _, proto := range lib.Prototypes {
+			fmt.Printf("  %s\n", proto)
+		}
+		fmt.Println()
+
+		return nil
+	},
+
+	Long: `Output documentation for some ksonnet registry prototype uniquely identified in
+	the current ksonnet project by some 'registry-name'.`,
+}
+
 var depListCmd = &cobra.Command{
 	Use:   "list",
 	Short: `Lists information about all dependencies known to the current ksonnet app`,
@@ -165,16 +228,24 @@ var depListCmd = &cobra.Command{
 	},
 }
 
-func parseDepSpec(cmd *cobra.Command, spec string) (registry, libID, name, version string, err error) {
+func parsePkgSpec(spec string) (registry, libID string, err error) {
 	split := strings.SplitN(spec, "/", 2)
 	if len(split) < 2 {
-		return "", "", "", "", fmt.Errorf("Command 'dep add' requires a single argument of the form <registry>/<library>@<version>")
+		return "", "", errInvalidSpec
 	}
 	registry = split[0]
 	// Strip off the trailing `@version`.
 	libID = strings.SplitN(split[1], "@", 2)[0]
+	return
+}
 
-	split = strings.Split(spec, "@")
+func parseDepSpec(cmd *cobra.Command, spec string) (registry, libID, name, version string, err error) {
+	registry, libID, err = parsePkgSpec(spec)
+	if err != nil {
+		return "", "", "", "", err
+	}
+
+	split := strings.Split(spec, "@")
 	if len(split) > 2 {
 		return "", "", "", "", fmt.Errorf("Symbol '@' is only allowed once, at the end of the argument of the form <registry>/<library>@<version>")
 	}
