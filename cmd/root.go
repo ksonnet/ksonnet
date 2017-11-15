@@ -347,7 +347,12 @@ func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overri
 
 	var servers = make(map[string]string)
 	for name, cluster := range rawConfig.Clusters {
-		servers[cluster.Server] = name
+		server, err := utils.NormalizeURL(cluster.Server)
+		if err != nil {
+			return err
+		}
+
+		servers[server] = name
 	}
 
 	//
@@ -361,8 +366,13 @@ func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overri
 		return err
 	}
 
-	if _, ok := servers[env.Server]; ok {
-		clusterName := servers[env.Server]
+	server, err := utils.NormalizeURL(env.Server)
+	if err != nil {
+		return err
+	}
+
+	if _, ok := servers[server]; ok {
+		clusterName := servers[server]
 		log.Debugf("Overwriting --cluster flag with '%s'", clusterName)
 		overrides.Context.Cluster = clusterName
 		log.Debugf("Overwriting --namespace flag with '%s'", env.Namespace)
