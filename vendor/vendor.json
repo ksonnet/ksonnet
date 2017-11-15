@@ -93,6 +93,12 @@
 			"revisionTime": "2017-04-20T17:29:56Z"
 		},
 		{
+			"checksumSHA1": "CCfIpyo6sGH8gnEdP/0vGSi4ywA=",
+			"path": "github.com/cpuguy83/go-md2man/md2man",
+			"revision": "1d903dcb749992f3741d744c0f8376b4bd7eb3e1",
+			"revisionTime": "2017-08-27T12:01:20Z"
+		},
+		{
 			"checksumSHA1": "dvabztWVQX8f6oMLRyv4dLH+TGY=",
 			"path": "github.com/davecgh/go-spew/spew",
 			"revision": "346938d642f2ec3594ed81d874461961cd0faa76",
@@ -497,6 +503,12 @@
 			"revisionTime": "2016-01-10T10:55:54Z"
 		},
 		{
+			"checksumSHA1": "1KVewmQICPa+IH1gYJUKDgNbKpY=",
+			"path": "github.com/russross/blackfriday",
+			"revision": "6d1ef893fcb01b4f50cb6e57ed7df3e2e627b6b2",
+			"revisionTime": "2017-10-11T18:22:19Z"
+		},
+		{
 			"checksumSHA1": "v7C+aJ1D/z3MEeCte6bxvpoGjM4=",
 			"path": "github.com/sergi/go-diff/diffmatchpatch",
 			"revision": "feef008d51ad2b3778f85d387ccf91735543008d",
@@ -523,6 +535,12 @@
 		{
 			"checksumSHA1": "Wgm8Y0np1Usy3+ZTTPFdHoqzed8=",
 			"path": "github.com/spf13/cobra",
+			"revision": "4673102358fdd630e3bb0eb6dee96e4b533d53ec",
+			"revisionTime": "2017-05-11T15:04:35Z"
+		},
+		{
+			"checksumSHA1": "NJF80yw0LnJWN/3rAGDoBzNFiOw=",
+			"path": "github.com/spf13/cobra/doc",
 			"revision": "4673102358fdd630e3bb0eb6dee96e4b533d53ec",
 			"revisionTime": "2017-05-11T15:04:35Z"
 		},
