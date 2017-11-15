@@ -30,30 +30,30 @@ const (
 	flagName = "name"
 )
 
-var errInvalidSpec = fmt.Errorf("Command 'dep add' requires a single argument of the form <registry>/<library>@<version>")
+var errInvalidSpec = fmt.Errorf("Command 'pkg install' requires a single argument of the form <registry>/<library>@<version>")
 
 func init() {
-	RootCmd.AddCommand(depCmd)
-	depCmd.AddCommand(depAddCmd)
-	depCmd.AddCommand(depListCmd)
-	depCmd.AddCommand(depDescribeCmd)
-	depAddCmd.PersistentFlags().String(flagName, "", "Name to give the dependency")
+	RootCmd.AddCommand(pkgCmd)
+	pkgCmd.AddCommand(pkgInstallCmd)
+	pkgCmd.AddCommand(pkgListCmd)
+	pkgCmd.AddCommand(pkgDescribeCmd)
+	pkgInstallCmd.PersistentFlags().String(flagName, "", "Name to give the dependency")
 }
 
-var depCmd = &cobra.Command{
-	Use:   "dep",
-	Short: `Manage dependencies for the current ksonnet project`,
+var pkgCmd = &cobra.Command{
+	Use:   "pkg",
+	Short: `Manage packages and dependencies for the current ksonnet project`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return fmt.Errorf("Command 'dep' requires a subcommand\n\n%s", cmd.UsageString())
+		return fmt.Errorf("Command 'pkg' requires a subcommand\n\n%s", cmd.UsageString())
 	},
 }
 
-var depAddCmd = &cobra.Command{
-	Use:   "add <registry>/<library>@<version>",
-	Short: `Add a dependency to current ksonnet application`,
+var pkgInstallCmd = &cobra.Command{
+	Use:   "install <registry>/<library>@<version>",
+	Short: `Install a package as a dependency in the current ksonnet application`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("Command 'dep add' requires a single argument of the form <registry>/<library>@<version>")
+			return fmt.Errorf("Command 'pkg install' requires a single argument of the form <registry>/<library>@<version>")
 		}
 
 		registry, libID, name, version, err := parseDepSpec(cmd, args[0])
@@ -86,7 +86,7 @@ app repository.
 
 For example, inside a ksonnet application directory, run:
 
-  ks dep get incubator/nginx@v0.1
+  ks pkg install incubator/nginx@v0.1
 
 This can then be referenced in a source file in the ksonnet project:
 
@@ -99,19 +99,19 @@ be added with the 'ks registry' command.
 Note that multiple versions of the same ksonnet library can be cached and used
 in the same project, by explicitly passing in the '--name' flag. For example:
 
-  ks dep get incubator/nginx@v0.1 --name nginxv1
-  ks dep get incubator/nginx@v0.2 --name nginxv2
+  ks pkg install incubator/nginx@v0.1 --name nginxv1
+  ks pkg install incubator/nginx@v0.2 --name nginxv2
 
 With these commands, a user can 'import "kspkg://nginx1"', and
 'import "kspkg://nginx2"' with no conflict.`,
 }
 
-var depDescribeCmd = &cobra.Command{
+var pkgDescribeCmd = &cobra.Command{
 	Use:   "describe [<registry-name/]<package-name>",
 	Short: `Describe a ksonnet package`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("Command 'dep describe' requires a package name\n\n%s", cmd.UsageString())
+			return fmt.Errorf("Command 'pkg describe' requires a package name\n\n%s", cmd.UsageString())
 		}
 
 		registryName, libID, err := parsePkgSpec(args[0])
@@ -165,7 +165,7 @@ var depDescribeCmd = &cobra.Command{
 	the current ksonnet project by some 'registry-name'.`,
 }
 
-var depListCmd = &cobra.Command{
+var pkgListCmd = &cobra.Command{
 	Use:   "list",
 	Short: `Lists information about all dependencies known to the current ksonnet app`,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -177,7 +177,7 @@ var depListCmd = &cobra.Command{
 		)
 
 		if len(args) != 0 {
-			return fmt.Errorf("Command 'dep list' does not take arguments")
+			return fmt.Errorf("Command 'pkg list' does not take arguments")
 		}
 
 		cwd, err := os.Getwd()
