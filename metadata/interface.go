@@ -75,7 +75,9 @@ type Manager interface {
 	// Dependency/registry API.
 	AddRegistry(name, protocol, uri, version string) (*registry.Spec, error)
 	GetRegistry(name string) (*registry.Spec, string, error)
+	GetPackage(registryName, libID string) (*parts.Spec, error)
 	CacheDependency(registryName, libID, libName, libVersion string) (*parts.Spec, error)
+	GetDependency(libName string) (*parts.Spec, error)
 	GetAllPrototypes() (prototype.SpecificationSchemas, error)
 }
 

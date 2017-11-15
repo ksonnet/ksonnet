@@ -116,6 +116,41 @@ func (gh *gitHubRegistryManager) MakeRegistryRefSpec() *app.RegistryRefSpec {
 	return gh.RegistryRefSpec
 }
 
+func (gh *gitHubRegistryManager) ResolveLibrarySpec(libID, libRefSpec string) (*parts.Spec, error) {
+	client := github.NewClient(nil)
+
+	// Resolve `version` (a git refspec) to a specific SHA.
+	ctx := context.Background()
+	resolvedSHA, _, err := client.Repositories.GetCommitSHA1(ctx, gh.org, gh.repo, libRefSpec, "")
+	if err != nil {
+		return nil, err
+	}
+
+	// Resolve app spec.
+	appSpecPath := strings.Join([]string{gh.registryRepoPath, libID, partsYAMLFile}, "/")
+	ctx = context.Background()
+	getOpts := &github.RepositoryContentGetOptions{Ref: resolvedSHA}
+	file, directory, _, err := client.Repositories.GetContents(ctx, gh.org, gh.repo, appSpecPath, getOpts)
+	if err != nil {
+		return nil, err
+	} else if directory != nil {
+		return nil, fmt.Errorf("Can't download library specification; resource '%s' points at a file", gh.registrySpecRawURL())
+	}
+
+	partsSpecText, err := file.GetContent()
+	if err != nil {
+		return nil, err
+	}
+
+	parts := parts.Spec{}
+	err = yaml.Unmarshal([]byte(partsSpecText), &parts)
+	if err != nil {
+		return nil, err
+	}
+
+	return &parts, nil
+}
+
 func (gh *gitHubRegistryManager) ResolveLibrary(libID, libAlias, libRefSpec string, onFile registry.ResolveFile, onDir registry.ResolveDirectory) (*parts.Spec, *app.LibraryRefSpec, error) {
 	client := github.NewClient(nil)
 
@@ -150,7 +185,10 @@ func (gh *gitHubRegistryManager) ResolveLibrary(libID, libAlias, libRefSpec stri
 	}
 
 	parts := parts.Spec{}
-	yaml.Unmarshal([]byte(partsSpecText), &parts)
+	err = yaml.Unmarshal([]byte(partsSpecText), &parts)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	refSpec := app.LibraryRefSpec{
 		Name:     libAlias,

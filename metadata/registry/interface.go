@@ -13,5 +13,6 @@ type Manager interface {
 	RegistrySpecFilePath() string
 	FetchRegistrySpec() (*Spec, error)
 	MakeRegistryRefSpec() *app.RegistryRefSpec
+	ResolveLibrarySpec(libID, libRefSpec string) (*parts.Spec, error)
 	ResolveLibrary(libID, libAlias, version string, onFile ResolveFile, onDir ResolveDirectory) (*parts.Spec, *app.LibraryRefSpec, error)
 }

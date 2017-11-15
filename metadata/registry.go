@@ -73,6 +73,76 @@ func (m *manager) GetRegistry(name string) (*registry.Spec, string, error) {
 	return regSpec, protocol, nil
 }
 
+func (m *manager) GetPackage(registryName, libID string) (*parts.Spec, error) {
+	// Retrieve application specification.
+	appSpec, err := m.AppSpec()
+	if err != nil {
+		return nil, err
+	}
+
+	regRefSpec, ok := appSpec.GetRegistryRef(registryName)
+	if !ok {
+		return nil, fmt.Errorf("COuld not find registry '%s'", registryName)
+	}
+
+	registryManager, _, err := m.getRegistryManagerFor(regRefSpec)
+	if err != nil {
+		return nil, err
+	}
+
+	partsSpec, err := registryManager.ResolveLibrarySpec(libID, regRefSpec.GitVersion.CommitSHA)
+	if err != nil {
+		return nil, err
+	}
+
+	protoSpecs, err := m.GetPrototypesForDependency(registryName, libID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, protoSpec := range protoSpecs {
+		partsSpec.Prototypes = append(partsSpec.Prototypes, protoSpec.Name)
+	}
+
+	return partsSpec, nil
+}
+
+func (m *manager) GetDependency(libName string) (*parts.Spec, error) {
+	// Retrieve application specification.
+	appSpec, err := m.AppSpec()
+	if err != nil {
+		return nil, err
+	}
+
+	libRef, ok := appSpec.Libraries[libName]
+	if !ok {
+		return nil, fmt.Errorf("Library '%s' is not a dependency in current ksonnet app", libName)
+	}
+
+	partsYAMLPath := appendToAbsPath(m.vendorPath, libRef.Registry, libName, partsYAMLFile)
+	partsBytes, err := afero.ReadFile(m.appFS, string(partsYAMLPath))
+	if err != nil {
+		return nil, err
+	}
+
+	var partsSpec parts.Spec
+	err = yaml.Unmarshal(partsBytes, &partsSpec)
+	if err != nil {
+		return nil, err
+	}
+
+	protoSpecs, err := m.GetPrototypesForDependency(libRef.Registry, libName)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, protoSpec := range protoSpecs {
+		partsSpec.Prototypes = append(partsSpec.Prototypes, protoSpec.Name)
+	}
+
+	return &partsSpec, nil
+}
+
 func (m *manager) CacheDependency(registryName, libID, libName, libVersion string) (*parts.Spec, error) {
 	// Retrieve application specification.
 	appSpec, err := m.AppSpec()
@@ -146,6 +216,44 @@ func (m *manager) CacheDependency(registryName, libID, libName, libVersion strin
 	return parts, nil
 }
 
+func (m *manager) GetPrototypesForDependency(registryName, libID string) (prototype.SpecificationSchemas, error) {
+	// TODO: Remove `registryName` when we flatten vendor/.
+	specs := prototype.SpecificationSchemas{}
+	protos := string(appendToAbsPath(m.vendorPath, registryName, libID, "prototypes"))
+	exists, err := afero.DirExists(m.appFS, protos)
+	if err != nil {
+		return nil, err
+	} else if !exists {
+		return prototype.SpecificationSchemas{}, nil // No prototypes to report.
+	}
+
+	err = afero.Walk(
+		m.appFS,
+		protos,
+		func(path string, info os.FileInfo, err error) error {
+			if info.IsDir() || filepath.Ext(path) != ".jsonnet" {
+				return nil
+			}
+
+			protoJsonnet, err := afero.ReadFile(m.appFS, path)
+			if err != nil {
+				return err
+			}
+
+			protoSpec, err := prototype.FromJsonnet(string(protoJsonnet))
+			if err != nil {
+				return err
+			}
+			specs = append(specs, protoSpec)
+			return nil
+		})
+	if err != nil {
+		return nil, err
+	}
+
+	return specs, nil
+}
+
 func (m *manager) GetAllPrototypes() (prototype.SpecificationSchemas, error) {
 	appSpec, err := m.AppSpec()
 	if err != nil {
@@ -154,37 +262,11 @@ func (m *manager) GetAllPrototypes() (prototype.SpecificationSchemas, error) {
 
 	specs := prototype.SpecificationSchemas{}
 	for _, lib := range appSpec.Libraries {
-		protos := string(appendToAbsPath(m.vendorPath, lib.Registry, lib.Name, "prototypes"))
-		exists, err := afero.DirExists(m.appFS, protos)
-		if err != nil {
-			return nil, err
-		} else if !exists {
-			return prototype.SpecificationSchemas{}, nil // No prototypes to report.
-		}
-
-		err = afero.Walk(
-			m.appFS,
-			protos,
-			func(path string, info os.FileInfo, err error) error {
-				if info.IsDir() || filepath.Ext(path) != ".jsonnet" {
-					return nil
-				}
-
-				protoJsonnet, err := afero.ReadFile(m.appFS, path)
-				if err != nil {
-					return err
-				}
-
-				protoSpec, err := prototype.FromJsonnet(string(protoJsonnet))
-				if err != nil {
-					return err
-				}
-				specs = append(specs, protoSpec)
-				return nil
-			})
+		depProtos, err := m.GetPrototypesForDependency(lib.Registry, lib.Name)
 		if err != nil {
 			return nil, err
 		}
+		specs = append(specs, depProtos...)
 	}
 
 	return specs, nil

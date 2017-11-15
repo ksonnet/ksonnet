@@ -22,6 +22,10 @@ func newMockRegistryManager(name string) *mockRegistryManager {
 	}
 }
 
+func (m *mockRegistryManager) ResolveLibrarySpec(libID, libRefSpec string) (*parts.Spec, error) {
+	return nil, nil
+}
+
 func (m *mockRegistryManager) RegistrySpecDir() string {
 	return m.registryDir
 }
