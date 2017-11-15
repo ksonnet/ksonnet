@@ -107,7 +107,7 @@ With these commands, a user can 'import "kspkg://nginx1"', and
 }
 
 var pkgDescribeCmd = &cobra.Command{
-	Use:   "describe [<registry-name/]<package-name>",
+	Use:   "describe [<registry-name>/]<package-name>",
 	Short: `Describe a ksonnet package`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
