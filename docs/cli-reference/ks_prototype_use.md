@@ -16,10 +16,6 @@ ksonnet will expand templates as Jsonnet).
     --name=nginx                                                         \
     --image=nginx
 
-Note that if we were to specify to expand the template as JSON or YAML, we would
-generate a file with a '.json' or '.yaml' extension, respectively. See examples
-below for an example of how to do this.
-
 Note also that 'prototype-name' need only contain enough of the suffix of a name
 to uniquely disambiguate it among known names. For example, 'deployment' may
 resolve ambiguously, in which case 'use' will fail, while 'deployment' might be
@@ -45,13 +41,6 @@ ks prototype use <prototype-name> <componentName> [type] [parameter-flags]
   # information on how this works. Note that if you have imported another
   # prototype with this suffix, this may resolve ambiguously for you.
   ks prototype use deployment nginx-depl \
-    --name=nginx                              \
-    --image=nginx
-
-  # Instantiate prototype 'io.ksonnet.pkg.single-port-deployment' as YAML,
-  # placing the result in 'components/nginx-depl.yaml. Note that some templates
-  # do not have a YAML or JSON versions.
-  ks prototype use deployment nginx-depl yaml \
     --name=nginx                              \
     --image=nginx
 ```

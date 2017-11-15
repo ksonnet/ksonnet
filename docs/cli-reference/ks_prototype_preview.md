@@ -32,13 +32,6 @@ ks prototype preview <prototype-name> [type] [parameter-flags]
   ks prototype preview simple-deployment \
     --name=nginx                              \
     --image=nginx
-
-  # Preview prototype 'io.ksonnet.pkg.single-port-deployment' as YAML,
-  # placing the result in 'components/nginx-depl.yaml. Note that some templates
-  # do not have a YAML or JSON versions.
-  ks prototype preview deployment nginx-depl yaml \
-    --name=nginx                                       \
-    --image=nginx
 ```
 
 ### Options inherited from parent commands
