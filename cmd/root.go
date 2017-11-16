@@ -148,7 +148,12 @@ func resolveContext(context *string) (server, namespace string, err error) {
 	}
 	ctx := rawConfig.Contexts[ctxName]
 	if ctx == nil {
-		return "", "", fmt.Errorf("context '%s' does not exist in the kubeconfig file", *context)
+		if len(ctxName) == 0 && ctxName == rawConfig.CurrentContext {
+			// User likely does not have a kubeconfig file.
+			return "", "", fmt.Errorf("No current context found. Make sure a kubeconfig file is present")
+		}
+
+		return "", "", fmt.Errorf("context '%s' does not exist in the kubeconfig file", ctxName)
 	}
 
 	log.Infof("Using context '%s'", ctxName)
