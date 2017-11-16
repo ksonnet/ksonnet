@@ -30,6 +30,7 @@ import (
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/ksonnet"
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubespec"
 	param "github.com/ksonnet/ksonnet/metadata/params"
+	"github.com/ksonnet/ksonnet/utils"
 )
 
 const (
@@ -492,6 +493,11 @@ params + {
 }
 
 func generateSpecData(server, namespace string) ([]byte, error) {
+	server, err := utils.NormalizeURL(server)
+	if err != nil {
+		return nil, err
+	}
+
 	// Format the spec json and return; preface keys with 2 space idents.
 	return json.MarshalIndent(EnvironmentSpec{Server: server, Namespace: namespace}, "", "  ")
 }

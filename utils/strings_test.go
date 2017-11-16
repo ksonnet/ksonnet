@@ -53,6 +53,34 @@ func TestIsASCIIIdentifier(t *testing.T) {
 	}
 }
 
+func TestNormalizeURL(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			input:    "host/path/./a/b/../c",
+			expected: "host/path/a/c",
+		},
+		{
+			input:    "HTTP://host",
+			expected: "http://host",
+		},
+		{
+			input:    "http://host:80",
+			expected: "http://host",
+		},
+	}
+	for _, test := range tests {
+		normalized, err := NormalizeURL(test.input)
+		if err != nil {
+			t.Error(err)
+		}
+
+		require.EqualValues(t, test.expected, normalized)
+	}
+}
+
 func TestPadRows(t *testing.T) {
 	tests := []struct {
 		input    [][]string

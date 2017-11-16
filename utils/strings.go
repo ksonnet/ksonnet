@@ -18,6 +18,8 @@ package utils
 import (
 	"bytes"
 	"strings"
+
+	"github.com/PuerkitoBio/purell"
 )
 
 // IsASCIIIdentifier takes a string and returns true if the string does not
@@ -30,6 +32,14 @@ func IsASCIIIdentifier(s string) bool {
 		return false
 	}
 	return true
+}
+
+// NormalizeURL uses purell's "usually safe normalization" algorithm to
+// normalize URLs. This includes removing dot segments, removing trailing
+// slashes, removing unnecessary escapes, removing default ports, and setting
+// the URL to lowercase.
+func NormalizeURL(s string) (string, error) {
+	return purell.NormalizeURLString(s, purell.FlagsUsuallySafeGreedy)
 }
 
 func PadRows(rows [][]string) (string, error) {
