@@ -36,8 +36,13 @@ const (
 
 var mockAPIServer = "http://example.com"
 var mockNamespace = "some-namespace"
+var mockEnvs = []string{defaultEnvName, mockEnvName, mockEnvName2, mockEnvName3}
 
 func mockEnvironments(t *testing.T, appName string) *manager {
+	return mockEnvironmentsWith(t, appName, mockEnvs)
+}
+
+func mockEnvironmentsWith(t *testing.T, appName string, envNames []string) *manager {
 	spec, err := parseClusterSpec(fmt.Sprintf("file:%s", blankSwagger), testFS)
 	if err != nil {
 		t.Fatalf("Failed to parse cluster spec: %v", err)
@@ -50,7 +55,6 @@ func mockEnvironments(t *testing.T, appName string) *manager {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
 
-	envNames := []string{defaultEnvName, mockEnvName, mockEnvName2, mockEnvName3}
 	for _, env := range envNames {
 		envPath := appendToAbsPath(m.environmentsPath, env)
 		testFS.Mkdir(string(envPath), defaultFolderPermissions)
@@ -225,6 +229,36 @@ func TestSetEnvironment(t *testing.T) {
 	}
 	if envSpec.Namespace != set.Namespace {
 		t.Fatalf("Expected namespace to be set to '%s', got: '%s'", set.Namespace, envSpec.Namespace)
+	}
+
+	tests := []struct {
+		appName string
+		nameOld string
+		nameNew string
+	}{
+		// Test changing the name of an env 'us-west' to 'us-west/dev'
+		{
+			"test-set-to-child",
+			"us-west",
+			"us-west/dev",
+		},
+		// Test changing the name of an env 'us-west/dev' to 'us-west'
+		{
+			"test-set-to-parent",
+			"us-west/dev",
+			"us-west",
+		},
+	}
+
+	for _, v := range tests {
+		m = mockEnvironmentsWith(t, v.appName, []string{v.nameOld})
+		err = m.SetEnvironment(v.nameOld, &Environment{Name: v.nameNew})
+		if err != nil {
+			t.Fatalf("Could not set '%s', got:\n  %s", v.nameOld, err)
+		}
+		// Ensure new env directory is created
+		expectedPath := appendToAbsPath(AbsPath(v.appName), environmentsDir, v.nameNew)
+		testDirExists(t, string(expectedPath))
 	}
 }
 
