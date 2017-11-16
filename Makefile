@@ -41,6 +41,9 @@ ks:
 docs:
 	$(DOC_GEN_FILE)
 
+install:
+	$(GO) build -o $(GOPATH)/bin/ks $(GO_FLAGS) .
+
 test: gotest jsonnettest docstest
 
 gotest:

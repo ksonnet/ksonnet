@@ -6,75 +6,175 @@
 *ksonnet* is a framework for writing, sharing, and deploying Kubernetes application manifests. With its CLI, you can generate a complete application from scratch in only a few commands, or manage a complex system at scale.
 
 Specifically, ksonnet allows you to:
-* *Reuse* common manifest patterns (within your app or from external libraries)
-* *Customize* manifests directly with powerful object concatenation syntax
-* *Deploy* app manifests to multiple environments
-* *Diff* across environments to compare two running versions of your app
-* *Track* the entire state of your app manifests in version control
+* **Reuse** common manifest patterns (within your app or from external libraries)
+* **Customize** manifests directly with powerful object concatenation syntax
+* **Deploy** app manifests to multiple environments
+* **Diff** across environments to compare two running versions of your app
+* **Track** the entire state of your app configuration in version controllable files
+
+All of this results in a more iterative process for developing manifests, one that can be supplemented by continuous integration (CI).
 
 *STATUS: Development is ongoing—this tool is pre-alpha.*
 
 ## Install
 
-To build from source:
+> You should have Go installed *(minimum version 1.8.1)*, and an appropriately set `$GOPATH`. If you need additional help, see the [official Go installation guide](https://golang.org/doc/install#install).
 
-```console
-% PATH=$PATH:$GOPATH/bin
-% go get github.com/ksonnet/ksonnet
+To install ksonnet, run the following commands:
+
+```bash
+# Download ksonnet
+go get github.com/ksonnet/ksonnet
+
+# Separate make command to install binary under shortname `ks`
+cd $GOPATH/src/github.com/ksonnet/ksonnet
+make install
+
+# Ensure that Go binaries are runnable in any directory
+PATH=$PATH:$GOPATH/bin
 ```
 
-Requires golang >=1.7 and a functional cgo environment (C++ with libstdc++).
-Note that recent OSX environments
-[require golang >=1.8.1](https://github.com/golang/go/issues/19734) to
-avoid an immediate `Killed: 9`.
+If your ksonnet is properly installed, you should be able to run the following `--help` command and see similar output:
+
+```
+$ ks --help
+
+Synchronise Kubernetes resources with config files
+
+Usage:
+  ks [command]
+
+Available Commands:
+  apply       Apply local configuration to remote cluster
+  delete      Delete Kubernetes resources described in local config
+  diff        Display differences between server and local config, or server and server config
+  env         Manage ksonnet environments
+  generate    Expand prototype, place in components/ directory of ksonnet app
+  ...
+```
 
 ## Quickstart
 
-```console
-# Include <ksonnet.git>/lib in ksonnet/jsonnet library search path.
-# Can also use explicit `-J` args everywhere.
-% export KUBECFG_JPATH=/path/to/ksonnet/lib
+Here we provide a shell script that shows some basic ksonnet features in action. You can run this script to deploy and update a basic web app UI, via a Kubernetes Service and Deployment. This app is shown below:
 
-# Show generated YAML
-% ks show -o yaml -f examples/guestbook.jsonnet
+<p align="center">
+<img alt="guestbook screenshot" src="/docs/img/guestbook.png" style="width:60% !important;">
+</p>
 
-# Create resources
-% ks apply -f examples/guestbook.jsonnet
+Note that we will not be implementing the entire app in this quickstart, so the buttons will not work!
 
-# Modify configuration (downgrade gb-frontend image)
-% sed -i.bak '\,gcr.io/google-samples/gb-frontend,s/:v4/:v3/' examples/guestbook.jsonnet
-# See differences vs server
-% ks diff -f examples/guestbook.jsonnet
+**Minimal explanation is provided here, and only basic ksonnet features are shown---this is intended to be a quick demonstration.** If you are interested in learning more, see [Additional Documentation](#additional-documentation).
 
-# Update to new config
-% ks apply -f examples/guestbook.jsonnet
+### Prerequisites
+* *You should have access to an up-and-running Kubernetes cluster (**maximum version 1.7**).* Support for Kubernetes 1.8 is under development.
 
-# Clean up after demo
-% ks delete -f examples/guestbook.jsonnet
+  If you do not have a cluster, [choose a setup solution](https://kubernetes.io/docs/setup/) from the official Kubernetes docs.
+
+* *You should have `kubectl` installed.* If not, follow the instructions for [installing via Homebrew (MacOS)](https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-with-homebrew-on-macos) or [building the binary (Linux)](https://kubernetes.io/docs/tasks/tools/install-kubectl/#tabset-1).
+
+* *Your `$KUBECONFIG` should specify a valid `kubeconfig` file*, which points at the cluster you want to use for this demonstration.
+
+### Script
+
+Copy and paste the script below to deploy the container image for a basic web app UI:
+
+```bash
+# Start by creating your app directory
+# (This references your current cluster using $KUBECONFIG)
+ks init quickstart
+cd quickstart
+
+# Autogenerate a basic manifest
+ks generate deployment-exposed-with-service guestbook-ui \
+  --name guestbook \
+  --image alpinejay/dns-single-redis-guestbook:0.3 \
+  --type ClusterIP
+
+# Deploy your manifest to your cluster
+ks apply default
+
+# Set up an API proxy so that you can access the guestbook service locally
+kc proxy > /dev/null &
+PROXY_PID=$!
+QUICKSTART_NAMESPACE=$(kubectl get svc guestbook -o jsonpath="{.metadata.namespace}")
+GUESTBOOK_SERVICE_URL=http://localhost:8001/api/v1/proxy/namespaces/$QUICKSTART_NAMESPACE/services/guestbook
+
+# Check out the guestbook app in your browser (NOTE: the buttons don't work!)
+open $GUESTBOOK_SERVICE_URL
+
 ```
 
-## Features
+The rest of this script upgrades the container image to a new version:
 
-- Supports JSON, YAML or jsonnet files (by file suffix).
-- Best-effort sorts objects before updating, so that dependencies are
-  pushed to the server before objects that refer to them.
-- Additional jsonnet builtin functions. See `lib/kubecfg.libsonnet`.
+```bash
+# Bump the container image to a different version
+ks param set guestbook-ui image alpinejay/dns-single-redis-guestbook:0.4
 
-## Infrastructure-as-code Philosophy
+# See the differences between your local manifest and what's running on your cluster
+# (ERROR is expected here since there are differences)
+ks diff local:default remote:default
 
-The idea is to describe *as much as possible* about your configuration
-as files in version control (eg: git).
+# Update your cluster with your latest changes
+ks apply default
 
-Changes to the configuration follow a regular review, approve, merge,
-etc code change workflow (github pull-requests, phabricator diffs,
-etc).  At any point, the config in version control captures the entire
-desired-state, so the system can be easily recreated in a QA cluster
-or to recover from disaster.
+# (Wait a bit) and open another tab to see newly added javascript
+open $GUESTBOOK_SERVICE_URL
 
-### Jsonnet
+```
 
-ksonnet relies heavily on [jsonnet](http://jsonnet.org/) to describe
-Kubernetes resources, and is really just a thin Kubernetes-specific
-wrapper around jsonnet evaluation.  You should read the jsonnet
-[tutorial](http://jsonnet.org/docs/tutorial.html), and skim the functions available in the jsonnet [`std`](http://jsonnet.org/docs/stdlib.html)
-library.
+Notice that the webpage looks different! Now clean up:
+
+```bash
+# Teardown
+kill -9 $PROXY_PID
+ks delete default
+
+# There should be no guestbook service left running
+kubectl get svc guestbook
+```
+
+Even though you've made modifications to the Guestbook app and removed it from your cluster, ksonnet still tracks all your manifests locally:
+
+```bash
+# View all expanded manifests (YAML)
+ks show default
+```
+
+If you're wondering how ksonnet differs from existing tools, the full-length tutorial (WIP) shows you how to use other ksonnet features to implement the rest of the Guestbook app (so that the buttons work!).
+
+## Additional documentation
+
+ksonnet is a feature-rich framework. To learn more about how to integrate it into your workflow, check out the resources below:
+
+* **Tutorial (WIP)** - How do I use ksonnet and why? This finishes the Guestbook app from the [Quickstart](#quickstart) above.
+
+* **Interactive tour of ksonnet (WIP)** - Where does the ksonnet magic come from?
+
+* **[CLI Reference](/docs/cli-reference#command-line-reference)** - What ksonnet commands are available, and how do I use them?
+
+* **[Concept Reference (WIP)](/docs/concepts.md)** - What do all these special ksonnet terms mean (e.g. *prototypes*) ?
+
+
+## Troubleshooting
+
+If you encounter any problems that the documentation does not address, [file an issue](https://github.com/ksonnet/ksonnet/issues).
+
+## Contributing
+
+Thanks for taking the time to join our community and start contributing!
+
+#### Before you start
+
+* Please familiarize yourself with the [Code of
+Conduct](CODE_OF_CONDUCT.md) before contributing.
+* Read the contribution guidelines in [CONTRIBUTING.md](CONTRIBUTING.md).
+* There is a [mailing list](https://groups.google.com/forum/#!forum/ksonnet) and [Slack channel](https://ksonnet.slack.com/) if you want to interact with
+other members of the community.
+
+#### Pull requests
+
+* We welcome pull requests. Feel free to dig through the [issues](https://github.com/ksonnet/ksonnet/issues) and jump in.
+
+## Changelog
+
+See [the list of releases](https://github.com/ksonnet/ksonnet/releases) to find out about feature changes.
