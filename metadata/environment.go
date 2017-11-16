@@ -36,11 +36,15 @@ const (
 	defaultEnvName  = "default"
 	metadataDirName = ".metadata"
 
+	// hidden metadata files
 	schemaFilename        = "swagger.json"
 	extensionsLibFilename = "k.libsonnet"
 	k8sLibFilename        = "k8s.libsonnet"
-	paramsFileName        = "params.libsonnet"
-	specFilename          = "spec.json"
+
+	// primary environment files
+	envFileName    = "main.jsonnet"
+	paramsFileName = "params.libsonnet"
+	specFilename   = "spec.json"
 )
 
 // Environment represents all fields of a ksonnet environment
@@ -129,7 +133,7 @@ func (m *manager) createEnvironment(name, server, namespace string, extensionsLi
 		},
 		{
 			// environment base override file
-			appendToAbsPath(envPath, path.Base(name)+".jsonnet"),
+			appendToAbsPath(envPath, envFileName),
 			m.generateOverrideData(),
 		},
 		{
@@ -281,10 +285,9 @@ func (m *manager) SetEnvironment(name string, desired *Environment) error {
 		//
 		// Move the directory
 		//
+
 		pathOld := appendToAbsPath(m.environmentsPath, name)
 		pathNew := appendToAbsPath(m.environmentsPath, desired.Name)
-		jsonnetPathOld := string(appendToAbsPath(pathOld, path.Base(name)+".jsonnet"))
-		jsonnetPathNew := string(appendToAbsPath(pathOld, path.Base(desired.Name)+".jsonnet"))
 		exists, err := afero.DirExists(m.appFS, string(pathNew))
 		if err != nil {
 			return err
@@ -297,13 +300,6 @@ func (m *manager) SetEnvironment(name string, desired *Environment) error {
 		log.Debugf("Moving directory at path '%s' to '%s'", string(pathOld), string(pathNew))
 		err = m.appFS.MkdirAll(intermediatePath, defaultFolderPermissions)
 		if err != nil {
-			return err
-		}
-		// note: we have to move the jsonnet file first because of a bug with afero: spf13/afero:#141
-		log.Debugf("Renaming jsonnet file from '%s' to '%s'", path.Base(jsonnetPathOld), path.Base(jsonnetPathNew))
-		err = m.appFS.Rename(jsonnetPathOld, jsonnetPathNew)
-		if err != nil {
-			log.Debugf("Failed to move path '%s' to '%s", jsonnetPathOld, jsonnetPathNew)
 			return err
 		}
 		// finally, move the directory

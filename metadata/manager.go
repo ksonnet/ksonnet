@@ -255,7 +255,7 @@ func (m *manager) CreateComponent(name string, text string, params param.Params,
 func (m *manager) LibPaths(envName string) (libPath, vendorPath, envLibPath, envComponentPath, envParamsPath AbsPath) {
 	envPath := appendToAbsPath(m.environmentsPath, envName)
 	return m.libPath, m.vendorPath, appendToAbsPath(envPath, metadataDirName),
-		appendToAbsPath(envPath, path.Base(envName)+".jsonnet"), appendToAbsPath(envPath, componentParamsFile)
+		appendToAbsPath(envPath, envFileName), appendToAbsPath(envPath, componentParamsFile)
 }
 
 func (m *manager) GetComponentParams(component string) (param.Params, error) {
