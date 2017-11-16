@@ -18,20 +18,26 @@ All of this results in a more iterative process for developing manifests, one th
 
 ## Install
 
-> You should have Go installed, and an appropriately set `$GOPATH`. (For most systems, the minimum Go version is 1.7. However, recent OSX may [require golang >=1.8.1](https://github.com/golang/go/issues/19734) to
-avoid an immediate `Killed: 9`.) If you need additional help, see the [official Go installation guide](https://golang.org/doc/install#install).
+> You should have Go installed *(minimum version 1.8.1)*, and an appropriately set `$GOPATH`. If you need additional help, see the [official Go installation guide](https://golang.org/doc/install#install).
 
-ksonnet is installed like any other Go binary. Run the following shell commands to download ksonnet and ensure that it is runnable in any directory:
+To install ksonnet, run the following commands:
 
 ```bash
+# Download ksonnet
 go get github.com/ksonnet/ksonnet
+
+# Separate make command to install binary under shortname `ks`
+cd $GOPATH/src/github.com/ksonnet/ksonnet
+make install
+
+# Ensure that Go binaries are runnable in any directory
 PATH=$PATH:$GOPATH/bin
 ```
 
 If your ksonnet is properly installed, you should be able to run the following `--help` command and see similar output:
 
 ```
-$ ksonnet --help
+$ ks --help
 
 Synchronise Kubernetes resources with config files
 
@@ -72,20 +78,20 @@ Note that we will not be implementing the entire app in this quickstart, so the 
 
 Copy and paste the script below to deploy the container image for a basic web app UI:
 
-```
+```bash
 # Start by creating your app directory
 # (This references your current cluster using $KUBECONFIG)
-ksonnet init quickstart
+ks init quickstart
 cd quickstart
 
 # Autogenerate a basic manifest
-ksonnet generate deployment-exposed-with-service guestbook-ui \
---name guestbook \
---image alpinejay/dns-single-redis-guestbook:0.3 \
---type ClusterIP
+ks generate deployment-exposed-with-service guestbook-ui \
+  --name guestbook \
+  --image alpinejay/dns-single-redis-guestbook:0.3 \
+  --type ClusterIP
 
 # Deploy your manifest to your cluster
-ksonnet apply default
+ks apply default
 
 # Set up an API proxy so that you can access the guestbook service locally
 kc proxy > /dev/null &
@@ -100,16 +106,16 @@ open $GUESTBOOK_SERVICE_URL
 
 The rest of this script upgrades the container image to a new version:
 
-```
+```bash
 # Bump the container image to a different version
-ksonnet param set guestbook-ui image alpinejay/dns-single-redis-guestbook:0.4
+ks param set guestbook-ui image alpinejay/dns-single-redis-guestbook:0.4
 
 # See the differences between your local manifest and what's running on your cluster
 # (ERROR is expected here since there are differences)
-ksonnet diff local:default remote:default
+ks diff local:default remote:default
 
 # Update your cluster with your latest changes
-ksonnet apply default
+ks apply default
 
 # (Wait a bit) and open another tab to see newly added javascript
 open $GUESTBOOK_SERVICE_URL
@@ -118,10 +124,10 @@ open $GUESTBOOK_SERVICE_URL
 
 Notice that the webpage looks different! Now clean up:
 
-```
+```bash
 # Teardown
 kill -9 $PROXY_PID
-ksonnet delete default
+ks delete default
 
 # There should be no guestbook service left running
 kubectl get svc guestbook
@@ -129,7 +135,7 @@ kubectl get svc guestbook
 
 Even though you've made modifications to the Guestbook app and removed it from your cluster, ksonnet still tracks all your manifests locally:
 
-```
+```bash
 # View all expanded manifests (YAML)
 ks show default
 ```

@@ -1,4 +1,4 @@
-## DCO Sign off
+# DCO Sign off
 
 All authors to the project retain copyright to their work. However, to ensure
 that they are only submitting work that they have rights to, we are requiring

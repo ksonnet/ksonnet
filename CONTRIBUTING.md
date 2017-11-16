@@ -1,4 +1,4 @@
-## Contributing to ksonnet
+# Contributing to ksonnet
 
 Thank you for taking the time to contribute to ksonnet! Before you submit any PRs, we encourage you to read the instructions for the [developer certificate of origin (DCO)](DCO-SIGNOFF.md), as well as the guidelines below:
 
@@ -10,14 +10,16 @@ Thank you for taking the time to contribute to ksonnet! Before you submit any PR
 * [Test](#test)
 * [Make a release](#make-a-release)
 
-### Build
+## Build
 
-To build ksonnet locally (e.g. for open-source development), run the following in the root of your ksonnet repo:
+> Ensure that you already have (1) a proper `$GOPATH` and (2) ksonnet installed. If not, follow [these README instructions](/README.md#install) to get set up.
+
+To build ksonnet locally (e.g. for open-source development), run the following in the root of your ksonnet repo (which is `$GOPATH/src/github.com/ksonnet/ksonnet` unless otherwise specified):
 ```
 make all
 ```
 This indirectly makes the following targets:
-  * `make ks` - Compiles all the code into a `ks` binary
+  * `make ks` - Compiles all the code into a local `ks` binary
   * `make docs` - Regenerates all the documentation for the ksonnet CLI, based on the code inside `cmd/`.
 
 *Troubleshooting*
@@ -28,27 +30,49 @@ brew install coreutils
 ```
 Running `make` again afterwards should work.
 
-### Manage dependencies
+## Manage dependencies
 
-This project uses `govendor` to manage Go dependencies. To make things easier for reviewers, put updates to `vendor/` in a separate commit within the same PR.
+This project uses [`govendor`](https://github.com/kardianos/govendor) to manage Go dependencies.
 
-#### Add a new dependency
 
-First make the code change that imports your new library, then run the following in the root of the repo:
 
-```
-# View missing dependencies
-govendor list +missing
+To make things easier for reviewers, put updates to `vendor/` in a separate commit within the same PR.
 
-# Download missing dependencies into vendor/
-govendor fetch -v +missing
-```
+### Add a new dependency
 
-#### Pin a dependency to a specific version
+To introduce a new dependency to the ksonnet codebase, follow these steps:
 
-Note that pinning a library to a specific version requires extra work.
+1. [Open an issue](https://github.com/ksonnet/ksonnet/issues) to discuss the use case and need for the dependency with the project maintainers.
 
-We do this for key libraries like `client-go` and `apimachinery`. To find the current version used for these particular packages, look in `vendor/vendor.json` for the `version` field (not `versionExact`).
+2. After building agreement, vendor the dependency using `govendor`.
+    * Where possible, **please [pin the dependency](#pin-a-dependency-to-a-specific-version) to a specific stable version.** Please do not vendor HEAD if you can avoid it!
+    * **Please introduce a vendored dependency in a dedicated commit to make review easier!**
+
+3. Write the code change that imports and uses the new dependency.
+
+4. Run the following in the root of the ksonnet repo:
+    ```
+    # View missing dependencies
+    govendor list +missing
+
+    # Download missing dependencies into vendor/
+    govendor fetch -v +missing
+    ```
+
+5. Consider [cleaning up unused dependencies](#clean-up-unnecessary-dependencies) while you're at it.
+
+6. Separate your `vendor/` and actual code changes into different pull requests:
+  * Make a separate commit for your `vendor/` changes, and [cherry-pick it](https://git-scm.com/docs/git-cherry-pick) it into a new branch. Submit a PR for review.
+  * After your `vendor/` changes are checked in, rebase your original code change and submit that PR.
+
+7. Feel awesome for making a sizeable contribution to ksonnet! :tada:
+
+
+### Pin a dependency to a specific version
+
+Pinning a dependency avoids the issue of breaking updates.
+
+We already do this for key libraries like `client-go` and `apimachinery`. To find the current version used for these particular packages, look in `vendor/vendor.json` for the `version` field (not `versionExact`).
 
 Use that same version in the commands below:
 
@@ -62,7 +86,7 @@ be imported at HEAD.  You need to re-run the above command until *all* imports a
 
 If you make a mistake or miss some libraries, it is safe (and appropriate) to re-run `govendor fetch` with a different version.
 
-#### Clean up unnecessary dependencies
+### Clean up unnecessary dependencies
 
 Before sending a non-trivial change for review, consider running the following command:
 
@@ -74,23 +98,30 @@ govendor list +unused
 govendor remove +unused
 ```
 
-### Test
+## Test
 
-You can run ksonnet tests with `make test` in the root of the repo, specifying any additional, custom Go flags with `$EXTRA_GO_FLAGS`.
+Before making a PR, you should make sure to test your changes.
 
-### Make a Release
+To do so, run `make test` in the root of the ksonnet repo, specifying any additional, custom Go flags with `$EXTRA_GO_FLAGS`.
+
+## Make a Release
 
 To make a new release, follow these instructions:
 
-1. Add an appropriate tag.  We do this via `git` (not the github UI) so that the tag is signed.  This process requires you to have write access to the real `master` branch (not your local fork).
-   ```
-   tag=vX.Y.Z
-   git fetch   # update
-   git tag -s -m $tag $tag origin/master
-   git push origin tag $tag
-   ```
+1. Set a release tag (based on [semvar](http://semver.org/)):
+  ```
+  VERSION=vX.Y.Z
+  ```
+2. Build a release binary (this implicitly uses `$VERSION`):
+  ```
+  make
+  ```
+3. Add an appropriate tag. We do this via `git` (not the github UI) so that the tag is signed.  This process requires you to have write access to the real `master` branch (not your local fork).
+  ```
+  git fetch   # update
+  git tag -s -m $VERSION $VERSION origin/master
+  git push origin tag $VERSION
+  ```
 
-2. Wait for the Travis autobuilders to build release binaries.
-
-3. *Now* create the Github release, using the existing tag created
+4. *Now* create the Github release, using the existing tag created
    above.
