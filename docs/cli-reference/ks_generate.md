@@ -16,10 +16,6 @@ ksonnet will expand templates as Jsonnet).
     --name=nginx                                                         \
     --image=nginx
 
-Note that if we were to specify to expand the template as JSON or YAML, we would
-generate a file with a '.json' or '.yaml' extension, respectively. See examples
-below for an example of how to do this.
-
 Note also that 'prototype-name' need only contain enough of the suffix of a name
 to uniquely disambiguate it among known names. For example, 'deployment' may
 resolve ambiguously, in which case 'use' will fail, while 'deployment' might be
