@@ -6,7 +6,7 @@ Describe a ksonnet package
 
 
 Output documentation for some ksonnet registry prototype uniquely identified in
-	the current ksonnet project by some 'registry-name'.
+the current ksonnet project by some 'registry-name'.
 
 ```
 ks pkg describe [<registry-name>/]<package-name>

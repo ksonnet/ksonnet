@@ -6,34 +6,35 @@ Add a new environment to a ksonnet project
 
 
 Add a new environment to a ksonnet project. Names are restricted to not
-include punctuation, so names like '../foo' are not allowed.
+include punctuation, so names like `../foo` are not allowed.
 
 An environment acts as a sort of "named cluster", allowing for commands like
-'ks apply dev', which applies the ksonnet application to the "dev cluster".
-For more information on what an environment is and how they work, run 'help
-env'.
+ `ks apply dev` , which applies the ksonnet application to the "dev cluster".
+For more information on what an environment is and how they work, run `ks help env` .
 
 Environments are represented as a hierarchy in the 'environments' directory of a
-ksonnet application, and hence 'env add' will add to this directory structure.
+ksonnet application, and hence `ks env add` will add to this directory structure.
 For example, in the example below, there are two environments: 'default' and
-'us-west/staging'. 'env add' will add a similar directory to this environment.
+'us-west/staging'. `ks env add` will add a similar directory to this environment.
 
-environments/
-  default/           [Default generated environment]
-    .metadata/
-      k.libsonnet
-      k8s.libsonnet
-      swagger.json
-    spec.json
-    default.jsonnet
-  us-west/
-    staging/         [Example of user-generated env]
-      .metadata/
-        k.libsonnet
-        k8s.libsonnet
-        swagger.json
-      spec.json      [This will contain the API server address of the environment and other environment metadata],
-      staging.jsonnet
+    environments/
+      default/           [Default generated environment]
+        .metadata/
+          k.libsonnet
+          k8s.libsonnet
+          swagger.json
+        spec.json
+		default.jsonnet
+        params.libsonnet
+      us-west/
+        staging/         [Example of user-generated env]
+          .metadata/
+            k.libsonnet
+            k8s.libsonnet
+            swagger.json
+          spec.json      [This will contain the API server address of the environment and other environment metadata],
+		  staging.jsonnet
+          params.libsonnet
 
 ```
 ks env add <env-name>
@@ -42,20 +43,20 @@ ks env add <env-name>
 ### Examples
 
 ```
-  # Initialize a new staging environment at 'us-west'.
-	# The environment will be setup using the current context in your kubecfg file. The directory
-	# structure rooted at 'us-west' in the documentation above will be generated.
-  ks env add us-west/staging
+# Initialize a new staging environment at 'us-west'.
+# The environment will be setup using the current context in your kubecfg file. The directory
+# structure rooted at 'us-west' in the documentation above will be generated.
+ks env add us-west/staging
 
-  # Initialize a new staging environment at 'us-west' with the namespace 'staging', using
-  # the OpenAPI specification generated in the Kubernetes v1.7.1 build to generate 'ksonnet-lib'.
-  ks env add us-west/staging --api-spec=version:v1.7.1 --namespace=staging
+# Initialize a new staging environment at 'us-west' with the namespace 'staging', using
+# the OpenAPI specification generated in the Kubernetes v1.7.1 build to generate 'ksonnet-lib'.
+ks env add us-west/staging --api-spec=version:v1.7.1 --namespace=staging
 
-  # Initialize a new environment using the 'dev' context in your kubeconfig file.
-  ks env add my-env --context=dev
+# Initialize a new environment using the 'dev' context in your kubeconfig file.
+ks env add my-env --context=dev
 
-  # Initialize a new environment using a server address.
-  ks env add my-env --server=https://ksonnet-1.us-west.elb.amazonaws.com
+# Initialize a new environment using a server address.
+ks env add my-env --server=https://ksonnet-1.us-west.elb.amazonaws.com
 ```
 
 ### Options

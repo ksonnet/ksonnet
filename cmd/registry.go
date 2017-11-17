@@ -39,7 +39,7 @@ manage in a ksonnet project using the CLI. A typical library contains:
 
 var registryListCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List all registries known to current ksonnet app`,
+	Short: `List all registries known to the current ksonnet app.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		const (
 			nameHeader     = "NAME"
@@ -142,5 +142,5 @@ var registryDescribeCmd = &cobra.Command{
 	},
 
 	Long: `Output documentation for some ksonnet registry prototype uniquely identified in
-the current ksonnet project by some 'registry-name'.`,
+the current ksonnet project by some` + " `registry-name`" + `.`,
 }

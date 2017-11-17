@@ -54,7 +54,8 @@ demands.
 
 Environments are ksonnet "named clusters". For more information on environments,
 run:
-  ks env --help
+
+    ks env --help
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Command 'param' requires a subcommand\n\n%s", cmd.UsageString())
@@ -83,20 +84,20 @@ var paramSetCmd = &cobra.Command{
 
 		return c.Run()
 	},
-	Long: `"Set component or environment parameters such as replica count or name.
+	Long: `Set component or environment parameters such as replica count or name.
 
 Parameters are set individually, one at a time. If you require customization of
 more fields, we suggest that you modify your ksonnet project's
-'components/params.libsonnet' file directly. Likewise, for greater customization
+` + " `components/params.libsonnet` " + `file directly. Likewise, for greater customization
 of environment parameters, we suggest modifying the
-'environments/:name/params.libsonnet' file.
+` + " `environments/:name/params.libsonnet` " + `file.
 `,
-	Example: `  # Updates the replica count of the 'guestbook' component to 4.
-  ks param set guestbook replicas 4
+	Example: `# Updates the replica count of the 'guestbook' component to 4.
+ks param set guestbook replicas 4
 
-  # Updates the replica count of the 'guestbook' component to 2 for the environment
-  # 'dev'
-  ks param set guestbook replicas 2 --env=dev`,
+# Updates the replica count of the 'guestbook' component to 2 for the environment
+# 'dev'
+ks param set guestbook replicas 2 --env=dev`,
 }
 
 var paramListCmd = &cobra.Command{
@@ -122,24 +123,24 @@ var paramListCmd = &cobra.Command{
 
 		return c.Run(cmd.OutOrStdout())
 	},
-	Long: `"List all component parameters or environment parameters.
+	Long: `List all component parameters or environment parameters.
 
 This command will display all parameters for the component specified. If a
 component is not specified, parameters for all components will be listed.
 
 Furthermore, parameters can be listed on a per-environment basis.
 `,
-	Example: `  # List all component parameters
-  ks param list
+	Example: `# List all component parameters
+ks param list
 
-  # List all parameters for the component "guestbook"
-  ks param list guestbook
+# List all parameters for the component "guestbook"
+ks param list guestbook
 
-  # List all parameters for the environment "dev"
-  ks param list --env=dev
+# List all parameters for the environment "dev"
+ks param list --env=dev
 
-  # List all parameters for the component "guestbook" in the environment "dev"
-  ks param list guestbook --env=dev`,
+# List all parameters for the component "guestbook" in the environment "dev"
+ks param list guestbook --env=dev`,
 }
 
 var paramDiffCmd = &cobra.Command{
@@ -163,14 +164,14 @@ var paramDiffCmd = &cobra.Command{
 
 		return c.Run(cmd.OutOrStdout())
 	},
-	Long: `"Pretty prints differences between the component parameters of two environments.
+	Long: `Pretty prints differences between the component parameters of two environments.
 
 A component flag is accepted to diff against a single component. By default, the
 diff is performed against all components.
 `,
-	Example: `  # Diff between the component parameters on environments 'dev' and 'prod'
-  ks param diff dev prod
+	Example: `# Diff between the component parameters on environments 'dev' and 'prod'
+ks param diff dev prod
 
-  # Diff between the component 'guestbook' on environments 'dev' and 'prod'
-  ks param diff dev prod --component=guestbook`,
+# Diff between the component 'guestbook' on environments 'dev' and 'prod'
+ks param diff dev prod --component=guestbook`,
 }

@@ -1,11 +1,11 @@
 ## ks registry list
 
-List all registries known to current ksonnet app
+List all registries known to the current ksonnet app.
 
 ### Synopsis
 
 
-List all registries known to current ksonnet app
+List all registries known to the current ksonnet app.
 
 ```
 ks registry list

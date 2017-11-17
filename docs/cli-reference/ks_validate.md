@@ -18,21 +18,21 @@ ks validate [env-name] [-f <file-or-dir>]
 ### Examples
 
 ```
-  # Validate all resources described in a ksonnet application, expanding
-  # ksonnet code with 'dev' environment where necessary (i.e., not YAML, JSON,
-  # or non-ksonnet Jsonnet code).
-  ksonnet validate dev
+# Validate all resources described in a ksonnet application, expanding
+# ksonnet code with 'dev' environment where necessary (i.e., not YAML, JSON,
+# or non-ksonnet Jsonnet code).
+ksonnet validate dev
 
-  # Validate resources described in a YAML file.
-  ksonnet validate -f ./pod.yaml
+# Validate resources described in a YAML file.
+ksonnet validate -f ./pod.yaml
 
-  # Validate resources described in the JSON file against existing resources
-  # in the cluster the 'dev' environment is pointing at.
-  ksonnet validate dev -f ./pod.yaml
+# Validate resources described in the JSON file against existing resources
+# in the cluster the 'dev' environment is pointing at.
+ksonnet validate dev -f ./pod.yaml
 
-  # Validate resources described in a Jsonnet file. Does not expand using
-  # environment bindings.
-  ksonnet validate -f ./pod.jsonnet
+# Validate resources described in a Jsonnet file. Does not expand using
+# environment bindings.
+ksonnet validate -f ./pod.jsonnet
 ```
 
 ### Options

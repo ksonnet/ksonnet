@@ -50,40 +50,40 @@ var prototypeCmd = &cobra.Command{
 
 Prototypes are Kubernetes app configuration templates with "holes" that can be
 filled in by (e.g.) the ksonnet CLI tool or a language server. For example, a
-prototype for a 'apps.v1beta1.Deployment' might require a name and image, and
+prototype for a` + " `apps.v1beta1.Deployment` " + `might require a name and image, and
 the ksonnet CLI could expand this to a fully-formed 'Deployment' object.
 
 Commands:
-  use      Instantiate prototype, filling in parameters from flags, and
-           emitting the generated code to stdout.
-  describe Display documentation and details about a prototype
-  search   Search for a prototype`,
+    use      Instantiate prototype, filling in parameters from flags, and
+             emitting the generated code to stdout.
+    describe Display documentation and details about a prototype
+    search   Search for a prototype`,
 
-	Example: `  # Display documentation about prototype
-  # 'io.ksonnet.pkg.prototype.simple-deployment', including:
-  #
-  #   (1) a description of what gets generated during instantiation
-  #   (2) a list of parameters that are required to be passed in with CLI flags
-  #
-  # NOTE: Many subcommands only require the user to specify enough of the
-  # identifier to disambiguate it among other known prototypes, which is why
-  # 'simple-deployment' is given as argument instead of the fully-qualified
-  # name.
-  ks prototype describe simple-deployment
+	Example: `# Display documentation about prototype
+# 'io.ksonnet.pkg.prototype.simple-deployment', including:
+#
+#   (1) a description of what gets generated during instantiation
+#   (2) a list of parameters that are required to be passed in with CLI flags
+#
+# NOTE: Many subcommands only require the user to specify enough of the
+# identifier to disambiguate it among other known prototypes, which is why
+# 'simple-deployment' is given as argument instead of the fully-qualified
+# name.
+ks prototype describe simple-deployment
 
-  # Instantiate prototype 'io.ksonnet.pkg.prototype.simple-deployment', using
-  # the 'nginx' image, and port 80 exposed.
-  #
-  # SEE ALSO: Note above for a description of why this subcommand can take
-  # 'simple-deployment' instead of the fully-qualified prototype name.
-  ks prototype use simple-deployment \
-    --name=nginx                          \
-    --image=nginx                         \
-    --port=80                             \
-    --portName=http
+# Instantiate prototype 'io.ksonnet.pkg.prototype.simple-deployment', using
+# the 'nginx' image, and port 80 exposed.
+#
+# SEE ALSO: Note above for a description of why this subcommand can take
+# 'simple-deployment' instead of the fully-qualified prototype name.
+ks prototype use simple-deployment \
+  --name=nginx                     \
+  --image=nginx                    \
+  --port=80                        \
+  --portName=http
 
-  # Search known prototype metadata for the string 'deployment'.
-  ks prototype search deployment`,
+# Search known prototype metadata for the string 'deployment'.
+ks prototype search deployment`,
 }
 
 var prototypeListCmd = &cobra.Command{
@@ -173,27 +173,27 @@ var prototypeDescribeCmd = &cobra.Command{
 		return nil
 	},
 	Long: `Output documentation, examples, and other information for some ksonnet
-prototype uniquely identified by some (possibly partial) 'prototype-name'. This
+prototype uniquely identified by some (possibly partial)` + " `prototype-name`" + `. This
 includes:
 
-  (1) a description of what gets generated during instantiation
-  (2) a list of parameters that are required to be passed in with CLI flags
+  1. a description of what gets generated during instantiation
+  2. a list of parameters that are required to be passed in with CLI flags
 
-'prototype-name' need only contain enough of the suffix of a name to uniquely
+` + "`prototype-name` " + `need only contain enough of the suffix of a name to uniquely
 disambiguate it among known names. For example, 'deployment' may resolve
 ambiguously, in which case 'use' will fail, while 'simple-deployment' might be
 unique enough to resolve to 'io.ksonnet.pkg.prototype.simple-deployment'.`,
 
-	Example: `  # Display documentation about prototype, including:
-  ks prototype describe io.ksonnet.pkg.prototype.simple-deployment
+	Example: `# Display documentation about prototype, including:
+ks prototype describe io.ksonnet.pkg.prototype.simple-deployment
 
-  # Display documentation about prototype using a unique suffix of an
-  # identifier. That is, this command only requires a long enough suffix to
-  # uniquely identify a ksonnet prototype. In this example, the suffix
-  # 'simple-deployment' is enough to uniquely identify
-  # 'io.ksonnet.pkg.prototype.simple-deployment', but 'deployment' might not
-  # be, as several names end with that suffix.
-  ks prototype describe simple-deployment`,
+# Display documentation about prototype using a unique suffix of an
+# identifier. That is, this command only requires a long enough suffix to
+# uniquely identify a ksonnet prototype. In this example, the suffix
+# 'simple-deployment' is enough to uniquely identify
+# 'io.ksonnet.pkg.prototype.simple-deployment', but 'deployment' might not
+# be, as several names end with that suffix.
+ks prototype describe simple-deployment`,
 }
 
 var prototypeSearchCmd = &cobra.Command{
@@ -218,9 +218,9 @@ var prototypeSearchCmd = &cobra.Command{
 
 		return nil
 	},
-	Long: `Search ksonnet for prototypes whose names contain 'name-substring'.`,
-	Example: `  # Search known prototype metadata for the string 'deployment'.
-  ks prototype search deployment`,
+	Long: `Search ksonnet for prototypes whose names contain` + " `name-substring` " + `.`,
+	Example: `# Search known prototype metadata for the string 'deployment'.
+ks prototype search deployment`,
 }
 
 var prototypePreviewCmd = &cobra.Command{
@@ -292,25 +292,25 @@ var prototypePreviewCmd = &cobra.Command{
 		return nil
 	},
 	Long: `Expand prototype uniquely identified by (possibly partial)
-'prototype-name', filling in parameters from flags, and emitting the generated
+` + " `prototype-name` " + `, filling in parameters from flags, and emitting the generated
 code to stdout.
 
-Note also that 'prototype-name' need only contain enough of the suffix of a name
+Note also that` + " `prototype-name` " + `need only contain enough of the suffix of a name
 to uniquely disambiguate it among known names. For example, 'deployment' may
-resolve ambiguously, in which case 'use' will fail, while 'deployment' might be
+resolve ambiguously, in which case` + " `use` " + `will fail, while 'deployment' might be
 unique enough to resolve to 'io.ksonnet.pkg.single-port-deployment'.`,
 
-	Example: `  # Preview prototype 'io.ksonnet.pkg.single-port-deployment', using the
-  # 'nginx' image, and port 80 exposed.
-  ks prototype preview io.ksonnet.pkg.prototype.simple-deployment \
-    --name=nginx                                                       \
-    --image=nginx
+	Example: `# Preview prototype 'io.ksonnet.pkg.single-port-deployment', using the
+# 'nginx' image, and port 80 exposed.
+ks prototype preview io.ksonnet.pkg.prototype.simple-deployment \
+  --name=nginx                                                  \
+  --image=nginx
 
-  # Preview prototype using a unique suffix of an identifier. See
-  # introduction of help message for more information on how this works.
-  ks prototype preview simple-deployment \
-    --name=nginx                              \
-    --image=nginx`,
+# Preview prototype using a unique suffix of an identifier. See
+# introduction of help message for more information on how this works.
+ks prototype preview simple-deployment \
+  --name=nginx                         \
+  --image=nginx`,
 }
 
 // generateCmd acts as an alias for `prototype use`
@@ -397,37 +397,37 @@ var prototypeUseCmd = &cobra.Command{
 
 		return manager.CreateComponent(componentName, text, params, templateType)
 	},
-	Long: `Expand prototype uniquely identified by (possibly partial) 'prototype-name',
+	Long: `Expand prototype uniquely identified by (possibly partial)` + " `prototype-name` " + `,
 filling in parameters from flags, and placing it into the file
-'components/componentName', with the appropriate extension set. For example, the
+` + " `components/componentName` " + `, with the appropriate extension set. For example, the
 following command will expand template 'io.ksonnet.pkg.single-port-deployment'
-and place it in the file 'components/nginx-depl.jsonnet' (since by default
+and place it in the file` + " `components/nginx-depl.jsonnet` " + `(since by default
 ksonnet will expand templates as Jsonnet).
 
-  ks prototype use io.ksonnet.pkg.single-port-deployment nginx-depl \
-    --name=nginx                                                         \
-    --image=nginx
+    ks prototype use io.ksonnet.pkg.single-port-deployment nginx-depl \
+      --name=nginx                                                    \
+      --image=nginx
 
-Note also that 'prototype-name' need only contain enough of the suffix of a name
+Note also that` + " `prototype-name` " + `need only contain enough of the suffix of a name
 to uniquely disambiguate it among known names. For example, 'deployment' may
-resolve ambiguously, in which case 'use' will fail, while 'deployment' might be
+resolve ambiguously, in which case` + " `use` " + `will fail, while 'deployment' might be
 unique enough to resolve to 'io.ksonnet.pkg.single-port-deployment'.`,
 
-	Example: `  # Instantiate prototype 'io.ksonnet.pkg.single-port-deployment', using the
-  # 'nginx' image. The expanded prototype is placed in
-  # 'components/nginx-depl.jsonnet'.
-  ks prototype use io.ksonnet.pkg.prototype.simple-deployment nginx-depl \
-    --name=nginx                                                              \
-    --image=nginx
+	Example: `# Instantiate prototype 'io.ksonnet.pkg.single-port-deployment', using the
+# 'nginx' image. The expanded prototype is placed in
+# 'components/nginx-depl.jsonnet'.
+ks prototype use io.ksonnet.pkg.prototype.simple-deployment nginx-depl \
+  --name=nginx                                                         \
+  --image=nginx
 
-  # Instantiate prototype 'io.ksonnet.pkg.single-port-deployment' using the
-  # unique suffix, 'deployment'. The expanded prototype is again placed in
-  # 'components/nginx-depl.jsonnet'. See introduction of help message for more
-  # information on how this works. Note that if you have imported another
-  # prototype with this suffix, this may resolve ambiguously for you.
-  ks prototype use deployment nginx-depl \
-    --name=nginx                              \
-    --image=nginx`,
+# Instantiate prototype 'io.ksonnet.pkg.single-port-deployment' using the
+# unique suffix, 'deployment'. The expanded prototype is again placed in
+# 'components/nginx-depl.jsonnet'. See introduction of help message for more
+# information on how this works. Note that if you have imported another
+# prototype with this suffix, this may resolve ambiguously for you.
+ks prototype use deployment nginx-depl \
+  --name=nginx                         \
+  --image=nginx`,
 }
 
 func bindPrototypeFlags(cmd *cobra.Command, proto *prototype.SpecificationSchema) {

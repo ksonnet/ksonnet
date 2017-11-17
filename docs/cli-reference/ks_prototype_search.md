@@ -5,7 +5,7 @@ Search for a ksonnet prototype
 ### Synopsis
 
 
-Search ksonnet for prototypes whose names contain 'name-substring'.
+Search ksonnet for prototypes whose names contain `name-substring` .
 
 ```
 ks prototype search <name-substring>
@@ -14,8 +14,8 @@ ks prototype search <name-substring>
 ### Examples
 
 ```
-  # Search known prototype metadata for the string 'deployment'.
-  ks prototype search deployment
+# Search known prototype metadata for the string 'deployment'.
+ks prototype search deployment
 ```
 
 ### Options inherited from parent commands

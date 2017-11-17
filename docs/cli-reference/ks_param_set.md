@@ -5,13 +5,13 @@ Set component or environment parameters such as replica count or name
 ### Synopsis
 
 
-"Set component or environment parameters such as replica count or name.
+Set component or environment parameters such as replica count or name.
 
 Parameters are set individually, one at a time. If you require customization of
 more fields, we suggest that you modify your ksonnet project's
-'components/params.libsonnet' file directly. Likewise, for greater customization
+ `components/params.libsonnet` file directly. Likewise, for greater customization
 of environment parameters, we suggest modifying the
-'environments/:name/params.libsonnet' file.
+ `environments/:name/params.libsonnet` file.
 
 
 ```
@@ -21,12 +21,12 @@ ks param set <component-name> <param-key> <param-value>
 ### Examples
 
 ```
-  # Updates the replica count of the 'guestbook' component to 4.
-  ks param set guestbook replicas 4
+# Updates the replica count of the 'guestbook' component to 4.
+ks param set guestbook replicas 4
 
-  # Updates the replica count of the 'guestbook' component to 2 for the environment
-  # 'dev'
-  ks param set guestbook replicas 2 --env=dev
+# Updates the replica count of the 'guestbook' component to 2 for the environment
+# 'dev'
+ks param set guestbook replicas 2 --env=dev
 ```
 
 ### Options

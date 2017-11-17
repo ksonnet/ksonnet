@@ -6,7 +6,7 @@ Apply local configuration to remote cluster
 
 
 Update (or optionally create) Kubernetes resources on the cluster using the
-local configuration. Use the '--create' flag to control whether we create them
+local configuration. Use the `--create` flag to control whether we create them
 if they do not exist (default: true).
 
 ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
@@ -19,25 +19,25 @@ ks apply [env-name] [-f <file-or-dir>]
 ### Examples
 
 ```
-  # Create or update all resources described in a ksonnet application, and
-  # running in the 'dev' environment. Can be used in any subdirectory of the
-  # application.
-  ks apply dev
+# Create or update all resources described in a ksonnet application, and
+# running in the 'dev' environment. Can be used in any subdirectory of the
+# application.
+ks apply dev
 
-  # Create or update resources described in a YAML file. Automatically picks up
-  # the cluster's location from '$KUBECONFIG'.
-  ks appy -f ./pod.yaml
+# Create or update resources described in a YAML file. Automatically picks up
+# the cluster's location from '$KUBECONFIG'.
+ks appy -f ./pod.yaml
 
-  # Create or update resources described in the JSON file. Changes are deployed
-  # to the cluster pointed at the 'dev' environment.
-  ks apply dev -f ./pod.json
+# Create or update resources described in the JSON file. Changes are deployed
+# to the cluster pointed at the 'dev' environment.
+ks apply dev -f ./pod.json
 
-  # Update resources described in a YAML file, and running in cluster referred
-  # to by './kubeconfig'.
-  ks apply --kubeconfig=./kubeconfig -f ./pod.yaml
+# Update resources described in a YAML file, and running in cluster referred
+# to by './kubeconfig'.
+ks apply --kubeconfig=./kubeconfig -f ./pod.yaml
 
-  # Display set of actions we will execute when we run 'apply'.
-  ks apply dev --dry-run
+# Display set of actions we will execute when we run 'apply'.
+ks apply dev --dry-run
 ```
 
 ### Options

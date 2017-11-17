@@ -56,7 +56,7 @@ var envCmd = &cobra.Command{
 	Use:   "env",
 	Short: `Manage ksonnet environments`,
 	Long: `An environment acts as a sort of "named cluster", allowing for commands like
-'ks apply dev', which applies the ksonnet application to the "dev cluster".
+` + " `ks apply dev` " + `, which applies the ksonnet application to the 'dev cluster'.
 Additionally, environments allow users to cache data about the cluster it points
 to, including data needed to run 'verify', and a version of ksonnet-lib that is
 generated based on the flags the API server was started with (e.g., RBAC enabled
@@ -68,25 +68,27 @@ often contained in a kubeconfig file), and
 Environments are represented as a hierarchy in the 'environments' directory of a
 ksonnet application. For example, in the example below, there are two
 environments: 'default' and 'us-west/staging'. Each contains a cached version of
-ksonnet-lib, and a 'spec.json' that contains the server and server cert that
+` + " `ksonnet-lib` " + `, and a` + " `spec.json` " + `that contains the server and server cert that
 uniquely identifies the cluster.
 
-environments/
-  default/           [Default generated environment]
-    .metadata/
-      k.libsonnet
-      k8s.libsonnet
-      swagger.json
-    spec.json
-    default.jsonnet
-  us-west/
-    staging/         [Example of user-generated env]
-      .metadata/
-        k.libsonnet
-        k8s.libsonnet
-        swagger.json
-      spec.json      [This will contain the API server address of the environment and other environment metadata]
-      staging.jsonnet`,
+    environments/
+      default/           [Default generated environment]
+        .metadata/
+          k.libsonnet
+          k8s.libsonnet
+          swagger.json
+        spec.json
+		default.jsonnet
+        params.libsonnet		
+      us-west/
+        staging/         [Example of user-generated env]
+          .metadata/
+            k.libsonnet
+            k8s.libsonnet
+            swagger.json
+          spec.json      [This will contain the API server address of the environment and other environment metadata]
+		  staging.jsonnet
+          params.libsonnet`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Command 'env' requires a subcommand\n\n%s", cmd.UsageString())
 	},
@@ -157,48 +159,49 @@ var envAddCmd = &cobra.Command{
 	},
 
 	Long: `Add a new environment to a ksonnet project. Names are restricted to not
-include punctuation, so names like '../foo' are not allowed.
+include punctuation, so names like` + " `../foo` " + `are not allowed.
 
 An environment acts as a sort of "named cluster", allowing for commands like
-'ks apply dev', which applies the ksonnet application to the "dev cluster".
-For more information on what an environment is and how they work, run 'help
-env'.
+` + " `ks apply dev` " + `, which applies the ksonnet application to the "dev cluster".
+For more information on what an environment is and how they work, run` + " `ks help env` " + `.
 
 Environments are represented as a hierarchy in the 'environments' directory of a
-ksonnet application, and hence 'env add' will add to this directory structure.
+ksonnet application, and hence` + " `ks env add` " + `will add to this directory structure.
 For example, in the example below, there are two environments: 'default' and
-'us-west/staging'. 'env add' will add a similar directory to this environment.
+'us-west/staging'.` + " `ks env add` " + `will add a similar directory to this environment.
 
-environments/
-  default/           [Default generated environment]
-    .metadata/
-      k.libsonnet
-      k8s.libsonnet
-      swagger.json
-    spec.json
-    default.jsonnet
-  us-west/
-    staging/         [Example of user-generated env]
-      .metadata/
-        k.libsonnet
-        k8s.libsonnet
-        swagger.json
-      spec.json      [This will contain the API server address of the environment and other environment metadata],
-      staging.jsonnet`,
-	Example: `  # Initialize a new staging environment at 'us-west'.
-	# The environment will be setup using the current context in your kubecfg file. The directory
-	# structure rooted at 'us-west' in the documentation above will be generated.
-  ks env add us-west/staging
+    environments/
+      default/           [Default generated environment]
+        .metadata/
+          k.libsonnet
+          k8s.libsonnet
+          swagger.json
+        spec.json
+		default.jsonnet
+        params.libsonnet
+      us-west/
+        staging/         [Example of user-generated env]
+          .metadata/
+            k.libsonnet
+            k8s.libsonnet
+            swagger.json
+          spec.json      [This will contain the API server address of the environment and other environment metadata],
+		  staging.jsonnet
+          params.libsonnet`,
+	Example: `# Initialize a new staging environment at 'us-west'.
+# The environment will be setup using the current context in your kubecfg file. The directory
+# structure rooted at 'us-west' in the documentation above will be generated.
+ks env add us-west/staging
 
-  # Initialize a new staging environment at 'us-west' with the namespace 'staging', using
-  # the OpenAPI specification generated in the Kubernetes v1.7.1 build to generate 'ksonnet-lib'.
-  ks env add us-west/staging --api-spec=version:v1.7.1 --namespace=staging
+# Initialize a new staging environment at 'us-west' with the namespace 'staging', using
+# the OpenAPI specification generated in the Kubernetes v1.7.1 build to generate 'ksonnet-lib'.
+ks env add us-west/staging --api-spec=version:v1.7.1 --namespace=staging
 
-  # Initialize a new environment using the 'dev' context in your kubeconfig file.
-  ks env add my-env --context=dev
+# Initialize a new environment using the 'dev' context in your kubeconfig file.
+ks env add my-env --context=dev
 
-  # Initialize a new environment using a server address.
-  ks env add my-env --server=https://ksonnet-1.us-west.elb.amazonaws.com`,
+# Initialize a new environment using a server address.
+ks env add my-env --server=https://ksonnet-1.us-west.elb.amazonaws.com`,
 }
 
 var envRmCmd = &cobra.Command{
@@ -230,15 +233,11 @@ var envRmCmd = &cobra.Command{
 		return c.Run()
 	},
 	Long: `Delete an environment from a ksonnet project. This is the same
-as removing the <env-name> environment directory and all files contained. If the
-project exists in a hierarchy (e.g., 'us-east/staging') and deleting the
-environment results in an empty environments directory (e.g., if deleting
-'us-east/staging' resulted in an empty 'us-east/' directory), then all empty
-parent directories are subsequently deleted.`,
-	Example: `  # Remove the directory 'us-west/staging' and all contents
-  #	in the 'environments' directory. This will also remove the parent directory
-  # 'us-west' if it is empty.
-  ks env rm us-west/staging`,
+as removing the <env-name> environment directory and all files contained. All empty
+parent directories are also subsequently deleted.`,
+	Example: `# Remove the directory 'us-west/staging' and all contents in the 'environments'
+# directory. This will also remove the parent directory 'us-west' if it is empty.
+ks env rm us-west/staging`,
 }
 
 var envListCmd = &cobra.Command{
@@ -324,19 +323,19 @@ var envSetCmd = &cobra.Command{
 	Long: `Set environment fields such as the name, and server. Changing
 the name of an environment will also update the directory structure in
 'environments'.`,
-	Example: `  # Updates the API server address of the environment 'us-west/staging'.
-  ks env set us-west/staging --server=http://example.com
+	Example: `# Updates the API server address of the environment 'us-west/staging'.
+ks env set us-west/staging --server=http://example.com
 
-  # Updates the namespace of the environment 'us-west/staging'.
-  ks env set us-west/staging --namespace=staging
+# Updates the namespace of the environment 'us-west/staging'.
+ks env set us-west/staging --namespace=staging
 
-  # Updates both the name and the server of the environment 'us-west/staging'.
-  # Updating the name will update the directory structure in 'environments'.
-  ks env set us-west/staging --server=http://example.com --name=us-east/staging
+# Updates both the name and the server of the environment 'us-west/staging'.
+# Updating the name will update the directory structure in 'environments'.
+ks env set us-west/staging --server=http://example.com --name=us-east/staging
   
-  # Updates API server address of the environment 'us-west/staging' based on the
-  # server in the context 'staging-west' in your kubeconfig file.
-  ks env set us-west/staging --context=staging-west`,
+# Updates API server address of the environment 'us-west/staging' based on the
+# server in the context 'staging-west' in your kubeconfig file.
+ks env set us-west/staging --context=staging-west`,
 }
 
 func commonEnvFlags(flags *pflag.FlagSet) (server, namespace, context string, err error) {

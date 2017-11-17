@@ -16,7 +16,8 @@ demands.
 
 Environments are ksonnet "named clusters". For more information on environments,
 run:
-  ks env --help
+
+    ks env --help
 
 
 ```
