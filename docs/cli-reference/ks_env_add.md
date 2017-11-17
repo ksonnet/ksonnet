@@ -12,10 +12,10 @@ An environment acts as a sort of "named cluster", allowing for commands like
  `ks apply dev` , which applies the ksonnet application to the "dev cluster".
 For more information on what an environment is and how they work, run `ks help env` .
 
-Environments are represented as a hierarchy in the 'environments' directory of a
+Environments are represented as a hierarchy in the "environments" directory of a
 ksonnet application, and hence `ks env add` will add to this directory structure.
-For example, in the example below, there are two environments: 'default' and
-'us-west/staging'. `ks env add` will add a similar directory to this environment.
+For example, in the example below, there are two environments: "default" and
+"us-west/staging". `ks env add` will add a similar directory to this environment.
 
     environments/
       default/           [Default generated environment]
@@ -43,16 +43,16 @@ ks env add <env-name>
 ### Examples
 
 ```
-# Initialize a new staging environment at 'us-west'.
+# Initialize a new staging environment at "us-west".
 # The environment will be setup using the current context in your kubecfg file. The directory
-# structure rooted at 'us-west' in the documentation above will be generated.
+# structure rooted at "us-west" in the documentation above will be generated.
 ks env add us-west/staging
 
-# Initialize a new staging environment at 'us-west' with the namespace 'staging', using
-# the OpenAPI specification generated in the Kubernetes v1.7.1 build to generate 'ksonnet-lib'.
+# Initialize a new staging environment at "us-west" with the namespace "staging", using
+# the OpenAPI specification generated in the Kubernetes v1.7.1 build to generate "ksonnet-lib".
 ks env add us-west/staging --api-spec=version:v1.7.1 --namespace=staging
 
-# Initialize a new environment using the 'dev' context in your kubeconfig file.
+# Initialize a new environment using the "dev" context in your kubeconfig file.
 ks env add my-env --context=dev
 
 # Initialize a new environment using a server address.

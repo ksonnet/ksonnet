@@ -1,15 +1,16 @@
 ## ks delete
 
-Delete Kubernetes resources described in local config
+Delete Kubernetes resources described in local manifest
 
 ### Synopsis
 
 
 Delete Kubernetes resources from a cluster, as described in the local
-configuration.
+manifest.
 
-ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
-files.
+An entire ksonnet application can be deleted, or individual JSON, YAML, or Jsonnet files.
+
+This command can be considered the inverse of the `ks apply` command.
 
 ```
 ks delete [env-name] [-f <file-or-dir>]
@@ -18,21 +19,17 @@ ks delete [env-name] [-f <file-or-dir>]
 ### Examples
 
 ```
-# Delete all resources described in a ksonnet application, from the 'dev'
-# environment. Can be used in any subdirectory of the application.
-ks delete dev
+# Delete all resources described in a ksonnet application, from the 'prod'
+# environment. Can be used in any subdirectory of that application.
+ks delete prod
 
-# Delete resources described in a YAML file. Automatically picks up the
-# cluster's location from '$KUBECONFIG'.
-ks delete -f ./pod.yaml
-
-# Delete resources described in the JSON file from the 'dev' environment. Can
-# be used in any subdirectory of the application.
+# Delete resources described in a JSON file from the 'dev' environment.
 ks delete dev -f ./pod.json
 
-# Delete resources described in a YAML file, and running in the cluster
-# specified by the current context in specified kubeconfig file.
-ks delete --kubeconfig=./kubeconfig -f ./pod.yaml
+# Delete resources described in a YAML file. Changes are deployed to the cluster
+# pointed to by the current context of './kubeconfig'. This kubeconfig context
+# overrides the 'default' environment.
+ks delete default --kubeconfig=./kubeconfig -f ./pod.yaml
 ```
 
 ### Options

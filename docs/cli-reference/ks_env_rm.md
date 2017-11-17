@@ -16,8 +16,8 @@ ks env rm <env-name>
 ### Examples
 
 ```
-# Remove the directory 'us-west/staging' and all contents in the 'environments'
-# directory. This will also remove the parent directory 'us-west' if it is empty.
+# Remove the directory "us-west/staging" and all contents in the "environments"
+# directory. This will also remove the parent directory "us-west" if it is empty.
 ks env rm us-west/staging
 ```
 
