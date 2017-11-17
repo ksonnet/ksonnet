@@ -30,7 +30,7 @@ var _ = Describe("flags", func() {
 	BeforeEach(func() {
 		c = corev1.NewForConfigOrDie(clusterConfigOrDie())
 		ns = createNsOrDie(c, "kubeflags")
-		args = []string{"update", "-vv"}
+		args = []string{"apply", "-vv"}
 		objs = []runtime.Object{
 			&v1.ConfigMap{
 				// Note: no explicit Namespace
