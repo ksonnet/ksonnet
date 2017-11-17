@@ -18,40 +18,49 @@ All of this results in a more iterative process for developing manifests, one th
 
 ## Install
 
-> You should have Go installed *(minimum version 1.8.1)*, and an appropriately set `$GOPATH`. If you need additional help, see the [official Go installation guide](https://golang.org/doc/install#install).
+> You should have Go installed *(minimum version 1.8.1)*. If not, follow the instructions in the [official installation guide](https://golang.org/doc/install#install).
 
-To install ksonnet, run the following commands:
+1. First ensure that you have a working `$GOPATH`:
+    ```
+    echo $GOPATH
+    ```
+    If your `$GOPATH` is empty, you'll need to permanently set it. On OSX, you can do this by adding the line `export GOPATH=$HOME/go` to the end of your `$HOME/.bash_profile`. (Otherwise [these instructions](https://github.com/golang/go/wiki/SettingGOPATH) may help).
 
-```bash
-# Download ksonnet
-go get github.com/ksonnet/ksonnet
+    To ensure that your Go binaries are runnable in any directory, run the following:
+    ```
+    PATH=$PATH:$GOPATH/bin
+    ```
 
-# Separate make command to install binary under shortname `ks`
-cd $GOPATH/src/github.com/ksonnet/ksonnet
-make install
 
-# Ensure that Go binaries are runnable in any directory
-PATH=$PATH:$GOPATH/bin
-```
+2. Now, to install ksonnet, copy and paste the following commands:
 
-If your ksonnet is properly installed, you should be able to run the following `--help` command and see similar output:
+    ```bash
+    # Download ksonnet
+    go get github.com/ksonnet/ksonnet
 
-```
-$ ks --help
+    # Build and install binary under shortname `ks`
+    cd $GOPATH/src/github.com/ksonnet/ksonnet
+    make install
+    ```
 
-Synchronise Kubernetes resources with config files
+3. If your ksonnet is properly installed, you should be able to run the following `--help` command and see similar output:
 
-Usage:
-  ks [command]
+    ```
+    $ ks --help
 
-Available Commands:
-  apply       Apply local configuration to remote cluster
-  delete      Delete Kubernetes resources described in local config
-  diff        Display differences between server and local config, or server and server config
-  env         Manage ksonnet environments
-  generate    Expand prototype, place in components/ directory of ksonnet app
-  ...
-```
+    Synchronise Kubernetes resources with config files
+
+    Usage:
+      ks [command]
+
+    Available Commands:
+      apply       Apply local configuration to remote cluster
+      delete      Delete Kubernetes resources described in local config
+      diff        Display differences between server and local config, or server and server config
+      env         Manage ksonnet environments
+      generate    Expand prototype, place in components/ directory of ksonnet app
+      ...
+    ```
 
 ## Quickstart
 

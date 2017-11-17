@@ -66,7 +66,7 @@ Components can be as simple as a single Kubernetes resource (e.g. a Deployment) 
 
 * Typically, **you autogenerate it** with the [`ks generate`](docs/cli-reference/ks_generate.md) command. In this case, the manifest is expressed in a language called [Jsonnet](#jsonnet).
 
-* Alternatively, you can **manually drop in** a file. In this case, your manifest can be any one of YAML, JSON, or Jsonnet. Because all three languages are supported, this approach allows you to introduce ksonnet to existing codebases without significant rewrites.
+* Alternatively, you can **manually drop in** a file. In this case, your manifest can be any one of YAML, JSON, or Jsonnet. Because all three languages are supported, *this approach allows you to introduce ksonnet to existing codebases without significant rewrites*.
 
 How does the autogeneration process work? When you use `ks generate`, the component is generated from a *prototype*. The distinction between a component and a prototype is a bit subtle. If you are familiar with object oriented programming, you can roughly think of a prototype as a "class", and a component as its instantiation:
 
