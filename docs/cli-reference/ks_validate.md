@@ -1,15 +1,12 @@
 ## ks validate
 
-Compare generated manifest against server OpenAPI spec
+Compare generated manifests against the server's OpenAPI spec
 
 ### Synopsis
 
 
-Validate that an application or file is compliant with the Kubernetes
-specification.
-
-ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
-files.
+Validate that a ksonnet application or file is compliant with an environment's
+Kubernetes specification.
 
 ```
 ks validate [env-name] [-f <file-or-dir>]
@@ -19,20 +16,14 @@ ks validate [env-name] [-f <file-or-dir>]
 
 ```
 # Validate all resources described in a ksonnet application, expanding
-# ksonnet code with 'dev' environment where necessary (i.e., not YAML, JSON,
-# or non-ksonnet Jsonnet code).
+# ksonnet code with 'dev' environment parameters where necessary.
+# Note that this ONLY validates manifests that are written with ksonnet-lib. It does
+# not check YAML, JSON, or vanilla Jsonnet.
 ksonnet validate dev
 
-# Validate resources described in a YAML file.
-ksonnet validate -f ./pod.yaml
-
-# Validate resources described in the JSON file against existing resources
-# in the cluster the 'dev' environment is pointing at.
+# Validate that resources described in a YAML file adhere to the Kubernetes spec
+# used by the 'dev' environment cluster.
 ksonnet validate dev -f ./pod.yaml
-
-# Validate resources described in a Jsonnet file. Does not expand using
-# environment bindings.
-ksonnet validate -f ./pod.jsonnet
 ```
 
 ### Options
