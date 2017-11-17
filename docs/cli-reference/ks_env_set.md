@@ -5,9 +5,10 @@ Set environment fields such as the name, server, and namespace.
 ### Synopsis
 
 
-Set environment fields such as the name, and server. Changing
+Set environment fields such as the name, namespace, and server. Changing
 the name of an environment will also update the directory structure in
-"environments".
+'environments/'. However, note that resources on the original cluster will not be
+automatically cleaned up.
 
 ```
 ks env set <env-name>
@@ -16,25 +17,25 @@ ks env set <env-name>
 ### Examples
 
 ```
-# Updates the API server address of the environment "us-west/staging".
+# Update the API server address of the environment "us-west/staging".
 ks env set us-west/staging --server=http://example.com
 
-# Updates the namespace of the environment "us-west/staging".
+# Update the namespace of the environment "us-west/staging" to "staging".
 ks env set us-west/staging --namespace=staging
 
-# Updates both the name and the server of the environment "us-west/staging".
-# Updating the name will update the directory structure in "environments".
+# Update both the name and the server of the environment "us-west/staging".
 ks env set us-west/staging --server=http://example.com --name=us-east/staging
 
-# Updates API server address of the environment "us-west/staging" based on the
-# server in the context "staging-west" in your kubeconfig file.
+# Update the API server address of the environment "us-west/staging", based on
+# server URI specified in the "staging-west" context of your current 'kubeconfig'
+# file.
 ks env set us-west/staging --context=staging-west
 ```
 
 ### Options
 
 ```
-      --name string   Specify name to rename environment to. Name must not already exist
+      --name string   Name used to uniquely identify the environment. Must not already exist within the ksonnet app
 ```
 
 ### Options inherited from parent commands

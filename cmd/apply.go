@@ -53,10 +53,10 @@ func init() {
 	addEnvCmdFlags(applyCmd)
 	bindClientGoFlags(applyCmd)
 	bindJsonnetFlags(applyCmd)
-	applyCmd.PersistentFlags().Bool(flagCreate, true, "Create resources if they do not already exist on the cluster")
-	applyCmd.PersistentFlags().Bool(flagSkipGc, false, "Opt out of garbage collection, even with --"+flagGcTag+" specified")
+	applyCmd.PersistentFlags().Bool(flagCreate, true, "Option to create resources if they do not already exist on the cluster")
+	applyCmd.PersistentFlags().Bool(flagSkipGc, false, "Option to skip garbage collection, even with --"+flagGcTag+" specified")
 	applyCmd.PersistentFlags().String(flagGcTag, "", "The specified tag is (1) added to all updated objects (2) used to identify what needs to be removed from the cluster (previously tagged objects that are no longer in the specified manifest)")
-	applyCmd.PersistentFlags().Bool(flagDryRun, false, "Preview the list of operations without changing the cluster state")
+	applyCmd.PersistentFlags().Bool(flagDryRun, false, "Option to preview the list of operations without changing the cluster state")
 }
 
 var applyCmd = &cobra.Command{

@@ -47,8 +47,8 @@ ks apply default --kubeconfig=./kubeconfig -f ./lib/pod.yaml
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
       --context string                 The name of the kubeconfig context to use
-      --create                         Create resources if they do not already exist on the cluster (default true)
-      --dry-run                        Preview the list of operations without changing the cluster state
+      --create                         Option to create resources if they do not already exist on the cluster (default true)
+      --dry-run                        Option to preview the list of operations without changing the cluster state
   -V, --ext-str stringSlice            Values of external variables
       --ext-str-file stringSlice       Read external variable from a file
   -f, --file stringArray               Filename or directory that contains the configuration to apply (accepts YAML, JSON, and Jsonnet)
@@ -62,7 +62,7 @@ ks apply default --kubeconfig=./kubeconfig -f ./lib/pod.yaml
       --resolve-images string          Change implementation of resolveImage native function. One of: noop, registry (default "noop")
       --resolve-images-error string    Action when resolveImage fails. One of ignore,warn,error (default "warn")
       --server string                  The address and port of the Kubernetes API server
-      --skip-gc                        Opt out of garbage collection, even with --gc-tag specified
+      --skip-gc                        Option to skip garbage collection, even with --gc-tag specified
   -A, --tla-str stringSlice            Values of top level arguments
       --tla-str-file stringSlice       Read top level argument from a file
       --token string                   Bearer token for authentication to the API server
