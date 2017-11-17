@@ -1,11 +1,17 @@
 ## ks pkg
 
-Manage packages and dependencies for the current ksonnet project
+Manage packages and dependencies for the current ksonnet application
 
 ### Synopsis
 
 
-Manage packages and dependencies for the current ksonnet project
+Packages allow you to distribute and reuse third-party code in any ksonnet *application*.
+Any package can be installed if it has a valid combination of:
+1. Registry (similar to a container registry, this is a repository of ksonnet libraries)
+2. Library (contains prototypes and helper jsonnet libraries)
+3. Version (a unique identifier for a release of the library, e.g. a git commit SHA)
+
+For more information, see the concept documentation, or related info with `ks registry --help`.
 
 ```
 ks pkg

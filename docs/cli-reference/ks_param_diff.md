@@ -5,10 +5,10 @@ Display differences between the component parameters of two environments
 ### Synopsis
 
 
-Pretty prints differences between the component parameters of two environments.
+Pretty print differences between the component parameters of two environments.
 
-A component flag is accepted to diff against a single component. By default, the
-diff is performed against all components.
+By default, the diff is performed for all components. Diff-ing for a single component
+is supported via a component flag.
 
 
 ```
@@ -18,17 +18,17 @@ ks param diff <env1> <env2>
 ### Examples
 
 ```
-# Diff between the component parameters on environments 'dev' and 'prod'
+# Diff between all component parameters for environments 'dev' and 'prod'
 ks param diff dev prod
 
-# Diff between the component 'guestbook' on environments 'dev' and 'prod'
+# Diff only between the parameters for the 'guestbook' component for environments 'dev' and 'prod'
 ks param diff dev prod --component=guestbook
 ```
 
 ### Options
 
 ```
-      --component string   Specify the component to diff against
+      --component string   Base name of the component file to diff against
 ```
 
 ### Options inherited from parent commands
@@ -38,5 +38,5 @@ ks param diff dev prod --component=guestbook
 ```
 
 ### SEE ALSO
-* [ks param](ks_param.md)	 - Manage ksonnet component parameters
+* [ks param](ks_param.md)	 - Manage parameters for ksonnet components
 

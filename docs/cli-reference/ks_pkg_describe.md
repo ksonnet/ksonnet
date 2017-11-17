@@ -5,8 +5,12 @@ Describe a ksonnet package
 ### Synopsis
 
 
-Output documentation for some ksonnet registry prototype uniquely identified in
-the current ksonnet project by some 'registry-name'.
+Output documentation for a package that is available in the current
+ksonnet application. (This must belong to an already added registry). The output
+includes:
+1. The library name
+2. A brief description provided by the library authors
+3. A list of available prototypes provided by the library
 
 ```
 ks pkg describe [<registry-name>/]<package-name>
@@ -19,5 +23,5 @@ ks pkg describe [<registry-name>/]<package-name>
 ```
 
 ### SEE ALSO
-* [ks pkg](ks_pkg.md)	 - Manage packages and dependencies for the current ksonnet project
+* [ks pkg](ks_pkg.md)	 - Manage packages and dependencies for the current ksonnet application
 

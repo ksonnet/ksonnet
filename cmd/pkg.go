@@ -37,12 +37,19 @@ func init() {
 	pkgCmd.AddCommand(pkgInstallCmd)
 	pkgCmd.AddCommand(pkgListCmd)
 	pkgCmd.AddCommand(pkgDescribeCmd)
-	pkgInstallCmd.PersistentFlags().String(flagName, "", "Name to give the dependency")
+	pkgInstallCmd.PersistentFlags().String(flagName, "", "Name to give the dependency, to use within the ksonnet app")
 }
 
 var pkgCmd = &cobra.Command{
 	Use:   "pkg",
-	Short: `Manage packages and dependencies for the current ksonnet project`,
+	Short: `Manage packages and dependencies for the current ksonnet application`,
+	Long: `Packages allow you to distribute and reuse third-party code in any ksonnet *application*.
+Any package can be installed if it has a valid combination of:
+1. Registry (similar to a container registry, this is a repository of ksonnet libraries)
+2. Library (contains prototypes and helper jsonnet libraries)
+3. Version (a unique identifier for a release of the library, e.g. a git commit SHA)
+
+For more information, see the concept documentation, or related info with ` + "`ks registry --help`" + `.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Command 'pkg' requires a subcommand\n\n%s", cmd.UsageString())
 	},
@@ -80,21 +87,21 @@ var pkgInstallCmd = &cobra.Command{
 		return nil
 	},
 	Long: `Cache a ksonnet library locally, and make it available for use in the current
-ksonnet project. This particularly means that we record enough information in
-` + " `app.yaml` " + `for new users to retrieve the dependency after a fresh clone of the
+ksonnet application. Enough info and metadata is recorded in ` + " `app.yaml` " +
+`that new users can retrieve the dependency after a fresh clone of the
 app repository.
 
-For example, inside a ksonnet application directory, run:
+For example, to install an nginx dependency, run the following iinside a ksonnet
+application directory:
 
-    ks pkg install incubator/nginx@v0.1
+		ks pkg install incubator/nginx@v0.1
 
 This can then be referenced in a source file in the ksonnet project:
 
     local nginx = import "kspkg://nginx";
 
-By default, ksonnet knows about two registries: incubator and stable, which are
-the release channels for official ksonnet libraries. Additional registries can
-be added with the` + " `ks registry` " + `command.
+By default, ksonnet knows about two registries: *incubator* and *stable*, which are
+the release channels for official ksonnet libraries.
 
 Note that multiple versions of the same ksonnet library can be cached and used
 in the same project, by explicitly passing in the` + " `--name` " + `flag. For example:
@@ -161,13 +168,21 @@ var pkgDescribeCmd = &cobra.Command{
 		return nil
 	},
 
-	Long: `Output documentation for some ksonnet registry prototype uniquely identified in
-the current ksonnet project by some 'registry-name'.`,
+	Long: `Output documentation for a package that is available in the current
+ksonnet application. (This must belong to an already added registry). The output
+includes:
+1. The library name
+2. A brief description provided by the library authors
+3. A list of available prototypes provided by the library`,
 }
 
 var pkgListCmd = &cobra.Command{
 	Use:   "list",
 	Short: `Lists information about all dependencies known to the current ksonnet app`,
+	Long: `This looks like a table with the following columns:
+1. Library name
+2. Registry name
+3. Installed status—this is indicated by an asterisk`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		const (
 			nameHeader      = "NAME"
