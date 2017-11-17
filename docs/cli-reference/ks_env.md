@@ -6,7 +6,7 @@ Manage ksonnet environments
 
 
 An environment acts as a sort of "named cluster", allowing for commands like
-'ks apply dev', which applies the ksonnet application to the "dev cluster".
+ `ks apply dev` , which applies the ksonnet application to the 'dev cluster'.
 Additionally, environments allow users to cache data about the cluster it points
 to, including data needed to run 'verify', and a version of ksonnet-lib that is
 generated based on the flags the API server was started with (e.g., RBAC enabled
@@ -18,25 +18,27 @@ often contained in a kubeconfig file), and
 Environments are represented as a hierarchy in the 'environments' directory of a
 ksonnet application. For example, in the example below, there are two
 environments: 'default' and 'us-west/staging'. Each contains a cached version of
-ksonnet-lib, and a 'spec.json' that contains the server and server cert that
+ `ksonnet-lib` , and a `spec.json` that contains the server and server cert that
 uniquely identifies the cluster.
 
-environments/
-  default/           [Default generated environment]
-    .metadata/
-      k.libsonnet
-      k8s.libsonnet
-      swagger.json
-    spec.json
-    default.jsonnet
-  us-west/
-    staging/         [Example of user-generated env]
-      .metadata/
-        k.libsonnet
-        k8s.libsonnet
-        swagger.json
-      spec.json      [This will contain the API server address of the environment and other environment metadata]
-      staging.jsonnet
+    environments/
+      default/           [Default generated environment]
+        .metadata/
+          k.libsonnet
+          k8s.libsonnet
+          swagger.json
+        spec.json
+		default.jsonnet
+        params.libsonnet		
+      us-west/
+        staging/         [Example of user-generated env]
+          .metadata/
+            k.libsonnet
+            k8s.libsonnet
+            swagger.json
+          spec.json      [This will contain the API server address of the environment and other environment metadata]
+		  staging.jsonnet
+          params.libsonnet
 
 ```
 ks env

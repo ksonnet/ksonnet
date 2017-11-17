@@ -88,19 +88,19 @@ configuration.
 
 ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
 files.`,
-	Example: `  # Delete all resources described in a ksonnet application, from the 'dev'
-  # environment. Can be used in any subdirectory of the application.
-  ks delete dev
+	Example: `# Delete all resources described in a ksonnet application, from the 'dev'
+# environment. Can be used in any subdirectory of the application.
+ks delete dev
 
-  # Delete resources described in a YAML file. Automatically picks up the
-  # cluster's location from '$KUBECONFIG'.
-  ks delete -f ./pod.yaml
+# Delete resources described in a YAML file. Automatically picks up the
+# cluster's location from '$KUBECONFIG'.
+ks delete -f ./pod.yaml
 
-  # Delete resources described in the JSON file from the 'dev' environment. Can
-  # be used in any subdirectory of the application.
-  ks delete dev -f ./pod.json
+# Delete resources described in the JSON file from the 'dev' environment. Can
+# be used in any subdirectory of the application.
+ks delete dev -f ./pod.json
 
-  # Delete resources described in a YAML file, and running in the cluster
-  # specified by the current context in specified kubeconfig file.
-  ks delete --kubeconfig=./kubeconfig -f ./pod.yaml`,
+# Delete resources described in a YAML file, and running in the cluster
+# specified by the current context in specified kubeconfig file.
+ks delete --kubeconfig=./kubeconfig -f ./pod.yaml`,
 }

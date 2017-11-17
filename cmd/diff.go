@@ -88,35 +88,35 @@ configurations.
 
 ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
 files.`,
-	Example: `  # Show diff between resources described in a the local 'dev' environment
-  # specified by the ksonnet application and the remote cluster referenced by
-  # the same 'dev' environment. Can be used in any subdirectory of the application.
-  ksonnet diff dev
+	Example: `# Show diff between resources described in a the local 'dev' environment
+# specified by the ksonnet application and the remote cluster referenced by
+# the same 'dev' environment. Can be used in any subdirectory of the application.
+ksonnet diff dev
 
-  # Show diff between resources at remote clusters. This requires ksonnet
-  # application defined environments. Diff between the cluster defined at the
-  # 'us-west/dev' environment, and the cluster defined at the 'us-west/prod'
-  # environment. Can be used in any subdirectory of the application.
-  ksonnet diff remote:us-west/dev remote:us-west/prod
+# Show diff between resources at remote clusters. This requires ksonnet
+# application defined environments. Diff between the cluster defined at the
+# 'us-west/dev' environment, and the cluster defined at the 'us-west/prod'
+# environment. Can be used in any subdirectory of the application.
+ksonnet diff remote:us-west/dev remote:us-west/prod
 
-  # Show diff between resources at a remote and a local cluster. This requires
-  # ksonnet application defined environments. Diff between the cluster defined
-  # at the 'us-west/dev' environment, and the cluster defined at the
-  # 'us-west/prod' environment. Can be used in any subdirectory of the
-  # application.
-  ksonnet diff local:us-west/dev remote:us-west/prod
+# Show diff between resources at a remote and a local cluster. This requires
+# ksonnet application defined environments. Diff between the cluster defined
+# at the 'us-west/dev' environment, and the cluster defined at the
+# 'us-west/prod' environment. Can be used in any subdirectory of the
+# application.
+ksonnet diff local:us-west/dev remote:us-west/prod
 
-  # Show diff between resources described in a YAML file and the cluster
-  # referenced in '$KUBECONFIG'.
-  ks diff -f ./pod.yaml
+# Show diff between resources described in a YAML file and the cluster
+# referenced in '$KUBECONFIG'.
+ks diff -f ./pod.yaml
 
-  # Show diff between resources described in a JSON file and the cluster
-  # referenced by the environment 'dev'.
-  ks diff dev -f ./pod.json
+# Show diff between resources described in a JSON file and the cluster
+# referenced by the environment 'dev'.
+ks diff dev -f ./pod.json
 
-  # Show diff between resources described in a YAML file and the cluster
-  # referred to by './kubeconfig'.
-  ks diff --kubeconfig=./kubeconfig -f ./pod.yaml`,
+# Show diff between resources described in a YAML file and the cluster
+# referred to by './kubeconfig'.
+ks diff --kubeconfig=./kubeconfig -f ./pod.yaml`,
 }
 
 func initDiffCmd(cmd *cobra.Command, wd metadata.AbsPath, envFq1, envFq2 *string, files []string, diffStrategy string) (kubecfg.DiffCmd, error) {

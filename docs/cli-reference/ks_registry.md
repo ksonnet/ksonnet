@@ -32,5 +32,5 @@ ks registry
 ### SEE ALSO
 * [ks](ks.md)	 - Synchronise Kubernetes resources with config files
 * [ks registry describe](ks_registry_describe.md)	 - Describe a ksonnet registry
-* [ks registry list](ks_registry_list.md)	 - List all registries known to current ksonnet app
+* [ks registry list](ks_registry_list.md)	 - List all registries known to the current ksonnet app.
 

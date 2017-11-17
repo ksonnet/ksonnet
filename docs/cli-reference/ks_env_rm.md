@@ -6,11 +6,8 @@ Delete an environment from a ksonnet project
 
 
 Delete an environment from a ksonnet project. This is the same
-as removing the <env-name> environment directory and all files contained. If the
-project exists in a hierarchy (e.g., 'us-east/staging') and deleting the
-environment results in an empty environments directory (e.g., if deleting
-'us-east/staging' resulted in an empty 'us-east/' directory), then all empty
-parent directories are subsequently deleted.
+as removing the <env-name> environment directory and all files contained. All empty
+parent directories are also subsequently deleted.
 
 ```
 ks env rm <env-name>
@@ -19,10 +16,9 @@ ks env rm <env-name>
 ### Examples
 
 ```
-  # Remove the directory 'us-west/staging' and all contents
-  #	in the 'environments' directory. This will also remove the parent directory
-  # 'us-west' if it is empty.
-  ks env rm us-west/staging
+# Remove the directory 'us-west/staging' and all contents in the 'environments'
+# directory. This will also remove the parent directory 'us-west' if it is empty.
+ks env rm us-west/staging
 ```
 
 ### Options inherited from parent commands

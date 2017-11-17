@@ -16,19 +16,19 @@ ks env set <env-name>
 ### Examples
 
 ```
-  # Updates the API server address of the environment 'us-west/staging'.
-  ks env set us-west/staging --server=http://example.com
+# Updates the API server address of the environment 'us-west/staging'.
+ks env set us-west/staging --server=http://example.com
 
-  # Updates the namespace of the environment 'us-west/staging'.
-  ks env set us-west/staging --namespace=staging
+# Updates the namespace of the environment 'us-west/staging'.
+ks env set us-west/staging --namespace=staging
 
-  # Updates both the name and the server of the environment 'us-west/staging'.
-  # Updating the name will update the directory structure in 'environments'.
-  ks env set us-west/staging --server=http://example.com --name=us-east/staging
+# Updates both the name and the server of the environment 'us-west/staging'.
+# Updating the name will update the directory structure in 'environments'.
+ks env set us-west/staging --server=http://example.com --name=us-east/staging
   
-  # Updates API server address of the environment 'us-west/staging' based on the
-  # server in the context 'staging-west' in your kubeconfig file.
-  ks env set us-west/staging --context=staging-west
+# Updates API server address of the environment 'us-west/staging' based on the
+# server in the context 'staging-west' in your kubeconfig file.
+ks env set us-west/staging --context=staging-west
 ```
 
 ### Options
