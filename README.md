@@ -103,7 +103,7 @@ ks generate deployment-exposed-with-service guestbook-ui \
 ks apply default
 
 # Set up an API proxy so that you can access the guestbook service locally
-kc proxy > /dev/null &
+kubectl proxy > /dev/null &
 PROXY_PID=$!
 QUICKSTART_NAMESPACE=$(kubectl get svc guestbook -o jsonpath="{.metadata.namespace}")
 GUESTBOOK_SERVICE_URL=http://localhost:8001/api/v1/proxy/namespaces/$QUICKSTART_NAMESPACE/services/guestbook
@@ -161,7 +161,7 @@ ksonnet is a feature-rich framework. To learn more about how to integrate it int
 
 * **[CLI Reference](/docs/cli-reference#command-line-reference)** - What ksonnet commands are available, and how do I use them?
 
-* **[Concept Reference (WIP)](/docs/concepts.md)** - What do all these special ksonnet terms mean (e.g. *prototypes*) ?
+* **[Concept Reference](/docs/concepts.md)** - What do all these special ksonnet terms mean (e.g. *prototypes*) ?
 
 
 ## Troubleshooting
