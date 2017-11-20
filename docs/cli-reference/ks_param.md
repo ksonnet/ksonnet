@@ -1,24 +1,21 @@
 ## ks param
 
-Manage ksonnet component parameters
+Manage parameters for ksonnet components
 
 ### Synopsis
 
 
-Parameters are the customizable fields defining ksonnet components. For
-example, replica count, component name, or deployment image.
+Parameters are predetermined fields that can be used to customize ksonnet
+components. Potential examples include replica count, component name, and deployment
+image.
 
-Parameters are also able to be defined separately across environments. Meaning,
-this supports features to allow a "development" environment to only run a
-single replication instance for it's components, whereas allowing a "production"
-environment to run more replication instances to meet heavier production load
-demands.
+Parameters can also be defined on a per-environment basis. For example, this
+allows a "development" environment to only run a single replica for component X,
+whereas a production environment might run multiple replicas for component X, in
+order to meet heavier production load demands.
 
-Environments are ksonnet "named clusters". For more information on environments,
-run:
-
-    ks env --help
-
+Environments can be thought of as "named cluster contexts". For more information,
+run `ks env --help` or see the concept documentation.
 
 ```
 ks param

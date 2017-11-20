@@ -5,7 +5,10 @@ Lists information about all dependencies known to the current ksonnet app
 ### Synopsis
 
 
-Lists information about all dependencies known to the current ksonnet app
+This looks like a table with the following columns:
+1. Library name
+2. Registry name
+3. Installed status—this is indicated by an asterisk
 
 ```
 ks pkg list
@@ -18,5 +21,5 @@ ks pkg list
 ```
 
 ### SEE ALSO
-* [ks pkg](ks_pkg.md)	 - Manage packages and dependencies for the current ksonnet project
+* [ks pkg](ks_pkg.md)	 - Manage packages and dependencies for the current ksonnet application
 

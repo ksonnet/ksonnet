@@ -34,7 +34,7 @@ func init() {
 
 var validateCmd = &cobra.Command{
 	Use:   "validate [env-name] [-f <file-or-dir>]",
-	Short: "Compare generated manifest against server OpenAPI spec",
+	Short: "Compare generated manifests against the server's OpenAPI spec",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 1 {
 			return fmt.Errorf("'validate' takes at most a single argument, that is the name of the environment")
@@ -67,24 +67,15 @@ var validateCmd = &cobra.Command{
 
 		return c.Run(objs, cmd.OutOrStdout())
 	},
-	Long: `Validate that an application or file is compliant with the Kubernetes
-specification.
-
-ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
-files.`,
+	Long: `Validate that a ksonnet application or file is compliant with an environment's
+Kubernetes specification.`,
 	Example: `# Validate all resources described in a ksonnet application, expanding
-# ksonnet code with 'dev' environment where necessary (i.e., not YAML, JSON,
-# or non-ksonnet Jsonnet code).
+# ksonnet code with 'dev' environment parameters where necessary.
+# Note that this ONLY validates manifests that are written with ksonnet-lib. It does
+# not check YAML, JSON, or vanilla Jsonnet.
 ksonnet validate dev
 
-# Validate resources described in a YAML file.
-ksonnet validate -f ./pod.yaml
-
-# Validate resources described in the JSON file against existing resources
-# in the cluster the 'dev' environment is pointing at.
-ksonnet validate dev -f ./pod.yaml
-
-# Validate resources described in a Jsonnet file. Does not expand using
-# environment bindings.
-ksonnet validate -f ./pod.jsonnet`,
+# Validate that resources described in a YAML file adhere to the Kubernetes spec
+# used by the 'dev' environment cluster.
+ksonnet validate dev -f ./pod.yaml`,
 }

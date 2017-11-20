@@ -1,11 +1,11 @@
 ## ks env rm
 
-Delete an environment from a ksonnet project
+Delete an environment from a ksonnet application
 
 ### Synopsis
 
 
-Delete an environment from a ksonnet project. This is the same
+Delete an environment from a ksonnet application. This is the same
 as removing the <env-name> environment directory and all files contained. All empty
 parent directories are also subsequently deleted.
 
@@ -16,8 +16,8 @@ ks env rm <env-name>
 ### Examples
 
 ```
-# Remove the directory 'us-west/staging' and all contents in the 'environments'
-# directory. This will also remove the parent directory 'us-west' if it is empty.
+# Remove the directory "environments/us-west/staging", as well as the
+# parent directory "us-west" (if it is empty).
 ks env rm us-west/staging
 ```
 

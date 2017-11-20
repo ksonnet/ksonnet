@@ -1,43 +1,41 @@
 ## ks apply
 
-Apply local configuration to remote cluster
+Apply local manifests to a remote cluster
 
 ### Synopsis
 
 
-Update (or optionally create) Kubernetes resources on the cluster using the
-local configuration. Use the `--create` flag to control whether we create them
-if they do not exist (default: true).
+Use local manifest(s) to update (and optionally create) Kubernetes resources on the cluster.
+This cluster is determined by the mandatory environment argument.
+To control whether resources are created if they do not exist, use the `--create` flag (defaults to `true`).
 
-ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
-files.
+An entire ksonnet application can be applied, or individual JSON, YAML, or Jsonnet files.
+
+Note that this command needs to be run *within* a ksonnet app directory.
 
 ```
-ks apply [env-name] [-f <file-or-dir>]
+ks apply [env-name] [-f <file-or-dir>] [--dry-run]
 ```
 
 ### Examples
 
 ```
-# Create or update all resources described in a ksonnet application, and
-# running in the 'dev' environment. Can be used in any subdirectory of the
-# application.
-ks apply dev
-
-# Create or update resources described in a YAML file. Automatically picks up
-# the cluster's location from '$KUBECONFIG'.
-ks appy -f ./pod.yaml
-
-# Create or update resources described in the JSON file. Changes are deployed
-# to the cluster pointed at the 'dev' environment.
-ks apply dev -f ./pod.json
-
-# Update resources described in a YAML file, and running in cluster referred
-# to by './kubeconfig'.
-ks apply --kubeconfig=./kubeconfig -f ./pod.yaml
-
-# Display set of actions we will execute when we run 'apply'.
+# Preview the set of actions that are executed by 'apply'.
 ks apply dev --dry-run
+
+# Update (but do not create) all resources described in a ksonnet
+# application. Changes are deployed to the cluster pointed at the 'prod'
+# environment. Can be used in any subdirectory of that application.
+ks apply prod --create=false
+
+# Create or update resources described in a JSON file. Changes are deployed
+# to the cluster pointed at the 'dev' environment.
+ks apply dev -f ./lib/pod.json
+
+# Create or update resources described in a YAML file. Changes are deployed to the
+# cluster pointed to by the current context of './kubeconfig'. This kubeconfig
+# context overrides the 'default' environment.
+ks apply default --kubeconfig=./kubeconfig -f ./lib/pod.yaml
 ```
 
 ### Options
@@ -49,12 +47,12 @@ ks apply dev --dry-run
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
       --context string                 The name of the kubeconfig context to use
-      --create                         Create missing resources (default true)
-      --dry-run                        Perform only read-only operations
+      --create                         Option to create resources if they do not already exist on the cluster (default true)
+      --dry-run                        Option to preview the list of operations without changing the cluster state
   -V, --ext-str stringSlice            Values of external variables
       --ext-str-file stringSlice       Read external variable from a file
   -f, --file stringArray               Filename or directory that contains the configuration to apply (accepts YAML, JSON, and Jsonnet)
-      --gc-tag string                  Add this tag to updated objects, and garbage collect existing objects with this tag and not in config
+      --gc-tag string                  The specified tag is (1) added to all updated objects (2) used to identify what needs to be removed from the cluster (previously tagged objects that are no longer in the specified manifest)
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
   -J, --jpath stringSlice              Additional jsonnet library search path
       --kubeconfig string              Path to a kube config. Only required if out-of-cluster
@@ -64,7 +62,7 @@ ks apply dev --dry-run
       --resolve-images string          Change implementation of resolveImage native function. One of: noop, registry (default "noop")
       --resolve-images-error string    Action when resolveImage fails. One of ignore,warn,error (default "warn")
       --server string                  The address and port of the Kubernetes API server
-      --skip-gc                        Don't perform garbage collection, even with --gc-tag
+      --skip-gc                        Option to skip garbage collection, even with --gc-tag specified
   -A, --tla-str stringSlice            Values of top level arguments
       --tla-str-file stringSlice       Read top level argument from a file
       --token string                   Bearer token for authentication to the API server

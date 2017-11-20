@@ -36,13 +36,13 @@ const flagDiffStrategy = "diff-strategy"
 func init() {
 	addEnvCmdFlags(diffCmd)
 	bindJsonnetFlags(diffCmd)
-	diffCmd.PersistentFlags().String(flagDiffStrategy, "all", "Diff strategy, all or subset.")
+	diffCmd.PersistentFlags().String(flagDiffStrategy, "all", "Diff strategy, \"all\" or \"subset\".")
 	RootCmd.AddCommand(diffCmd)
 }
 
 var diffCmd = &cobra.Command{
 	Use:   "diff [<env1> [<env2>]] [-f <file-or-dir>]",
-	Short: "Display differences between server and local config, or server and server config",
+	Short: "Display differences between manifests, based on environment or location (local or remote)",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 2 {
 			return fmt.Errorf("'diff' takes at most two arguments, that are the name of the environments")
@@ -83,40 +83,37 @@ var diffCmd = &cobra.Command{
 
 		return c.Run(cmd.OutOrStdout())
 	},
-	Long: `Display differences between server and local configuration, or server and server
-configurations.
+	Long: `Display differences between manifests, for any of the following cases:
+1. Remote and local manifests for a single environment
+2. Remote manifests for two separate environments
+3. Local manifests for two separate environments
+4. A remote manifest in one environment and a local manifest in another environment
 
-ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
-files.`,
-	Example: `# Show diff between resources described in a the local 'dev' environment
-# specified by the ksonnet application and the remote cluster referenced by
-# the same 'dev' environment. Can be used in any subdirectory of the application.
-ksonnet diff dev
+Essentially, any two manifests can be compared, as long as their location ("local" or
+"remote") and environment are specified.
 
-# Show diff between resources at remote clusters. This requires ksonnet
-# application defined environments. Diff between the cluster defined at the
-# 'us-west/dev' environment, and the cluster defined at the 'us-west/prod'
-# environment. Can be used in any subdirectory of the application.
-ksonnet diff remote:us-west/dev remote:us-west/prod
+Note that "remote" refers to what's actually running on a given Kubernetes API server.
 
-# Show diff between resources at a remote and a local cluster. This requires
-# ksonnet application defined environments. Diff between the cluster defined
-# at the 'us-west/dev' environment, and the cluster defined at the
-# 'us-west/prod' environment. Can be used in any subdirectory of the
-# application.
-ksonnet diff local:us-west/dev remote:us-west/prod
+Diff can be called on an entire ksonnet application, or individual JSON, YAML, or
+Jsonnet files.`,
+	Example: `# Show diff between remote and local manifests for a single 'dev'
+# environment. This diffs the entire ksonnet app, and can be used in any
+# subdirectory of that ksonnet application.
+ks diff dev
 
-# Show diff between resources described in a YAML file and the cluster
-# referenced in '$KUBECONFIG'.
-ks diff -f ./pod.yaml
+# Show diff between the remote resources running in two different ksonnet
+# environments, 'us-west/dev' and 'us-west/prod'. This command covers
+# all resources defined in the ksonnet app.
+ks diff remote:us-west/dev remote:us-west/prod
 
-# Show diff between resources described in a JSON file and the cluster
-# referenced by the environment 'dev'.
-ks diff dev -f ./pod.json
+# Show diff between local manifests in the 'us-west/dev' environment and
+# remote resources in the 'us-west/prod' environment, for an entire ksonnet app
+ks diff local:us-west/dev remote:us-west/prod
 
-# Show diff between resources described in a YAML file and the cluster
-# referred to by './kubeconfig'.
-ks diff --kubeconfig=./kubeconfig -f ./pod.yaml`,
+# For the resources defined in './components/redis.jsonnet', show the diff
+# between what's in the local manifest and what's actually running in the 'dev'
+# environment
+ks diff dev -f ./components/redis.jsonnet`,
 }
 
 func initDiffCmd(cmd *cobra.Command, wd metadata.AbsPath, envFq1, envFq2 *string, files []string, diffStrategy string) (kubecfg.DiffCmd, error) {

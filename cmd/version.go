@@ -33,6 +33,8 @@ var Version = "(dev build)"
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version information",
+	Long: `Prints information about the versions of the kubecfg, jsonnet, and client-go
+libraries used.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		out := cmd.OutOrStdout()
 		fmt.Fprintln(out, "kubecfg version:", Version)

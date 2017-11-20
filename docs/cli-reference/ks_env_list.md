@@ -1,12 +1,13 @@
 ## ks env list
 
-List all environments in a ksonnet project
+List all environments in a ksonnet application
 
 ### Synopsis
 
 
-List all environments in a ksonnet project. This will
-display the name, server, and namespace of each environment within the ksonnet project.
+List all environments in a ksonnet application. This will display the
+(1) name, (2) server, and (3) namespace of each environment within the ksonnet
+application.
 
 ```
 ks env list

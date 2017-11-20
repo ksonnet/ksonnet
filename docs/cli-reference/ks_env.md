@@ -5,40 +5,45 @@ Manage ksonnet environments
 ### Synopsis
 
 
-An environment acts as a sort of "named cluster", allowing for commands like
- `ks apply dev` , which applies the ksonnet application to the 'dev cluster'.
-Additionally, environments allow users to cache data about the cluster it points
-to, including data needed to run 'verify', and a version of ksonnet-lib that is
-generated based on the flags the API server was started with (e.g., RBAC enabled
-or not).
+An environment acts as a sort of "named cluster context", and points at a
+combination of a cluster's (1) API server URI, and (2) Kubernetes namespace. *Note that
+the namespace must already exist on your cluster.* This environment definition
+allows commands like `ks apply dev` to make changes to the specified
+"dev cluster".
 
-An environment contains no user-specific data (such as the private key
-often contained in a kubeconfig file), and
+An environment also caches additional data about the cluster it points to, so
+that it has:
+1. The right version of the helper Kubernetes library (ksonnet-lib),
+2. The appropriate schema to later validate manifests against
 
-Environments are represented as a hierarchy in the 'environments' directory of a
+Note that an environment *DOES NOT* contain user-specific data such as private keys.
+
+Environments are represented as a hierarchy in the 'environments/' directory of a
 ksonnet application. For example, in the example below, there are two
-environments: 'default' and 'us-west/staging'. Each contains a cached version of
- `ksonnet-lib` , and a `spec.json` that contains the server and server cert that
-uniquely identifies the cluster.
+environments: "default" and "us-west/staging". Each contains a cached version of
+ `ksonnet-lib` , and a `spec.json` that contains the server
+and server cert that uniquely identifies the cluster.
 
-    environments/
-      default/           [Default generated environment]
-        .metadata/
-          k.libsonnet
-          k8s.libsonnet
-          swagger.json
-        spec.json
-		default.jsonnet
-        params.libsonnet		
-      us-west/
-        staging/         [Example of user-generated env]
-          .metadata/
-            k.libsonnet
-            k8s.libsonnet
-            swagger.json
-          spec.json      [This will contain the API server address of the environment and other environment metadata]
-		  staging.jsonnet
-          params.libsonnet
+├── environments
+│   ├── base.libsonnet
+│   ├── default                      // default generated environment
+│   │   ├── .metadata
+│   │   │   ├── k.libsonnet
+│   │   │   ├── k8s.libsonnet
+│   │   │   └── swagger.json
+│   │   ├── default.jsonnet
+│   │   ├── params.libsonnet
+│   │   └── spec.json
+│   └── us-west
+│       └── staging                  // example of user-generated env
+│           ├── .metadata
+│           │   ├── k.libsonnet
+│           │   ├── k8s.libsonnet
+│           │   └── swagger.json
+│           ├── params.libsonnet
+│           ├── spec.json           //This will contain the enviornment's API server address and namespace
+│           └── staging.jsonnet
+...
 
 ```
 ks env
@@ -72,8 +77,8 @@ ks env
 
 ### SEE ALSO
 * [ks](ks.md)	 - Synchronise Kubernetes resources with config files
-* [ks env add](ks_env_add.md)	 - Add a new environment to a ksonnet project
-* [ks env list](ks_env_list.md)	 - List all environments in a ksonnet project
-* [ks env rm](ks_env_rm.md)	 - Delete an environment from a ksonnet project
+* [ks env add](ks_env_add.md)	 - Add a new environment to a ksonnet application
+* [ks env list](ks_env_list.md)	 - List all environments in a ksonnet application
+* [ks env rm](ks_env_rm.md)	 - Delete an environment from a ksonnet application
 * [ks env set](ks_env_set.md)	 - Set environment fields such as the name, server, and namespace.
 

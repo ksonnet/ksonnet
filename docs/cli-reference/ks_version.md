@@ -5,7 +5,8 @@ Print version information
 ### Synopsis
 
 
-Print version information
+Prints information about the versions of the kubecfg, jsonnet, and client-go
+libraries used.
 
 ```
 ks version

@@ -41,7 +41,7 @@ var showCmd = &cobra.Command{
 	Short: "Show expanded resource definitions",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 1 {
-			return fmt.Errorf("'show' takes at most a single argument, that is the name of the environment")
+			return fmt.Errorf("'show' takes at most a single argument: the name of the environment")
 		}
 
 		flags := cmd.Flags()
@@ -72,4 +72,5 @@ var showCmd = &cobra.Command{
 
 		return c.Run(objs, cmd.OutOrStdout())
 	},
+	Long: ``,
 }

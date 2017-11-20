@@ -35,28 +35,25 @@ func init() {
 	paramCmd.AddCommand(paramListCmd)
 	paramCmd.AddCommand(paramDiffCmd)
 
-	paramSetCmd.PersistentFlags().String(flagParamEnv, "", "Specify environment to set parameters for")
-	paramListCmd.PersistentFlags().String(flagParamEnv, "", "Specify environment to list parameters for")
-	paramDiffCmd.PersistentFlags().String(flagParamComponent, "", "Specify the component to diff against")
+	paramSetCmd.PersistentFlags().String(flagParamEnv, "", "Name of the environment to set parameters for")
+	paramListCmd.PersistentFlags().String(flagParamEnv, "", "Name of the environment to list parameters for")
+	paramDiffCmd.PersistentFlags().String(flagParamComponent, "", "Base name of the component file to diff against")
 }
 
 var paramCmd = &cobra.Command{
 	Use:   "param",
-	Short: `Manage ksonnet component parameters`,
-	Long: `Parameters are the customizable fields defining ksonnet components. For
-example, replica count, component name, or deployment image.
+	Short: `Manage parameters for ksonnet components`,
+	Long: `Parameters are predetermined fields that can be used to customize ksonnet
+components. Potential examples include replica count, component name, and deployment
+image.
 
-Parameters are also able to be defined separately across environments. Meaning,
-this supports features to allow a "development" environment to only run a
-single replication instance for it's components, whereas allowing a "production"
-environment to run more replication instances to meet heavier production load
-demands.
+Parameters can also be defined on a per-environment basis. For example, this
+allows a "development" environment to only run a single replica for component X,
+whereas a production environment might run multiple replicas for component X, in
+order to meet heavier production load demands.
 
-Environments are ksonnet "named clusters". For more information on environments,
-run:
-
-    ks env --help
-`,
+Environments can be thought of as "named cluster contexts". For more information,
+run ` + "`ks env --help`" + ` or see the concept documentation.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Command 'param' requires a subcommand\n\n%s", cmd.UsageString())
 	},
@@ -68,7 +65,7 @@ var paramSetCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
 		if len(args) != 3 {
-			return fmt.Errorf("'param set' takes exactly three arguments, the name of the component, and the key and value of the parameter, respectively")
+			return fmt.Errorf("'param set' takes exactly three arguments: (1) the name of the component, in addition to (2) the key and (3) value of the parameter, respectively")
 		}
 
 		component := args[0]
@@ -86,16 +83,19 @@ var paramSetCmd = &cobra.Command{
 	},
 	Long: `Set component or environment parameters such as replica count or name.
 
-Parameters are set individually, one at a time. If you require customization of
-more fields, we suggest that you modify your ksonnet project's
+Parameters are set individually, one at a time. If you need to customize multiple
+fields at once, we suggest that you modify your ksonnet application's
 ` + " `components/params.libsonnet` " + `file directly. Likewise, for greater customization
 of environment parameters, we suggest modifying the
 ` + " `environments/:name/params.libsonnet` " + `file.
+
+Additional information about parameters is available in the concept documentation.
 `,
-	Example: `# Updates the replica count of the 'guestbook' component to 4.
+	Example: `# Update the replica count of the 'guestbook' component to 4, across
+# all environments
 ks param set guestbook replicas 4
 
-# Updates the replica count of the 'guestbook' component to 2 for the environment
+# Update the replica count of the 'guestbook' component to 2, but only for the environment
 # 'dev'
 ks param set guestbook replicas 2 --env=dev`,
 }
@@ -106,7 +106,7 @@ var paramListCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
 		if len(args) > 1 {
-			return fmt.Errorf("'param list' takes at most one argument, that is the name of the component")
+			return fmt.Errorf("'param list' takes at most one argument: the component name")
 		}
 
 		component := ""
@@ -125,8 +125,8 @@ var paramListCmd = &cobra.Command{
 	},
 	Long: `List all component parameters or environment parameters.
 
-This command will display all parameters for the component specified. If a
-component is not specified, parameters for all components will be listed.
+This command displays all parameters for the specified component. If a
+component is not specified, parameters for *all* components are listed.
 
 Furthermore, parameters can be listed on a per-environment basis.
 `,
@@ -149,7 +149,7 @@ var paramDiffCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
 		if len(args) != 2 {
-			return fmt.Errorf("'param diff' takes exactly two arguments, that is the name of the environments to diff against")
+			return fmt.Errorf("'param diff' takes exactly two arguments: the respective names of the environments being diffed")
 		}
 
 		env1 := args[0]
@@ -164,14 +164,14 @@ var paramDiffCmd = &cobra.Command{
 
 		return c.Run(cmd.OutOrStdout())
 	},
-	Long: `Pretty prints differences between the component parameters of two environments.
+	Long: `Pretty print differences between the component parameters of two environments.
 
-A component flag is accepted to diff against a single component. By default, the
-diff is performed against all components.
+By default, the diff is performed for all components. Diff-ing for a single component
+is supported via a component flag.
 `,
-	Example: `# Diff between the component parameters on environments 'dev' and 'prod'
+	Example: `# Diff between all component parameters for environments 'dev' and 'prod'
 ks param diff dev prod
 
-# Diff between the component 'guestbook' on environments 'dev' and 'prod'
+# Diff only between the parameters for the 'guestbook' component for environments 'dev' and 'prod'
 ks param diff dev prod --component=guestbook`,
 }

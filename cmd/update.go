@@ -31,18 +31,19 @@ func init() {
 	addEnvCmdFlags(updateCmd)
 	bindClientGoFlags(updateCmd)
 	bindJsonnetFlags(updateCmd)
-	updateCmd.PersistentFlags().Bool(flagCreate, true, "Create missing resources")
-	updateCmd.PersistentFlags().Bool(flagSkipGc, false, "Don't perform garbage collection, even with --"+flagGcTag)
-	updateCmd.PersistentFlags().String(flagGcTag, "", "Add this tag to updated objects, and garbage collect existing objects with this tag and not in config")
-	updateCmd.PersistentFlags().Bool(flagDryRun, false, "Perform only read-only operations")
+
+	updateCmd.PersistentFlags().Bool(flagCreate, true, "Option to create resources if they do not already exist on the cluster")
+	updateCmd.PersistentFlags().Bool(flagSkipGc, false, "Option to skip garbage collection, even with --"+flagGcTag+" specified")
+	updateCmd.PersistentFlags().String(flagGcTag, "", "The specified tag is (1) added to all updated objects (2) used to identify what needs to be removed from the cluster (previously tagged objects that are no longer in the specified manifest)")
+	updateCmd.PersistentFlags().Bool(flagDryRun, false, "Option to preview the list of operations without changing the cluster state")
 }
 
 var updateCmd = &cobra.Command{
-	Deprecated: "NOTE: Command 'update' is deprecated, use 'apply' instead",
+	Deprecated: "NOTE: Use 'apply' instead",
 	Hidden:     true,
 	Use:        "update [<env>|-f <file-or-dir>]",
-	Short: `[DEPRECATED] Update (or optionally create) Kubernetes resources on the cluster using the
-local configuration. Accepts JSON, YAML, or Jsonnet.`,
+	Short: `[DEPRECATED] Use local manifest(s) to update (and optionally create) Kubernetes resources on the cluster.
+Accepts JSON, YAML, or Jsonnet files.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 1 {
 			return fmt.Errorf("'update' takes at most a single argument, that is the name of the environment")
@@ -101,27 +102,4 @@ local configuration. Accepts JSON, YAML, or Jsonnet.`,
 
 		return c.Run(objs, wd)
 	},
-	Long: `NOTE: Command 'update' is deprecated, use 'apply' instead.
-
-Update (or optionally create) Kubernetes resources on the cluster using the
-local configuration. Use the '--create' flag to control whether we create them
-if they do not exist (default: true).
-
-ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
-files.`,
-	Example: `# Create or update all resources described in a ksonnet application, and
-# running in the 'dev' environment. Can be used in any subdirectory of the
-# application.
-ks update dev
-
-# Create or update resources described in a YAML file. Automatically picks up
-# the cluster's location from '$KUBECONFIG'.
-ks update -f ./pod.yaml
-
-# Update resources described in a YAML file, and running in cluster referred
-# to by './kubeconfig'.
-ks update --kubeconfig=./kubeconfig -f ./pod.yaml
-
-# Display set of actions we will execute when we run 'update'.
-ks update dev --dry-run`,
 }

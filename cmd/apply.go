@@ -53,15 +53,15 @@ func init() {
 	addEnvCmdFlags(applyCmd)
 	bindClientGoFlags(applyCmd)
 	bindJsonnetFlags(applyCmd)
-	applyCmd.PersistentFlags().Bool(flagCreate, true, "Create missing resources")
-	applyCmd.PersistentFlags().Bool(flagSkipGc, false, "Don't perform garbage collection, even with --"+flagGcTag)
-	applyCmd.PersistentFlags().String(flagGcTag, "", "Add this tag to updated objects, and garbage collect existing objects with this tag and not in config")
-	applyCmd.PersistentFlags().Bool(flagDryRun, false, "Perform only read-only operations")
+	applyCmd.PersistentFlags().Bool(flagCreate, true, "Option to create resources if they do not already exist on the cluster")
+	applyCmd.PersistentFlags().Bool(flagSkipGc, false, "Option to skip garbage collection, even with --"+flagGcTag+" specified")
+	applyCmd.PersistentFlags().String(flagGcTag, "", "The specified tag is (1) added to all updated objects (2) used to identify what needs to be removed from the cluster (previously tagged objects that are no longer in the specified manifest)")
+	applyCmd.PersistentFlags().Bool(flagDryRun, false, "Option to preview the list of operations without changing the cluster state")
 }
 
 var applyCmd = &cobra.Command{
-	Use:   "apply [env-name] [-f <file-or-dir>]",
-	Short: `Apply local configuration to remote cluster`,
+	Use:   "apply [env-name] [-f <file-or-dir>] [--dry-run]",
+	Short: `Apply local manifests to a remote cluster`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 1 {
 			return fmt.Errorf("'apply' takes at most a single argument, that is the name of the environment")
@@ -120,29 +120,28 @@ var applyCmd = &cobra.Command{
 
 		return c.Run(objs, wd)
 	},
-	Long: `Update (or optionally create) Kubernetes resources on the cluster using the
-local configuration. Use the` + " `--create` " + `flag to control whether we create them
-if they do not exist (default: true).
+	Long: `Use local manifest(s) to update (and optionally create) Kubernetes resources on the cluster.
+This cluster is determined by the mandatory environment argument.
+To control whether resources are created if they do not exist, use the` +
+" `--create` " + `flag (defaults to ` + "`true`" +`).
 
-ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
-files.`,
-	Example: `# Create or update all resources described in a ksonnet application, and
-# running in the 'dev' environment. Can be used in any subdirectory of the
-# application.
-ks apply dev
+An entire ksonnet application can be applied, or individual JSON, YAML, or Jsonnet files.
 
-# Create or update resources described in a YAML file. Automatically picks up
-# the cluster's location from '$KUBECONFIG'.
-ks appy -f ./pod.yaml
+Note that this command needs to be run *within* a ksonnet app directory.`,
+	Example: `# Preview the set of actions that are executed by 'apply'.
+ks apply dev --dry-run
 
-# Create or update resources described in the JSON file. Changes are deployed
+# Update (but do not create) all resources described in a ksonnet
+# application. Changes are deployed to the cluster pointed at the 'prod'
+# environment. Can be used in any subdirectory of that application.
+ks apply prod --create=false
+
+# Create or update resources described in a JSON file. Changes are deployed
 # to the cluster pointed at the 'dev' environment.
-ks apply dev -f ./pod.json
+ks apply dev -f ./lib/pod.json
 
-# Update resources described in a YAML file, and running in cluster referred
-# to by './kubeconfig'.
-ks apply --kubeconfig=./kubeconfig -f ./pod.yaml
-
-# Display set of actions we will execute when we run 'apply'.
-ks apply dev --dry-run`,
+# Create or update resources described in a YAML file. Changes are deployed to the
+# cluster pointed to by the current context of './kubeconfig'. This kubeconfig
+# context overrides the 'default' environment.
+ks apply default --kubeconfig=./kubeconfig -f ./lib/pod.yaml`,
 }
