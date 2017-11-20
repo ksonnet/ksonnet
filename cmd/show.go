@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/ksonnet/ksonnet/metadata"
@@ -67,6 +68,8 @@ var showCmd = &cobra.Command{
 
 		objs, err := expandEnvCmdObjs(cmd, envSpec, wd)
 		if err != nil {
+			log.Info("Jsonnet files in components/ aren't able to be expanded without an environment. " +
+				"Consider running this command with the format: `ks show <env> -f <file>.")
 			return err
 		}
 
