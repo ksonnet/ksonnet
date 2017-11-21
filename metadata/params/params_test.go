@@ -296,6 +296,23 @@ func TestGetComponentParams(t *testing.T) {
 }`,
 			Params{"name": `"foo-bar"`, "replicas": "1"},
 		},
+		// Test case where one of the param values is a block string
+		{
+			"foo",
+			`
+{
+	components: {
+		"foo": {
+			name: |||
+        name
+        is
+        foo
+			|||,
+		}
+	},
+}`,
+			Params{"name": "|||\nname\nis\nfoo\n|||"},
+		},
 	}
 
 	errors := []struct {
@@ -334,18 +351,6 @@ func TestGetComponentParams(t *testing.T) {
 	components: {
 		|||foo|||: {
 			name: "foo",
-		}
-	},
-}`,
-		},
-		// Test case where one of the param values is a block string
-		{
-			"foo",
-			`
-{
-	components: {
-		"foo": {
-			name: |||name is foo|||,
 		}
 	},
 }`,
@@ -568,6 +573,36 @@ local bar = import "bar";
   },
 }`,
 		},
+		// Test setting parameter for jsonnet file with multi-string field
+		{
+			"foo-bar",
+			`
+{
+  components: {
+    "foo-bar": {
+      description: |||
+        foo
+        bar
+      |||,
+      name: "foo-bar",
+    },
+  },
+}`,
+			Params{"replicas": "5"},
+			`
+{
+  components: {
+    "foo-bar": {
+      description: |||
+        foo
+        bar
+      |||,
+      name: "foo-bar",
+      replicas: 5,
+    },
+  },
+}`,
+		},
 	}
 
 	errors := []struct {
@@ -755,6 +790,9 @@ params + {
       replicas: 1,
     },
     foo +: {
+      description: |||
+        foo
+      |||,
       name: "foo",
       replicas: 1,
     },
@@ -770,6 +808,9 @@ params + {
       replicas: 1,
     },
     foo +: {
+      description: |||
+        foo
+      |||,
       name: "foobar",
       replicas: 5,
     },

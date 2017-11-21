@@ -152,6 +152,8 @@ func visitParamValue(param ast.Node) (string, error) {
 		switch n.Kind {
 		case ast.StringSingle, ast.StringDouble:
 			return fmt.Sprintf(`"%s"`, n.Value), nil
+		case ast.StringBlock:
+			return fmt.Sprintf("|||\n%s|||", n.Value), nil
 		default:
 			return "", fmt.Errorf("Found unsupported LiteralString type %T", n)
 		}
@@ -176,7 +178,21 @@ func writeParams(indent int, params Params) string {
 	var buffer bytes.Buffer
 	buffer.WriteString("\n")
 	for i, key := range keys {
-		buffer.WriteString(fmt.Sprintf("%s%s: %s,", indentBuffer.String(), key, params[key]))
+		param := params[key]
+		if strings.HasPrefix(param, "|||\n") {
+			println(param)
+
+			// every line in a block string needs to be indented
+			lines := strings.Split(param, "\n")
+			buffer.WriteString(fmt.Sprintf("%s%s: %s\n", indentBuffer.String(), key, lines[0]))
+			for i := 1; i < len(lines)-1; i++ {
+				buffer.WriteString(fmt.Sprintf("  %s%s\n", indentBuffer.String(), lines[i]))
+			}
+			buffer.WriteString(fmt.Sprintf("%s|||,", indentBuffer.String()))
+		} else {
+			// other param types
+			buffer.WriteString(fmt.Sprintf("%s%s: %s,", indentBuffer.String(), key, param))
+		}
 		if i < len(keys)-1 {
 			buffer.WriteString("\n")
 		}
