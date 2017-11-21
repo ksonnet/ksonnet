@@ -266,7 +266,7 @@ func TestLibPaths(t *testing.T) {
 	expectedVendorPath := path.Join(appName, vendorDir)
 	expectedLibPath := path.Join(appName, libDir)
 	expectedEnvLibPath := path.Join(appName, environmentsDir, mockEnvName, metadataDirName)
-	expectedEnvComponentPath := path.Join(appName, environmentsDir, mockEnvName, path.Base(mockEnvName)+".jsonnet")
+	expectedEnvComponentPath := path.Join(appName, environmentsDir, mockEnvName, envFileName)
 	expectedEnvParamsPath := path.Join(appName, environmentsDir, mockEnvName, paramsFileName)
 	m := mockEnvironments(t, appName)
 

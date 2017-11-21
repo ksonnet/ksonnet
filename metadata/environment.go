@@ -37,12 +37,27 @@ const (
 	defaultEnvName  = "default"
 	metadataDirName = ".metadata"
 
+	// hidden metadata files
 	schemaFilename        = "swagger.json"
 	extensionsLibFilename = "k.libsonnet"
 	k8sLibFilename        = "k8s.libsonnet"
-	paramsFileName        = "params.libsonnet"
-	specFilename          = "spec.json"
+
+	// primary environment files
+	envFileName    = "main.jsonnet"
+	paramsFileName = "params.libsonnet"
+	specFilename   = "spec.json"
 )
+
+var envPaths = []string{
+	// metadata Dir.wh
+	metadataDirName,
+	// environment base override file
+	envFileName,
+	// params file
+	paramsFileName,
+	// spec file
+	specFilename,
+}
 
 // Environment represents all fields of a ksonnet environment
 type Environment struct {
@@ -130,7 +145,7 @@ func (m *manager) createEnvironment(name, server, namespace string, extensionsLi
 		},
 		{
 			// environment base override file
-			appendToAbsPath(envPath, path.Base(name)+".jsonnet"),
+			appendToAbsPath(envPath, envFileName),
 			m.generateOverrideData(),
 		},
 		{
@@ -282,37 +297,43 @@ func (m *manager) SetEnvironment(name string, desired *Environment) error {
 		//
 		// Move the directory
 		//
+
 		pathOld := appendToAbsPath(m.environmentsPath, name)
 		pathNew := appendToAbsPath(m.environmentsPath, desired.Name)
-		jsonnetPathOld := string(appendToAbsPath(pathOld, path.Base(name)+".jsonnet"))
-		jsonnetPathNew := string(appendToAbsPath(pathOld, path.Base(desired.Name)+".jsonnet"))
 		exists, err := afero.DirExists(m.appFS, string(pathNew))
 		if err != nil {
 			return err
 		}
+
 		if exists {
-			return fmt.Errorf("Failed to create environment, directory exists at path: %s", string(pathNew))
+			// we know that the desired path is not an environment from
+			// the check earlier. This is an intermediate directory.
+			// We need to move the file contents.
+			m.tryMvEnvDir(pathOld, pathNew)
+		} else if filepath.HasPrefix(string(pathNew), string(pathOld)) {
+			// the new directory is a child of the old directory --
+			// rename won't work.
+			err = m.appFS.MkdirAll(string(pathNew), defaultFolderPermissions)
+			if err != nil {
+				return err
+			}
+			m.tryMvEnvDir(pathOld, pathNew)
+		} else {
+			// Need to first create subdirectories that don't exist
+			intermediatePath := path.Dir(string(pathNew))
+			log.Debugf("Moving directory at path '%s' to '%s'", string(pathOld), string(pathNew))
+			err = m.appFS.MkdirAll(intermediatePath, defaultFolderPermissions)
+			if err != nil {
+				return err
+			}
+			// finally, move the directory
+			err = m.appFS.Rename(string(pathOld), string(pathNew))
+			if err != nil {
+				log.Debugf("Failed to move path '%s' to '%s", string(pathOld), string(pathNew))
+				return err
+			}
 		}
-		// Need to first create subdirectories that don't exist
-		intermediatePath := path.Dir(string(pathNew))
-		log.Debugf("Moving directory at path '%s' to '%s'", string(pathOld), string(pathNew))
-		err = m.appFS.MkdirAll(intermediatePath, defaultFolderPermissions)
-		if err != nil {
-			return err
-		}
-		// note: we have to move the jsonnet file first because of a bug with afero: spf13/afero:#141
-		log.Debugf("Renaming jsonnet file from '%s' to '%s'", path.Base(jsonnetPathOld), path.Base(jsonnetPathNew))
-		err = m.appFS.Rename(jsonnetPathOld, jsonnetPathNew)
-		if err != nil {
-			log.Debugf("Failed to move path '%s' to '%s", jsonnetPathOld, jsonnetPathNew)
-			return err
-		}
-		// finally, move the directory
-		err = m.appFS.Rename(string(pathOld), string(pathNew))
-		if err != nil {
-			log.Debugf("Failed to move path '%s' to '%s", string(pathOld), string(pathNew))
-			return err
-		}
+
 		// clean up any empty parent directory paths
 		err = m.cleanEmptyParentDirs(name)
 		if err != nil {
@@ -416,6 +437,34 @@ func (m *manager) SetEnvironmentParams(env, component string, params param.Param
 	}
 
 	log.Debugf("Successfully set parameters for component '%s' at environment '%s'", component, env)
+	return nil
+}
+
+func (m *manager) tryMvEnvDir(dirPathOld, dirPathNew AbsPath) error {
+	// first ensure none of these paths exists in the new directory
+	for _, p := range envPaths {
+		path := string(appendToAbsPath(dirPathNew, p))
+		if exists, err := afero.Exists(m.appFS, path); err != nil {
+			return err
+		} else if exists {
+			return fmt.Errorf("%s already exists", path)
+		}
+	}
+
+	// note: afero and go does not provide simple ways to move the
+	// contents. We'll have to rename them individually.
+	for _, p := range envPaths {
+		err := m.appFS.Rename(string(appendToAbsPath(dirPathOld, p)), string(appendToAbsPath(dirPathNew, p)))
+		if err != nil {
+			return err
+		}
+	}
+	// clean up the old directory if it is empty
+	if empty, err := afero.IsEmpty(m.appFS, string(dirPathOld)); err != nil {
+		return err
+	} else if empty {
+		return m.appFS.RemoveAll(string(dirPathOld))
+	}
 	return nil
 }
 

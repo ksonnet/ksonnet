@@ -18,7 +18,6 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
-	"path"
 	"reflect"
 	"strings"
 	"testing"
@@ -28,7 +27,6 @@ import (
 )
 
 const (
-	mockSpecJSON       = "spec.json"
 	mockSpecJSONServer = "localhost:8080"
 
 	mockEnvName  = "us-west/test"
@@ -38,8 +36,13 @@ const (
 
 var mockAPIServer = "http://example.com"
 var mockNamespace = "some-namespace"
+var mockEnvs = []string{defaultEnvName, mockEnvName, mockEnvName2, mockEnvName3}
 
 func mockEnvironments(t *testing.T, appName string) *manager {
+	return mockEnvironmentsWith(t, appName, mockEnvs)
+}
+
+func mockEnvironmentsWith(t *testing.T, appName string, envNames []string) *manager {
 	spec, err := parseClusterSpec(fmt.Sprintf("file:%s", blankSwagger), testFS)
 	if err != nil {
 		t.Fatalf("Failed to parse cluster spec: %v", err)
@@ -52,21 +55,20 @@ func mockEnvironments(t *testing.T, appName string) *manager {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
 
-	envNames := []string{defaultEnvName, mockEnvName, mockEnvName2, mockEnvName3}
 	for _, env := range envNames {
 		envPath := appendToAbsPath(m.environmentsPath, env)
 		testFS.Mkdir(string(envPath), defaultFolderPermissions)
 		testDirExists(t, string(envPath))
 
-		jsonnetPath := appendToAbsPath(envPath, path.Base(env)+".jsonnet")
-		jsonnetData := m.generateOverrideData()
-		err = afero.WriteFile(testFS, string(jsonnetPath), jsonnetData, defaultFilePermissions)
+		envFilePath := appendToAbsPath(envPath, envFileName)
+		envFileData := m.generateOverrideData()
+		err = afero.WriteFile(testFS, string(envFilePath), envFileData, defaultFilePermissions)
 		if err != nil {
-			t.Fatalf("Could not write file at path: %s", jsonnetPath)
+			t.Fatalf("Could not write file at path: %s", envFilePath)
 		}
-		testFileExists(t, string(jsonnetPath))
+		testFileExists(t, string(envFilePath))
 
-		specPath := appendToAbsPath(envPath, mockSpecJSON)
+		specPath := appendToAbsPath(envPath, specFilename)
 		specData, err := generateSpecData(mockSpecJSONServer, mockNamespace)
 		if err != nil {
 			t.Fatalf("Expected to marshal:\nserver: %s\nnamespace: %s\n, but failed", mockSpecJSONServer, mockNamespace)
@@ -75,6 +77,15 @@ func mockEnvironments(t *testing.T, appName string) *manager {
 		if err != nil {
 			t.Fatalf("Could not write file at path: %s", specPath)
 		}
+		testFileExists(t, string(specPath))
+
+		paramsPath := appendToAbsPath(envPath, paramsFileName)
+		paramsData := m.generateParamsData()
+		err = afero.WriteFile(testFS, string(paramsPath), paramsData, defaultFilePermissions)
+		if err != nil {
+			t.Fatalf("Could not write file at path: %s", paramsPath)
+		}
+		testFileExists(t, string(paramsPath))
 	}
 
 	return m
@@ -172,26 +183,42 @@ func TestSetEnvironment(t *testing.T) {
 		t.Fatalf("Expected error when setting \"%s\" to \"%s\", because env already exists", mockEnvName, mockEnvName2)
 	}
 
+	//
 	// Test changing the name and server of a an existing environment.
-	// Ensure new env directory is created, and old directory no longer exists.
-	// Also ensure server is set in spec.json
+	//
+
 	err = m.SetEnvironment(mockEnvName, &set)
 	if err != nil {
 		t.Fatalf("Could not set \"%s\", got:\n  %s", mockEnvName, err)
 	}
 
+	// Ensure new env directory is created, and old directory no longer exists.
 	envPath := appendToAbsPath(AbsPath(appName), environmentsDir)
 	expectedPathExists := appendToAbsPath(envPath, set.Name)
 	expectedPathNotExists := appendToAbsPath(envPath, mockEnvName)
 	testDirExists(t, string(expectedPathExists))
 	testDirNotExists(t, string(expectedPathNotExists))
 
-	expectedSpecPath := appendToAbsPath(expectedPathExists, specFilename)
-	specData, err := afero.ReadFile(testFS, string(expectedSpecPath))
+	// BUG: https://github.com/spf13/afero/issues/141
+	// we aren't able to test this until the above is fixed.
+	//
+	// ensure all files are moved
+	//
+	// expectedFiles := []string{
+	// 	envFileName,
+	// 	specFilename,
+	// 	paramsFileName,
+	// }
+	// for _, f := range expectedFiles {
+	// 	expectedFilePath := appendToAbsPath(expectedPathExists, f)
+	// 	testFileExists(t, string(expectedFilePath))
+	// }
+
+	// ensure spec file contains the correct content
+	specData, err := afero.ReadFile(testFS, string(appendToAbsPath(expectedPathExists, specFilename)))
 	if err != nil {
 		t.Fatalf("Failed to read spec file:\n  %s", err)
 	}
-
 	var envSpec EnvironmentSpec
 	err = json.Unmarshal(specData, &envSpec)
 	if err != nil {
@@ -202,6 +229,36 @@ func TestSetEnvironment(t *testing.T) {
 	}
 	if envSpec.Namespace != set.Namespace {
 		t.Fatalf("Expected namespace to be set to '%s', got: '%s'", set.Namespace, envSpec.Namespace)
+	}
+
+	tests := []struct {
+		appName string
+		nameOld string
+		nameNew string
+	}{
+		// Test changing the name of an env 'us-west' to 'us-west/dev'
+		{
+			"test-set-to-child",
+			"us-west",
+			"us-west/dev",
+		},
+		// Test changing the name of an env 'us-west/dev' to 'us-west'
+		{
+			"test-set-to-parent",
+			"us-west/dev",
+			"us-west",
+		},
+	}
+
+	for _, v := range tests {
+		m = mockEnvironmentsWith(t, v.appName, []string{v.nameOld})
+		err = m.SetEnvironment(v.nameOld, &Environment{Name: v.nameNew})
+		if err != nil {
+			t.Fatalf("Could not set '%s', got:\n  %s", v.nameOld, err)
+		}
+		// Ensure new env directory is created
+		expectedPath := appendToAbsPath(AbsPath(v.appName), environmentsDir, v.nameNew)
+		testDirExists(t, string(expectedPath))
 	}
 }
 
