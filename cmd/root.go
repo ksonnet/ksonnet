@@ -157,7 +157,10 @@ func resolveContext(context *string) (server, namespace string, err error) {
 	}
 
 	log.Infof("Using context '%s'", ctxName)
-	cluster := rawConfig.Clusters[ctx.Cluster]
+	cluster, exists := rawConfig.Clusters[ctx.Cluster]
+	if !exists {
+		return "", "", fmt.Errorf("No cluster with name '%s' exists", ctx.Cluster)
+	}
 	return cluster.Server, ctx.Namespace, nil
 }
 
