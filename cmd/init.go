@@ -22,6 +22,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -59,6 +60,8 @@ var initCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
+		log.Infof("Creating a new app '%s' at path '%s'", appName, appRoot)
 
 		// Find the URI and namespace of the current cluster, if it exists.
 		var ctx *string
