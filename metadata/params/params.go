@@ -31,13 +31,39 @@ const (
 	componentsID = "components"
 )
 
-func astRoot(component, snippet string) (ast.Node, error) {
+func componentsObj(component, snippet string) (*ast.Object, error) {
 	tokens, err := parser.Lex(component, snippet)
 	if err != nil {
 		return nil, err
 	}
 
-	return parser.Parse(tokens)
+	root, err := parser.Parse(tokens)
+	if err != nil {
+		return nil, err
+	}
+
+	return findComponentsObj(root)
+}
+
+func findComponentsObj(node ast.Node) (*ast.Object, error) {
+	switch n := node.(type) {
+	case *ast.Local:
+		return findComponentsObj(n.Body)
+	case *ast.Binary:
+		return findComponentsObj(n.Right)
+	case *ast.Object:
+		for _, f := range n.Fields {
+			if *f.Id == componentsID {
+				c, isObj := f.Expr2.(*ast.Object)
+				if !isObj {
+					return nil, fmt.Errorf("Expected components node type to be object")
+				}
+				return c, nil
+			}
+		}
+		return nil, fmt.Errorf("Invalid params schema -- there must be a top-level object '%s'", componentsID)
+	}
+	return nil, fmt.Errorf("Invalid params schema -- did not expect node type: %T", node)
 }
 
 // SanitizeComponent puts quotes around a component name if it contains special
@@ -49,7 +75,7 @@ func SanitizeComponent(component string) string {
 	return component
 }
 
-func getFieldId(field ast.ObjectField) (string, error) {
+func getFieldID(field ast.ObjectField) (string, error) {
 	switch field.Kind {
 	case ast.ObjectFieldStr:
 		// case "foo-bar": {...}
@@ -68,7 +94,7 @@ func getFieldId(field ast.ObjectField) (string, error) {
 }
 
 func hasComponent(component string, field ast.ObjectField) (bool, error) {
-	id, err := getFieldId(field)
+	id, err := getFieldID(field)
 	return id == component, err
 }
 
@@ -104,7 +130,7 @@ func visitAllParams(components ast.Object) (map[string]Params, error) {
 		if err != nil {
 			return nil, err
 		}
-		id, err := getFieldId(f)
+		id, err := getFieldID(f)
 		if err != nil {
 			return nil, err
 		}
@@ -162,32 +188,8 @@ func writeParams(indent int, params Params) string {
 // ---------------------------------------------------------------------------
 // Component Parameter-specific functionality
 
-func visitComponentsObj(component, snippet string) (*ast.Object, error) {
-	root, err := astRoot(component, snippet)
-	if err != nil {
-		return nil, err
-	}
-
-	n, isObj := root.(*ast.Object)
-	if !isObj {
-		return nil, fmt.Errorf("Invalid format; expected to find a top-level object")
-	}
-
-	for _, field := range n.Fields {
-		if field.Id != nil && *field.Id == componentsID {
-			c, isObj := field.Expr2.(*ast.Object)
-			if !isObj {
-				return nil, fmt.Errorf("Expected components node type to be object")
-			}
-			return c, nil
-		}
-	}
-	// If this point has been reached, it means we weren't able to find a top-level components object.
-	return nil, fmt.Errorf("Invalid format; expected to find a top-level components object")
-}
-
 func appendComponent(component, snippet string, params Params) (string, error) {
-	componentsNode, err := visitComponentsObj(component, snippet)
+	componentsNode, err := componentsObj(component, snippet)
 	if err != nil {
 		return "", err
 	}
@@ -221,7 +223,7 @@ func appendComponent(component, snippet string, params Params) (string, error) {
 }
 
 func getComponentParams(component, snippet string) (Params, *ast.LocationRange, error) {
-	componentsNode, err := visitComponentsObj(component, snippet)
+	componentsNode, err := componentsObj(component, snippet)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -240,7 +242,7 @@ func getComponentParams(component, snippet string) (Params, *ast.LocationRange, 
 }
 
 func getAllComponentParams(snippet string) (map[string]Params, error) {
-	componentsNode, err := visitComponentsObj("", snippet)
+	componentsNode, err := componentsObj("", snippet)
 	if err != nil {
 		return nil, err
 	}
@@ -271,34 +273,8 @@ func setComponentParams(component, snippet string, params Params) (string, error
 // ---------------------------------------------------------------------------
 // Environment Parameter-specific functionality
 
-func findEnvComponentsObj(node ast.Node) (*ast.Object, error) {
-	switch n := node.(type) {
-	case *ast.Local:
-		return findEnvComponentsObj(n.Body)
-	case *ast.Binary:
-		return findEnvComponentsObj(n.Right)
-	case *ast.Object:
-		for _, f := range n.Fields {
-			if *f.Id == componentsID {
-				c, isObj := f.Expr2.(*ast.Object)
-				if !isObj {
-					return nil, fmt.Errorf("Expected components node type to be object")
-				}
-				return c, nil
-			}
-		}
-		return nil, fmt.Errorf("Invalid params schema -- found %T that is not 'components'", n)
-	}
-	return nil, fmt.Errorf("Invalid params schema -- did not expect type: %T", node)
-}
-
 func getEnvironmentParams(component, snippet string) (Params, *ast.LocationRange, bool, error) {
-	root, err := astRoot(component, snippet)
-	if err != nil {
-		return nil, nil, false, err
-	}
-
-	n, err := findEnvComponentsObj(root)
+	n, err := componentsObj(component, snippet)
 	if err != nil {
 		return nil, nil, false, err
 	}
@@ -325,12 +301,7 @@ func getEnvironmentParams(component, snippet string) (Params, *ast.LocationRange
 }
 
 func getAllEnvironmentParams(snippet string) (map[string]Params, error) {
-	root, err := astRoot("", snippet)
-	if err != nil {
-		return nil, err
-	}
-
-	componentsNode, err := findEnvComponentsObj(root)
+	componentsNode, err := componentsObj("", snippet)
 	if err != nil {
 		return nil, err
 	}
