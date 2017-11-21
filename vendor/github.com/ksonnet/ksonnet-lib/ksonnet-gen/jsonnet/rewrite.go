@@ -35,6 +35,14 @@ type FuncParam string
 // Kubernetes version. For example, `fooAPI` becomes `fooApi`.
 type Identifier string
 
+func (id Identifier) ToSetterID() Identifier {
+	return Identifier("with" + strings.Title(string(id)))
+}
+
+func (id Identifier) ToMixinID() Identifier {
+	return Identifier("with" + strings.Title(string(id)) + "Mixin")
+}
+
 // RewriteAsFieldKey takes a `PropertyName` and converts it to a valid
 // Jsonnet field name. For example, if the `PropertyName` has a value
 // of `"error"`, then this would generate an invalid object, `{error:

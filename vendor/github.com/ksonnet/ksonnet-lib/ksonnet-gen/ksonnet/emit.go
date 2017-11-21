@@ -601,8 +601,10 @@ func (ao *apiObject) emitConstructor(
 					"Attempted to create constructor, but property '%s' does not exist",
 					param.ID)
 			}
+			k8sVersion := ao.root().spec.Info.Version
+			propMethodName := jsonnet.RewriteAsIdentifier(k8sVersion, prop.name).ToSetterID()
 			setters = append(
-				setters, fmt.Sprintf("self.%s(%s)", prop.name, param.ID))
+				setters, fmt.Sprintf("self.%s(%s)", propMethodName, param.ID))
 		} else {
 			// TODO(hausdorff): We may want to verify this relative path
 			// exists.
@@ -788,10 +790,12 @@ func (p *property) emitHelper(
 	p.comments.emit(m)
 
 	k8sVersion := p.root().spec.Info.Version
-	functionName := jsonnet.RewriteAsIdentifier(k8sVersion, p.name)
+	setterFunctionName := jsonnet.RewriteAsIdentifier(k8sVersion, p.name).ToSetterID()
+	mixinFunctionName := jsonnet.RewriteAsIdentifier(k8sVersion, p.name).ToMixinID()
 	paramName := jsonnet.RewriteAsFuncParam(k8sVersion, p.name)
 	fieldName := jsonnet.RewriteAsFieldKey(p.name)
-	signature := fmt.Sprintf("%s(%s)::", functionName, paramName)
+	setterSignature := fmt.Sprintf("%s(%s)::", setterFunctionName, paramName)
+	mixinSignature := fmt.Sprintf("%s(%s)::", mixinFunctionName, paramName)
 
 	if isMixinRef(p.ref) {
 		parsedRefPath := p.ref.Name().Parse()
@@ -804,21 +808,41 @@ func (p *property) emitHelper(
 		} else {
 			body = fmt.Sprintf("%s({%s: %s})", *parentMixinName, fieldName, paramName)
 		}
-		line := fmt.Sprintf("%s %s,", signature, body)
+		line := fmt.Sprintf("%s %s,", setterSignature, body)
 		m.writeLine(line)
 	} else if p.schemaType != nil {
 		paramType := *p.schemaType
 
-		var body string
+		//
+		// Generate both setter and mixin functions for some property. For
+		// example, we emit both `metadata.setAnnotations({foo: "bar"})`
+		// (which replaces a set of annotations with given object) and
+		// `metadata.mixinAnnotations({foo: "bar"})` (which replaces only
+		// the `foo` key, if it exists.)
+		//
+
+		var setterBody string
+		var mixinBody string
+		emitMixin := false
 		switch paramType {
 		case "array":
+			emitMixin = true
 			if parentMixinName == nil {
-				body = fmt.Sprintf(
+				setterBody = fmt.Sprintf(
+					"if std.type(%s) == \"array\" then {%s: %s} else {%s: [%s]}",
+					paramName, fieldName, paramName, fieldName, paramName,
+				)
+				mixinBody = fmt.Sprintf(
 					"if std.type(%s) == \"array\" then {%s+: %s} else {%s+: [%s]}",
 					paramName, fieldName, paramName, fieldName, paramName,
 				)
 			} else {
-				body = fmt.Sprintf(
+				setterBody = fmt.Sprintf(
+					"if std.type(%s) == \"array\" then %s({%s: %s}) else %s({%s: [%s]})",
+					paramName, *parentMixinName, fieldName, paramName, *parentMixinName,
+					fieldName, paramName,
+				)
+				mixinBody = fmt.Sprintf(
 					"if std.type(%s) == \"array\" then %s({%s+: %s}) else %s({%s+: [%s]})",
 					paramName, *parentMixinName, fieldName, paramName, *parentMixinName,
 					fieldName, paramName,
@@ -826,22 +850,35 @@ func (p *property) emitHelper(
 			}
 		case "integer", "string", "boolean":
 			if parentMixinName == nil {
-				body = fmt.Sprintf("{%s: %s}", fieldName, paramName)
+				setterBody = fmt.Sprintf("{%s: %s}", fieldName, paramName)
 			} else {
-				body = fmt.Sprintf("%s({%s: %s})", *parentMixinName, fieldName, paramName)
+				setterBody = fmt.Sprintf("%s({%s: %s})", *parentMixinName, fieldName, paramName)
 			}
 		case "object":
+			emitMixin = true
 			if parentMixinName == nil {
-				body = fmt.Sprintf("{%s+: %s}", fieldName, paramName)
+				setterBody = fmt.Sprintf("{%s: %s}", fieldName, paramName)
+				mixinBody = fmt.Sprintf("{%s+: %s}", fieldName, paramName)
 			} else {
-				body = fmt.Sprintf("%s({%s+: %s})", *parentMixinName, fieldName, paramName)
+				setterBody = fmt.Sprintf("%s({%s: %s})", *parentMixinName, fieldName, paramName)
+				mixinBody = fmt.Sprintf("%s({%s+: %s})", *parentMixinName, fieldName, paramName)
 			}
 		default:
 			log.Panicf("Unrecognized type '%s'", paramType)
 		}
 
-		line := fmt.Sprintf("%s %s,", signature, body)
+		//
+		// Emit.
+		//
+
+		line := fmt.Sprintf("%s self + %s,", setterSignature, setterBody)
 		m.writeLine(line)
+
+		if emitMixin {
+			p.comments.emit(m)
+			line = fmt.Sprintf("%s self + %s,", mixinSignature, mixinBody)
+			m.writeLine(line)
+		}
 	} else {
 		log.Panicf("Neither a type nor a ref")
 	}

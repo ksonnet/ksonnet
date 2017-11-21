@@ -72,6 +72,74 @@ var versions = map[string]versionData{
 			"local": "localStorage",
 		},
 		constructorSpecs: map[string][]CustomConstructorSpec{
+			//
+			// Apps namespace.
+			//
+			"io.k8s.kubernetes.pkg.apis.apps.v1beta1.Deployment":         v1beta1Deployment,
+			"io.k8s.kubernetes.pkg.apis.apps.v1beta1.DeploymentList":     objectList,
+			"io.k8s.kubernetes.pkg.apis.apps.v1beta1.DeploymentRollback": v1beta1DeploymentRollback,
+			"io.k8s.kubernetes.pkg.apis.apps.v1beta1.Scale":              v1beta1Scale,
+			"io.k8s.kubernetes.pkg.apis.apps.v1beta1.StatefulSet":        v1beta1StatefulSet,
+			"io.k8s.kubernetes.pkg.apis.apps.v1beta1.StatefulSetList":    objectList,
+
+			//
+			// Extensions namespace.
+			//
+
+			"io.k8s.kubernetes.pkg.apis.extensions.v1beta1.Deployment":         v1beta1Deployment,
+			"io.k8s.kubernetes.pkg.apis.extensions.v1beta1.DeploymentList":     objectList,
+			"io.k8s.kubernetes.pkg.apis.extensions.v1beta1.DeploymentRollback": v1beta1DeploymentRollback,
+			"io.k8s.kubernetes.pkg.apis.extensions.v1beta1.Scale":              v1beta1Scale,
+			"io.k8s.kubernetes.pkg.apis.extensions.v1beta1.StatefulSet":        v1beta1StatefulSet,
+			"io.k8s.kubernetes.pkg.apis.extensions.v1beta1.StatefulSetList":    objectList,
+
+			//
+			// Authentication namespace.
+			//
+
+			"io.k8s.kubernetes.pkg.apis.authentication.v1.TokenReview": []CustomConstructorSpec{
+				newConstructor(
+					"new",
+					newParamNestedRef("token", "mixin.spec.withToken")),
+			},
+			"io.k8s.kubernetes.pkg.apis.authentication.v1beta1.TokenReview": []CustomConstructorSpec{
+				newConstructor(
+					"new",
+					newParamNestedRef("token", "mixin.spec.withToken")),
+			},
+
+			//
+			// Autoscaling namespace.
+			//
+
+			"io.k8s.kubernetes.pkg.apis.autoscaling.v1.HorizontalPodAutoscalerList":       objectList,
+			"io.k8s.kubernetes.pkg.apis.autoscaling.v1.Scale":                             v1beta1Scale,
+			"io.k8s.kubernetes.pkg.apis.autoscaling.v2alpha1.HorizontalPodAutoscalerList": objectList,
+
+			//
+			// Batch namespace.
+			//
+
+			"io.k8s.kubernetes.pkg.apis.batch.v1.JobList":           objectList,
+			"io.k8s.kubernetes.pkg.apis.batch.v2alpha1.CronJobList": objectList,
+
+			//
+			// Certificates namespace.
+			//
+
+			"io.k8s.kubernetes.pkg.apis.certificates.v1beta1.CertificateSigningRequestList": objectList,
+
+			//
+			// Core namespace.
+			//
+
+			"io.k8s.kubernetes.pkg.api.v1.ConfigMap": []CustomConstructorSpec{
+				newConstructor(
+					"new",
+					newParamNestedRef("name", "mixin.metadata.withName"),
+					newParam("data")),
+			},
+			"io.k8s.kubernetes.pkg.api.v1.ConfigMapList": objectList,
 			"io.k8s.kubernetes.pkg.api.v1.Container": []CustomConstructorSpec{
 				newConstructor("new", newParam("name"), newParam("image")),
 			},
@@ -79,28 +147,64 @@ var versions = map[string]versionData{
 				newConstructor("new", newParam("containerPort")),
 				newConstructor("newNamed", newParam("name"), newParam("containerPort")),
 			},
+			"io.k8s.kubernetes.pkg.api.v1.EndpointsList": objectList,
 			"io.k8s.kubernetes.pkg.api.v1.EnvVar": []CustomConstructorSpec{
 				newConstructor("new", newParam("name"), newParam("value")),
 				newConstructor(
 					"fromSecretRef",
 					newParam("name"),
-					newParamNestedRef("secretRefName", "mixin.valueFrom.secretKeyRef.name"),
-					newParamNestedRef("secretRefKey", "mixin.valueFrom.secretKeyRef.key")),
+					newParamNestedRef("secretRefName", "mixin.valueFrom.secretKeyRef.withName"),
+					newParamNestedRef("secretRefKey", "mixin.valueFrom.secretKeyRef.withKey")),
 				newConstructor(
 					"fromFieldPath",
 					newParam("name"),
-					newParamNestedRef("fieldPath", "mixin.valueFrom.fieldRef.fieldPath")),
+					newParamNestedRef("fieldPath", "mixin.valueFrom.fieldRef.withFieldPath")),
 			},
+			"io.k8s.kubernetes.pkg.api.v1.EventList": objectList,
 			"io.k8s.kubernetes.pkg.api.v1.KeyToPath": []CustomConstructorSpec{
 				newConstructor("new", newParam("key"), newParam("path")),
 			},
+			"io.k8s.kubernetes.pkg.api.v1.LimitRangeList": objectList,
+			"io.k8s.kubernetes.pkg.api.v1.Namespace": []CustomConstructorSpec{
+				newConstructor(
+					"new",
+					newParamNestedRef("name", "mixin.metadata.withName")),
+			},
+			"io.k8s.kubernetes.pkg.api.v1.NamespaceList":             objectList,
+			"io.k8s.kubernetes.pkg.api.v1.NodeList":                  objectList,
+			"io.k8s.kubernetes.pkg.api.v1.PersistentVolumeClaimList": objectList,
+			"io.k8s.kubernetes.pkg.api.v1.PersistentVolumeList":      objectList,
+			"io.k8s.kubernetes.pkg.api.v1.PodList":                   objectList,
+			"io.k8s.kubernetes.pkg.api.v1.PodTemplateList":           objectList,
+			"io.k8s.kubernetes.pkg.api.v1.ReplicationControllerList": objectList,
+			"io.k8s.kubernetes.pkg.api.v1.ResourceQuotaList":         objectList,
+			"io.k8s.kubernetes.pkg.api.v1.Secret": []CustomConstructorSpec{
+				newConstructor(
+					"new",
+					newParamNestedRef("name", "mixin.metadata.withName"),
+					newParam("data"),
+					newParamWithDefault("type", "\"Opaque\"")),
+				newConstructor(
+					"fromString",
+					newParamNestedRef("name", "mixin.metadata.withName"),
+					newParam("stringData"),
+					newParamWithDefault("type", "\"Opaque\"")),
+			},
+			"io.k8s.kubernetes.pkg.api.v1.SecretList": objectList,
 			"io.k8s.kubernetes.pkg.api.v1.Service": []CustomConstructorSpec{
 				newConstructor(
 					"new",
-					newParamNestedRef("name", "mixin.metadata.name"),
-					newParamNestedRef("selector", "mixin.spec.selector"),
-					newParamNestedRef("ports", "mixin.spec.ports")),
+					newParamNestedRef("name", "mixin.metadata.withName"),
+					newParamNestedRef("selector", "mixin.spec.withSelector"),
+					newParamNestedRef("ports", "mixin.spec.withPorts")),
 			},
+			"io.k8s.kubernetes.pkg.api.v1.ServiceAccount": []CustomConstructorSpec{
+				newConstructor(
+					"new",
+					newParamNestedRef("name", "mixin.metadata.withName")),
+			},
+			"io.k8s.kubernetes.pkg.api.v1.ServiceAccountList": objectList,
+			"io.k8s.kubernetes.pkg.api.v1.ServiceList":        objectList,
 			"io.k8s.kubernetes.pkg.api.v1.ServicePort": []CustomConstructorSpec{
 				newConstructor("new", newParam("port"), newParam("targetPort")),
 				newConstructor("newNamed", newParam("name"), newParam("port"), newParam("targetPort")),
@@ -109,8 +213,8 @@ var versions = map[string]versionData{
 				newConstructor(
 					"fromConfigMap",
 					newParam("name"),
-					newParamNestedRef("configMapName", "mixin.configMap.name"),
-					newParamNestedRef("configMapItems", "mixin.configMap.items")),
+					newParamNestedRef("configMapName", "mixin.configMap.withName"),
+					newParamNestedRef("configMapItems", "mixin.configMap.withItems")),
 				newConstructor(
 					"fromEmptyDir",
 					newParam("name"),
@@ -118,32 +222,21 @@ var versions = map[string]versionData{
 				newConstructor(
 					"fromPersistentVolumeClaim",
 					newParam("name"),
-					newParamNestedRef("claimName", "mixin.persistentVolumeClaim.claimName")),
+					newParamNestedRef("claimName", "mixin.persistentVolumeClaim.withClaimName")),
 				newConstructor(
 					"fromHostPath",
 					newParam("name"),
-					newParamNestedRef("hostPath", "mixin.hostPath.path")),
+					newParamNestedRef("hostPath", "mixin.hostPath.withPath")),
+				newConstructor(
+					"fromSecret",
+					newParam("name"),
+					newParamNestedRef("secretName", "mixin.secret.withSecretName")),
 			},
 			"io.k8s.kubernetes.pkg.api.v1.VolumeMount": []CustomConstructorSpec{
 				newConstructor("new", newParam("name"), newParam("mountPath"), newParamWithDefault("readOnly", "false")),
 			},
-			"io.k8s.kubernetes.pkg.apis.apps.v1beta1.Deployment": []CustomConstructorSpec{
-				newConstructor(
-					"new",
-					newParamNestedRef("name", "mixin.metadata.name"),
-					newParamNestedRef("replicas", "mixin.spec.replicas"),
-					newParamNestedRef("containers", "mixin.spec.template.spec.containers"),
-					newParamNestedRefDefault("podLabels", "mixin.spec.template.metadata.labels", "{}")),
-			},
-			"io.k8s.kubernetes.pkg.apis.extensions.v1beta1.Deployment": []CustomConstructorSpec{
-				newConstructor(
-					"new",
-					newParamNestedRef("name", "mixin.metadata.name"),
-					newParamNestedRef("replicas", "mixin.spec.replicas"),
-					newParamNestedRef("containers", "mixin.spec.template.spec.containers"),
-					newParamNestedRefDefault("podLabels", "mixin.spec.template.metadata.labels", "{}")),
-			},
 		},
+
 		propertyBlacklist: map[string]propertySet{
 			// Metadata fields.
 			"io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta": newPropertySet(
@@ -335,4 +428,47 @@ k8s + {
 }
 `,
 	},
+}
+
+//-----------------------------------------------------------------------------
+// Utility specs, for duplicated objects.
+//-----------------------------------------------------------------------------
+
+var objectList = []CustomConstructorSpec{
+	newConstructor(
+		"new",
+		newParam("items")),
+}
+var v1beta1Deployment = []CustomConstructorSpec{
+	newConstructor(
+		"new",
+		newParamNestedRef("name", "mixin.metadata.withName"),
+		newParamNestedRef("replicas", "mixin.spec.withReplicas"),
+		newParamNestedRef("containers", "mixin.spec.template.spec.withContainers"),
+		newParamNestedRefDefault(
+			"podLabels",
+			"mixin.spec.template.metadata.withLabels",
+			"{app: name}")),
+}
+var v1beta1DeploymentRollback = []CustomConstructorSpec{
+	newConstructor(
+		"new",
+		newParam("name")),
+}
+var v1beta1Scale = []CustomConstructorSpec{
+	newConstructor(
+		"new",
+		newParamNestedRef("replicas", "mixin.spec.withReplicas")),
+}
+var v1beta1StatefulSet = []CustomConstructorSpec{
+	newConstructor(
+		"new",
+		newParamNestedRef("name", "mixin.metadata.withName"),
+		newParamNestedRef("replicas", "mixin.spec.withReplicas"),
+		newParamNestedRef("containers", "mixin.spec.template.spec.withContainers"),
+		newParamNestedRef("volumeClaims", "mixin.spec.withVolumeClaimTemplates"),
+		newParamNestedRefDefault(
+			"podLabels",
+			"mixin.spec.template.metadata.withLabels",
+			"{app: name}")),
 }
