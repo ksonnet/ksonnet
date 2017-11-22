@@ -44,8 +44,11 @@ var diffCmd = &cobra.Command{
 	Use:   "diff [<env1> [<env2>]] [-f <file-or-dir>]",
 	Short: "Display differences between server and local config, or server and server config",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			return fmt.Errorf("'diff' requires at least one argument, that is the name of the environment\n\n%s", cmd.UsageString())
+		}
 		if len(args) > 2 {
-			return fmt.Errorf("'diff' takes at most two arguments, that are the name of the environments")
+			return fmt.Errorf("'diff' takes at most two arguments, that are the name of the environments\n\n%s", cmd.UsageString())
 		}
 
 		flags := cmd.Flags()
