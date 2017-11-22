@@ -78,7 +78,11 @@ func TestConstructBaseObj(t *testing.T) {
 	}
 
 	for _, s := range tests {
-		res := constructBaseObj(s.inputPaths)
+		res, err := constructBaseObj(s.inputPaths, nil)
+		if err != nil {
+			t.Error(err)
+		}
+
 		if res != fmt.Sprintf("__ksonnet/components=%s", s.expected) {
 			t.Errorf("Wrong object constructed\n  expected: %v\n  got: %v", s.expected, res)
 		}

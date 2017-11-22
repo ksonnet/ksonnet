@@ -39,6 +39,24 @@ func cmdOutput(t *testing.T, args []string) string {
 }
 
 func TestShow(t *testing.T) {
+	// cd to the test directory we can run the `show` command.
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = os.Chdir("../testdata/testapp")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		err = os.Chdir(wd)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	// Run the show command.
 	formats := map[string]func(string) (interface{}, error){
 		"json": func(text string) (ret interface{}, err error) {
 			err = json.Unmarshal([]byte(text), &ret)
@@ -80,13 +98,14 @@ func TestShow(t *testing.T) {
 		os.Setenv("anVar", "aVal2")
 		defer os.Unsetenv("anVar")
 
-		output := cmdOutput(t, []string{"show",
-			"-J", filepath.FromSlash("../testdata/lib"),
+		output := cmdOutput(t, []string{
+			"show",
+			"default",
 			"-o", format,
-			"-f", filepath.FromSlash("../testdata/test.jsonnet"),
+			"-c", "test",
 			"-V", "aVar=aVal",
 			"-V", "anVar",
-			"--ext-str-file", "filevar=" + filepath.FromSlash("../testdata/extvar.file"),
+			"--ext-str-file", "filevar=" + filepath.FromSlash("../extvar.file"),
 		})
 
 		t.Log("output is", output)

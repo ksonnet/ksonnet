@@ -44,7 +44,7 @@ each defining a ksonnet component, are expanded into their JSON or YAML equivale
 Any parameters in these Jsonnet manifests are resolved based on environment-specific values.
 
 When NO component is specified (no ` + "`-c`" + ` flag), this command expands all of the files in the ` +
-"`components/`" + ` directory into a list of resource definitions. This is the YAML version
+		"`components/`" + ` directory into a list of resource definitions. This is the YAML version
 of what gets deployed to your cluster with ` + "`ks apply <env>`" + `.
 
 When a component IS specified via the ` + "`-c`" + ` flag, this command only expands the manifest for that
@@ -60,12 +60,18 @@ ks show prod -c redis -o json
 ks show dev -c redis -c nginx-server
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 1 {
-			return fmt.Errorf("'show' takes at most a single argument, that is the name of the environment")
+		if len(args) != 1 {
+			return fmt.Errorf("'show' requires an environment name; use `env list` to see available environments\n\n%s", cmd.UsageString())
 		}
+		env := args[0]
 
 		flags := cmd.Flags()
 		var err error
+
+		componentNames, err := flags.GetStringArray(flagComponent)
+		if err != nil {
+			return err
+		}
 
 		c := kubecfg.ShowCmd{}
 
@@ -80,12 +86,7 @@ ks show dev -c redis -c nginx-server
 		}
 		wd := metadata.AbsPath(cwd)
 
-		envSpec, err := parseEnvCmd(cmd, args)
-		if err != nil {
-			return err
-		}
-
-		objs, err := expandEnvCmdObjs(cmd, envSpec, wd)
+		objs, err := expandEnvCmdObjs(cmd, env, componentNames, wd)
 		if err != nil {
 			return err
 		}

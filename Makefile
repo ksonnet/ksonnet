@@ -44,14 +44,10 @@ docs:
 install:
 	$(GO) build -o $(GOPATH)/bin/ks $(GO_FLAGS) .
 
-test: gotest jsonnettest docstest
+test: gotest docstest
 
 gotest:
 	$(GO) test $(GO_FLAGS) $(GO_PACKAGES)
-
-jsonnettest: ks $(JSONNET_FILES)
-#	TODO: use `ks check` once implemented
-	./ks -J lib show -f $(KCFG_TEST_FILE) -f $(GUESTBOOK_FILE) >/dev/null
 
 docstest:
 	$(DOC_TEST_FILE)
