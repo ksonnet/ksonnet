@@ -20,57 +20,35 @@ All of this results in a more iterative process for developing manifests, one th
 
 > You should have Go installed *(minimum version 1.8.1)*. If not, follow the instructions in the [official installation guide](https://golang.org/doc/install#install).
 
-1. First ensure that you have a working `$GOPATH`:
-    ```
-    echo $GOPATH
-    ```
-    If your `$GOPATH` is empty, you'll need to permanently set it. On OSX, you can do this by adding the line `export GOPATH=$HOME/go` to the end of your `$HOME/.bash_profile`. (Otherwise [these instructions](https://github.com/golang/go/wiki/SettingGOPATH) may help).
+Copy and paste the following commands:
+```bash
+# Download ksonnet
+go get github.com/ksonnet/ksonnet
 
-    To ensure that your Go binaries are runnable in any directory, run the following:
-    ```
-    PATH=$PATH:$GOPATH/bin
-    ```
+# Build and install binary under shortname `ks`
+cd $GOPATH/src/github.com/ksonnet/ksonnet
+make install
+```
+If your ksonnet is properly installed, you should be able to run `ks --help` and see output describing the various `ks` commands.
 
+#### Common issues
+* **Ensure that your `$GOPATH` is set appropriately.** If `echo $GOPATH` results in empty output, you'll need to set it. If you're using OSX, trying adding the line `export GOPATH=$HOME/go` to the end of your `$HOME/.bash_profile`.
 
-2. Now, to install ksonnet, copy and paste the following commands:
+  Other systems may have different `$GOPATH` defaults (e.g. `/usr/local/go`), in which case you should use those instead. If you get stuck, [these instructions](https://github.com/golang/go/wiki/SettingGOPATH) may help).
 
-    ```bash
-    # Download ksonnet
-    go get github.com/ksonnet/ksonnet
+* **You may need to specify your `$GOPATH` in the same command as `make install`.** For example, try `GOPATH=<your-go-path> make install` (making sure to replace `<your-go-path>`), instead of just `make install`.
 
-    # Build and install binary under shortname `ks`
-    cd $GOPATH/src/github.com/ksonnet/ksonnet
-    make install
-    ```
+* **If your error is "command not found", make sure that Go binaries are included in your $PATH**. You can do this by running `PATH=$PATH:$GOPATH/bin`.
 
-3. If your ksonnet is properly installed, you should be able to run the following `--help` command and see similar output:
+## Example
 
-    ```
-    $ ks --help
-
-    Synchronise Kubernetes resources with config files
-
-    Usage:
-      ks [command]
-
-    Available Commands:
-      apply       Apply local configuration to remote cluster
-      delete      Delete Kubernetes resources described in local config
-      diff        Display differences between server and local config, or server and server config
-      env         Manage ksonnet environments
-      generate    Expand prototype, place in components/ directory of ksonnet app
-      ...
-    ```
-
-## Quickstart
-
-Here we provide a shell script that shows some basic ksonnet features in action. You can run this script to deploy and update a basic web app UI, via a Kubernetes Service and Deployment. This app is shown below:
+Here we provide some commands that show some basic ksonnet features in action. You can run these commands to deploy and update a basic web app UI, via a Kubernetes Service and Deployment. This app is shown below:
 
 <p align="center">
 <img alt="guestbook screenshot" src="/docs/img/guestbook.png" style="width:60% !important;">
 </p>
 
-Note that we will not be implementing the entire app in this quickstart, so the buttons will not work!
+Note that we will not be implementing the entire app in this example, so the buttons will not work!
 
 **Minimal explanation is provided here, and only basic ksonnet features are shown---this is intended to be a quick demonstration.** If you are interested in learning more, see [Additional Documentation](#additional-documentation).
 
@@ -83,37 +61,45 @@ Note that we will not be implementing the entire app in this quickstart, so the 
 
 * *Your `$KUBECONFIG` should specify a valid `kubeconfig` file*, which points at the cluster you want to use for this demonstration.
 
-### Script
+### Example flow
 
-Copy and paste the script below to deploy the container image for a basic web app UI:
+You can copy and paste the commands below to deploy the web app UI:
 
 ```bash
-# Start by creating your app directory
+# Start by creating your app directory (this is created at the current path)
 # (This references your current cluster using $KUBECONFIG)
-ks init quickstart
-cd quickstart
+ks init ks-example
+cd ks-example
 
 # Autogenerate a basic manifest
-ks generate deployment-exposed-with-service guestbook-ui \
+ks generate deployed-service guestbook-ui \
   --name guestbook \
   --image alpinejay/dns-single-redis-guestbook:0.3 \
   --type ClusterIP
 
 # Deploy your manifest to your cluster
 ks apply default
+```
 
+Now there should be a Deployment and Service running on your cluster! Try accessing the `guestbook` service in your browser. (How you do this may depend on your cluster setup).
+
+<details>
+<summary><i>If you are unsure what to do, we suggest using <code>kubectl proxy</code>.</i></summary>
+<pre>
 # Set up an API proxy so that you can access the guestbook service locally
 kubectl proxy > /dev/null &
 PROXY_PID=$!
 QUICKSTART_NAMESPACE=$(kubectl get svc guestbook -o jsonpath="{.metadata.namespace}")
 GUESTBOOK_SERVICE_URL=http://localhost:8001/api/v1/proxy/namespaces/$QUICKSTART_NAMESPACE/services/guestbook
-
-# Check out the guestbook app in your browser (NOTE: the buttons don't work!)
 open $GUESTBOOK_SERVICE_URL
+</pre>
+</details>
 
-```
+<br>
 
-The rest of this script upgrades the container image to a new version:
+*(Remember, the buttons won't work in this example.)*
+
+Now let's try upgrading the container image to a new version:
 
 ```bash
 # Bump the container image to a different version
@@ -126,38 +112,36 @@ ks diff local:default remote:default
 # Update your cluster with your latest changes
 ks apply default
 
-# (Wait a bit) and open another tab to see newly added javascript
-open $GUESTBOOK_SERVICE_URL
-
 ```
 
-Notice that the webpage looks different! Now clean up:
+Check out the webpage again in your browser (force-refresh to update the javascript). Notice that it looks different! Clean up:
 
 ```bash
 # Teardown
-kill -9 $PROXY_PID
 ks delete default
 
 # There should be no guestbook service left running
 kubectl get svc guestbook
 ```
 
-Even though you've made modifications to the Guestbook app and removed it from your cluster, ksonnet still tracks all your manifests locally:
+*(If you ended up copying and pasting the `kubectl proxy` code above, make sure to clean up that process with `kill -9 $PROXY_PID`).*
+
+Now, even though you've made modifications to the Guestbook app and removed it from your cluster, ksonnet still tracks all your manifests locally:
 
 ```bash
 # View all expanded manifests (YAML)
 ks show default
 ```
 
-If you're wondering how ksonnet differs from existing tools, the full-length tutorial (WIP) shows you how to use other ksonnet features to implement the rest of the Guestbook app (so that the buttons work!).
+If you're still wondering how ksonnet differs from existing tools, the [tutorial](https://ksonnet-next-site.i.heptio.com/docs/tutorial) shows you how to use other ksonnet features to implement the rest of the Guestbook app (and yes, the buttons will work!).
 
 ## Additional documentation
 
 ksonnet is a feature-rich framework. To learn more about how to integrate it into your workflow, check out the resources below:
 
-* **Tutorial (WIP)** - How do I use ksonnet and why? This finishes the Guestbook app from the [Quickstart](#quickstart) above.
+* **[Tutorial](https://ksonnet-next-site.i.heptio.com/docs/tutorial)** - What can I build with ksonnet and why? This finishes the Guestbook app from the [Example](#example) above.
 
-* **Interactive tour of ksonnet (WIP)** - Where does the ksonnet magic come from?
+* **[Interactive tour of ksonnet](https://ksonnet-next-site.i.heptio.com/docs/tutorial/tour/welcome)** - How do `ks` commands work under the hood?
 
 * **[CLI Reference](/docs/cli-reference#command-line-reference)** - What ksonnet commands are available, and how do I use them?
 

@@ -92,7 +92,7 @@ Why is this useful? Prototypes allow you to avoid copying and pasting boilerplat
 
 ![prototype parameter component diagram](/docs/img/prototype_and_parameters.svg)
 
-Out of the box, ksonnet comes with some system prototypes (like `io.ksonnet.pkg.deployment-exposed-with-service`) that you can explore with the various [`ks prototype`](docs/cli-reference/ks_prototype.md) commands. See [*package*](#package) for information on downloading or sharing additional prototypes.
+Out of the box, ksonnet comes with some system prototypes (like `io.ksonnet.pkg.deployed-service`) that you can explore with the various [`ks prototype`](docs/cli-reference/ks_prototype.md) commands. See [*package*](#package) for information on downloading or sharing additional prototypes.
 
 ---
 
