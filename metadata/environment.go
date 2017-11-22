@@ -517,8 +517,12 @@ func (m *manager) generateKsonnetLibData(spec ClusterSpec) ([]byte, []byte, []by
 }
 
 func (m *manager) generateOverrideData() []byte {
+	const (
+		relBaseLibsonnetPath = "../" + baseLibsonnetFile
+	)
+
 	var buf bytes.Buffer
-	buf.WriteString(fmt.Sprintf("local base = import \"%s\";\n", m.baseLibsonnetPath))
+	buf.WriteString(fmt.Sprintf("local base = import \"%s\";\n", relBaseLibsonnetPath))
 	buf.WriteString(fmt.Sprintf("local k = import \"%s\";\n\n", extensionsLibFilename))
 	buf.WriteString("base + {\n")
 	buf.WriteString("  // Insert user-specified overrides here. For example if a component is named \"nginx-deployment\", you might have something like:\n")
@@ -528,7 +532,11 @@ func (m *manager) generateOverrideData() []byte {
 }
 
 func (m *manager) generateParamsData() []byte {
-	return []byte(`local params = import "` + m.componentParamsPath + `";
+	const (
+		relComponentParamsPath = "../../" + componentsDir + "/" + paramsFileName
+	)
+
+	return []byte(`local params = import "` + relComponentParamsPath + `";
 params + {
   components +: {
     // Insert component parameter overrides here. Ex:
