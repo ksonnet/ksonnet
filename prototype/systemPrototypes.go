@@ -56,9 +56,9 @@ will typically look something like:
 	},
 	&SpecificationSchema{
 		APIVersion: "0.1",
-		Name:       "io.ksonnet.pkg.deployment-exposed-with-service",
+		Name:       "io.ksonnet.pkg.deployed-service",
 		Params: ParamSchemas{
-			RequiredParam("name", "name", "Name of the service and deployment", String),
+			RequiredParam("name", "name", "Name of the service and deployment resources", String),
 			RequiredParam("image", "containerImage", "Container image to deploy", String),
 			OptionalParam("servicePort", "port", "Port for the service to expose.", "80", NumberOrString),
 			OptionalParam("containerPort", "port", "Container port for service to target.", "80", NumberOrString),
