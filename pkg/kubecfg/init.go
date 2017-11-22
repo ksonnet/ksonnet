@@ -1,6 +1,9 @@
 package kubecfg
 
-import "github.com/ksonnet/ksonnet/metadata"
+import (
+	"github.com/ksonnet/ksonnet/metadata"
+	log "github.com/sirupsen/logrus"
+)
 
 type InitCmd struct {
 	name      string
@@ -24,5 +27,8 @@ func NewInitCmd(name string, rootPath metadata.AbsPath, specFlag string, serverU
 
 func (c *InitCmd) Run() error {
 	_, err := metadata.Init(c.name, c.rootPath, c.spec, c.serverURI, c.namespace)
+	if err == nil {
+		log.Info("ksonnet app successfully created! Next, try creating a component with `ks generate`.")
+	}
 	return err
 }

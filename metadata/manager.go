@@ -146,14 +146,14 @@ func initManager(name string, rootPath AbsPath, spec ClusterSpec, serverURI, nam
 
 	// Initialize user dir structure.
 	if err := m.createUserDirTree(); err != nil {
-		return nil, err
+		return nil, errorOnCreateFailure(name, err)
 	}
 
 	// Initialize environment, and cache specification data.
 	if serverURI != nil {
 		err := m.createEnvironment(defaultEnvName, *serverURI, *namespace, extensionsLibData, k8sLibData, specData)
 		if err != nil {
-			return nil, err
+			return nil, errorOnCreateFailure(name, err)
 		}
 	}
 
@@ -161,7 +161,7 @@ func initManager(name string, rootPath AbsPath, spec ClusterSpec, serverURI, nam
 	registryPath := string(m.registryPath(incubatorReg))
 	err = afero.WriteFile(m.appFS, registryPath, registryYAMLData, defaultFilePermissions)
 	if err != nil {
-		return nil, err
+		return nil, errorOnCreateFailure(name, err)
 	}
 
 	return m, nil
@@ -354,8 +354,9 @@ func (m *manager) createAppDirTree(name string, appYAMLData, baseLibData []byte,
 	}
 
 	for _, p := range dirPaths {
+		log.Debugf("Creating directory '%s'", p)
 		if err := m.appFS.MkdirAll(string(p), defaultFolderPermissions); err != nil {
-			return err
+			return errorOnCreateFailure(name, err)
 		}
 	}
 
@@ -382,6 +383,7 @@ func (m *manager) createAppDirTree(name string, appYAMLData, baseLibData []byte,
 	}
 
 	for _, f := range filePaths {
+		log.Debugf("Creating file '%s'", f.path)
 		if err := afero.WriteFile(m.appFS, string(f.path), f.content, defaultFilePermissions); err != nil {
 			return err
 		}
@@ -452,4 +454,8 @@ components + {
   // Insert user-specified overrides here.
 }
 `)
+}
+
+func errorOnCreateFailure(appName string, err error) error {
+	return fmt.Errorf("%s\nTo undo this simply delete directory '%s' and re-run `ks init`.\nIf the error persists, try using flag '--context' to set a different context or run `ks init --help` for more options", err, appName)
 }

@@ -156,7 +156,7 @@ func resolveContext(context *string) (server, namespace string, err error) {
 		return "", "", fmt.Errorf("context '%s' does not exist in the kubeconfig file", ctxName)
 	}
 
-	log.Infof("Using context '%s'", ctxName)
+	log.Infof("Using context '%s' from the kubeconfig file specified at the environment variable $KUBECONFIG", ctxName)
 	cluster, exists := rawConfig.Clusters[ctx.Cluster]
 	if !exists {
 		return "", "", fmt.Errorf("No cluster with name '%s' exists", ctx.Cluster)
