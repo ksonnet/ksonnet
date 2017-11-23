@@ -14,7 +14,7 @@ If your ksonnet is properly installed, you should be able to run `ks --help` and
 
 ## Common issues
 
-* **Ensure that your `$GOPATH` is set appropriately.**
+* **If your error is "open /bin/ks: operation not permitted", ensure that your `$GOPATH` is set appropriately.**
   If `echo $GOPATH` results in empty output, you'll need to set it.
   If you're using macOS, trying adding the line `export GOPATH=$HOME/go` to the end of your `$HOME/.bash_profile`.
 
