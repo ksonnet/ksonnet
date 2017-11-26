@@ -18,27 +18,21 @@ All of this results in a more iterative process for developing manifests, one th
 
 ## Install
 
-> You should have Go installed *(minimum version 1.8.1)*. If not, follow the instructions in the [official installation guide](https://golang.org/doc/install#install).
+### Homebrew on macOS
 
-Copy and paste the following commands:
-```bash
-# Download ksonnet
-go get github.com/ksonnet/ksonnet
+If you are using [Homebrew](https://brew.sh/) on macOS, you can easily install `ks`.
 
-# Build and install binary under shortname `ks`
-cd $GOPATH/src/github.com/ksonnet/ksonnet
-make install
 ```
-If your ksonnet is properly installed, you should be able to run `ks --help` and see output describing the various `ks` commands.
+brew install ksonnet/tap/ks
+```
 
-#### Common issues
-* **Ensure that your `$GOPATH` is set appropriately.** If `echo $GOPATH` results in empty output, you'll need to set it. If you're using OSX, trying adding the line `export GOPATH=$HOME/go` to the end of your `$HOME/.bash_profile`.
+### Download a prebuilt binary for your OS
 
-  Other systems may have different `$GOPATH` defaults (e.g. `/usr/local/go`), in which case you should use those instead. If you get stuck, [these instructions](https://github.com/golang/go/wiki/SettingGOPATH) may help).
+See the [releases page](https://github.com/ksonnet/ksonnet/releases) to download the latest released binary.
 
-* **You may need to specify your `$GOPATH` in the same command as `make install`.** For example, try `GOPATH=<your-go-path> make install` (making sure to replace `<your-go-path>`), instead of just `make install`.
+### Manually build and install
 
-* **If your error is "command not found", make sure that Go binaries are included in your $PATH**. You can do this by running `PATH=$PATH:$GOPATH/bin`.
+You can download and manually build from source by following [these instructions](/docs/build-install.md).
 
 ## Example
 
