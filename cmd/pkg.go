@@ -44,6 +44,9 @@ var pkgCmd = &cobra.Command{
 	Use:   "pkg",
 	Short: `Manage packages and dependencies for the current ksonnet project`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 0 {
+			return fmt.Errorf("%s is not a valid subcommand\n\n%s", strings.Join(args, " "), cmd.UsageString())
+		}
 		return fmt.Errorf("Command 'pkg' requires a subcommand\n\n%s", cmd.UsageString())
 	},
 }
