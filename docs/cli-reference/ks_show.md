@@ -7,12 +7,12 @@ Show expanded manifests for a specific environment.
 
 Show expanded manifests (resource definitions) for a specific environment. Jsonnet manifests,
 each defining a ksonnet component, are expanded into their JSON or YAML equivalents (YAML is the default).
-Any parameters for a component are resolved based on environment-specific values.
+Any parameters in these Jsonnet manifests are resolved based on environment-specific values.
 
-When NO component is specified via the`-c`flag, this command expands all of the files in the `components/` directory into a list of resource definitions. This is the YAML version
+When NO component is specified (no `-c` flag), this command expands all of the files in the `components/` directory into a list of resource definitions. This is the YAML version
 of what gets deployed to your cluster with `ks apply <env>`.
 
-When a component IS specified via the`-c`flag, this command only expands the manifest for that
+When a component IS specified via the `-c` flag, this command only expands the manifest for that
 particular component.
 
 ```
