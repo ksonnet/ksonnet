@@ -56,24 +56,13 @@ var initCmd = &cobra.Command{
 			return err
 		}
 
-		context, err := flags.GetString(flagEnvContext)
+		server, namespace, err := resolveEnvFlags(flags)
 		if err != nil {
 			return err
 		}
 
 		log.Infof("Creating a new app '%s' at path '%s'", appName, appRoot)
-
-		// Find the URI and namespace of the current cluster, if it exists.
-		var ctx *string
-		if len(context) != 0 {
-			ctx = &context
-		}
-		uri, namespace, err := resolveContext(ctx)
-		if err != nil {
-			return err
-		}
-
-		c, err := kubecfg.NewInitCmd(appName, appRoot, specFlag, &uri, &namespace)
+		c, err := kubecfg.NewInitCmd(appName, appRoot, specFlag, &server, &namespace)
 		if err != nil {
 			return err
 		}

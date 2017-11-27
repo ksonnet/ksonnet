@@ -134,33 +134,35 @@ func namespaceFor(c clientcmd.ClientConfig, overrides *clientcmd.ConfigOverrides
 	return ns, err
 }
 
-// resolveContext returns the server and namespace of the cluster at the provided
-// context. If context is nil, the current context is used.
-func resolveContext(context *string) (server, namespace string, err error) {
+// resolveContext returns the server and namespace of the cluster at the
+// provided context. If the context string is empty, the default context is
+// used.
+func resolveContext(context string) (server, namespace string, err error) {
 	rawConfig, err := clientConfig.RawConfig()
 	if err != nil {
 		return "", "", err
 	}
 
-	ctxName := rawConfig.CurrentContext
-	if context != nil {
-		ctxName = *context
-	}
-	ctx := rawConfig.Contexts[ctxName]
-	if ctx == nil {
-		if len(ctxName) == 0 && ctxName == rawConfig.CurrentContext {
+	// use the default context where context is empty
+	if context == "" {
+		if rawConfig.CurrentContext == "" {
 			// User likely does not have a kubeconfig file.
 			return "", "", fmt.Errorf("No current context found. Make sure a kubeconfig file is present")
 		}
-
-		return "", "", fmt.Errorf("context '%s' does not exist in the kubeconfig file", ctxName)
+		context = rawConfig.CurrentContext
 	}
 
-	log.Infof("Using context '%s' from the kubeconfig file specified at the environment variable $KUBECONFIG", ctxName)
+	ctx := rawConfig.Contexts[context]
+	if ctx == nil {
+		return "", "", fmt.Errorf("context '%s' does not exist in the kubeconfig file", context)
+	}
+
+	log.Infof("Using context '%s' from the kubeconfig file specified at the environment variable $KUBECONFIG", context)
 	cluster, exists := rawConfig.Clusters[ctx.Cluster]
 	if !exists {
 		return "", "", fmt.Errorf("No cluster with name '%s' exists", ctx.Cluster)
 	}
+
 	return cluster.Server, ctx.Namespace, nil
 }
 
