@@ -14,12 +14,12 @@ If your ksonnet is properly installed, you should be able to run `ks --help` and
 
 ## Common issues
 
-* **Ensure that your `$GOPATH` is set appropriately.**
+* **If your error is "open /bin/ks: operation not permitted", ensure that your `$GOPATH` is set appropriately.**
   If `echo $GOPATH` results in empty output, you'll need to set it.
   If you're using macOS, trying adding the line `export GOPATH=$HOME/go` to the end of your `$HOME/.bash_profile`.
 
   Other systems may have different `$GOPATH` defaults (e.g. `/usr/local/go`), in which case you should use those instead.
-  If you get stuck, [these instructions](https://github.com/golang/go/wiki/SettingGOPATH) may help).
+  (If you get stuck, [these instructions](https://github.com/golang/go/wiki/SettingGOPATH) may help).
 
   The ksonnet Makefile assumes you have one and only one directory in your `$GOPATH`.
 

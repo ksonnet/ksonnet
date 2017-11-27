@@ -24,7 +24,7 @@ Synchronise Kubernetes resources with config files
 * [ks pkg](ks_pkg.md)	 - Manage packages and dependencies for the current ksonnet project
 * [ks prototype](ks_prototype.md)	 - Instantiate, inspect, and get examples for ksonnet prototypes
 * [ks registry](ks_registry.md)	 - Manage registries for current project
-* [ks show](ks_show.md)	 - Show expanded resource definitions
+* [ks show](ks_show.md)	 - Show expanded manifests for a specific environment.
 * [ks validate](ks_validate.md)	 - Compare generated manifest against server OpenAPI spec
 * [ks version](ks_version.md)	 - Print version information
 

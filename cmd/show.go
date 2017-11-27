@@ -37,8 +37,28 @@ func init() {
 }
 
 var showCmd = &cobra.Command{
-	Use:   "show [<env>|-f <file-or-dir>]",
-	Short: "Show expanded resource definitions",
+	Use:   "show <env> [-c <component-filename>]",
+	Short: "Show expanded manifests for a specific environment.",
+	Long: `Show expanded manifests (resource definitions) for a specific environment. Jsonnet manifests,
+each defining a ksonnet component, are expanded into their JSON or YAML equivalents (YAML is the default).
+Any parameters in these Jsonnet manifests are resolved based on environment-specific values.
+
+When NO component is specified (no ` + "`-c`" + ` flag), this command expands all of the files in the ` +
+"`components/`" + ` directory into a list of resource definitions. This is the YAML version
+of what gets deployed to your cluster with ` + "`ks apply <env>`" + `.
+
+When a component IS specified via the ` + "`-c`" + ` flag, this command only expands the manifest for that
+particular component.`,
+	Example: `# Show all of the components for the 'dev' environment, in YAML
+# (In other words, expands all manifests in the components/ directory)
+ks show dev
+
+# Show a single component from the 'prod' environment, in JSON
+ks show prod -c redis -o json
+
+# Show multiple components from the 'dev' environment, in YAML
+ks show dev -c redis -c nginx-server
+`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 1 {
 			return fmt.Errorf("'show' takes at most a single argument, that is the name of the environment")

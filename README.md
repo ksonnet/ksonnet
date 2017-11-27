@@ -18,9 +18,11 @@ All of this results in a more iterative process for developing manifests, one th
 
 ## Install
 
+The ksonnet CLI, `ks`, can be installed in three different ways. Choose the method that best matches your setup:
+
 ### Homebrew on macOS
 
-If you are using [Homebrew](https://brew.sh/) on macOS, you can easily install `ks`.
+If you are using [Homebrew](https://brew.sh/) on macOS, you can easily install `ks` with the following command:
 
 ```
 brew install ksonnet/tap/ks
@@ -153,7 +155,7 @@ Thanks for taking the time to join our community and start contributing!
 #### Before you start
 
 * Please familiarize yourself with the [Code of
-Conduct](CODE_OF_CONDUCT.md) before contributing.
+Conduct](CODE-OF-CONDUCT.md) before contributing.
 * Read the contribution guidelines in [CONTRIBUTING.md](CONTRIBUTING.md).
 * There is a [mailing list](https://groups.google.com/forum/#!forum/ksonnet) and [Slack channel](https://ksonnet.slack.com/) if you want to interact with
 other members of the community.
