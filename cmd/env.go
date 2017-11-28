@@ -109,33 +109,9 @@ var envAddCmd = &cobra.Command{
 
 		name := args[0]
 
-		server, namespace, context, err := commonEnvFlags(flags)
+		server, namespace, err := resolveEnvFlags(flags)
 		if err != nil {
 			return err
-		}
-
-		if len(namespace) == 0 {
-			namespace = defaultNamespace
-		}
-
-		if len(server) == 0 {
-			// If server is not provided, use the provided context.
-			// If context is also not provided, use the current context.
-			var ctx *string
-			if len(context) != 0 {
-				ctx = &context
-			}
-
-			var ns string
-			server, ns, err = resolveContext(ctx)
-			if err != nil {
-				return err
-			}
-
-			// If namespace is not provided, use the default namespace provided in the context.
-			if !flags.Changed(flagEnvNamespace) {
-				namespace = ns
-			}
 		}
 
 		appDir, err := os.Getwd()
@@ -300,22 +276,7 @@ var envSetCmd = &cobra.Command{
 			return err
 		}
 
-		server, namespace, context, err := commonEnvFlags(flags)
-		if err != nil {
-			return err
-		}
-
-		// If namespace flag is provided but without a value, use the default namespace.
-		if flags.Changed(flagEnvNamespace) && len(namespace) == 0 {
-			namespace = defaultNamespace
-		}
-
-		if len(context) != 0 {
-			server, _, err = resolveContext(&context)
-			if err != nil {
-				return err
-			}
-		}
+		server, namespace, err := resolveEnvFlags(flags)
 
 		c, err := kubecfg.NewEnvSetCmd(originalName, name, server, namespace, manager)
 		if err != nil {
@@ -364,4 +325,26 @@ func commonEnvFlags(flags *pflag.FlagSet) (server, namespace, context string, er
 	}
 
 	return server, namespace, context, nil
+}
+
+func resolveEnvFlags(flags *pflag.FlagSet) (string, string, error) {
+	server, ns, context, err := commonEnvFlags(flags)
+	if err != nil {
+		return "", "", err
+	}
+
+	if server == "" {
+		// server is not provided -- use the context.
+		server, ns, err = resolveContext(context)
+		if err != nil {
+			return "", "", err
+		}
+	}
+
+	namespace := defaultNamespace
+	if ns != "" {
+		namespace = ns
+	}
+
+	return server, namespace, nil
 }
