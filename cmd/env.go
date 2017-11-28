@@ -32,8 +32,6 @@ const (
 	flagEnvServer    = "server"
 	flagEnvNamespace = "namespace"
 	flagEnvContext   = "context"
-
-	defaultNamespace = "default"
 )
 
 func init() {
@@ -328,6 +326,8 @@ func commonEnvFlags(flags *pflag.FlagSet) (server, namespace, context string, er
 }
 
 func resolveEnvFlags(flags *pflag.FlagSet) (string, string, error) {
+	defaultNamespace := "default"
+
 	server, ns, context, err := commonEnvFlags(flags)
 	if err != nil {
 		return "", "", err
@@ -335,7 +335,7 @@ func resolveEnvFlags(flags *pflag.FlagSet) (string, string, error) {
 
 	if server == "" {
 		// server is not provided -- use the context.
-		server, ns, err = resolveContext(context)
+		server, defaultNamespace, err = resolveContext(context)
 		if err != nil {
 			return "", "", err
 		}
