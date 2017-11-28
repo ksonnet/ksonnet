@@ -265,7 +265,7 @@ func TestSetEnvironment(t *testing.T) {
 func TestGenerateOverrideData(t *testing.T) {
 	m := mockEnvironments(t, "test-gen-override-data")
 
-	expected := `local base = import "test-gen-override-data/environments/base.libsonnet";
+	expected := `local base = import "../base.libsonnet";
 local k = import "k.libsonnet";
 
 base + {
@@ -283,7 +283,7 @@ base + {
 func TestGenerateParamsData(t *testing.T) {
 	m := mockEnvironments(t, "test-gen-params-data")
 
-	expected := `local params = import "test-gen-params-data/components/params.libsonnet";
+	expected := `local params = import "../../components/params.libsonnet";
 params + {
   components +: {
     // Insert component parameter overrides here. Ex:
