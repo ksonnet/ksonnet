@@ -134,6 +134,41 @@ func TestAppendComponentParams(t *testing.T) {
   },
 }`,
 		},
+		// Test top of file imports
+		{
+			"foo-bar",
+			`
+local foo = import "foo";
+local bar = import "bar";
+{
+  global: {
+    // User-defined global parameters; accessible to all component and environments, Ex:
+    // replicas: 4,
+  },
+  components: {
+    // Component-level parameters, defined initially from 'ks prototype use ...'
+    // Each object below should correspond to a component in the components/ directory
+  },
+}`,
+			Params{"replicas": "5", "name": `"foo-bar"`},
+			`
+local foo = import "foo";
+local bar = import "bar";
+{
+  global: {
+    // User-defined global parameters; accessible to all component and environments, Ex:
+    // replicas: 4,
+  },
+  components: {
+    // Component-level parameters, defined initially from 'ks prototype use ...'
+    // Each object below should correspond to a component in the components/ directory
+    "foo-bar": {
+      name: "foo-bar",
+      replicas: 5,
+    },
+  },
+}`,
+		},
 	}
 
 	errors := []struct {
@@ -261,6 +296,23 @@ func TestGetComponentParams(t *testing.T) {
 }`,
 			Params{"name": `"foo-bar"`, "replicas": "1"},
 		},
+		// Test case where one of the param values is a block string
+		{
+			"foo",
+			`
+{
+	components: {
+		"foo": {
+			name: |||
+        name
+        is
+        foo
+			|||,
+		}
+	},
+}`,
+			Params{"name": "|||\nname\nis\nfoo\n|||"},
+		},
 	}
 
 	errors := []struct {
@@ -299,18 +351,6 @@ func TestGetComponentParams(t *testing.T) {
 	components: {
 		|||foo|||: {
 			name: "foo",
-		}
-	},
-}`,
-		},
-		// Test case where one of the param values is a block string
-		{
-			"foo",
-			`
-{
-	components: {
-		"foo": {
-			name: |||name is foo|||,
 		}
 	},
 }`,
@@ -505,6 +545,64 @@ func TestSetComponentParams(t *testing.T) {
   },
 }`,
 		},
+		// Test setting parameter for jsonnet file with top-level imports
+		{
+			"foo-bar",
+			`
+local foo = import "foo";
+local bar = import "bar";
+
+{
+  components: {
+    "foo-bar": {
+      name: "foo-bar",
+    },
+  },
+}`,
+			Params{"replicas": "5"},
+			`
+local foo = import "foo";
+local bar = import "bar";
+
+{
+  components: {
+    "foo-bar": {
+      name: "foo-bar",
+      replicas: 5,
+    },
+  },
+}`,
+		},
+		// Test setting parameter for jsonnet file with multi-string field
+		{
+			"foo-bar",
+			`
+{
+  components: {
+    "foo-bar": {
+      description: |||
+        foo
+        bar
+      |||,
+      name: "foo-bar",
+    },
+  },
+}`,
+			Params{"replicas": "5"},
+			`
+{
+  components: {
+    "foo-bar": {
+      description: |||
+        foo
+        bar
+      |||,
+      name: "foo-bar",
+      replicas: 5,
+    },
+  },
+}`,
+		},
 	}
 
 	errors := []struct {
@@ -692,6 +790,9 @@ params + {
       replicas: 1,
     },
     foo +: {
+      description: |||
+        foo
+      |||,
       name: "foo",
       replicas: 1,
     },
@@ -707,6 +808,9 @@ params + {
       replicas: 1,
     },
     foo +: {
+      description: |||
+        foo
+      |||,
       name: "foobar",
       replicas: 5,
     },
@@ -749,6 +853,37 @@ local params = import "/fake/path";
 params + {
   components +: {
     "foo-bar" +: {
+      replicas: 5,
+    },
+  },
+}`,
+		},
+		// Test top-of-file import cases
+		{
+			"foo",
+			`
+local foo = import "foo";
+local bar = import "bar";
+
+local params = import "/fake/path";
+params + {
+  components +: {
+    foo +: {
+      name: "foo",
+      replicas: 1,
+    },
+  },
+}`,
+			Params{"replicas": "5"},
+			`
+local foo = import "foo";
+local bar = import "bar";
+
+local params = import "/fake/path";
+params + {
+  components +: {
+    foo +: {
+      name: "foo",
       replicas: 5,
     },
   },
