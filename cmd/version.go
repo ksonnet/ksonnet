@@ -35,7 +35,7 @@ var versionCmd = &cobra.Command{
 	Short: "Print version information",
 	Run: func(cmd *cobra.Command, args []string) {
 		out := cmd.OutOrStdout()
-		fmt.Fprintln(out, "kubecfg version:", Version)
+		fmt.Fprintln(out, "ksonnet version:", Version)
 		fmt.Fprintln(out, "jsonnet version:", jsonnet.Version())
 		fmt.Fprintln(out, "client-go version:", version.Get())
 	},
