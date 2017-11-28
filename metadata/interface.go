@@ -96,7 +96,7 @@ func Init(name string, rootPath AbsPath, spec ClusterSpec, serverURI, namespace 
 	// directory tree, in case the network call fails.
 	const (
 		defaultIncubatorRegName = "incubator"
-		defaultIncubatorURI     = "github.com/ksonnet/parts/tree/test-reg/" + defaultIncubatorRegName
+		defaultIncubatorURI     = "github.com/ksonnet/parts/tree/master/" + defaultIncubatorRegName
 	)
 
 	gh, err := makeGitHubRegistryManager(&app.RegistryRefSpec{

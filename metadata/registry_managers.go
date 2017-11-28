@@ -152,10 +152,17 @@ func (gh *gitHubRegistryManager) ResolveLibrarySpec(libID, libRefSpec string) (*
 }
 
 func (gh *gitHubRegistryManager) ResolveLibrary(libID, libAlias, libRefSpec string, onFile registry.ResolveFile, onDir registry.ResolveDirectory) (*parts.Spec, *app.LibraryRefSpec, error) {
+	const (
+		defaultRefSpec = "master"
+	)
+
 	client := github.NewClient(nil)
 
 	// Resolve `version` (a git refspec) to a specific SHA.
 	ctx := context.Background()
+	if len(libRefSpec) == 0 {
+		libRefSpec = defaultRefSpec
+	}
 	resolvedSHA, _, err := client.Repositories.GetCommitSHA1(ctx, gh.org, gh.repo, libRefSpec, "")
 	if err != nil {
 		return nil, nil, err

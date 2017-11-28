@@ -249,7 +249,10 @@ func parseDepSpec(cmd *cobra.Command, spec string) (registry, libID, name, versi
 	if len(split) > 2 {
 		return "", "", "", "", fmt.Errorf("Symbol '@' is only allowed once, at the end of the argument of the form <registry>/<library>@<version>")
 	}
-	version = split[len(split)-1]
+	version = ""
+	if len(split) == 2 {
+		version = split[1]
+	}
 
 	name, err = cmd.Flags().GetString(flagName)
 	if err != nil {
