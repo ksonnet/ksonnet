@@ -37,9 +37,9 @@ ks show dev -c redis -c nginx-server
 ### Options
 
 ```
+  -c, --component stringArray         Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)
   -V, --ext-str stringSlice           Values of external variables
       --ext-str-file stringSlice      Read external variable from a file
-  -f, --file stringArray              Filename or directory that contains the configuration to apply (accepts YAML, JSON, and Jsonnet)
   -o, --format string                 Output format.  Supported values are: json, yaml (default "yaml")
   -J, --jpath stringSlice             Additional jsonnet library search path
       --resolve-images string         Change implementation of resolveImage native function. One of: noop, registry (default "noop")

@@ -60,12 +60,18 @@ ks show prod -c redis -o json
 ks show dev -c redis -c nginx-server
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 1 {
-			return fmt.Errorf("'show' takes at most a single argument, that is the name of the environment")
+		if len(args) != 1 {
+			return fmt.Errorf("'show' requires an environment name; use `env list` to see available environments")
 		}
+		env := args[0]
 
 		flags := cmd.Flags()
 		var err error
+
+		componentNames, err := flags.GetStringArray(flagComponent)
+		if err != nil {
+			return err
+		}
 
 		c := kubecfg.ShowCmd{}
 
@@ -80,12 +86,7 @@ ks show dev -c redis -c nginx-server
 		}
 		wd := metadata.AbsPath(cwd)
 
-		envSpec, err := parseEnvCmd(cmd, args)
-		if err != nil {
-			return err
-		}
-
-		objs, err := expandEnvCmdObjs(cmd, envSpec, wd)
+		objs, err := expandEnvCmdObjs(cmd, env, componentNames, wd)
 		if err != nil {
 			return err
 		}

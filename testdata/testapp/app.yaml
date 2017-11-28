@@ -1,0 +1,11 @@
+apiVersion: 0.0.1
+kind: ksonnet.io/app
+name: test-app
+registries:
+  incubator:
+    gitVersion:
+      commitSha: 93cd219c5ef77adaade43da0f95a4bebd6acc422
+      refSpec: test-reg
+    protocol: github
+    uri: github.com/ksonnet/parts/tree/test-reg/incubator
+version: 0.0.1

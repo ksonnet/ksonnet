@@ -43,10 +43,10 @@ ks delete --kubeconfig=./kubeconfig -f ./pod.yaml
       --client-certificate string      Path to a client certificate file for TLS
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
+  -c, --component stringArray          Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)
       --context string                 The name of the kubeconfig context to use
   -V, --ext-str stringSlice            Values of external variables
       --ext-str-file stringSlice       Read external variable from a file
-  -f, --file stringArray               Filename or directory that contains the configuration to apply (accepts YAML, JSON, and Jsonnet)
       --grace-period int               Number of seconds given to resources to terminate gracefully. A negative value is ignored (default -1)
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
   -J, --jpath stringSlice              Additional jsonnet library search path
