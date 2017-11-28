@@ -44,6 +44,9 @@ var prototypeCmd = &cobra.Command{
 	Use:   "prototype",
 	Short: `Instantiate, inspect, and get examples for ksonnet prototypes`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 0 {
+			return fmt.Errorf("%s is not a valid subcommand\n\n%s", strings.Join(args, " "), cmd.UsageString())
+		}
 		return fmt.Errorf("Command 'prototype' requires a subcommand\n\n%s", cmd.UsageString())
 	},
 	Long: `Manage, inspect, instantiate, and get examples for ksonnet prototypes.

@@ -44,16 +44,20 @@ var pkgCmd = &cobra.Command{
 	Use:   "pkg",
 	Short: `Manage packages and dependencies for the current ksonnet project`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 0 {
+			return fmt.Errorf("%s is not a valid subcommand\n\n%s", strings.Join(args, " "), cmd.UsageString())
+		}
 		return fmt.Errorf("Command 'pkg' requires a subcommand\n\n%s", cmd.UsageString())
 	},
 }
 
 var pkgInstallCmd = &cobra.Command{
-	Use:   "install <registry>/<library>@<version>",
-	Short: `Install a package as a dependency in the current ksonnet application`,
+	Use:     "install <registry>/<library>@<version>",
+	Short:   `Install a package as a dependency in the current ksonnet application`,
+	Aliases: []string{"get"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("Command 'pkg install' requires a single argument of the form <registry>/<library>@<version>")
+			return fmt.Errorf("Command requires a single argument of the form <registry>/<library>@<version>\n\n%s", cmd.UsageString())
 		}
 
 		registry, libID, name, version, err := parseDepSpec(cmd, args[0])
