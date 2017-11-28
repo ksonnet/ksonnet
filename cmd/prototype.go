@@ -388,6 +388,15 @@ var prototypeUseCmd = &cobra.Command{
 			return fmt.Errorf("Command has too many arguments (takes a prototype name and a component name)\n\n%s", cmd.UsageString())
 		}
 
+		name, err := flags.GetString("name")
+		if err != nil {
+			return err
+		}
+
+		if name == "" {
+			flags.Set("name", componentName)
+		}
+
 		params, err := getParameters(proto, flags)
 		if err != nil {
 			return err
