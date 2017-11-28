@@ -101,9 +101,8 @@ Now let's try upgrading the container image to a new version:
 # Bump the container image to a different version
 ks param set guestbook-ui image alpinejay/dns-single-redis-guestbook:0.4
 
-# See the differences between your local manifest and what's running on your cluster
-# (ERROR is expected here since there are differences)
-ks diff local:default remote:default
+# View updated param values
+ks param list
 
 # Update your cluster with your latest changes
 ks apply default
