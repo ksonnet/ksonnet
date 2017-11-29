@@ -1,25 +1,42 @@
 ## ks generate
 
-Expand prototype, place in components/ directory of ksonnet app
+Use the specified prototype to generate a component manifest
 
 ### Synopsis
 
 
-Expand prototype uniquely identified by (possibly partial) `prototype-name` ,
-filling in parameters from flags, and placing it into the file
- `components/componentName` , with the appropriate extension set. For example, the
-following command will expand template 'io.ksonnet.pkg.single-port-deployment'
-and place it in the file `components/nginx-depl.jsonnet` (since by default
-ksonnet will expand templates as Jsonnet).
 
-    ks prototype use io.ksonnet.pkg.single-port-deployment nginx-depl \
-      --name=nginx                                                    \
-      --image=nginx
+The `generate` command (aliased from `prototype use`) generates Kubernetes-
+compatible, Jsonnet manifests for components in your ksonnet app. Each prototype
+corresponds to a single manifest in the `components/` directory. This manifest
+can define one or more Kubernetes resources.
 
-Note also that `prototype-name` need only contain enough of the suffix of a name
-to uniquely disambiguate it among known names. For example, 'deployment' may
-resolve ambiguously, in which case `use` will fail, while 'deployment' might be
-unique enough to resolve to 'io.ksonnet.pkg.single-port-deployment'.
+1. The first argument, the **prototype name**, can either be fully qualified
+(e.g. `io.ksonnet.pkg.single-port-service`) or a partial match (e.g. `service`).
+If using a partial match, note that any ambiguity in resolving the name will
+result in an error.
+
+2. The second argument, the **component name**, determines the filename for the
+generated component manifest. For example, the following command will expand
+template `io.ksonnet.pkg.single-port-deployment` and place it in the
+file `components/nginx-depl.jsonnet` . Note that by default ksonnet will
+expand prototypes into Jsonnet files.
+
+       ks prototype use io.ksonnet.pkg.single-port-deployment nginx-depl \
+         --name=nginx                                                    \
+         --image=nginx
+
+3. Prototypes can be further customized by passing in **parameters** via additional
+command line flags, such as `--name` and `--image` in the example above. Note that
+different prototypes support their own unique flags.
+
+### Related Commands
+
+* `ks apply` — Apply your component manifests to a cluster
+* `ks param set` — Change the values you specified when generating the component
+
+### Syntax
+
 
 ```
 ks generate <prototype-name> <component-name> [type] [parameter-flags]

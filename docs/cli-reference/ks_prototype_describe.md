@@ -1,21 +1,26 @@
 ## ks prototype describe
 
-Describe a ksonnet prototype
+See more info about a prototype's output and usage
 
 ### Synopsis
 
 
-Output documentation, examples, and other information for some ksonnet
-prototype uniquely identified by some (possibly partial) `prototype-name`. This
-includes:
 
-  1. a description of what gets generated during instantiation
-  2. a list of parameters that are required to be passed in with CLI flags
+This command outputs documentation, examples, and other information for
+the specified prototype (identified by name). Specifically, this describes:
 
-`prototype-name` need only contain enough of the suffix of a name to uniquely
-disambiguate it among known names. For example, 'deployment' may resolve
-ambiguously, in which case 'use' will fail, while 'simple-deployment' might be
-unique enough to resolve to 'io.ksonnet.pkg.prototype.simple-deployment'.
+  1. What sort of component is generated
+  2. Which parameters (required and optional) can be passed in via CLI flags
+     to customize the component
+  3. The file format of the generated component manifest (currently, Jsonnet only)
+
+### Related Commands
+
+* `ks prototype preview` — Preview a prototype's output without creating a component (stdout)
+* `ks prototype use` — Use the specified prototype to generate a component manifest
+
+### Syntax
+
 
 ```
 ks prototype describe <prototype-name>
@@ -24,16 +29,9 @@ ks prototype describe <prototype-name>
 ### Examples
 
 ```
-# Display documentation about prototype, including:
-ks prototype describe io.ksonnet.pkg.prototype.simple-deployment
 
-# Display documentation about prototype using a unique suffix of an
-# identifier. That is, this command only requires a long enough suffix to
-# uniquely identify a ksonnet prototype. In this example, the suffix
-# 'simple-deployment' is enough to uniquely identify
-# 'io.ksonnet.pkg.prototype.simple-deployment', but 'deployment' might not
-# be, as several names end with that suffix.
-ks prototype describe simple-deployment
+# Display documentation about the prototype 'io.ksonnet.pkg.single-port-deployment'
+ks prototype describe deployment
 ```
 
 ### Options inherited from parent commands

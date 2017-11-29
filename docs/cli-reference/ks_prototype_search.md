@@ -1,11 +1,21 @@
 ## ks prototype search
 
-Search for a ksonnet prototype
+Search for a prototype
 
 ### Synopsis
 
 
-Search ksonnet for prototypes whose names contain `name-substring` .
+
+The `prototype search` command allows you to search for specific prototypes by name.
+Specifically, it matches any prototypes with names that contain the string <name-substring>.
+
+### Related Commands
+
+* `ks prototype describe` — See more info about a prototype's output and usage
+* `ks prototype list` — List all locally available ksonnet prototypes
+
+### Syntax
+
 
 ```
 ks prototype search <name-substring>
@@ -14,8 +24,9 @@ ks prototype search <name-substring>
 ### Examples
 
 ```
-# Search known prototype metadata for the string 'deployment'.
-ks prototype search deployment
+
+# Search for prototypes with names that contain the string 'service'.
+ks prototype search service
 ```
 
 ### Options inherited from parent commands

@@ -1,37 +1,39 @@
 ## ks prototype preview
 
-Expand prototype, emitting the generated code to stdout
+Preview a prototype's output without creating a component (stdout)
 
 ### Synopsis
 
 
-Expand prototype uniquely identified by (possibly partial)
- `prototype-name` , filling in parameters from flags, and emitting the generated
-code to stdout.
 
-Note also that `prototype-name` need only contain enough of the suffix of a name
-to uniquely disambiguate it among known names. For example, 'deployment' may
-resolve ambiguously, in which case `use` will fail, while 'deployment' might be
-unique enough to resolve to 'io.ksonnet.pkg.single-port-deployment'.
+This `preview` command expands a prototype with CLI flag parameters, and
+emits the resulting manifest to stdout. This allows you to see the potential
+output of a `ks generate` command without actually creating a new component file.
+
+The output is formatted in Jsonnet. To see YAML or JSON equivalents, first create
+a component with `ks generate` and then use `ks show`.
+
+### Related Commands
+
+* `ks generate` — Use the specified prototype to generate a component manifest
+
+### Syntax
+
 
 ```
-ks prototype preview <prototype-name> [type] [parameter-flags]
+ks prototype preview <prototype-name> [parameter-flags]
 ```
 
 ### Examples
 
 ```
+
 # Preview prototype 'io.ksonnet.pkg.single-port-deployment', using the
 # 'nginx' image, and port 80 exposed.
-ks prototype preview io.ksonnet.pkg.prototype.simple-deployment \
-  --name=nginx                                                  \
-  --image=nginx
-
-# Preview prototype using a unique suffix of an identifier. See
-# introduction of help message for more information on how this works.
-ks prototype preview simple-deployment \
-  --name=nginx                         \
-  --image=nginx
+ks prototype preview single-port-deployment \
+  --name=nginx                              \
+  --image=nginx                             \
+  --port=80
 ```
 
 ### Options inherited from parent commands
