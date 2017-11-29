@@ -1,14 +1,31 @@
 ## ks prototype list
 
-List all known ksonnet prototypes
+List all locally available ksonnet prototypes
 
 ### Synopsis
 
 
-List all known ksonnet prototypes.
+
+The `list` command displays all prototypes that are available locally, as
+well as brief descriptions of what they generate.
+
+ksonnet comes with a set of system prototypes that you can use out-of-the-box
+(e.g. `io.ksonnet.pkg.configMap`). However, you can use more advanced
+prototypes like `io.ksonnet.pkg.redis-stateless` by downloading extra packages
+from the *incubator* registry.
+
+### Related Commands
+
+* `ks prototype describe` — See more info about a prototype's output and usage
+* `ks prototype preview` — Preview a prototype's output without creating a component (stdout)
+* `ks prototype use` — Use the specified prototype to generate a component manifest
+* `ks pkg install` — Install more prototypes (from external packages)
+
+### Syntax
+
 
 ```
-ks prototype list <name-substring>
+ks prototype list
 ```
 
 ### Options inherited from parent commands
