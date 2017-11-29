@@ -360,10 +360,14 @@ func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overri
 
 	if _, ok := servers[server]; ok {
 		clusterName := servers[server]
-		log.Debugf("Overwriting --cluster flag with '%s'", clusterName)
-		overrides.Context.Cluster = clusterName
-		log.Debugf("Overwriting --namespace flag with '%s'", env.Namespace)
-		overrides.Context.Namespace = env.Namespace
+		if overrides.Context.Cluster == "" {
+			log.Debugf("Overwriting --cluster flag with '%s'", clusterName)
+			overrides.Context.Cluster = clusterName
+		}
+		if overrides.Context.Namespace == "" {
+			log.Debugf("Overwriting --namespace flag with '%s'", env.Namespace)
+			overrides.Context.Namespace = env.Namespace
+		}
 		return nil
 	}
 
