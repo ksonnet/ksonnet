@@ -4,7 +4,6 @@ package integration
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/pkg/api/v1"
 
@@ -18,11 +17,14 @@ func cmData(cm *v1.ConfigMap) map[string]string {
 
 var _ = Describe("apply", func() {
 	var c corev1.CoreV1Interface
+	var host string
 	var ns string
 	const cmName = "testcm"
 
 	BeforeEach(func() {
-		c = corev1.NewForConfigOrDie(clusterConfigOrDie())
+		config := clusterConfigOrDie()
+		host = config.Host
+		c = corev1.NewForConfigOrDie(config)
 		ns = createNsOrDie(c, "apply")
 	})
 	AfterEach(func() {
@@ -31,52 +33,32 @@ var _ = Describe("apply", func() {
 
 	Describe("A simple apply", func() {
 		var cm *v1.ConfigMap
-		BeforeEach(func() {
-			cm = &v1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{Name: cmName},
-				Data:       map[string]string{"foo": "bar"},
-			}
-		})
-
 		JustBeforeEach(func() {
-			err := runKubecfgWith([]string{"apply", "-vv", "-n", ns}, []runtime.Object{cm})
+			err := runKsonnetWith([]string{"apply", "default", "-v"}, host, ns)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		Context("With no existing state", func() {
 			It("should produce expected object", func() {
-				Expect(c.ConfigMaps(ns).Get("testcm", metav1.GetOptions{})).
-					To(WithTransform(cmData, HaveKeyWithValue("foo", "bar")))
+				Expect(c.Services(ns).Get("guestbook-ui", metav1.GetOptions{})).
+					NotTo(BeNil())
 			})
 		})
 
 		Context("With existing object", func() {
 			BeforeEach(func() {
+				cm = &v1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{Name: cmName},
+					Data:       map[string]string{"foo": "bar"},
+				}
+
 				_, err := c.ConfigMaps(ns).Create(cm)
 				Expect(err).To(Not(HaveOccurred()))
 			})
 
 			It("should succeed", func() {
-
-				Expect(c.ConfigMaps(ns).Get("testcm", metav1.GetOptions{})).
-					To(WithTransform(cmData, HaveKeyWithValue("foo", "bar")))
-			})
-		})
-
-		Context("With modified object", func() {
-			BeforeEach(func() {
-				otherCm := &v1.ConfigMap{
-					ObjectMeta: cm.ObjectMeta,
-					Data:       map[string]string{"foo": "not bar"},
-				}
-
-				_, err := c.ConfigMaps(ns).Create(otherCm)
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("should update the object", func() {
-				Expect(c.ConfigMaps(ns).Get("testcm", metav1.GetOptions{})).
-					To(WithTransform(cmData, HaveKeyWithValue("foo", "bar")))
+				Expect(c.Services(ns).Get("guestbook-ui", metav1.GetOptions{})).
+					NotTo(BeNil())
 			})
 		})
 	})
@@ -90,34 +72,13 @@ var _ = Describe("apply", func() {
 			deleteNsOrDie(c, ns2)
 		})
 
-		var objs []runtime.Object
-		BeforeEach(func() {
-			objs = []runtime.Object{
-				&v1.ConfigMap{
-					ObjectMeta: metav1.ObjectMeta{Name: "nons"},
-				},
-				&v1.ConfigMap{
-					ObjectMeta: metav1.ObjectMeta{Namespace: ns, Name: "ns1"},
-				},
-				&v1.ConfigMap{
-					ObjectMeta: metav1.ObjectMeta{Namespace: ns2, Name: "ns2"},
-				},
-			}
-		})
-
 		JustBeforeEach(func() {
-			err := runKubecfgWith([]string{"apply", "-vv", "-n", ns}, objs)
+			err := runKsonnetWith([]string{"apply", "default", "-v", "-n", ns2}, host, ns)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should create objects in the correct namespaces", func() {
-			Expect(c.ConfigMaps(ns).Get("nons", metav1.GetOptions{})).
-				NotTo(BeNil())
-
-			Expect(c.ConfigMaps(ns).Get("ns1", metav1.GetOptions{})).
-				NotTo(BeNil())
-
-			Expect(c.ConfigMaps(ns2).Get("ns2", metav1.GetOptions{})).
+			Expect(c.Services(ns2).Get("guestbook-ui", metav1.GetOptions{})).
 				NotTo(BeNil())
 		})
 	})

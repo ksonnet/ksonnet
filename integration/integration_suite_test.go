@@ -3,13 +3,13 @@
 package integration
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
+	"path"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,7 +31,8 @@ import (
 )
 
 var kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-var kubecfgBin = flag.String("kubecfg-bin", "ks", "path to kubecfg executable under test")
+var ksonnetBin = flag.String("ksonnet-bin", "ks", "path to ksonnet executable under test")
+var ksonnetData = flag.String("fixtures", "integration/fixtures", "path to ksonnet test data")
 
 func init() {
 	if missingVersions := api.Registry.ValidateEnvRequestedVersions(); len(missingVersions) != 0 {
@@ -86,36 +87,36 @@ func containsString(haystack []string, needle string) bool {
 	return false
 }
 
-func runKubecfgWith(flags []string, input []runtime.Object) error {
-	tmpdir, err := ioutil.TempDir("", "kubecfg-testdata")
+func runKsonnetWith(flags []string, host, ns string) error {
+	type envSpec struct {
+		Server    string `json:"server"`
+		Namespace string `json:"namespace"`
+	}
+
+	defaultEnvSpecPath := path.Join(*ksonnetData, "sampleapp/environments/default/spec.json")
+	defaultEnvSpecFile, err := os.Create(defaultEnvSpecPath)
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(tmpdir)
-
-	fname := filepath.Join(tmpdir, "input.yaml")
-
-	f, err := os.Create(fname)
+	data, err := json.MarshalIndent(envSpec{Server: host, Namespace: ns}, "", "  ")
 	if err != nil {
 		return err
 	}
-	enc := api.Codecs.LegacyCodec(v1.SchemeGroupVersion)
-	if err := encodeTo(f, enc, input); err != nil {
+	defaultEnvSpecFile.Write(data)
+	if err := defaultEnvSpecFile.Close(); err != nil {
 		return err
 	}
-	if err := f.Close(); err != nil {
-		return err
-	}
+	defer os.Remove(defaultEnvSpecPath)
 
 	args := []string{}
 	if *kubeconfig != "" && !containsString(flags, "--kubeconfig") {
 		args = append(args, "--kubeconfig", *kubeconfig)
 	}
 	args = append(args, flags...)
-	args = append(args, "-f", fname)
 
-	fmt.Fprintf(GinkgoWriter, "Running %q %q\n", *kubecfgBin, args)
-	cmd := exec.Command(*kubecfgBin, args...)
+	fmt.Fprintf(GinkgoWriter, "Running %q %q\n", *ksonnetBin, args)
+	cmd := exec.Command(*ksonnetBin, args...)
+	cmd.Dir = path.Join(*ksonnetData, "sampleapp")
 	cmd.Stdout = GinkgoWriter
 	cmd.Stderr = GinkgoWriter
 
@@ -143,5 +144,5 @@ func encodeTo(w io.Writer, enc runtime.Encoder, objs []runtime.Object) error {
 
 func TestE2e(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "kubecfg integration tests")
+	RunSpecs(t, "ksonnet integration tests")
 }
