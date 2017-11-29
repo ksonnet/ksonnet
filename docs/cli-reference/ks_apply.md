@@ -48,12 +48,12 @@ ks apply dev --dry-run
       --client-certificate string      Path to a client certificate file for TLS
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
+  -c, --component stringArray          Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)
       --context string                 The name of the kubeconfig context to use
       --create                         Create missing resources (default true)
       --dry-run                        Perform only read-only operations
   -V, --ext-str stringSlice            Values of external variables
       --ext-str-file stringSlice       Read external variable from a file
-  -f, --file stringArray               Filename or directory that contains the configuration to apply (accepts YAML, JSON, and Jsonnet)
       --gc-tag string                  Add this tag to updated objects, and garbage collect existing objects with this tag and not in config
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
   -J, --jpath stringSlice              Additional jsonnet library search path

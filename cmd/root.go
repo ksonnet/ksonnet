@@ -59,8 +59,8 @@ const (
 
 	// For use in the commands (e.g., diff, apply, delete) that require either an
 	// environment or the -f flag.
-	flagFile      = "file"
-	flagFileShort = "f"
+	flagComponent      = "component"
+	flagComponentShort = "c"
 )
 
 var clientConfig clientcmd.ClientConfig
@@ -302,33 +302,10 @@ func restClientPool(cmd *cobra.Command, envName *string) (dynamic.ClientPool, di
 	return restClient(cmd, envName, clientConfig, &overrides)
 }
 
-type envSpec struct {
-	env   *string
-	files []string
-}
-
 // addEnvCmdFlags adds the flags that are common to the family of commands
 // whose form is `[<env>|-f <file-name>]`, e.g., `apply` and `delete`.
 func addEnvCmdFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringArrayP(flagFile, flagFileShort, nil, "Filename or directory that contains the configuration to apply (accepts YAML, JSON, and Jsonnet)")
-}
-
-// parseEnvCmd parses the family of commands that come in the form `[<env>|-f
-// <file-name>]`, e.g., `apply` and `delete`.
-func parseEnvCmd(cmd *cobra.Command, args []string) (*envSpec, error) {
-	flags := cmd.Flags()
-
-	files, err := flags.GetStringArray(flagFile)
-	if err != nil {
-		return nil, err
-	}
-
-	var env *string
-	if len(args) == 1 {
-		env = &args[0]
-	}
-
-	return &envSpec{env: env, files: files}, nil
+	cmd.PersistentFlags().StringArrayP(flagComponent, flagComponentShort, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
 }
 
 // overrideCluster ensures that the server specified in the environment is
@@ -383,10 +360,14 @@ func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overri
 
 	if _, ok := servers[server]; ok {
 		clusterName := servers[server]
-		log.Debugf("Overwriting --cluster flag with '%s'", clusterName)
-		overrides.Context.Cluster = clusterName
-		log.Debugf("Overwriting --namespace flag with '%s'", env.Namespace)
-		overrides.Context.Namespace = env.Namespace
+		if overrides.Context.Cluster == "" {
+			log.Debugf("Overwriting --cluster flag with '%s'", clusterName)
+			overrides.Context.Cluster = clusterName
+		}
+		if overrides.Context.Namespace == "" {
+			log.Debugf("Overwriting --namespace flag with '%s'", env.Namespace)
+			overrides.Context.Namespace = env.Namespace
+		}
 		return nil
 	}
 
@@ -398,55 +379,41 @@ func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overri
 // the user passes a list of files, we will expand all templates in those files,
 // while if a user passes an environment name, we will expand all component
 // files using that environment.
-func expandEnvCmdObjs(cmd *cobra.Command, envSpec *envSpec, cwd metadata.AbsPath) ([]*unstructured.Unstructured, error) {
+func expandEnvCmdObjs(cmd *cobra.Command, env string, components []string, cwd metadata.AbsPath) ([]*unstructured.Unstructured, error) {
 	expander, err := newExpander(cmd)
 	if err != nil {
 		return nil, err
 	}
 
 	//
-	// Get all filenames that contain templates to expand. Importantly, we need to
-	// enforce the form `[<env-name>|-f <file-name>]`; that is, we need to make
-	// sure that the user either passed an environment name or a `-f` flag.
+	// Set up the template expander to be able to expand the ksonnet application.
 	//
 
-	envPresent := envSpec.env != nil
-	filesPresent := len(envSpec.files) > 0
-
-	if !envPresent && !filesPresent {
-		return nil, fmt.Errorf("Must specify either an environment or a file list, or both")
+	manager, err := metadata.Find(cwd)
+	if err != nil {
+		return nil, err
 	}
 
-	fileNames := envSpec.files
-	if envPresent {
-		manager, err := metadata.Find(cwd)
-		if err != nil {
-			return nil, err
-		}
+	libPath, vendorPath, envLibPath, envComponentPath, envParamsPath := manager.LibPaths(env)
+	expander.FlagJpath = append([]string{string(libPath), string(vendorPath), string(envLibPath)}, expander.FlagJpath...)
 
-		libPath, vendorPath, envLibPath, envComponentPath, envParamsPath := manager.LibPaths(*envSpec.env)
-		expander.FlagJpath = append([]string{string(libPath), string(vendorPath), string(envLibPath)}, expander.FlagJpath...)
-
-		componentPaths, err := manager.ComponentPaths()
-		if err != nil {
-			return nil, err
-		}
-
-		baseObj := constructBaseObj(componentPaths)
-		params := importParams(string(envParamsPath))
-		expander.ExtCodes = append([]string{baseObj, params}, expander.ExtCodes...)
-
-		if !filesPresent {
-
-			fileNames = []string{string(envComponentPath)}
-		}
+	componentPaths, err := manager.ComponentPaths()
+	if err != nil {
+		return nil, err
 	}
 
+	baseObj, err := constructBaseObj(componentPaths, components)
+	if err != nil {
+		return nil, err
+	}
+	params := importParams(string(envParamsPath))
+	expander.ExtCodes = append([]string{baseObj, params}, expander.ExtCodes...)
+
 	//
-	// Expand templates.
+	// Expand the ksonnet app as rendered for environment `env`.
 	//
 
-	return expander.Expand(fileNames)
+	return expander.Expand([]string{string(envComponentPath)})
 }
 
 // constructBaseObj constructs the base Jsonnet object that represents k-v
@@ -456,21 +423,75 @@ func expandEnvCmdObjs(cmd *cobra.Command, envSpec *envSpec, cwd metadata.AbsPath
 //      foo: import "components/foo.jsonnet"
 //      "foo-bar": import "components/foo-bar.jsonnet"
 //   }
-func constructBaseObj(paths []string) string {
+func constructBaseObj(componentPaths, componentNames []string) (string, error) {
+	// IMPLEMENTATION NOTE: If one or more `componentNames` exist, it is
+	// sufficient to simply omit every name that does not appear in the list. This
+	// is because we know every field of the base object will contain _only_ an
+	// `import` node (see example object in the function-heading comment). This
+	// would not be true in cases where one field can reference another field; in
+	// this case, one would need to generate the entire object, and filter that.
+	//
+	// Hence, a word of caution: if the base object ever becomes more complex, you
+	// will need to change the way this function performs filtering, as it will
+	// lead to very confusing bugs.
+
+	shouldFilter := len(componentNames) > 0
+	filter := map[string]string{}
+	for _, name := range componentNames {
+		filter[name] = ""
+	}
+
+	// Add every component we know about to the base object.
 	var obj bytes.Buffer
 	obj.WriteString("{\n")
-	for _, p := range paths {
+	for _, p := range componentPaths {
 		ext := path.Ext(p)
-		if path.Ext(p) != ".jsonnet" {
+		componentName := strings.TrimSuffix(path.Base(p), ext)
+
+		// Filter! If the filter has more than 1 element and the component name is
+		// not in the filter, skip.
+		if _, exists := filter[componentName]; shouldFilter && !exists {
+			continue
+		} else if shouldFilter && exists {
+			delete(filter, componentName)
+		}
+
+		// Generate import statement.
+		var importExpr string
+		switch ext {
+		case ".jsonnet":
+			importExpr = fmt.Sprintf(`import "%s"`, p)
+
+		// TODO: Pull in YAML and JSON when we build the base object.
+		//
+		// case ".yaml", ".yml":
+		// 	importExpr = fmt.Sprintf(`util.parseYaml("%s")`, p)
+		// case ".json":
+		// 	importExpr = fmt.Sprintf(`util.parseJson("%s")`, p)
+		default:
 			continue
 		}
 
-		name := strings.TrimSuffix(path.Base(p), ext)
-		name = params.SanitizeComponent(name)
-		fmt.Fprintf(&obj, "  %s: import \"%s\",\n", name, p)
+		// Emit object field. Sanitize the name to guarantee we generate valid
+		// Jsonnet.
+		componentName = params.SanitizeComponent(componentName)
+		fmt.Fprintf(&obj, "  %s: %s,\n", componentName, importExpr)
 	}
-	obj.WriteString("}\n")
-	return fmt.Sprintf("%s=%s", metadata.ComponentsExtCodeKey, obj.String())
+
+	// Check that we found all the components the user asked for.
+	if shouldFilter && len(filter) != 0 {
+		names := []string{}
+		for name := range filter {
+			names = append(names, "'"+name+"'")
+		}
+		return "", fmt.Errorf("Failed to filter components; the following components don't exist: [ %s ]", strings.Join(names, ","))
+	}
+
+	// Terminate object.
+	fmt.Fprintf(&obj, "}\n")
+
+	// Emit `base.libsonnet`.
+	return fmt.Sprintf("%s=%s", metadata.ComponentsExtCodeKey, obj.String()), nil
 }
 
 func importParams(path string) string {

@@ -41,9 +41,10 @@ var deleteCmd = &cobra.Command{
 	Use:   "delete [env-name] [-f <file-or-dir>]",
 	Short: "Delete Kubernetes resources described in local config",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 1 {
-			return fmt.Errorf("'delete' takes at most a single argument, that is the name of the environment")
+		if len(args) != 1 {
+			return fmt.Errorf("'delete' requires an environment name; use `env list` to see available environments\n\n%s", cmd.UsageString())
 		}
+		env := args[0]
 
 		flags := cmd.Flags()
 		var err error
@@ -55,18 +56,18 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 
+		componentNames, err := flags.GetStringArray(flagComponent)
+		if err != nil {
+			return err
+		}
+
 		cwd, err := os.Getwd()
 		if err != nil {
 			return err
 		}
 		wd := metadata.AbsPath(cwd)
 
-		envSpec, err := parseEnvCmd(cmd, args)
-		if err != nil {
-			return err
-		}
-
-		c.ClientPool, c.Discovery, err = restClientPool(cmd, envSpec.env)
+		c.ClientPool, c.Discovery, err = restClientPool(cmd, &env)
 		if err != nil {
 			return err
 		}
@@ -76,7 +77,7 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 
-		objs, err := expandEnvCmdObjs(cmd, envSpec, wd)
+		objs, err := expandEnvCmdObjs(cmd, env, componentNames, wd)
 		if err != nil {
 			return err
 		}

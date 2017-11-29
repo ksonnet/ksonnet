@@ -36,10 +36,12 @@ var validateCmd = &cobra.Command{
 	Use:   "validate [env-name] [-f <file-or-dir>]",
 	Short: "Compare generated manifest against server OpenAPI spec",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 1 {
-			return fmt.Errorf("'validate' takes at most a single argument, that is the name of the environment")
+		if len(args) != 1 {
+			return fmt.Errorf("'validate' requires an environment name; use `env list` to see available environments\n\n%s", cmd.UsageString())
 		}
+		env := args[0]
 
+		flags := cmd.Flags()
 		var err error
 
 		c := kubecfg.ValidateCmd{}
@@ -50,7 +52,7 @@ var validateCmd = &cobra.Command{
 		}
 		wd := metadata.AbsPath(cwd)
 
-		envSpec, err := parseEnvCmd(cmd, args)
+		componentNames, err := flags.GetStringArray(flagComponent)
 		if err != nil {
 			return err
 		}
@@ -60,7 +62,7 @@ var validateCmd = &cobra.Command{
 			return err
 		}
 
-		objs, err := expandEnvCmdObjs(cmd, envSpec, wd)
+		objs, err := expandEnvCmdObjs(cmd, env, componentNames, wd)
 		if err != nil {
 			return err
 		}

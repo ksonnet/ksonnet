@@ -10,7 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	clientcmdlatest "k8s.io/client-go/tools/clientcmd/api/latest"
@@ -22,22 +21,16 @@ import (
 var _ = Describe("flags", func() {
 	var c corev1.CoreV1Interface
 	var ns string
-	const testName = "testobj"
+	var host string
 	var args []string
-	var objs []runtime.Object
 	var kubecfgExit *exec.ExitError
 
 	BeforeEach(func() {
-		c = corev1.NewForConfigOrDie(clusterConfigOrDie())
+		config := clusterConfigOrDie()
+		c = corev1.NewForConfigOrDie(config)
+		host = config.Host
 		ns = createNsOrDie(c, "kubeflags")
-		args = []string{"apply", "-vv"}
-		objs = []runtime.Object{
-			&v1.ConfigMap{
-				// Note: no explicit Namespace
-				ObjectMeta: metav1.ObjectMeta{Name: testName},
-				Data:       map[string]string{"foo": "bar"},
-			},
-		}
+		args = []string{"apply", "default", "-v"}
 	})
 	AfterEach(func() {
 		deleteNsOrDie(c, ns)
@@ -81,7 +74,7 @@ var _ = Describe("flags", func() {
 
 		JustBeforeEach(func() {
 			kubecfgExit = nil
-			err := runKubecfgWith(args, objs)
+			err := runKsonnetWith(args, host, ns)
 			if err != nil {
 				Expect(err).To(BeAssignableToTypeOf(&exec.ExitError{}))
 				kubecfgExit = err.(*exec.ExitError)
@@ -95,7 +88,7 @@ var _ = Describe("flags", func() {
 
 			It("should update correct namespace", func() {
 				Expect(kubecfgExit).NotTo(HaveOccurred())
-				Expect(c.ConfigMaps(ns).Get(testName, metav1.GetOptions{})).
+				Expect(c.Services(ns).List(metav1.ListOptions{})).
 					NotTo(BeNil())
 			})
 		})
@@ -110,7 +103,7 @@ var _ = Describe("flags", func() {
 
 			It("should update correct namespace", func() {
 				Expect(kubecfgExit).NotTo(HaveOccurred())
-				Expect(c.ConfigMaps(ns).Get(testName, metav1.GetOptions{})).
+				Expect(c.Services(ns).List(metav1.ListOptions{})).
 					NotTo(BeNil())
 			})
 		})

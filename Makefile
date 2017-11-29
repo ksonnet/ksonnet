@@ -32,6 +32,7 @@ GO_PACKAGES = ./cmd/... ./utils/... ./pkg/... ./metadata/... ./prototype/...
 
 # Default cluster from this config is used for integration tests
 KUBECONFIG = $(HOME)/.kube/config
+INTEGRATION_TEST_FIXTURES = ./fixtures
 
 all: ks docs
 
@@ -44,20 +45,16 @@ docs:
 install:
 	$(GO) build -o $(GOPATH)/bin/ks $(GO_FLAGS) .
 
-test: gotest jsonnettest docstest
+test: gotest docstest
 
 gotest:
 	$(GO) test $(GO_FLAGS) $(GO_PACKAGES)
-
-jsonnettest: ks $(JSONNET_FILES)
-#	TODO: use `ks check` once implemented
-	./ks -J lib show -f $(KCFG_TEST_FILE) -f $(GUESTBOOK_FILE) >/dev/null
 
 docstest:
 	$(DOC_TEST_FILE)
 
 integrationtest: ks
-	$(GINKGO) -tags 'integration' integration -- -kubeconfig $(KUBECONFIG) -kubecfg-bin $(abspath $<)
+	$(GINKGO) -tags 'integration' integration -- -fixtures $(INTEGRATION_TEST_FIXTURES) -kubeconfig $(KUBECONFIG) -ksonnet-bin $(abspath $<)
 
 vet:
 	$(GO) vet $(GO_FLAGS) $(GO_PACKAGES)
