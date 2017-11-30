@@ -1,12 +1,26 @@
 ## ks pkg describe
 
-Describe a ksonnet package
+Describe a ksonnet package and its contents
 
 ### Synopsis
 
 
-Output documentation for some ksonnet registry prototype uniquely identified in
-the current ksonnet project by some 'registry-name'.
+
+The `describe` command outputs documentation for a package that is available
+(e.g. downloaded) in the current ksonnet application. (This must belong to an already
+known `<registry-name>` like *incubator*). The output includes:
+
+1. The library name
+2. A brief description provided by the library authors
+3. A list of available prototypes provided by the library
+
+### Related Commands
+
+* `ks prototype describe` — See more info about a prototype's output and usage
+* `ks generate` — Use the specified prototype to generate a component manifest
+
+### Syntax
+
 
 ```
 ks pkg describe [<registry-name>/]<package-name>
@@ -19,5 +33,5 @@ ks pkg describe [<registry-name>/]<package-name>
 ```
 
 ### SEE ALSO
-* [ks pkg](ks_pkg.md)	 - Manage packages and dependencies for the current ksonnet project
+* [ks pkg](ks_pkg.md)	 - Manage packages and dependencies for the current ksonnet application
 

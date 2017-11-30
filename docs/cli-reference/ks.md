@@ -26,7 +26,7 @@ application configuration to remote clusters.
 * [ks generate](ks_generate.md)	 - Use the specified prototype to generate a component manifest
 * [ks init](ks_init.md)	 - Initialize a ksonnet application
 * [ks param](ks_param.md)	 - Manage ksonnet parameters for components and environments
-* [ks pkg](ks_pkg.md)	 - Manage packages and dependencies for the current ksonnet project
+* [ks pkg](ks_pkg.md)	 - Manage packages and dependencies for the current ksonnet application
 * [ks prototype](ks_prototype.md)	 - Instantiate, inspect, and get examples for ksonnet prototypes
 * [ks registry](ks_registry.md)	 - Manage registries for current project
 * [ks show](ks_show.md)	 - Show expanded manifests for a specific environment.

@@ -1,44 +1,46 @@
 ## ks pkg install
 
-Install a package as a dependency in the current ksonnet application
+Install a package (e.g. extra prototypes) for the current ksonnet app
 
 ### Synopsis
 
 
-Cache a ksonnet library locally, and make it available for use in the current
-ksonnet project. This particularly means that we record enough information in
- `app.yaml` for new users to retrieve the dependency after a fresh clone of the
-app repository.
 
-For example, inside a ksonnet application directory, run:
+The `install` command caches a ksonnet library locally, and make it available
+for use in the current ksonnet application. Enough info and metadata is recorded in
+ `app.yaml` that new users can retrieve the dependency after a fresh clone of this app.
 
-    ks pkg install incubator/nginx@v0.1
+The library itself needs to be located in a registry (e.g. Github repo). By default,
+ksonnet knows about two registries: *incubator* and *stable*, which are the release
+channels for official ksonnet libraries.
 
-This can then be referenced in a source file in the ksonnet project:
+### Related Commands
 
-    local nginx = import "kspkg://nginx";
+* `ks pkg list` — List all packages known (downloaded or not) for the current ksonnet app
+* `ks prototype list` — List all locally available ksonnet prototypes
 
-By default, ksonnet knows about two registries: incubator and stable, which are
-the release channels for official ksonnet libraries. Additional registries can
-be added with the `ks registry` command.
+### Syntax
 
-Note that multiple versions of the same ksonnet library can be cached and used
-in the same project, by explicitly passing in the `--name` flag. For example:
-
-    ks pkg install incubator/nginx@v0.1 --name nginxv1
-    ks pkg install incubator/nginx@v0.2 --name nginxv2
-
-With these commands, a user can `import "kspkg://nginxv1"` , and
- `import "kspkg://nginxv2"` with no conflict.
 
 ```
 ks pkg install <registry>/<library>@<version>
 ```
 
+### Examples
+
+```
+
+# Install an nginx dependency, based on the 'master' branch.
+# In a ksonnet source file, this can be referenced as:
+#     local nginx = import "incubator/nginx/nginx.libsonnet";
+ks pkg install incubator/nginx@master
+
+```
+
 ### Options
 
 ```
-      --name string   Name to give the dependency
+      --name string   Name to give the dependency, to use within the ksonnet app
 ```
 
 ### Options inherited from parent commands
@@ -48,5 +50,5 @@ ks pkg install <registry>/<library>@<version>
 ```
 
 ### SEE ALSO
-* [ks pkg](ks_pkg.md)	 - Manage packages and dependencies for the current ksonnet project
+* [ks pkg](ks_pkg.md)	 - Manage packages and dependencies for the current ksonnet application
 

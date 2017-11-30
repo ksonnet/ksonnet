@@ -21,7 +21,7 @@ is supported via a component flag.
 
 
 ```
-ks param diff <env1> <env2>
+ks param diff <env1> <env2> [--component <component-name>]
 ```
 
 ### Examples

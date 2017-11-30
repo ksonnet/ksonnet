@@ -125,7 +125,7 @@ from the *incubator* registry.
 * ` + "`ks prototype describe` " + `— ` + protoShortDesc["describe"] + `
 * ` + "`ks prototype preview` " + `— ` + protoShortDesc["preview"] + `
 * ` + "`ks prototype use` " + `— ` + protoShortDesc["use"] + `
-* ` + "`ks pkg install` " + `— Install more prototypes (from external packages)
+* ` + "`ks pkg install` " + pkgShortDesc["install"] + `
 
 ### Syntax
 `,
