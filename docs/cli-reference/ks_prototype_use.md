@@ -32,7 +32,7 @@ different prototypes support their own unique flags.
 
 ### Related Commands
 
-* `ks apply` — Apply your component manifests to a cluster
+* `ks apply` — Apply local Kubernetes manifests (components) to remote clusters
 * `ks param set` — Change the values of an existing component
 
 ### Syntax

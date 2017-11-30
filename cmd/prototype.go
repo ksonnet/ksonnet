@@ -454,7 +454,7 @@ different prototypes support their own unique flags.
 
 ### Related Commands
 
-* ` + "`ks apply` " + `— Apply your component manifests to a cluster
+* ` + "`ks apply` " + `— ` + applyShortDesc + `
 * ` + "`ks param set` " + `— Change the values of an existing component
 
 ### Syntax

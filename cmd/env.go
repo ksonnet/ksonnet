@@ -165,7 +165,7 @@ Note that an environment *DOES NOT* contain user-specific data such as private k
 
 * ` + "`ks env list` " + `— ` + protoShortDesc["list"] + `
 * ` + "`ks param set` " + `— ` + `Change the values of an existing component` + `
-* ` + "`ks apply` " + `— ` + `Apply your component manifests to a cluster` + `
+* ` + "`ks apply` " + `— ` + applyShortDesc + `
 
 ### Syntax
 `,

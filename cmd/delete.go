@@ -37,9 +37,11 @@ func init() {
 	deleteCmd.PersistentFlags().Int64(flagGracePeriod, -1, "Number of seconds given to resources to terminate gracefully. A negative value is ignored")
 }
 
+var deleteShortDesc = `Remove component-specified Kubernetes resources from remote clusters`
+
 var deleteCmd = &cobra.Command{
-	Use:   "delete [env-name] [-f <file-or-dir>]",
-	Short: "Delete Kubernetes resources described in local config",
+	Use:   "delete [env-name] [-c <component-name>]",
+	Short: deleteShortDesc,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("'delete' requires an environment name; use `env list` to see available environments\n\n%s", cmd.UsageString())
@@ -84,24 +86,30 @@ var deleteCmd = &cobra.Command{
 
 		return c.Run(objs)
 	},
-	Long: `Delete Kubernetes resources from a cluster, as described in the local
-configuration.
+	Long: `
+The ` + "`delete`" + ` command removes Kubernetes resources from a cluster, as described
+in local *component* manifests. This cluster is determined by the mandatory
+` + "`<env-name>`" + `argument.
 
-ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
-files.`,
-	Example: `# Delete all resources described in a ksonnet application, from the 'dev'
-# environment. Can be used in any subdirectory of the application.
+An entire ksonnet application can be removed from a cluster, or just its specific
+components.
+
+**This command can be considered the inverse of the ` + "`ks apply`" + ` command.**
+
+### Related Commands
+
+* ` + "`ks diff` " + `— Compare manifests, based on environment or location (local or remote)
+* ` + "`ks apply` " + `— ` + applyShortDesc + `
+
+### Syntax
+`,
+	Example: `# Delete resources from the 'dev' environment, based on ALL of the manifests in your
+# ksonnet app's 'components/' directory. This command works in any subdirectory
+# of the app.
 ks delete dev
 
-# Delete resources described in a YAML file. Automatically picks up the
-# cluster's location from '$KUBECONFIG'.
-ks delete -f ./pod.yaml
-
-# Delete resources described in the JSON file from the 'dev' environment. Can
-# be used in any subdirectory of the application.
-ks delete dev -f ./pod.json
-
-# Delete resources described in a YAML file, and running in the cluster
-# specified by the current context in specified kubeconfig file.
-ks delete --kubeconfig=./kubeconfig -f ./pod.yaml`,
+# Delete resources described by the 'nginx' component. $KUBECONFIG is overridden by
+# the CLI-specified './kubeconfig', so these changes are deployed to the current
+# context's cluster (not the 'default' environment)
+ks delete --kubeconfig=./kubeconfig -c nginx`,
 }

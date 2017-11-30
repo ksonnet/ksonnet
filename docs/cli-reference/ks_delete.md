@@ -1,38 +1,44 @@
 ## ks delete
 
-Delete Kubernetes resources described in local config
+Remove component-specified Kubernetes resources from remote clusters
 
 ### Synopsis
 
 
-Delete Kubernetes resources from a cluster, as described in the local
-configuration.
 
-ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
-files.
+The `delete` command removes Kubernetes resources from a cluster, as described
+in local *component* manifests. This cluster is determined by the mandatory
+`<env-name>`argument.
+
+An entire ksonnet application can be removed from a cluster, or just its specific
+components.
+
+**This command can be considered the inverse of the `ks apply` command.**
+
+### Related Commands
+
+* `ks diff` — Compare manifests, based on environment or location (local or remote)
+* `ks apply` — Apply local Kubernetes manifests (components) to remote clusters
+
+### Syntax
+
 
 ```
-ks delete [env-name] [-f <file-or-dir>]
+ks delete [env-name] [-c <component-name>]
 ```
 
 ### Examples
 
 ```
-# Delete all resources described in a ksonnet application, from the 'dev'
-# environment. Can be used in any subdirectory of the application.
+# Delete resources from the 'dev' environment, based on ALL of the manifests in your
+# ksonnet app's 'components/' directory. This command works in any subdirectory
+# of the app.
 ks delete dev
 
-# Delete resources described in a YAML file. Automatically picks up the
-# cluster's location from '$KUBECONFIG'.
-ks delete -f ./pod.yaml
-
-# Delete resources described in the JSON file from the 'dev' environment. Can
-# be used in any subdirectory of the application.
-ks delete dev -f ./pod.json
-
-# Delete resources described in a YAML file, and running in the cluster
-# specified by the current context in specified kubeconfig file.
-ks delete --kubeconfig=./kubeconfig -f ./pod.yaml
+# Delete resources described by the 'nginx' component. $KUBECONFIG is overridden by
+# the CLI-specified './kubeconfig', so these changes are deployed to the current
+# context's cluster (not the 'default' environment)
+ks delete --kubeconfig=./kubeconfig -c nginx
 ```
 
 ### Options
