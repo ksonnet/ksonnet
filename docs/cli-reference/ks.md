@@ -14,7 +14,7 @@ Synchronise Kubernetes resources with config files
 ```
 
 ### SEE ALSO
-* [ks apply](ks_apply.md)	 - Apply local configuration to remote cluster
+* [ks apply](ks_apply.md)	 - Apply local Kubernetes manifests to remote clusters
 * [ks delete](ks_delete.md)	 - Delete Kubernetes resources described in local config
 * [ks diff](ks_diff.md)	 - Display differences between server and local config, or server and server config
 * [ks env](ks_env.md)	 - Manage ksonnet environments
