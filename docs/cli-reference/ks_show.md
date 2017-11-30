@@ -5,15 +5,26 @@ Show expanded manifests for a specific environment.
 ### Synopsis
 
 
-Show expanded manifests (resource definitions) for a specific environment. Jsonnet manifests,
-each defining a ksonnet component, are expanded into their JSON or YAML equivalents (YAML is the default).
-Any parameters in these Jsonnet manifests are resolved based on environment-specific values.
 
-When NO component is specified (no `-c` flag), this command expands all of the files in the `components/` directory into a list of resource definitions. This is the YAML version
-of what gets deployed to your cluster with `ks apply <env>`.
+Show expanded manifests (resource definitions) for a specific environment.
+Jsonnet manifests, each defining a ksonnet component, are expanded into their
+JSON or YAML equivalents (YAML is the default). Any parameters in these Jsonnet
+manifests are resolved based on environment-specific values.
 
-When a component IS specified via the `-c` flag, this command only expands the manifest for that
-particular component.
+When NO component is specified (no `-c` flag), this command expands all of
+the files in the `components/` directory into a list of resource definitions.
+This is the YAML version of what gets deployed to your cluster with
+`ks apply <env>`.
+
+When a component IS specified via the `-c` flag, this command only expands the
+manifest for that particular component.
+
+### Related Commands
+
+* `ks apply` — Apply local Kubernetes manifests (components) to remote clusters
+
+### Syntax
+
 
 ```
 ks show <env> [-c <component-filename>]
@@ -22,6 +33,7 @@ ks show <env> [-c <component-filename>]
 ### Examples
 
 ```
+
 # Show all of the components for the 'dev' environment, in YAML
 # (In other words, expands all manifests in the components/ directory)
 ks show dev

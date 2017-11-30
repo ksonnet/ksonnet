@@ -454,6 +454,7 @@ different prototypes support their own unique flags.
 
 ### Related Commands
 
+* ` + "`ks show` " + `— ` + showShortDesc + `
 * ` + "`ks apply` " + `— ` + applyShortDesc + `
 * ` + "`ks param set` " + `— Change the values of an existing component
 

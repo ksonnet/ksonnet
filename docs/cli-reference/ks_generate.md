@@ -32,6 +32,7 @@ different prototypes support their own unique flags.
 
 ### Related Commands
 
+* `ks show` — Show expanded manifests for a specific environment.
 * `ks apply` — Apply local Kubernetes manifests (components) to remote clusters
 * `ks param set` — Change the values of an existing component
 
