@@ -19,6 +19,8 @@ words, prototypes provide the basis for the **components** of your app. You can
 use prototypes to autogenerate boilerplate code and focus on customizing them
 for your use case.
 
+----
+
 
 ```
 ks prototype

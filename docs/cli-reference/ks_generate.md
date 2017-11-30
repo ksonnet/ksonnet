@@ -33,7 +33,7 @@ different prototypes support their own unique flags.
 ### Related Commands
 
 * `ks apply` — Apply your component manifests to a cluster
-* `ks param set` — Change the values you specified when generating the component
+* `ks param set` — Change the values of an existing component
 
 ### Syntax
 

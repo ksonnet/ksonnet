@@ -1,13 +1,24 @@
 ## ks env set
 
-Set environment fields such as the name, server, and namespace.
+Set environment-specific fields (name, namespace, server)
 
 ### Synopsis
 
 
-Set environment fields such as the name, and server. Changing
-the name of an environment will also update the directory structure in
-'environments'.
+
+The `set` command lets you change the fields of an existing environment.
+You can update any of your environment's (1) name (2) namespace and
+(3) server (cluster URI).
+
+Note that changing the name of an environment will also update the corresponding
+directory structure in `environments/`.
+
+### Related Commands
+
+* `ks env list` — List all environments in a ksonnet application
+
+### Syntax
+
 
 ```
 ks env set <env-name>
@@ -16,25 +27,25 @@ ks env set <env-name>
 ### Examples
 
 ```
-# Updates the API server address of the environment 'us-west/staging'.
+# Update the API server address of the environment 'us-west/staging'.
 ks env set us-west/staging --server=http://example.com
 
-# Updates the namespace of the environment 'us-west/staging'.
+# Update the namespace of the environment 'us-west/staging'.
 ks env set us-west/staging --namespace=staging
 
-# Updates both the name and the server of the environment 'us-west/staging'.
-# Updating the name will update the directory structure in 'environments'.
+# Update both the name and the server of the environment 'us-west/staging'.
+# Updating the name will update the directory structure in 'environments/'.
 ks env set us-west/staging --server=http://example.com --name=us-east/staging
-  
-# Updates API server address of the environment 'us-west/staging' based on the
-# server in the context 'staging-west' in your kubeconfig file.
+
+# Update the API server address of the environment 'us-west/staging' based on the
+# server in the 'staging-west' context of your kubeconfig file.
 ks env set us-west/staging --context=staging-west
 ```
 
 ### Options
 
 ```
-      --name string   Specify name to rename environment to. Name must not already exist
+      --name string   Name used to uniquely identify the environment. Must not already exist within the ksonnet app
 ```
 
 ### Options inherited from parent commands

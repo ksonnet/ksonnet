@@ -1,12 +1,22 @@
 ## ks env list
 
-List all environments in a ksonnet project
+List all environments in a ksonnet application
 
 ### Synopsis
 
 
-List all environments in a ksonnet project. This will
-display the name, server, and namespace of each environment within the ksonnet project.
+
+The `list` command lists all of the available environments for the
+current ksonnet app. Specifically, this will display the (1) *name*,
+(2) *server*, and (3) *namespace* of each environment.
+
+### Related Commands
+
+* `ks env set` — Set environment-specific fields (name, namespace, server)
+* `ks env rm` — Delete an environment from a ksonnet application
+
+### Syntax
+
 
 ```
 ks env list
