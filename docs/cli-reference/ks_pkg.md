@@ -18,7 +18,7 @@ ks pkg
 ```
 
 ### SEE ALSO
-* [ks](ks.md)	 - Synchronise Kubernetes resources with config files
+* [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 * [ks pkg describe](ks_pkg_describe.md)	 - Describe a ksonnet package
 * [ks pkg install](ks_pkg_install.md)	 - Install a package as a dependency in the current ksonnet application
 * [ks pkg list](ks_pkg_list.md)	 - Lists information about all dependencies known to the current ksonnet app

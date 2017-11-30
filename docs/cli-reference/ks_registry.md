@@ -30,7 +30,7 @@ ks registry
 ```
 
 ### SEE ALSO
-* [ks](ks.md)	 - Synchronise Kubernetes resources with config files
+* [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 * [ks registry describe](ks_registry_describe.md)	 - Describe a ksonnet registry
 * [ks registry list](ks_registry_list.md)	 - List all registries known to the current ksonnet app.
 

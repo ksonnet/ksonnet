@@ -49,7 +49,7 @@ ksonnet validate -f ./pod.jsonnet
       --ext-str-file stringSlice       Read external variable from a file
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
   -J, --jpath stringSlice              Additional jsonnet library search path
-      --kubeconfig string              Path to a kube config. Only required if out-of-cluster
+      --kubeconfig string              Path to a kubeconfig file. Alternative to env var $KUBECONFIG.
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
@@ -70,5 +70,5 @@ ksonnet validate -f ./pod.jsonnet
 ```
 
 ### SEE ALSO
-* [ks](ks.md)	 - Synchronise Kubernetes resources with config files
+* [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 

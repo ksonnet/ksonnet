@@ -56,7 +56,7 @@ ks env
       --cluster string                 The name of the kubeconfig cluster to use
       --context string                 The name of the kubeconfig context to use
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
-      --kubeconfig string              Path to a kube config. Only required if out-of-cluster
+      --kubeconfig string              Path to a kubeconfig file. Alternative to env var $KUBECONFIG.
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
@@ -73,7 +73,7 @@ ks env
 ```
 
 ### SEE ALSO
-* [ks](ks.md)	 - Synchronise Kubernetes resources with config files
+* [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 * [ks env add](ks_env_add.md)	 - Add a new environment to a ksonnet application
 * [ks env list](ks_env_list.md)	 - List all environments in a ksonnet application
 * [ks env rm](ks_env_rm.md)	 - Delete an environment from a ksonnet application

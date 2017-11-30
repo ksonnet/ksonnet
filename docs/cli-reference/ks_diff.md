@@ -70,5 +70,5 @@ ks diff --kubeconfig=./kubeconfig -f ./pod.yaml
 ```
 
 ### SEE ALSO
-* [ks](ks.md)	 - Synchronise Kubernetes resources with config files
+* [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 

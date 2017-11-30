@@ -1,11 +1,16 @@
 ## ks
 
-Synchronise Kubernetes resources with config files
+Configure your application to deploy to a Kubernetes cluster
 
 ### Synopsis
 
 
-Synchronise Kubernetes resources with config files
+
+You can use the `ks` commands to write, share, and deploy your Kubernetes
+application configuration to remote clusters.
+
+----
+
 
 ### Options
 

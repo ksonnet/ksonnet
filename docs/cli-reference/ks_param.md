@@ -31,7 +31,7 @@ ks param
 ```
 
 ### SEE ALSO
-* [ks](ks.md)	 - Synchronise Kubernetes resources with config files
+* [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 * [ks param diff](ks_param_diff.md)	 - Display differences between the component parameters of two environments
 * [ks param list](ks_param_list.md)	 - List all parameters for a component(s)
 * [ks param set](ks_param_set.md)	 - Set component or environment parameters such as replica count or name
