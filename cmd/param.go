@@ -41,22 +41,43 @@ func init() {
 	paramDiffCmd.PersistentFlags().String(flagParamComponent, "", "Specify the component to diff against")
 }
 
+var paramShortDesc = map[string]string{
+	"set":  `Change component or environment parameters (e.g. replica count, name)`,
+	"list": `List known component parameters`,
+	"diff": `Display differences between the component parameters of two environments`,
+}
+
 var paramCmd = &cobra.Command{
 	Use:   "param",
-	Short: `Manage ksonnet component parameters`,
-	Long: `Parameters are the customizable fields defining ksonnet components. For
-example, replica count, component name, or deployment image.
+	Short: `Manage ksonnet parameters for components and environments`,
+	Long: `
+Parameters are customizable fields that are used to expand and define ksonnet
+*components*. Examples might include a deployment's 'name' or 'image'. Parameters
+can also be defined on a *per-environment* basis. (Environments are ksonnet
+deployment targets, e.g. specific clusters. For more info, run ` + "`ks env --help`" + `.)
 
-Parameters are also able to be defined separately across environments. Meaning,
-this supports features to allow a "development" environment to only run a
-single replication instance for it's components, whereas allowing a "production"
-environment to run more replication instances to meet heavier production load
-demands.
+For example, this allows a ` + "`dev`" + ` and ` + "`prod`" + ` environment to use the same component
+manifest for an nginx deployment, but customize ` + "`prod`" + ` to use more replicas to meet
+heavier load demands.
 
-Environments are ksonnet "named clusters". For more information on environments,
-run:
+Params are structured as follows:
 
-    ks env --help
+* App params (stored in ` + "`components/params.libsonnet`" + `)
+    * Component-specific params
+        * Originally populated from ` + "`ks generate`" + `
+        * e.g. 80 for ` + "`deployment-example.port`" + `
+    * Global params
+        * Out of scope for CLI (requires Jsonnet editing)
+        * Use to make a variable accessible to multiple components (e.g. service name)
+
+* Per-environment params (stored in + ` + "`environments/<env-name>/params.libsonnet`" + `)
+    * Component-specific params ONLY
+    * Override app params (~inheritance)
+
+Note that all of these params are tracked **locally** in version-controllable
+Jsonnet files.
+
+----
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 0 {
@@ -68,11 +89,11 @@ run:
 
 var paramSetCmd = &cobra.Command{
 	Use:   "set <component-name> <param-key> <param-value>",
-	Short: "Set component or environment parameters such as replica count or name",
+	Short: paramShortDesc["set"],
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
 		if len(args) != 3 {
-			return fmt.Errorf("'param set' takes exactly three arguments, the name of the component, and the key and value of the parameter, respectively")
+			return fmt.Errorf("'param set' takes exactly three arguments, (1) the name of the component, in addition to (2) the key and (3) value of the parameter")
 		}
 
 		component := args[0]
@@ -88,25 +109,37 @@ var paramSetCmd = &cobra.Command{
 
 		return c.Run()
 	},
-	Long: `Set component or environment parameters such as replica count or name.
+	Long: `
+The ` + "`set`" + ` command sets component or environment parameters such as replica count
+or name. Parameters are set individually, one at a time. All of these changes are
+reflected in the ` + "`params.libsonnet`" + ` files.
 
-Parameters are set individually, one at a time. If you require customization of
-more fields, we suggest that you modify your ksonnet project's
-` + " `components/params.libsonnet` " + `file directly. Likewise, for greater customization
-of environment parameters, we suggest modifying the
-` + " `environments/:name/params.libsonnet` " + `file.
+For more details on how parameters are organized, see ` + "`ks param --help`" + `.
+
+*(If you need to customize multiple parameters at once, we suggest that you modify
+your ksonnet application's ` + " `components/params.libsonnet` " + `file directly. Likewise,
+for greater customization of environment parameters, we suggest modifying the
+` + " `environments/:name/params.libsonnet` " + `file.)*
+
+### Related Commands
+
+* ` + "`ks param diff` " + `— ` + paramShortDesc["diff"] + `
+* ` + "`ks apply` " + `— ` + applyShortDesc + `
+
+### Syntax
 `,
-	Example: `# Updates the replica count of the 'guestbook' component to 4.
+	Example: `
+# Update the replica count of the 'guestbook' component to 4.
 ks param set guestbook replicas 4
 
-# Updates the replica count of the 'guestbook' component to 2 for the environment
-# 'dev'
+# Update the replica count of the 'guestbook' component to 2, but only for the
+# 'dev' environment
 ks param set guestbook replicas 2 --env=dev`,
 }
 
 var paramListCmd = &cobra.Command{
-	Use:   "list <component-name>",
-	Short: "List all parameters for a component(s)",
+	Use:   "list [<component-name>] [--env <env-name>]",
+	Short: paramShortDesc["list"],
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
 		if len(args) > 1 {
@@ -127,14 +160,21 @@ var paramListCmd = &cobra.Command{
 
 		return c.Run(cmd.OutOrStdout())
 	},
-	Long: `List all component parameters or environment parameters.
+	Long: `
+The ` + "`list`" + ` command displays all known component parameters or environment parameters.
 
-This command will display all parameters for the component specified. If a
-component is not specified, parameters for all components will be listed.
-
+If a component is specified, this command displays all of its specific parameters.
+If a component is NOT specified, parameters for **all** components are listed.
 Furthermore, parameters can be listed on a per-environment basis.
+
+### Related Commands
+
+* ` + "`ks param set` " + `— ` + paramShortDesc["set"] + `
+
+### Syntax
 `,
-	Example: `# List all component parameters
+	Example: `
+# List all component parameters
 ks param list
 
 # List all parameters for the component "guestbook"
@@ -148,12 +188,12 @@ ks param list guestbook --env=dev`,
 }
 
 var paramDiffCmd = &cobra.Command{
-	Use:   "diff <env1> <env2>",
-	Short: "Display differences between the component parameters of two environments",
+	Use:   "diff <env1> <env2> [--component <component-name>]",
+	Short: paramShortDesc["diff"],
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
 		if len(args) != 2 {
-			return fmt.Errorf("'param diff' takes exactly two arguments, that is the name of the environments to diff against")
+			return fmt.Errorf("'param diff' takes exactly two arguments: the respective names of the environments being diffed")
 		}
 
 		env1 := args[0]
@@ -168,14 +208,25 @@ var paramDiffCmd = &cobra.Command{
 
 		return c.Run(cmd.OutOrStdout())
 	},
-	Long: `Pretty prints differences between the component parameters of two environments.
+	Long: `
+The ` + "`diff`" + ` command pretty prints differences between the component parameters
+of two environments.
 
-A component flag is accepted to diff against a single component. By default, the
-diff is performed against all components.
+By default, the diff is performed for all components. Diff-ing for a single component
+is supported via a component flag.
+
+### Related Commands
+
+* ` + "`ks param set` " + `— ` + paramShortDesc["set"] + `
+* ` + "`ks apply` " + `— ` + applyShortDesc + `
+
+### Syntax
 `,
-	Example: `# Diff between the component parameters on environments 'dev' and 'prod'
+	Example: `
+# Diff between all component parameters for environments 'dev' and 'prod'
 ks param diff dev prod
 
-# Diff between the component 'guestbook' on environments 'dev' and 'prod'
+# Diff only between the parameters for the 'guestbook' component for environments
+# 'dev' and 'prod'
 ks param diff dev prod --component=guestbook`,
 }

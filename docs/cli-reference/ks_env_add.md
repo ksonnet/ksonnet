@@ -24,7 +24,7 @@ Note that an environment *DOES NOT* contain user-specific data such as private k
 ### Related Commands
 
 * `ks env list` — List all locally available ksonnet prototypes
-* `ks param set` — Change the values of an existing component
+* `ks param set` — Change component or environment parameters (e.g. replica count, name)
 * `ks apply` — Apply local Kubernetes manifests (components) to remote clusters
 
 ### Syntax

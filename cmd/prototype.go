@@ -456,7 +456,7 @@ different prototypes support their own unique flags.
 
 * ` + "`ks show` " + `— ` + showShortDesc + `
 * ` + "`ks apply` " + `— ` + applyShortDesc + `
-* ` + "`ks param set` " + `— Change the values of an existing component
+* ` + "`ks param set` " + paramShortDesc["set"] + `
 
 ### Syntax
 `,

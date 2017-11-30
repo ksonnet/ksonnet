@@ -1,17 +1,28 @@
 ## ks param set
 
-Set component or environment parameters such as replica count or name
+Change component or environment parameters (e.g. replica count, name)
 
 ### Synopsis
 
 
-Set component or environment parameters such as replica count or name.
 
-Parameters are set individually, one at a time. If you require customization of
-more fields, we suggest that you modify your ksonnet project's
- `components/params.libsonnet` file directly. Likewise, for greater customization
-of environment parameters, we suggest modifying the
- `environments/:name/params.libsonnet` file.
+The `set` command sets component or environment parameters such as replica count
+or name. Parameters are set individually, one at a time. All of these changes are
+reflected in the `params.libsonnet` files.
+
+For more details on how parameters are organized, see `ks param --help`.
+
+*(If you need to customize multiple parameters at once, we suggest that you modify
+your ksonnet application's  `components/params.libsonnet` file directly. Likewise,
+for greater customization of environment parameters, we suggest modifying the
+ `environments/:name/params.libsonnet` file.)*
+
+### Related Commands
+
+* `ks param diff` — Display differences between the component parameters of two environments
+* `ks apply` — Apply local Kubernetes manifests (components) to remote clusters
+
+### Syntax
 
 
 ```
@@ -21,11 +32,12 @@ ks param set <component-name> <param-key> <param-value>
 ### Examples
 
 ```
-# Updates the replica count of the 'guestbook' component to 4.
+
+# Update the replica count of the 'guestbook' component to 4.
 ks param set guestbook replicas 4
 
-# Updates the replica count of the 'guestbook' component to 2 for the environment
-# 'dev'
+# Update the replica count of the 'guestbook' component to 2, but only for the
+# 'dev' environment
 ks param set guestbook replicas 2 --env=dev
 ```
 
@@ -42,5 +54,5 @@ ks param set guestbook replicas 2 --env=dev
 ```
 
 ### SEE ALSO
-* [ks param](ks_param.md)	 - Manage ksonnet component parameters
+* [ks param](ks_param.md)	 - Manage ksonnet parameters for components and environments
 
