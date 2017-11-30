@@ -1,11 +1,16 @@
 ## ks
 
-Synchronise Kubernetes resources with config files
+Configure your application to deploy to a Kubernetes cluster
 
 ### Synopsis
 
 
-Synchronise Kubernetes resources with config files
+
+You can use the `ks` commands to write, share, and deploy your Kubernetes
+application configuration to remote clusters.
+
+----
+
 
 ### Options
 
@@ -14,17 +19,17 @@ Synchronise Kubernetes resources with config files
 ```
 
 ### SEE ALSO
-* [ks apply](ks_apply.md)	 - Apply local Kubernetes manifests to remote clusters
-* [ks delete](ks_delete.md)	 - Delete Kubernetes resources described in local config
-* [ks diff](ks_diff.md)	 - Display differences between server and local config, or server and server config
+* [ks apply](ks_apply.md)	 - Apply local Kubernetes manifests (components) to remote clusters
+* [ks delete](ks_delete.md)	 - Remove component-specified Kubernetes resources from remote clusters
+* [ks diff](ks_diff.md)	 - Compare manifests, based on environment or location (local or remote)
 * [ks env](ks_env.md)	 - Manage ksonnet environments
 * [ks generate](ks_generate.md)	 - Use the specified prototype to generate a component manifest
 * [ks init](ks_init.md)	 - Initialize a ksonnet application
-* [ks param](ks_param.md)	 - Manage ksonnet component parameters
-* [ks pkg](ks_pkg.md)	 - Manage packages and dependencies for the current ksonnet project
+* [ks param](ks_param.md)	 - Manage ksonnet parameters for components and environments
+* [ks pkg](ks_pkg.md)	 - Manage packages and dependencies for the current ksonnet application
 * [ks prototype](ks_prototype.md)	 - Instantiate, inspect, and get examples for ksonnet prototypes
 * [ks registry](ks_registry.md)	 - Manage registries for current project
 * [ks show](ks_show.md)	 - Show expanded manifests for a specific environment.
-* [ks validate](ks_validate.md)	 - Compare generated manifest against server OpenAPI spec
-* [ks version](ks_version.md)	 - Print version information
+* [ks validate](ks_validate.md)	 - Check generated component manifests against the server's API
+* [ks version](ks_version.md)	 - Print version information for this ksonnet binary
 

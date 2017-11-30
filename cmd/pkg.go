@@ -30,6 +30,12 @@ const (
 	flagName = "name"
 )
 
+var pkgShortDesc = map[string]string{
+	"install":  "Install a package (e.g. extra prototypes) for the current ksonnet app",
+	"describe": "Describe a ksonnet package and its contents",
+	"list":     "List all packages known (downloaded or not) for the current ksonnet app",
+}
+
 var errInvalidSpec = fmt.Errorf("Command 'pkg install' requires a single argument of the form <registry>/<library>@<version>")
 
 func init() {
@@ -37,12 +43,38 @@ func init() {
 	pkgCmd.AddCommand(pkgInstallCmd)
 	pkgCmd.AddCommand(pkgListCmd)
 	pkgCmd.AddCommand(pkgDescribeCmd)
-	pkgInstallCmd.PersistentFlags().String(flagName, "", "Name to give the dependency")
+	pkgInstallCmd.PersistentFlags().String(flagName, "", "Name to give the dependency, to use within the ksonnet app")
 }
 
 var pkgCmd = &cobra.Command{
 	Use:   "pkg",
-	Short: `Manage packages and dependencies for the current ksonnet project`,
+	Short: `Manage packages and dependencies for the current ksonnet application`,
+	Long: `
+A ksonnet package contains:
+
+* A set of prototypes (see ` + "`ks prototype --help`" + ` for more info on prototypes), which
+generate similar types of components (e.g. ` + "`redis-stateless`" + `, ` + "`redis-persistent`" + `)
+* Associated helper libraries that define the prototype parts (e.g. ` + "`redis.libsonnet`" + `)
+
+Packages allow you to easily distribute and reuse code in any ksonnet application.
+Packages come from registries, such as Github repositories. (For more info, see
+` + "`ks registry --help`" + `).
+
+To be recognized and imported by ksonnet, packages need to follow a specific schema.
+See the annotated file tree below, as an example:
+
+` + "```" + `
+.
+├── README.md                      // Human-readable description of the package
+├── parts.yaml                     // Provides metadata about the package
+├── prototypes                     // Can be imported and used to generate components
+│   ├── redis-all-features.jsonnet
+│   ├── redis-persistent.jsonnet
+│   └── redis-stateless.jsonnet
+└── redis.libsonnet                // Helper library, includes prototype parts
+` + "```" + `
+---
+`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 0 {
 			return fmt.Errorf("%s is not a valid subcommand\n\n%s", strings.Join(args, " "), cmd.UsageString())
@@ -53,7 +85,7 @@ var pkgCmd = &cobra.Command{
 
 var pkgInstallCmd = &cobra.Command{
 	Use:     "install <registry>/<library>@<version>",
-	Short:   `Install a package as a dependency in the current ksonnet application`,
+	Short:   pkgShortDesc["install"],
 	Aliases: []string{"get"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -83,36 +115,34 @@ var pkgInstallCmd = &cobra.Command{
 
 		return nil
 	},
-	Long: `Cache a ksonnet library locally, and make it available for use in the current
-ksonnet project. This particularly means that we record enough information in
-` + " `app.yaml` " + `for new users to retrieve the dependency after a fresh clone of the
-app repository.
+	Long: `
+The ` + "`install`" + ` command caches a ksonnet library locally, and makes it available
+for use in the current ksonnet application. Enough info and metadata is recorded in
+` + "`app.yaml` " + `that new users can retrieve the dependency after a fresh clone of this app.
 
-For example, inside a ksonnet application directory, run:
+The library itself needs to be located in a registry (e.g. Github repo). By default,
+ksonnet knows about two registries: *incubator* and *stable*, which are the release
+channels for official ksonnet libraries.
 
-    ks pkg install incubator/nginx@v0.1
+### Related Commands
 
-This can then be referenced in a source file in the ksonnet project:
+* ` + "`ks pkg list` " + `— ` + pkgShortDesc["list"] + `
+* ` + "`ks prototype list` " + `— ` + protoShortDesc["list"] + `
+* ` + "`ks registry describe` " + `— ` + regShortDesc["describe"] + `
 
-    local nginx = import "kspkg://nginx";
-
-By default, ksonnet knows about two registries: incubator and stable, which are
-the release channels for official ksonnet libraries. Additional registries can
-be added with the` + " `ks registry` " + `command.
-
-Note that multiple versions of the same ksonnet library can be cached and used
-in the same project, by explicitly passing in the` + " `--name` " + `flag. For example:
-
-    ks pkg install incubator/nginx@v0.1 --name nginxv1
-    ks pkg install incubator/nginx@v0.2 --name nginxv2
-
-With these commands, a user can` + " `import \"kspkg://nginxv1\"` " + `, and
-` + " `import \"kspkg://nginxv2\"` " + `with no conflict.`,
+### Syntax
+`,
+	Example: `
+# Install an nginx dependency, based on the 'master' branch.
+# In a ksonnet source file, this can be referenced as:
+#   local nginx = import "incubator/nginx/nginx.libsonnet";
+ks pkg install incubator/nginx@master
+`,
 }
 
 var pkgDescribeCmd = &cobra.Command{
 	Use:   "describe [<registry-name>/]<package-name>",
-	Short: `Describe a ksonnet package`,
+	Short: pkgShortDesc["describe"],
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("Command 'pkg describe' requires a package name\n\n%s", cmd.UsageString())
@@ -165,13 +195,28 @@ var pkgDescribeCmd = &cobra.Command{
 		return nil
 	},
 
-	Long: `Output documentation for some ksonnet registry prototype uniquely identified in
-the current ksonnet project by some 'registry-name'.`,
+	Long: `
+The ` + "`describe`" + ` command outputs documentation for a package that is available
+(e.g. downloaded) in the current ksonnet application. (This must belong to an already
+known ` + "`<registry-name>`" + ` like *incubator*). The output includes:
+
+1. The library name
+2. A brief description provided by the library authors
+3. A list of available prototypes provided by the library
+
+### Related Commands
+
+* ` + "`ks pkg list` " + `— ` + pkgShortDesc["list"] + `
+* ` + "`ks prototype describe` " + `— ` + protoShortDesc["describe"] + `
+* ` + "`ks generate` " + `— ` + protoShortDesc["use"] + `
+
+### Syntax
+`,
 }
 
 var pkgListCmd = &cobra.Command{
 	Use:   "list",
-	Short: `Lists information about all dependencies known to the current ksonnet app`,
+	Short: pkgShortDesc["list"],
 	RunE: func(cmd *cobra.Command, args []string) error {
 		const (
 			nameHeader      = "NAME"
@@ -230,6 +275,23 @@ var pkgListCmd = &cobra.Command{
 		fmt.Print(formatted)
 		return nil
 	},
+	Long: `
+The ` + "`list`" + ` command outputs a table that describes all *known* packages (not
+necessarily downloaded, but available from existing registries). This includes
+the following info:
+
+1. Library name
+2. Registry name
+3. Installed status — an asterisk indicates 'installed'
+
+### Related Commands
+
+* ` + "`ks pkg install` " + `— ` + pkgShortDesc["install"] + `
+* ` + "`ks pkg describe` " + `— ` + pkgShortDesc["describe"] + `
+* ` + "`ks registry describe` " + `— ` + regShortDesc["describe"] + `
+
+### Syntax
+`,
 }
 
 func parsePkgSpec(spec string) (registry, libID string, err error) {

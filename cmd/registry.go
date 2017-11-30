@@ -10,6 +10,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var regShortDesc = map[string]string{
+	"list":     "List all registries known to the current ksonnet app.",
+	"describe": "Describe a ksonnet registry and the packages it contains",
+}
+
 func init() {
 	RootCmd.AddCommand(registryCmd)
 	registryCmd.AddCommand(registryListCmd)
@@ -25,24 +30,28 @@ var registryCmd = &cobra.Command{
 		}
 		return fmt.Errorf("Command 'registry' requires a subcommand\n\n%s", cmd.UsageString())
 	},
-	Long: `Manage and inspect ksonnet registries.
+	Long: `
+A ksonnet registry is basically a repository for *packages*. (Registry here is
+used in the same sense as a container image registry). Registries are identified
+by a ` + "`registry.yaml`" + ` in their root that declares which packages they contain.
 
-Registries contain a set of versioned libraries that the user can install and
-manage in a ksonnet project using the CLI. A typical library contains:
+Specifically, registries contain a set of versioned packages that the user can
+install and manage in a given ksonnet app, using the CLI. A typical package contains:
 
-  1. A set of "parts", pre-fabricated API objects which can be combined together
-     to configure a Kubernetes application for some task. For example, the Redis
-     library may contain a Deployment, a Service, a Secret, and a
-     PersistentVolumeClaim, but if the user is operating it as a cache, they may
-     only need the first three of these.
-  2. A set of "prototypes", which are pre-fabricated combinations of these
-     parts, made to make it easier to get started using a library. See the
-     documentation for 'ks prototype' for more information.`,
+1. **A library definining a set of "parts"**. These are pre-fabricated API objects
+which can be combined together to configure a Kubernetes application for some task.
+(e.g. a Deployment, a Service, and a Secret, specifically tailored for Redis).
+
+2. **A set of "prototypes"**, which are pre-fabricated combinations of parts, as
+described above. (See ` + "`ks prototype --help`" + ` for more information.)
+
+----
+`,
 }
 
 var registryListCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List all registries known to the current ksonnet app.`,
+	Short: regShortDesc["list"],
 	RunE: func(cmd *cobra.Command, args []string) error {
 		const (
 			nameHeader     = "NAME"
@@ -89,11 +98,25 @@ var registryListCmd = &cobra.Command{
 		fmt.Print(formatted)
 		return nil
 	},
+	Long: `
+The ` + "`list`" + ` command displays all known ksonnet registries in a table. This
+table includes the following info:
+
+1. Registry name
+2. Protocol (e.g. ` + "`github`" + `)
+3. Registry URI
+
+### Related Commands
+
+* ` + "`ks registry describe` " + `— ` + regShortDesc["describe"] + `
+
+### Syntax
+`,
 }
 
 var registryDescribeCmd = &cobra.Command{
 	Use:   "describe <registry-name>",
-	Short: `Describe a ksonnet registry`,
+	Short: regShortDesc["describe"],
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("Command 'registry describe' takes one argument, which is the name of the registry to describe")
@@ -135,7 +158,7 @@ var registryDescribeCmd = &cobra.Command{
 		fmt.Println(`PROTOCOL:`)
 		fmt.Println(regRef.Protocol)
 		fmt.Println()
-		fmt.Println(`LIBRARIES:`)
+		fmt.Println(`PACKAGES:`)
 
 		for _, lib := range reg.Libraries {
 			fmt.Printf("  %s\n", lib.Path)
@@ -144,6 +167,18 @@ var registryDescribeCmd = &cobra.Command{
 		return nil
 	},
 
-	Long: `Output documentation for some ksonnet registry prototype uniquely identified in
-the current ksonnet project by some` + " `registry-name`" + `.`,
+	Long: `
+The ` + "`describe`" + ` command outputs documentation for the ksonnet registry identified
+by ` + "`<registry-name>`" + `. Specifically, it displays the following:
+
+1. Registry URI
+2. Protocol (e.g. ` + "`github`" + `)
+3. List of packages included in the registry
+
+### Related Commands
+
+* ` + "`ks pkg install` " + `— ` + pkgShortDesc["install"] + `
+
+### Syntax
+`,
 }

@@ -19,7 +19,7 @@ from the *incubator* registry.
 * `ks prototype describe` — See more info about a prototype's output and usage
 * `ks prototype preview` — Preview a prototype's output without creating a component (stdout)
 * `ks prototype use` — Use the specified prototype to generate a component manifest
-* `ks pkg install` — Install more prototypes (from external packages)
+* `ks pkg install` Install a package (e.g. extra prototypes) for the current ksonnet app
 
 ### Syntax
 

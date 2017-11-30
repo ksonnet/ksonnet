@@ -45,6 +45,8 @@ const (
 	GcStrategyAuto = "auto"
 	// GcStrategyIgnore means this object should be ignored by garbage collection
 	GcStrategyIgnore = "ignore"
+
+	applyShortDesc = "Apply local Kubernetes manifests (components) to remote clusters"
 )
 
 func init() {
@@ -53,15 +55,15 @@ func init() {
 	addEnvCmdFlags(applyCmd)
 	bindClientGoFlags(applyCmd)
 	bindJsonnetFlags(applyCmd)
-	applyCmd.PersistentFlags().Bool(flagCreate, true, "Create missing resources")
-	applyCmd.PersistentFlags().Bool(flagSkipGc, false, "Don't perform garbage collection, even with --"+flagGcTag)
-	applyCmd.PersistentFlags().String(flagGcTag, "", "Add this tag to updated objects, and garbage collect existing objects with this tag and not in config")
-	applyCmd.PersistentFlags().Bool(flagDryRun, false, "Perform only read-only operations")
+	applyCmd.PersistentFlags().Bool(flagCreate, true, "Option to create resources if they do not already exist on the cluster")
+	applyCmd.PersistentFlags().Bool(flagSkipGc, false, "Option to skip garbage collection, even with --"+flagGcTag+" specified")
+	applyCmd.PersistentFlags().String(flagGcTag, "", "A tag that's (1) added to all updated objects (2) used to garbage collect existing objects that are no longer in the manifest")
+	applyCmd.PersistentFlags().Bool(flagDryRun, false, "Option to preview the list of operations without changing the cluster state")
 }
 
 var applyCmd = &cobra.Command{
-	Use:   "apply <env-name>",
-	Short: `Apply local Kubernetes manifests to remote clusters`,
+	Use:   "apply <env-name> [-c <component-name>] [--dry-run]",
+	Short: applyShortDesc,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("'apply' requires an environment name; use `env list` to see available environments\n\n%s", cmd.UsageString())
@@ -122,45 +124,50 @@ var applyCmd = &cobra.Command{
 		return c.Run(objs, wd)
 	},
 	Long: `
-Update (or optionally create) Kubernetes resources on the cluster using your
-local Kubernetes manifests. Use the` + " `--create` " + `flag to control whether
-they are created if they do not exist (default: true).
+The ` + "`apply`" + `command uses local manifest(s) to update (and optionally create)
+Kubernetes resources on a remote cluster. This cluster is determined by the
+mandatory ` + "`<env-name>`" + ` argument.
 
-The local Kubernetes manifests that are applied reside in your ` + "`components/`" + `
-directory. When applied, the manifests are fully expanded using the paremeters
-of the specified environment.
+The manifests themselves correspond to the components of your app, and reside
+in your app's ` + "`components/`" + ` directory. When applied, the manifests are fully
+expanded using the parameters of the specified environment.
 
-By default, all manifests are applied. To apply a subset of manifests, use the
-` + "`--component` " + `flag, as seen in the examples below.
+By default, all component manifests are applied. To apply a subset of components,
+use the ` + "`--component` " + `flag, as seen in the examples below.
+
+Note that this command needs to be run *within* a ksonnet app directory.
 
 ### Related Commands
 
-* ` + "`ks delete` " + `— Delete the component manifests on your cluster
+* ` + "`ks diff` " + `— ` + diffShortDesc + `
+* ` + "`ks delete` " + `— ` + deleteShortDesc + `
 
 ### Syntax
 `,
 	Example: `
-# Create or update all resources described in a ksonnet application, and
-# running in the 'dev' environment. Can be used in any subdirectory of the
-# application.
+# Create or update all resources described in the ksonnet application, specifically
+# the ones running in the 'dev' environment. This command works in any subdirectory
+# of the app.
 #
-# This is equivalent to applying all components in the 'components/' directory.
+# This essentially deploys all components in the 'components/' directory.
 ks apply dev
 
-# Create or update the single resource 'guestbook-ui' described in a ksonnet
-# application, and running in the 'dev' environment. Can be used in any
-# subdirectory of the application.
+# Similar to the previous command, but does not immediately execute. Use this to
+# see a preview of the cluster-changing actions.
+ks apply dev --dry-run
+
+# Create or update the single 'guestbook-ui' component of a ksonnet app, specifically
+# the instance running in the 'dev' environment.
 #
-# This is equivalent to applying the component with the same file name (excluding
-# the extension) 'guestbook-ui' in the 'components/' directory.
+# This essentially deploys 'components/guestbook-ui.jsonnet'.
 ks apply dev -c guestbook-ui
 
-# Create or update the multiple resources, 'guestbook-ui' and 'nginx-depl'
-# described in a ksonnet application, and running in the 'dev' environment. Can
-# be used in any subdirectory of the application.
+# Create or update multiple components in a ksonnet application (e.g. 'guestbook-ui'
+# and 'ngin-depl') for the 'dev' environment. Does not create resources that are
+# not already present on the cluster.
 #
-# This is equivalent to applying the component with the same file name (excluding
-# the extension) 'guestbook-ui' and 'nginx-depl' in the 'components/' directory.
-ks apply dev -c guestbook-ui -c nginx-depl
+# This essentially deploys 'components/guestbook-ui.jsonnet' and
+# 'components/nginx-depl.jsonnet'.
+ks apply dev -c guestbook-ui -c nginx-depl --create false
 `,
 }

@@ -32,8 +32,9 @@ different prototypes support their own unique flags.
 
 ### Related Commands
 
-* `ks apply` — Apply your component manifests to a cluster
-* `ks param set` — Change the values you specified when generating the component
+* `ks show` — Show expanded manifests for a specific environment.
+* `ks apply` — Apply local Kubernetes manifests (components) to remote clusters
+* `ks param set` Change component or environment parameters (e.g. replica count, name)
 
 ### Syntax
 

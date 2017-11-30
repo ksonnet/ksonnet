@@ -5,19 +5,23 @@ Manage registries for current project
 ### Synopsis
 
 
-Manage and inspect ksonnet registries.
 
-Registries contain a set of versioned libraries that the user can install and
-manage in a ksonnet project using the CLI. A typical library contains:
+A ksonnet registry is basically a repository for *packages*. (Registry here is
+used in the same sense as a container image registry). Registries are identified
+by a `registry.yaml` in their root that declares which packages they contain.
 
-  1. A set of "parts", pre-fabricated API objects which can be combined together
-     to configure a Kubernetes application for some task. For example, the Redis
-     library may contain a Deployment, a Service, a Secret, and a
-     PersistentVolumeClaim, but if the user is operating it as a cache, they may
-     only need the first three of these.
-  2. A set of "prototypes", which are pre-fabricated combinations of these
-     parts, made to make it easier to get started using a library. See the
-     documentation for 'ks prototype' for more information.
+Specifically, registries contain a set of versioned packages that the user can
+install and manage in a given ksonnet app, using the CLI. A typical package contains:
+
+1. **A library definining a set of "parts"**. These are pre-fabricated API objects
+which can be combined together to configure a Kubernetes application for some task.
+(e.g. a Deployment, a Service, and a Secret, specifically tailored for Redis).
+
+2. **A set of "prototypes"**, which are pre-fabricated combinations of parts, as
+described above. (See `ks prototype --help` for more information.)
+
+----
+
 
 ```
 ks registry
@@ -30,7 +34,7 @@ ks registry
 ```
 
 ### SEE ALSO
-* [ks](ks.md)	 - Synchronise Kubernetes resources with config files
-* [ks registry describe](ks_registry_describe.md)	 - Describe a ksonnet registry
+* [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
+* [ks registry describe](ks_registry_describe.md)	 - Describe a ksonnet registry and the packages it contains
 * [ks registry list](ks_registry_list.md)	 - List all registries known to the current ksonnet app.
 

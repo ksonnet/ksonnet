@@ -91,14 +91,20 @@ func bindJsonnetFlags(cmd *cobra.Command) {
 func bindClientGoFlags(cmd *cobra.Command) {
 	kflags := clientcmd.RecommendedConfigOverrideFlags("")
 	ep := &loadingRules.ExplicitPath
-	cmd.PersistentFlags().StringVar(ep, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
+	cmd.PersistentFlags().StringVar(ep, "kubeconfig", "", "Path to a kubeconfig file. Alternative to env var $KUBECONFIG.")
 	clientcmd.BindOverrideFlags(&overrides, cmd.PersistentFlags(), kflags)
 }
 
 // RootCmd is the root of cobra subcommand tree
 var RootCmd = &cobra.Command{
-	Use:           "ks",
-	Short:         "Synchronise Kubernetes resources with config files",
+	Use:   "ks",
+	Short: `Configure your application to deploy to a Kubernetes cluster`,
+	Long: `
+You can use the ` + "`ks`" + ` commands to write, share, and deploy your Kubernetes
+application configuration to remote clusters.
+
+----
+`,
 	SilenceErrors: true,
 	SilenceUsage:  true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {

@@ -1,25 +1,32 @@
 ## ks param list
 
-List all parameters for a component(s)
+List known component parameters
 
 ### Synopsis
 
 
-List all component parameters or environment parameters.
 
-This command will display all parameters for the component specified. If a
-component is not specified, parameters for all components will be listed.
+The `list` command displays all known component parameters or environment parameters.
 
+If a component is specified, this command displays all of its specific parameters.
+If a component is NOT specified, parameters for **all** components are listed.
 Furthermore, parameters can be listed on a per-environment basis.
+
+### Related Commands
+
+* `ks param set` — Change component or environment parameters (e.g. replica count, name)
+
+### Syntax
 
 
 ```
-ks param list <component-name>
+ks param list [<component-name>] [--env <env-name>]
 ```
 
 ### Examples
 
 ```
+
 # List all component parameters
 ks param list
 
@@ -46,5 +53,5 @@ ks param list guestbook --env=dev
 ```
 
 ### SEE ALSO
-* [ks param](ks_param.md)	 - Manage ksonnet component parameters
+* [ks param](ks_param.md)	 - Manage ksonnet parameters for components and environments
 

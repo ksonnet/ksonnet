@@ -1,38 +1,49 @@
 ## ks validate
 
-Compare generated manifest against server OpenAPI spec
+Check generated component manifests against the server's API
 
 ### Synopsis
 
 
-Validate that an application or file is compliant with the Kubernetes
-specification.
 
-ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
-files.
+The `validate` command checks that an application or file is compliant with the
+server API's Kubernetes specification. Note that this command actually communicates
+*with* the server for the specified `<env-name>`, so it only works if your
+$KUBECONFIG specifies a valid kubeconfig file.
+
+When NO component is specified (no `-c` flag), this command checks all of
+the files in the `components/` directory. This is the same as what would
+get deployed to your cluster with `ks apply <env-name>`.
+
+When a component IS specified via the `-c` flag, this command only checks
+the manifest for that particular component.
+
+### Related Commands
+
+* `ks show` — Show expanded manifests for a specific environment.
+* `ks apply` — Apply local Kubernetes manifests (components) to remote clusters
+
+### Syntax
+
 
 ```
-ks validate [env-name] [-f <file-or-dir>]
+ks validate <env-name> [-c <component-name>]
 ```
 
 ### Examples
 
 ```
-# Validate all resources described in a ksonnet application, expanding
-# ksonnet code with 'dev' environment where necessary (i.e., not YAML, JSON,
-# or non-ksonnet Jsonnet code).
+
+# Validate all resources described in the ksonnet app, against the server
+# specified by the 'dev' environment.
+# NOTE: Make sure your current $KUBECONFIG matches the 'dev' cluster info
 ksonnet validate dev
 
-# Validate resources described in a YAML file.
-ksonnet validate -f ./pod.yaml
+# Validate resources from the 'redis' component only, against the server specified
+# by the 'prod' environment
+# NOTE: Make sure your current $KUBECONFIG matches the 'prod' cluster info
+ksonnet validate prod -c redis
 
-# Validate resources described in the JSON file against existing resources
-# in the cluster the 'dev' environment is pointing at.
-ksonnet validate dev -f ./pod.yaml
-
-# Validate resources described in a Jsonnet file. Does not expand using
-# environment bindings.
-ksonnet validate -f ./pod.jsonnet
 ```
 
 ### Options
@@ -49,7 +60,7 @@ ksonnet validate -f ./pod.jsonnet
       --ext-str-file stringSlice       Read external variable from a file
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
   -J, --jpath stringSlice              Additional jsonnet library search path
-      --kubeconfig string              Path to a kube config. Only required if out-of-cluster
+      --kubeconfig string              Path to a kubeconfig file. Alternative to env var $KUBECONFIG.
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
@@ -70,5 +81,5 @@ ksonnet validate -f ./pod.jsonnet
 ```
 
 ### SEE ALSO
-* [ks](ks.md)	 - Synchronise Kubernetes resources with config files
+* [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 

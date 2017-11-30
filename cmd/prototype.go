@@ -30,6 +30,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var protoShortDesc = map[string]string{
+	"list":     "List all locally available ksonnet prototypes",
+	"describe": "See more info about a prototype's output and usage",
+	"preview":  "Preview a prototype's output without creating a component (stdout)",
+	"search":   "Search for a prototype",
+	"use":      "Use the specified prototype to generate a component manifest",
+}
+
 func init() {
 	RootCmd.AddCommand(prototypeCmd)
 	RootCmd.AddCommand(generateCmd)
@@ -38,14 +46,6 @@ func init() {
 	prototypeCmd.AddCommand(prototypeSearchCmd)
 	prototypeCmd.AddCommand(prototypeUseCmd)
 	prototypeCmd.AddCommand(prototypePreviewCmd)
-}
-
-var cmdShortDesc = map[string]string{
-	"list":     `List all locally available ksonnet prototypes`,
-	"describe": `See more info about a prototype's output and usage`,
-	"preview":  `Preview a prototype's output without creating a component (stdout)`,
-	"search":   `Search for a prototype`,
-	"use":      `Use the specified prototype to generate a component manifest`,
 }
 
 var prototypeCmd = &cobra.Command{
@@ -70,12 +70,14 @@ These complete manifests are output into your ` + "`components/`" + ` directory.
 words, prototypes provide the basis for the **components** of your app. You can
 use prototypes to autogenerate boilerplate code and focus on customizing them
 for your use case.
+
+----
 `,
 }
 
 var prototypeListCmd = &cobra.Command{
 	Use:   "list",
-	Short: cmdShortDesc["list"],
+	Short: protoShortDesc["list"],
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 0 {
 			return fmt.Errorf("Command 'prototype list' does not take any arguments")
@@ -120,10 +122,10 @@ from the *incubator* registry.
 
 ### Related Commands
 
-* ` + "`ks prototype describe` " + `— ` + cmdShortDesc["describe"] + `
-* ` + "`ks prototype preview` " + `— ` + cmdShortDesc["preview"] + `
-* ` + "`ks prototype use` " + `— ` + cmdShortDesc["use"] + `
-* ` + "`ks pkg install` " + `— Install more prototypes (from external packages)
+* ` + "`ks prototype describe` " + `— ` + protoShortDesc["describe"] + `
+* ` + "`ks prototype preview` " + `— ` + protoShortDesc["preview"] + `
+* ` + "`ks prototype use` " + `— ` + protoShortDesc["use"] + `
+* ` + "`ks pkg install` " + pkgShortDesc["install"] + `
 
 ### Syntax
 `,
@@ -131,7 +133,7 @@ from the *incubator* registry.
 
 var prototypeDescribeCmd = &cobra.Command{
 	Use:   "describe <prototype-name>",
-	Short: cmdShortDesc["describe"],
+	Short: protoShortDesc["describe"],
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("Command 'prototype describe' requires a prototype name\n\n%s", cmd.UsageString())
@@ -187,8 +189,8 @@ the specified prototype (identified by name). Specifically, this describes:
 
 ### Related Commands
 
-* ` + "`ks prototype preview` " + `— ` + cmdShortDesc["preview"] + `
-* ` + "`ks prototype use` " + `— ` + cmdShortDesc["use"] + `
+* ` + "`ks prototype preview` " + `— ` + protoShortDesc["preview"] + `
+* ` + "`ks prototype use` " + `— ` + protoShortDesc["use"] + `
 
 ### Syntax
 `,
@@ -200,7 +202,7 @@ ks prototype describe deployment`,
 
 var prototypeSearchCmd = &cobra.Command{
 	Use:   "search <name-substring>",
-	Short: cmdShortDesc["search"],
+	Short: protoShortDesc["search"],
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("Command 'prototype search' requires a prototype name\n\n%s", cmd.UsageString())
@@ -226,8 +228,8 @@ Specifically, it matches any prototypes with names that contain the string <name
 
 ### Related Commands
 
-* ` + "`ks prototype describe` " + `— ` + cmdShortDesc["describe"] + `
-* ` + "`ks prototype list` " + `— ` + cmdShortDesc["list"] + `
+* ` + "`ks prototype describe` " + `— ` + protoShortDesc["describe"] + `
+* ` + "`ks prototype list` " + `— ` + protoShortDesc["list"] + `
 
 ### Syntax
 `,
@@ -238,7 +240,7 @@ ks prototype search service`,
 
 var prototypePreviewCmd = &cobra.Command{
 	Use:                "preview <prototype-name> [parameter-flags]",
-	Short:              cmdShortDesc["preview"],
+	Short:              protoShortDesc["preview"],
 	DisableFlagParsing: true,
 	RunE: func(cmd *cobra.Command, rawArgs []string) error {
 		if len(rawArgs) == 1 && (rawArgs[0] == "--help" || rawArgs[0] == "-h") {
@@ -318,7 +320,7 @@ a component with ` + "`ks generate`" + ` and then use ` + "`ks show`" + `.
 
 ### Related Commands
 
-* ` + "`ks generate` " + `— ` + cmdShortDesc["use"] + `
+* ` + "`ks generate` " + `— ` + protoShortDesc["use"] + `
 
 ### Syntax
 `,
@@ -342,7 +344,7 @@ var generateCmd = &cobra.Command{
 
 var prototypeUseCmd = &cobra.Command{
 	Use:                "use <prototype-name> <componentName> [type] [parameter-flags]",
-	Short:              cmdShortDesc["use"],
+	Short:              protoShortDesc["use"],
 	DisableFlagParsing: true,
 	RunE: func(cmd *cobra.Command, rawArgs []string) error {
 		if len(rawArgs) == 1 && (rawArgs[0] == "--help" || rawArgs[0] == "-h") {
@@ -452,8 +454,9 @@ different prototypes support their own unique flags.
 
 ### Related Commands
 
-* ` + "`ks apply` " + `— Apply your component manifests to a cluster
-* ` + "`ks param set` " + `— Change the values you specified when generating the component
+* ` + "`ks show` " + `— ` + showShortDesc + `
+* ` + "`ks apply` " + `— ` + applyShortDesc + `
+* ` + "`ks param set` " + paramShortDesc["set"] + `
 
 ### Syntax
 `,
