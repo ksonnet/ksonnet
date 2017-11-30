@@ -6,8 +6,8 @@ Manage ksonnet parameters for components and environments
 
 
 
-Parameters are customizable fields that are used to expand and define ksonnet
-*components*. Examples might include a deployment's 'name' or 'image'. Parameters
+Parameters are customizable fields that are used inside ksonnet *component*
+manifests. Examples might include a deployment's 'name' or 'image'. Parameters
 can also be defined on a *per-environment* basis. (Environments are ksonnet
 deployment targets, e.g. specific clusters. For more info, run `ks env --help`.)
 

@@ -27,6 +27,7 @@ import (
 
 const (
 	flagGracePeriod = "grace-period"
+	deleteShortDesc = "Remove component-specified Kubernetes resources from remote clusters"
 )
 
 func init() {
@@ -36,8 +37,6 @@ func init() {
 	bindJsonnetFlags(deleteCmd)
 	deleteCmd.PersistentFlags().Int64(flagGracePeriod, -1, "Number of seconds given to resources to terminate gracefully. A negative value is ignored")
 }
-
-var deleteShortDesc = `Remove component-specified Kubernetes resources from remote clusters`
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete [env-name] [-c <component-name>]",
@@ -87,8 +86,8 @@ var deleteCmd = &cobra.Command{
 		return c.Run(objs)
 	},
 	Long: `
-The ` + "`delete`" + ` command removes Kubernetes resources from a cluster, as described
-in local *component* manifests. This cluster is determined by the mandatory
+The ` + "`delete`" + ` command removes Kubernetes resources (described in local
+*component* manifests) from a cluster. This cluster is determined by the mandatory
 ` + "`<env-name>`" + `argument.
 
 An entire ksonnet application can be removed from a cluster, or just its specific

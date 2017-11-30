@@ -97,8 +97,8 @@ func bindClientGoFlags(cmd *cobra.Command) {
 
 // RootCmd is the root of cobra subcommand tree
 var RootCmd = &cobra.Command{
-	Use:           "ks",
-	Short:         `Configure your application to deploy to a Kubernetes cluster`,
+	Use:   "ks",
+	Short: `Configure your application to deploy to a Kubernetes cluster`,
 	Long: `
 You can use the ` + "`ks`" + ` commands to write, share, and deploy your Kubernetes
 application configuration to remote clusters.

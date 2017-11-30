@@ -25,14 +25,16 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
 
+const (
+	valShortDesc = "Check generated component manifests against the server's API"
+)
+
 func init() {
 	RootCmd.AddCommand(validateCmd)
 	addEnvCmdFlags(validateCmd)
 	bindJsonnetFlags(validateCmd)
 	bindClientGoFlags(validateCmd)
 }
-
-var valShortDesc = "Check generated component manifests against the server's API"
 
 var validateCmd = &cobra.Command{
 	Use:   "validate <env-name> [-c <component-name>]",

@@ -26,7 +26,8 @@ import (
 )
 
 const (
-	flagFormat = "format"
+	flagFormat    = "format"
+	showShortDesc = "Show expanded manifests for a specific environment."
 )
 
 func init() {
@@ -35,8 +36,6 @@ func init() {
 	bindJsonnetFlags(showCmd)
 	showCmd.PersistentFlags().StringP(flagFormat, "o", "yaml", "Output format.  Supported values are: json, yaml")
 }
-
-var showShortDesc = `Show expanded manifests for a specific environment.`
 
 var showCmd = &cobra.Command{
 	Use:   "show <env> [-c <component-filename>]",

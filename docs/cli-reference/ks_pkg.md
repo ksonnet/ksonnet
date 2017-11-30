@@ -8,7 +8,8 @@ Manage packages and dependencies for the current ksonnet application
 
 A ksonnet package contains:
 
-* A set of prototypes, which have related output (e.g. `redis-stateless`, `redis-persistent`)
+* A set of prototypes (see `ks prototype --help` for more info on prototypes), which
+generate similar types of components (e.g. `redis-stateless`, `redis-persistent`)
 * Associated helper libraries that define the prototype parts (e.g. `redis.libsonnet`)
 
 Packages allow you to easily distribute and reuse code in any ksonnet application.

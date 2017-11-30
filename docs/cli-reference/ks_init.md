@@ -6,7 +6,7 @@ Initialize a ksonnet application
 
 
 
-The `init` command initialize a ksonnet application in a new directory, `app-name`.
+The `init` command initializes a ksonnet application in a new directory, `app-name`.
 
 This command generates all the project scaffolding required to begin creating and
 deploying components to Kubernetes clusters.

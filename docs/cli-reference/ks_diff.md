@@ -1,52 +1,67 @@
 ## ks diff
 
-Display differences between server and local config, or server and server config
+Compare manifests, based on environment or location (local or remote)
 
 ### Synopsis
 
 
-Display differences between server and local configuration, or server and server
-configurations.
 
-ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
-files.
+The `diff` command displays standard file diffs, and can be used to compare manifests
+based on *environment* or location ('local' ksonnet app manifests or what's running
+on a 'remote' server).
+
+Using this command, you can compare:
+
+1. *Remote* and *local* manifests for a single environment
+2. *Remote* manifests for two separate environments
+3. *Local* manifests for two separate environments
+4. A *remote* manifest in one environment and a *local* manifest in another environment
+
+To see the official syntax, see the examples below. Make sure that your $KUBECONFIG
+matches what you've defined in environments.
+
+When NO component is specified (no `-c` flag), this command diffs all of
+the files in the `components/` directory.
+
+When a component IS specified via the `-c` flag, this command only checks
+the manifest for that particular component.
+
+### Related Commands
+
+* `ks param diff` — Display differences between the component parameters of two environments
+
+### Syntax
+
 
 ```
-ks diff [<env1> [<env2>]] [-f <file-or-dir>]
+ks diff <location1:env1> [location2:env2] [-c <component-name>]
 ```
 
 ### Examples
 
 ```
-# Show diff between resources described in a the local 'dev' environment
-# specified by the ksonnet application and the remote cluster referenced by
-# the same 'dev' environment. Can be used in any subdirectory of the application.
-ksonnet diff dev
 
-# Show diff between resources at remote clusters. This requires ksonnet
-# application defined environments. Diff between the cluster defined at the
-# 'us-west/dev' environment, and the cluster defined at the 'us-west/prod'
-# environment. Can be used in any subdirectory of the application.
-ksonnet diff remote:us-west/dev remote:us-west/prod
+# Show diff between remote and local manifests for a single 'dev' environment.
+# This command diffs *all* components in the ksonnet app, and can be used in any
+# of that app's subdirectories.
+ks diff remote:dev local:dev
 
-# Show diff between resources at a remote and a local cluster. This requires
-# ksonnet application defined environments. Diff between the cluster defined
-# at the 'us-west/dev' environment, and the cluster defined at the
-# 'us-west/prod' environment. Can be used in any subdirectory of the
-# application.
-ksonnet diff local:us-west/dev remote:us-west/prod
+# Shorthand for the previous command (remote 'dev' and local 'dev')
+ks diff dev
 
-# Show diff between resources described in a YAML file and the cluster
-# referenced in '$KUBECONFIG'.
-ks diff -f ./pod.yaml
+# Show diff between the remote resources running in two different ksonnet environments
+# 'us-west/dev' and 'us-west/prod'. This command diffs all resources defined in
+# the ksonnet app.
+ks diff remote:us-west/dev remote:us-west/prod
 
-# Show diff between resources described in a JSON file and the cluster
-# referenced by the environment 'dev'.
-ks diff dev -f ./pod.json
+# Show diff between local manifests in the 'us-west/dev' environment and remote
+# resources in the 'us-west/prod' environment, for an entire ksonnet app
+ks diff local:us-west/dev remote:us-west/prod
 
-# Show diff between resources described in a YAML file and the cluster
-# referred to by './kubeconfig'.
-ks diff --kubeconfig=./kubeconfig -f ./pod.yaml
+# Show diff between what's in the local manifest and what's actually running in the
+# 'dev' environment, but for the Redis component ONLY
+ks diff dev -c redis
+
 ```
 
 ### Options

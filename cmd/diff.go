@@ -31,7 +31,10 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
 
-const flagDiffStrategy = "diff-strategy"
+const (
+	flagDiffStrategy = "diff-strategy"
+	diffShortDesc    = "Compare manifests, based on environment or location (local or remote)"
+)
 
 func init() {
 	addEnvCmdFlags(diffCmd)
@@ -41,8 +44,8 @@ func init() {
 }
 
 var diffCmd = &cobra.Command{
-	Use:   "diff [<env1> [<env2>]] [-f <file-or-dir>]",
-	Short: "Display differences between server and local config, or server and server config",
+	Use:   "diff <location1:env1> [location2:env2] [-c <component-name>]",
+	Short: diffShortDesc,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			return fmt.Errorf("'diff' requires at least one argument, that is the name of the environment\n\n%s", cmd.UsageString())
@@ -86,40 +89,55 @@ var diffCmd = &cobra.Command{
 
 		return c.Run(cmd.OutOrStdout())
 	},
-	Long: `Display differences between server and local configuration, or server and server
-configurations.
+	Long: `
+The ` + "`diff`" + ` command displays standard file diffs, and can be used to compare manifests
+based on *environment* or location ('local' ksonnet app manifests or what's running
+on a 'remote' server).
 
-ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
-files.`,
-	Example: `# Show diff between resources described in a the local 'dev' environment
-# specified by the ksonnet application and the remote cluster referenced by
-# the same 'dev' environment. Can be used in any subdirectory of the application.
-ksonnet diff dev
+Using this command, you can compare:
 
-# Show diff between resources at remote clusters. This requires ksonnet
-# application defined environments. Diff between the cluster defined at the
-# 'us-west/dev' environment, and the cluster defined at the 'us-west/prod'
-# environment. Can be used in any subdirectory of the application.
-ksonnet diff remote:us-west/dev remote:us-west/prod
+1. *Remote* and *local* manifests for a single environment
+2. *Remote* manifests for two separate environments
+3. *Local* manifests for two separate environments
+4. A *remote* manifest in one environment and a *local* manifest in another environment
 
-# Show diff between resources at a remote and a local cluster. This requires
-# ksonnet application defined environments. Diff between the cluster defined
-# at the 'us-west/dev' environment, and the cluster defined at the
-# 'us-west/prod' environment. Can be used in any subdirectory of the
-# application.
-ksonnet diff local:us-west/dev remote:us-west/prod
+To see the official syntax, see the examples below. Make sure that your $KUBECONFIG
+matches what you've defined in environments.
 
-# Show diff between resources described in a YAML file and the cluster
-# referenced in '$KUBECONFIG'.
-ks diff -f ./pod.yaml
+When NO component is specified (no ` + "`-c`" + ` flag), this command diffs all of
+the files in the ` + "`components/`" + ` directory.
 
-# Show diff between resources described in a JSON file and the cluster
-# referenced by the environment 'dev'.
-ks diff dev -f ./pod.json
+When a component IS specified via the ` + "`-c`" + ` flag, this command only checks
+the manifest for that particular component.
 
-# Show diff between resources described in a YAML file and the cluster
-# referred to by './kubeconfig'.
-ks diff --kubeconfig=./kubeconfig -f ./pod.yaml`,
+### Related Commands
+
+* ` + "`ks param diff` " + `— ` + paramShortDesc["diff"] + `
+
+### Syntax
+`,
+	Example: `
+# Show diff between remote and local manifests for a single 'dev' environment.
+# This command diffs *all* components in the ksonnet app, and can be used in any
+# of that app's subdirectories.
+ks diff remote:dev local:dev
+
+# Shorthand for the previous command (remote 'dev' and local 'dev')
+ks diff dev
+
+# Show diff between the remote resources running in two different ksonnet environments
+# 'us-west/dev' and 'us-west/prod'. This command diffs all resources defined in
+# the ksonnet app.
+ks diff remote:us-west/dev remote:us-west/prod
+
+# Show diff between local manifests in the 'us-west/dev' environment and remote
+# resources in the 'us-west/prod' environment, for an entire ksonnet app
+ks diff local:us-west/dev remote:us-west/prod
+
+# Show diff between what's in the local manifest and what's actually running in the
+# 'dev' environment, but for the Redis component ONLY
+ks diff dev -c redis
+`,
 }
 
 func initDiffCmd(cmd *cobra.Command, wd metadata.AbsPath, envFq1, envFq2 *string, files []string, diffStrategy string) (kubecfg.DiffCmd, error) {

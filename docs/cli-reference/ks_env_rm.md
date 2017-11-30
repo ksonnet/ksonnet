@@ -15,6 +15,9 @@ need to use the `ks delete` command.
 
 ### Related Commands
 
+* `ks env list` — List all locally available ksonnet prototypes
+* `ks env add` — 
+* `ks env set` — 
 * `ks delete` — Delete all the app components running in an environment (cluster)
 
 ### Syntax

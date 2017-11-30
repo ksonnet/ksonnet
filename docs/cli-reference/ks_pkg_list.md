@@ -12,12 +12,13 @@ the following info:
 
 1. Library name
 2. Registry name
-3. Installed status — this is indicated by an asterisk
+3. Installed status — an asterisk indicates 'installed'
 
 ### Related Commands
 
 * `ks pkg install` — Install a package (e.g. extra prototypes) for the current ksonnet app
 * `ks pkg describe` — Describe a ksonnet package and its contents
+* `ks registry describe` — Describe a ksonnet registry and the packages it contains
 
 ### Syntax
 

@@ -35,9 +35,9 @@ represented as a hierarchy in the `environments/` directory of a ksonnet app, li
 │           │   ├── k.libsonnet      // Jsonnet library with Kubernetes-compatible types and definitions
 │           │   ├── k8s.libsonnet
 │           │   └── swagger.json
-│           ├── main.libsonnet
-│           ├── params.libsonnet     // Can be used to customize components *per-environment*
-│           └── spec.json            // This will contain the environment's API server address and namespace
+│           ├── main.libsonnet       // Main file that imports all components (expanded on apply, delete, etc). Add environment-specific logic here.
+│           ├── params.libsonnet     // Customize components *per-environment* here.
+│           └── spec.json            // Contains the environment's API server address and namespace
 ```
 ----
 

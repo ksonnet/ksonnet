@@ -45,9 +45,9 @@ const (
 	GcStrategyAuto = "auto"
 	// GcStrategyIgnore means this object should be ignored by garbage collection
 	GcStrategyIgnore = "ignore"
-)
 
-var applyShortDesc = `Apply local Kubernetes manifests (components) to remote clusters`
+	applyShortDesc = "Apply local Kubernetes manifests (components) to remote clusters"
+)
 
 func init() {
 	RootCmd.AddCommand(applyCmd)
@@ -139,8 +139,8 @@ Note that this command needs to be run *within* a ksonnet app directory.
 
 ### Related Commands
 
-* ` + "`ks diff` " + `— Compare manifests, based on environment or location (local or remote)
-* ` + "`ks delete` " + deleteShortDesc + `
+* ` + "`ks diff` " + `— ` + diffShortDesc + `
+* ` + "`ks delete` " + `— ` + deleteShortDesc + `
 
 ### Syntax
 `,

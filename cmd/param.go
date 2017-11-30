@@ -29,6 +29,12 @@ const (
 	flagParamComponent = "component"
 )
 
+var paramShortDesc = map[string]string{
+	"set":  "Change component or environment parameters (e.g. replica count, name)",
+	"list": "List known component parameters",
+	"diff": "Display differences between the component parameters of two environments",
+}
+
 func init() {
 	RootCmd.AddCommand(paramCmd)
 
@@ -41,18 +47,12 @@ func init() {
 	paramDiffCmd.PersistentFlags().String(flagParamComponent, "", "Specify the component to diff against")
 }
 
-var paramShortDesc = map[string]string{
-	"set":  `Change component or environment parameters (e.g. replica count, name)`,
-	"list": `List known component parameters`,
-	"diff": `Display differences between the component parameters of two environments`,
-}
-
 var paramCmd = &cobra.Command{
 	Use:   "param",
 	Short: `Manage ksonnet parameters for components and environments`,
 	Long: `
-Parameters are customizable fields that are used to expand and define ksonnet
-*components*. Examples might include a deployment's 'name' or 'image'. Parameters
+Parameters are customizable fields that are used inside ksonnet *component*
+manifests. Examples might include a deployment's 'name' or 'image'. Parameters
 can also be defined on a *per-environment* basis. (Environments are ksonnet
 deployment targets, e.g. specific clusters. For more info, run ` + "`ks env --help`" + `.)
 

@@ -21,7 +21,7 @@ application configuration to remote clusters.
 ### SEE ALSO
 * [ks apply](ks_apply.md)	 - Apply local Kubernetes manifests (components) to remote clusters
 * [ks delete](ks_delete.md)	 - Remove component-specified Kubernetes resources from remote clusters
-* [ks diff](ks_diff.md)	 - Display differences between server and local config, or server and server config
+* [ks diff](ks_diff.md)	 - Compare manifests, based on environment or location (local or remote)
 * [ks env](ks_env.md)	 - Manage ksonnet environments
 * [ks generate](ks_generate.md)	 - Use the specified prototype to generate a component manifest
 * [ks init](ks_init.md)	 - Initialize a ksonnet application

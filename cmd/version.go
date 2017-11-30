@@ -41,7 +41,7 @@ var versionCmd = &cobra.Command{
 	},
 	Long: `
 The ` + "`version`" + ` command prints out version info about the current ksonnet CLI,
-as well as for any of its helper libraries (e.g. ` + "`client-go`" +`).
+as well as for any of its helper libraries (e.g. ` + "`client-go`" + `).
 
 ### Syntax
 `,

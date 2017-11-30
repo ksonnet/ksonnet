@@ -35,10 +35,10 @@ const (
 )
 
 var envShortDesc = map[string]string{
-	"add":  `Add a new environment to a ksonnet application`,
-	"list": `List all environments in a ksonnet application`,
-	"rm":   `Delete an environment from a ksonnet application`,
-	"set":  `Set environment-specific fields (name, namespace, server)`,
+	"add":  "Add a new environment to a ksonnet application",
+	"list": "List all environments in a ksonnet application",
+	"rm":   "Delete an environment from a ksonnet application",
+	"set":  "Set environment-specific fields (name, namespace, server)",
 }
 
 func init() {
@@ -91,9 +91,9 @@ represented as a hierarchy in the ` + "`environments/`" + ` directory of a ksonn
 │           │   ├── k.libsonnet      // Jsonnet library with Kubernetes-compatible types and definitions
 │           │   ├── k8s.libsonnet
 │           │   └── swagger.json
-│           ├── main.libsonnet
-│           ├── params.libsonnet     // Can be used to customize components *per-environment*
-│           └── spec.json            // This will contain the environment's API server address and namespace
+│           ├── main.libsonnet       // Main file that imports all components (expanded on apply, delete, etc). Add environment-specific logic here.
+│           ├── params.libsonnet     // Customize components *per-environment* here.
+│           └── spec.json            // Contains the environment's API server address and namespace
 ` + "```" + `
 ----
 `,
@@ -157,13 +157,16 @@ info:
 
 (1) is mandatory. (2) and (3) can be inferred from $KUBECONFIG, *or* from the
 ` + "`--kubeconfig`" + ` or ` + "`--context`" + ` flags. Otherwise, (2), (3), and (4) can all be
-specified by individual flags.
+specified by individual flags. Unless otherwise specified, (4) defaults to the
+latest Kubernetes version that ksonnet supports.
 
 Note that an environment *DOES NOT* contain user-specific data such as private keys.
 
 ### Related Commands
 
 * ` + "`ks env list` " + `— ` + protoShortDesc["list"] + `
+* ` + "`ks env rm` " + `— ` + protoShortDesc["rm"] + `
+* ` + "`ks env set` " + `— ` + protoShortDesc["set"] + `
 * ` + "`ks param set` " + `— ` + paramShortDesc["set"] + `
 * ` + "`ks apply` " + `— ` + applyShortDesc + `
 
@@ -172,7 +175,7 @@ Note that an environment *DOES NOT* contain user-specific data such as private k
 	Example: `
 # Initialize a new environment, called "staging". No flags are set, so 'server'
 # and 'namespace' info are pulled from the file specified by $KUBECONFIG.
-# 'version' defaults to "version:1.7.0".
+# 'version' defaults to the latest that ksonnet supports.
 ks env add us-west/staging
 
 # Initialize a new environment called "us-west/staging" with the pre-existing
@@ -230,6 +233,9 @@ need to use the ` + "`ks delete`" + ` command.
 
 ### Related Commands
 
+* ` + "`ks env list` " + `— ` + protoShortDesc["list"] + `
+* ` + "`ks env add` " + `— ` + protoShortDesc["add"] + `
+* ` + "`ks env set` " + `— ` + protoShortDesc["set"] + `
 * ` + "`ks delete` " + `— ` + `Delete all the app components running in an environment (cluster)` + `
 
 ### Syntax
@@ -272,6 +278,7 @@ current ksonnet app. Specifically, this will display the (1) *name*,
 
 ### Related Commands
 
+* ` + "`ks env add` " + `— ` + envShortDesc["add"] + `
 * ` + "`ks env set` " + `— ` + envShortDesc["set"] + `
 * ` + "`ks env rm` " + `— ` + envShortDesc["rm"] + `
 

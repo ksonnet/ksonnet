@@ -30,6 +30,12 @@ const (
 	flagName = "name"
 )
 
+var pkgShortDesc = map[string]string{
+	"install":  "Install a package (e.g. extra prototypes) for the current ksonnet app",
+	"describe": "Describe a ksonnet package and its contents",
+	"list":     "List all packages known (downloaded or not) for the current ksonnet app",
+}
+
 var errInvalidSpec = fmt.Errorf("Command 'pkg install' requires a single argument of the form <registry>/<library>@<version>")
 
 func init() {
@@ -40,19 +46,14 @@ func init() {
 	pkgInstallCmd.PersistentFlags().String(flagName, "", "Name to give the dependency, to use within the ksonnet app")
 }
 
-var pkgShortDesc = map[string]string{
-	"install":     `Install a package (e.g. extra prototypes) for the current ksonnet app`,
-	"describe":    `Describe a ksonnet package and its contents`,
-	"list":        `List all packages known (downloaded or not) for the current ksonnet app`,
-}
-
 var pkgCmd = &cobra.Command{
 	Use:   "pkg",
 	Short: `Manage packages and dependencies for the current ksonnet application`,
 	Long: `
 A ksonnet package contains:
 
-* A set of prototypes, which have related output (e.g. ` + "`redis-stateless`" +`, ` + "`redis-persistent`" + `)
+* A set of prototypes (see ` + "`ks prototype --help`" + ` for more info on prototypes), which
+generate similar types of components (e.g. ` + "`redis-stateless`" + `, ` + "`redis-persistent`" + `)
 * Associated helper libraries that define the prototype parts (e.g. ` + "`redis.libsonnet`" + `)
 
 Packages allow you to easily distribute and reuse code in any ksonnet application.
@@ -115,9 +116,9 @@ var pkgInstallCmd = &cobra.Command{
 		return nil
 	},
 	Long: `
-The ` + "`install`" + ` command caches a ksonnet library locally, and make it available
+The ` + "`install`" + ` command caches a ksonnet library locally, and makes it available
 for use in the current ksonnet application. Enough info and metadata is recorded in
-` + " `app.yaml` " + `that new users can retrieve the dependency after a fresh clone of this app.
+` + "`app.yaml` " + `that new users can retrieve the dependency after a fresh clone of this app.
 
 The library itself needs to be located in a registry (e.g. Github repo). By default,
 ksonnet knows about two registries: *incubator* and *stable*, which are the release
@@ -127,13 +128,14 @@ channels for official ksonnet libraries.
 
 * ` + "`ks pkg list` " + `— ` + pkgShortDesc["list"] + `
 * ` + "`ks prototype list` " + `— ` + protoShortDesc["list"] + `
+* ` + "`ks registry describe` " + `— ` + regShortDesc["describe"] + `
 
 ### Syntax
 `,
-  Example: `
+	Example: `
 # Install an nginx dependency, based on the 'master' branch.
 # In a ksonnet source file, this can be referenced as:
-#     local nginx = import "incubator/nginx/nginx.libsonnet";
+#   local nginx = import "incubator/nginx/nginx.libsonnet";
 ks pkg install incubator/nginx@master
 `,
 }
@@ -204,6 +206,7 @@ known ` + "`<registry-name>`" + ` like *incubator*). The output includes:
 
 ### Related Commands
 
+* ` + "`ks pkg list` " + `— ` + pkgShortDesc["list"] + `
 * ` + "`ks prototype describe` " + `— ` + protoShortDesc["describe"] + `
 * ` + "`ks generate` " + `— ` + protoShortDesc["use"] + `
 
@@ -279,12 +282,13 @@ the following info:
 
 1. Library name
 2. Registry name
-3. Installed status — this is indicated by an asterisk
+3. Installed status — an asterisk indicates 'installed'
 
 ### Related Commands
 
 * ` + "`ks pkg install` " + `— ` + pkgShortDesc["install"] + `
 * ` + "`ks pkg describe` " + `— ` + pkgShortDesc["describe"] + `
+* ` + "`ks registry describe` " + `— ` + regShortDesc["describe"] + `
 
 ### Syntax
 `,

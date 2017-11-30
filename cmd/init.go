@@ -28,7 +28,8 @@ import (
 )
 
 const (
-	flagInitDir = "dir"
+	flagInitDir   = "dir"
+	initShortDesc = "Initialize a ksonnet application"
 )
 
 func init() {
@@ -40,8 +41,6 @@ func init() {
 	bindClientGoFlags(initCmd)
 	initCmd.Flags().String(flagInitDir, "", "Ksonnet application directory")
 }
-
-var initShortDesc = `Initialize a ksonnet application`
 
 var initCmd = &cobra.Command{
 	Use:   "init <app-name>",
@@ -89,7 +88,7 @@ var initCmd = &cobra.Command{
 		return c.Run()
 	},
 	Long: `
-The ` + "`init`" + ` command initialize a ksonnet application in a new directory,` + " `app-name`" + `.
+The ` + "`init`" + ` command initializes a ksonnet application in a new directory,` + " `app-name`" + `.
 
 This command generates all the project scaffolding required to begin creating and
 deploying components to Kubernetes clusters.

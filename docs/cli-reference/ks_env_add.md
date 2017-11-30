@@ -17,13 +17,16 @@ info:
 
 (1) is mandatory. (2) and (3) can be inferred from $KUBECONFIG, *or* from the
 `--kubeconfig` or `--context` flags. Otherwise, (2), (3), and (4) can all be
-specified by individual flags.
+specified by individual flags. Unless otherwise specified, (4) defaults to the
+latest Kubernetes version that ksonnet supports.
 
 Note that an environment *DOES NOT* contain user-specific data such as private keys.
 
 ### Related Commands
 
 * `ks env list` — List all locally available ksonnet prototypes
+* `ks env rm` — 
+* `ks env set` — 
 * `ks param set` — Change component or environment parameters (e.g. replica count, name)
 * `ks apply` — Apply local Kubernetes manifests (components) to remote clusters
 
@@ -40,7 +43,7 @@ ks env add <env-name>
 
 # Initialize a new environment, called "staging". No flags are set, so 'server'
 # and 'namespace' info are pulled from the file specified by $KUBECONFIG.
-# 'version' defaults to "version:1.7.0".
+# 'version' defaults to the latest that ksonnet supports.
 ks env add us-west/staging
 
 # Initialize a new environment called "us-west/staging" with the pre-existing

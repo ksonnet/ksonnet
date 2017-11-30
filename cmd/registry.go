@@ -10,15 +10,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var regShortDesc = map[string]string{
+	"list":     "List all registries known to the current ksonnet app.",
+	"describe": "Describe a ksonnet registry and the packages it contains",
+}
+
 func init() {
 	RootCmd.AddCommand(registryCmd)
 	registryCmd.AddCommand(registryListCmd)
 	registryCmd.AddCommand(registryDescribeCmd)
-}
-
-var regShortDesc = map[string]string{
-	"list":     `List all registries known to the current ksonnet app.`,
-	"describe": `Describe a ksonnet registry and the packages it contains`,
 }
 
 var registryCmd = &cobra.Command{
@@ -169,7 +169,7 @@ var registryDescribeCmd = &cobra.Command{
 
 	Long: `
 The ` + "`describe`" + ` command outputs documentation for the ksonnet registry identified
-by `+ "`<registry-name>`" + `. Specifically, it displays the following:
+by ` + "`<registry-name>`" + `. Specifically, it displays the following:
 
 1. Registry URI
 2. Protocol (e.g. ` + "`github`" + `)

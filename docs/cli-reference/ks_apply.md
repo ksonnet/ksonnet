@@ -22,7 +22,7 @@ Note that this command needs to be run *within* a ksonnet app directory.
 ### Related Commands
 
 * `ks diff` — Compare manifests, based on environment or location (local or remote)
-* `ks delete` Remove component-specified Kubernetes resources from remote clusters
+* `ks delete` — Remove component-specified Kubernetes resources from remote clusters
 
 ### Syntax
 

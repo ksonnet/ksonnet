@@ -16,6 +16,7 @@ known `<registry-name>` like *incubator*). The output includes:
 
 ### Related Commands
 
+* `ks pkg list` — List all packages known (downloaded or not) for the current ksonnet app
 * `ks prototype describe` — See more info about a prototype's output and usage
 * `ks generate` — Use the specified prototype to generate a component manifest
 

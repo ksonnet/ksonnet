@@ -12,6 +12,7 @@ current ksonnet app. Specifically, this will display the (1) *name*,
 
 ### Related Commands
 
+* `ks env add` — Add a new environment to a ksonnet application
 * `ks env set` — Set environment-specific fields (name, namespace, server)
 * `ks env rm` — Delete an environment from a ksonnet application
 

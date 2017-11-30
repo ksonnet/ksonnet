@@ -30,6 +30,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var protoShortDesc = map[string]string{
+	"list":     "List all locally available ksonnet prototypes",
+	"describe": "See more info about a prototype's output and usage",
+	"preview":  "Preview a prototype's output without creating a component (stdout)",
+	"search":   "Search for a prototype",
+	"use":      "Use the specified prototype to generate a component manifest",
+}
+
 func init() {
 	RootCmd.AddCommand(prototypeCmd)
 	RootCmd.AddCommand(generateCmd)
@@ -38,14 +46,6 @@ func init() {
 	prototypeCmd.AddCommand(prototypeSearchCmd)
 	prototypeCmd.AddCommand(prototypeUseCmd)
 	prototypeCmd.AddCommand(prototypePreviewCmd)
-}
-
-var protoShortDesc = map[string]string{
-	"list":     `List all locally available ksonnet prototypes`,
-	"describe": `See more info about a prototype's output and usage`,
-	"preview":  `Preview a prototype's output without creating a component (stdout)`,
-	"search":   `Search for a prototype`,
-	"use":      `Use the specified prototype to generate a component manifest`,
 }
 
 var prototypeCmd = &cobra.Command{

@@ -6,9 +6,9 @@ Install a package (e.g. extra prototypes) for the current ksonnet app
 
 
 
-The `install` command caches a ksonnet library locally, and make it available
+The `install` command caches a ksonnet library locally, and makes it available
 for use in the current ksonnet application. Enough info and metadata is recorded in
- `app.yaml` that new users can retrieve the dependency after a fresh clone of this app.
+`app.yaml` that new users can retrieve the dependency after a fresh clone of this app.
 
 The library itself needs to be located in a registry (e.g. Github repo). By default,
 ksonnet knows about two registries: *incubator* and *stable*, which are the release
@@ -18,6 +18,7 @@ channels for official ksonnet libraries.
 
 * `ks pkg list` — List all packages known (downloaded or not) for the current ksonnet app
 * `ks prototype list` — List all locally available ksonnet prototypes
+* `ks registry describe` — Describe a ksonnet registry and the packages it contains
 
 ### Syntax
 
@@ -32,7 +33,7 @@ ks pkg install <registry>/<library>@<version>
 
 # Install an nginx dependency, based on the 'master' branch.
 # In a ksonnet source file, this can be referenced as:
-#     local nginx = import "incubator/nginx/nginx.libsonnet";
+#   local nginx = import "incubator/nginx/nginx.libsonnet";
 ks pkg install incubator/nginx@master
 
 ```
