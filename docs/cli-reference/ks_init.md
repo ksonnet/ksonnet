@@ -5,34 +5,42 @@ Initialize a ksonnet application
 ### Synopsis
 
 
-Initialize a ksonnet application in a new directory, `app-name`.
+
+The `init` command initialize a ksonnet application in a new directory, `app-name`.
 
 This command generates all the project scaffolding required to begin creating and
 deploying components to Kubernetes clusters.
 
 ksonnet applications are initialized based on your current cluster configurations,
-as defined in your `$KUBECONFIG` environment variable. The *Examples*
-section below demonstrates how to customize your configurations.
+as defined in your `$KUBECONFIG` environment variable. The *Examples* section
+below demonstrates how to customize these configurations.
 
 Creating a ksonnet application results in the following directory tree.
 
     app-name/
       .ksonnet/      Metadata for ksonnet
-      app.yaml       Application specifications, ex: name, api version
+      app.yaml       Application specifications (e.g. name, API version)
       components/    Top-level Kubernetes objects defining the application
       environments/  Kubernetes cluster definitions
         default/     Default environment, initialized from the current kubeconfig
           .metadata/ Contains a versioned ksonnet-lib, see [1] for details
-      lib/           user-written .libsonnet files
-      vendor/        part libraries, prototypes
+      lib/           User-written .libsonnet files
+      vendor/        Libraries that define prototypes and their constituent parts
 
 To begin populating your ksonnet application, see the docs for `ks generate` .
 
-[1] Each environment uses a specific version of ksonnet-lib. Users can set flags
-to generate the library based on a variety of data, including server
-configuration and an OpenAPI specification of a Kubernetes build. By default,
-this is generated from the capabilities of the cluster specified in the cluster
-of the current context specified in `$KUBECONFIG`.
+[1] `ksonnet-lib` is a Jsonnet helper library that wraps Kubernetes-API-compatible
+types. A specific version of `ksonnet-lib` is automatically provided for each
+environment. Users can set flags to generate the library based on a variety of data,
+including server configuration and an OpenAPI specification of a specific Kubernetes
+build. By default, this is generated using cluster information specified by the
+current context, in the file pointed to by `$KUBECONFIG`.
+
+### Related Commands
+
+* `ks generate` — Use the specified prototype to generate a component manifest
+
+### Syntax
 
 
 ```
@@ -43,19 +51,19 @@ ks init <app-name> [flags]
 
 ```
 # Initialize a ksonnet application, based on cluster information from the
-# active kubeconfig file (specified by the environment variable $KUBECONFIG).
+# active kubeconfig file (as specified by the environment variable $KUBECONFIG).
 # More specifically, the current context is used.
 ks init app-name
 
 # Initialize a ksonnet application, using the context 'dev' from the current
-# kubeconfig file ($KUBECONFIG). This initializes the default environment
-# using the server address and default namespace located at the context 'dev'.
+# kubeconfig file ($KUBECONFIG). The default environment is created using the
+# server address and default namespace located at the context 'dev'.
 ks init app-name --context=dev
 
 # Initialize a ksonnet application, using the context 'dev' and the namespace
-# 'dc-west' from the current kubeconfig file ($KUBECONFIG). This initializes
-# the default environment using the server address at the context 'dev' for
-# the namespace 'dc-west'.
+# 'dc-west' from the current kubeconfig file ($KUBECONFIG). The default environment
+# is created using the server address from the 'dev' context, and the specified
+# 'dc-west' namespace.
 ks init app-name --context=dev --namespace=dc-west
 
 # Initialize a ksonnet application, using v1.7.1 of the Kubernetes OpenAPI spec
@@ -66,15 +74,15 @@ ks init app-name --api-spec=version:v1.7.1
 # specific build of Kubernetes to generate 'ksonnet-lib'.
 ks init app-name --api-spec=file:swagger.json
 
-# Initialize a ksonnet application, using a custom location for the application
-# directory.
+# Initialize a ksonnet application, outputting the application directory into
+# the specified 'custom-location'.
 ks init app-name --dir=custom-location
 ```
 
 ### Options
 
 ```
-      --api-spec string                Manually specify API version from OpenAPI schema, cluster, or Kubernetes version (default "version:v1.7.0")
+      --api-spec string                Manually specified Kubernetes API version. The corresponding OpenAPI spec is used to generate ksonnet's Kubernetes libraries (default "version:v1.7.0")
       --as string                      Username to impersonate for the operation
       --certificate-authority string   Path to a cert. file for the certificate authority
       --client-certificate string      Path to a client certificate file for TLS

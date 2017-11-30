@@ -35,15 +35,17 @@ func init() {
 	RootCmd.AddCommand(initCmd)
 	// TODO: We need to make this default to checking the `kubeconfig` file.
 	initCmd.PersistentFlags().String(flagAPISpec, "version:v1.7.0",
-		"Manually specify API version from OpenAPI schema, cluster, or Kubernetes version")
+		"Manually specified Kubernetes API version. The corresponding OpenAPI spec is used to generate ksonnet's Kubernetes libraries")
 
 	bindClientGoFlags(initCmd)
 	initCmd.Flags().String(flagInitDir, "", "Ksonnet application directory")
 }
 
+var initShortDesc = `Initialize a ksonnet application`
+
 var initCmd = &cobra.Command{
 	Use:   "init <app-name>",
-	Short: "Initialize a ksonnet application",
+	Short: initShortDesc,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
 		if len(args) != 1 {
@@ -86,49 +88,57 @@ var initCmd = &cobra.Command{
 
 		return c.Run()
 	},
-	Long: `Initialize a ksonnet application in a new directory,` + " `app-name`" + `.
+	Long: `
+The ` + "`init`" + ` command initialize a ksonnet application in a new directory,` + " `app-name`" + `.
 
 This command generates all the project scaffolding required to begin creating and
 deploying components to Kubernetes clusters.
 
 ksonnet applications are initialized based on your current cluster configurations,
-as defined in your` + " `$KUBECONFIG` " + `environment variable. The *Examples*
-section below demonstrates how to customize your configurations.
+as defined in your` + " `$KUBECONFIG` " + `environment variable. The *Examples* section
+below demonstrates how to customize these configurations.
 
 Creating a ksonnet application results in the following directory tree.
 
     app-name/
       .ksonnet/      Metadata for ksonnet
-      app.yaml       Application specifications, ex: name, api version
+      app.yaml       Application specifications (e.g. name, API version)
       components/    Top-level Kubernetes objects defining the application
       environments/  Kubernetes cluster definitions
         default/     Default environment, initialized from the current kubeconfig
           .metadata/ Contains a versioned ksonnet-lib, see [1] for details
-      lib/           user-written .libsonnet files
-      vendor/        part libraries, prototypes
+      lib/           User-written .libsonnet files
+      vendor/        Libraries that define prototypes and their constituent parts
 
 To begin populating your ksonnet application, see the docs for` + " `ks generate` " + `.
 
-[1] Each environment uses a specific version of ksonnet-lib. Users can set flags
-to generate the library based on a variety of data, including server
-configuration and an OpenAPI specification of a Kubernetes build. By default,
-this is generated from the capabilities of the cluster specified in the cluster
-of the current context specified in` + " `$KUBECONFIG`" + `.
+[1] ` + "`ksonnet-lib`" + ` is a Jsonnet helper library that wraps Kubernetes-API-compatible
+types. A specific version of ` + "`ksonnet-lib`" + ` is automatically provided for each
+environment. Users can set flags to generate the library based on a variety of data,
+including server configuration and an OpenAPI specification of a specific Kubernetes
+build. By default, this is generated using cluster information specified by the
+current context, in the file pointed to by` + " `$KUBECONFIG`" + `.
+
+### Related Commands
+
+* ` + "`ks generate` " + `— ` + protoShortDesc["use"] + `
+
+### Syntax
 `,
 	Example: `# Initialize a ksonnet application, based on cluster information from the
-# active kubeconfig file (specified by the environment variable $KUBECONFIG).
+# active kubeconfig file (as specified by the environment variable $KUBECONFIG).
 # More specifically, the current context is used.
 ks init app-name
 
 # Initialize a ksonnet application, using the context 'dev' from the current
-# kubeconfig file ($KUBECONFIG). This initializes the default environment
-# using the server address and default namespace located at the context 'dev'.
+# kubeconfig file ($KUBECONFIG). The default environment is created using the
+# server address and default namespace located at the context 'dev'.
 ks init app-name --context=dev
 
 # Initialize a ksonnet application, using the context 'dev' and the namespace
-# 'dc-west' from the current kubeconfig file ($KUBECONFIG). This initializes
-# the default environment using the server address at the context 'dev' for
-# the namespace 'dc-west'.
+# 'dc-west' from the current kubeconfig file ($KUBECONFIG). The default environment
+# is created using the server address from the 'dev' context, and the specified
+# 'dc-west' namespace.
 ks init app-name --context=dev --namespace=dc-west
 
 # Initialize a ksonnet application, using v1.7.1 of the Kubernetes OpenAPI spec
@@ -139,8 +149,8 @@ ks init app-name --api-spec=version:v1.7.1
 # specific build of Kubernetes to generate 'ksonnet-lib'.
 ks init app-name --api-spec=file:swagger.json
 
-# Initialize a ksonnet application, using a custom location for the application
-# directory.
+# Initialize a ksonnet application, outputting the application directory into
+# the specified 'custom-location'.
 ks init app-name --dir=custom-location`,
 }
 
