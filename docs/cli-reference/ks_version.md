@@ -1,11 +1,16 @@
 ## ks version
 
-Print version information
+Print version information for this ksonnet binary
 
 ### Synopsis
 
 
-Print version information
+
+The `version` command prints out version info about the current ksonnet CLI,
+as well as for any of its helper libraries (e.g. `client-go`).
+
+### Syntax
+
 
 ```
 ks version

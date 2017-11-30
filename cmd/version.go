@@ -32,11 +32,17 @@ var Version = "(dev build)"
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print version information",
+	Short: "Print version information for this ksonnet binary",
 	Run: func(cmd *cobra.Command, args []string) {
 		out := cmd.OutOrStdout()
 		fmt.Fprintln(out, "ksonnet version:", Version)
 		fmt.Fprintln(out, "jsonnet version:", jsonnet.Version())
 		fmt.Fprintln(out, "client-go version:", version.Get())
 	},
+	Long: `
+The ` + "`version`" + ` command prints out version info about the current ksonnet CLI,
+as well as for any of its helper libraries (e.g. ` + "`client-go`" +`).
+
+### Syntax
+`,
 }

@@ -14,13 +14,14 @@ manifests are resolved based on environment-specific values.
 When NO component is specified (no `-c` flag), this command expands all of
 the files in the `components/` directory into a list of resource definitions.
 This is the YAML version of what gets deployed to your cluster with
-`ks apply <env>`.
+`ks apply <env-name>`.
 
 When a component IS specified via the `-c` flag, this command only expands the
 manifest for that particular component.
 
 ### Related Commands
 
+* `ks validate` — Check generated component manifests against the server's API
 * `ks apply` — Apply local Kubernetes manifests (components) to remote clusters
 
 ### Syntax
