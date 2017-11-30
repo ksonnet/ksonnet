@@ -1,12 +1,24 @@
 ## ks registry describe
 
-Describe a ksonnet registry
+Describe a ksonnet registry and the packages it contains
 
 ### Synopsis
 
 
-Output documentation for some ksonnet registry prototype uniquely identified in
-the current ksonnet project by some `registry-name`.
+
+The `describe` command outputs documentation for the ksonnet registry identified
+by `<registry-name>`. Specifically, it displays the following:
+
+1. Registry URI
+2. Protocol (e.g. `github`)
+3. List of packages included in the registry
+
+### Related Commands
+
+* `ks pkg install` — Install a package (e.g. extra prototypes) for the current ksonnet app
+
+### Syntax
+
 
 ```
 ks registry describe <registry-name>
