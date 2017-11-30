@@ -1,43 +1,60 @@
 ## ks apply
 
-Apply local configuration to remote cluster
+Apply local Kubernetes manifests to remote clusters
 
 ### Synopsis
 
 
-Update (or optionally create) Kubernetes resources on the cluster using the
-local configuration. Use the `--create` flag to control whether we create them
-if they do not exist (default: true).
 
-ksonnet applications are accepted, as well as normal JSON, YAML, and Jsonnet
-files.
+Update (or optionally create) Kubernetes resources on the cluster using your
+local Kubernetes manifests. Use the `--create` flag to control whether
+they are created if they do not exist (default: true).
+
+The local Kubernetes manifests that are applied reside in your `components/`
+directory. When applied, the manifests are fully expanded using the paremeters
+of the specified environment.
+
+By default, all manifests are applied. To apply a subset of manifests, use the
+`--component` flag, as seen in the examples below.
+
+### Related Commands
+
+* `ks delete` — Delete the component manifests on your cluster
+
+### Syntax
+
 
 ```
-ks apply [env-name] [-f <file-or-dir>]
+ks apply <env-name>
 ```
 
 ### Examples
 
 ```
+
 # Create or update all resources described in a ksonnet application, and
 # running in the 'dev' environment. Can be used in any subdirectory of the
 # application.
+#
+# This is equivalent to applying all components in the 'components/' directory.
 ks apply dev
 
-# Create or update resources described in a YAML file. Automatically picks up
-# the cluster's location from '$KUBECONFIG'.
-ks appy -f ./pod.yaml
+# Create or update the single resource 'guestbook-ui' described in a ksonnet
+# application, and running in the 'dev' environment. Can be used in any
+# subdirectory of the application.
+#
+# This is equivalent to applying the component with the same file name (excluding
+# the extension) 'guestbook-ui' in the 'components/' directory.
+ks apply dev -c guestbook-ui
 
-# Create or update resources described in the JSON file. Changes are deployed
-# to the cluster pointed at the 'dev' environment.
-ks apply dev -f ./pod.json
+# Create or update the multiple resources, 'guestbook-ui' and 'nginx-depl'
+# described in a ksonnet application, and running in the 'dev' environment. Can
+# be used in any subdirectory of the application.
+#
+# This is equivalent to applying the component with the same file name (excluding
+# the extension) 'guestbook-ui' and 'nginx-depl' in the 'components/' directory.
+ks apply dev -c guestbook-ui -c nginx-depl
 
-# Update resources described in a YAML file, and running in cluster referred
-# to by './kubeconfig'.
-ks apply --kubeconfig=./kubeconfig -f ./pod.yaml
-
-# Display set of actions we will execute when we run 'apply'.
-ks apply dev --dry-run
 ```
 
 ### Options
