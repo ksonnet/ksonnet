@@ -18,11 +18,12 @@ import (
 //
 
 const (
-	apiVersionTag  = "@apiVersion"
-	nameTag        = "@name"
-	descriptionTag = "@description"
-	paramTag       = "@param"
-	optParamTag    = "@optionalParam"
+	apiVersionTag       = "@apiVersion"
+	nameTag             = "@name"
+	descriptionTag      = "@description"
+	shortDescriptionTag = "@shortDescription"
+	paramTag            = "@param"
+	optParamTag         = "@optionalParam"
 )
 
 func FromJsonnet(data string) (*SpecificationSchema, error) {
@@ -97,7 +98,7 @@ func FromJsonnet(data string) (*SpecificationSchema, error) {
 		openText = bytes.Buffer{}
 		openText.WriteString(strings.TrimSpace(split[1]))
 		switch split[0] {
-		case apiVersionTag, nameTag, descriptionTag, paramTag, optParamTag: // Do nothing.
+		case apiVersionTag, nameTag, descriptionTag, shortDescriptionTag, paramTag, optParamTag: // Do nothing.
 		default:
 			return nil, fmt.Errorf(`Line in prototype heading comment is formatted incorrectly; '%s' is not
 recognized as a tag. Only tags can begin lines, and text that is wrapped must
@@ -186,6 +187,11 @@ func (s *SpecificationSchema) addField(tag, text string) error {
 			return fmt.Errorf("Prototype heading comment has two '@description' fields")
 		}
 		s.Template.Description = text
+	case shortDescriptionTag:
+		if s.Template.ShortDescription != "" {
+			return fmt.Errorf("Prototype heading comment has two '@shortDescription' fields")
+		}
+		s.Template.ShortDescription = text
 	case paramTag:
 		// NOTE: There is usually more than one `@param`, so we don't
 		// check length here.
