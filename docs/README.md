@@ -1,6 +1,8 @@
 ## Additional documentation
 
-While the ksonnet site updates are still pending, you can find additional documentation in this directory:
+**You can view all additional documentation on the [official ksonnet site](https://ksonnet.io/).**
+
+If you prefer to view content in Github, you can check out the links below:
 
 * [Manually build and install](/docs/build-install.md)
 * [CLI reference](/docs/cli-reference#command-line-reference)

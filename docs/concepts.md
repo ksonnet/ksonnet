@@ -1,6 +1,6 @@
 # Concept Reference
 
-The ksonnet framework is centered around a couple of key concepts and terms. This reference gives a brief explanation of each. To get a more tangible sense of how these concepts tie together, see the Tutorial (WIP, link pending).
+The ksonnet framework is centered around a couple of key concepts and terms. This reference gives a brief explanation of each. To get a more tangible sense of how these concepts tie together, see the [Tutorial](https://ksonnet.io/docs/tutorial).
 
 * Ksonnet
   * [Application](#application)
@@ -206,12 +206,12 @@ One of ksonnet's key features is that it allows you to write more concise manife
 
 ksonnet uses [Jsonnet](http://jsonnet.org/) to express all of your `components/` manifests (and associated configuration files, like `components/params.libsonnet`).
 
-Jsonnet is a data templating language—for simplicity, think of it as a fancier version of JSON, one that supports features like [variables](http://jsonnet.org/docs/tutorial.html#locals) and [object concatenation](http://jsonnet.org/docs/tutorial.html#oo). If you've ever had to copy and paste large chunks of YAML or JSON manifests, Jsonnet avoids this problem!
+Jsonnet is a data templating language—for simplicity, think of it as a fancier superset of JSON, one that supports features like [variables](http://jsonnet.org/docs/tutorial.html#locals) and [object concatenation](http://jsonnet.org/docs/tutorial.html#oo). If you've ever had to copy and paste large chunks of YAML or JSON manifests, Jsonnet avoids this problem!
 
 You can see how much more concise it is by comparing the same manifest, written in two different languages:
 
 ![jsonnet vs yaml](/docs/img/jsonnet_vs_yaml.png)
 
-(Note that we've omitted Jsonnet's `import` lines in this example).
+*Note that we've omitted Jsonnet's `import` lines in this example.*
 
-Jsonnet is also JSON-compatible, meaning that you can drop parts of your legacy manifests into your ksonnet manifests, without having to rewrite them all at once.
+Jsonnet is also JSON-compatible, meaning that you can drop parts of your legacy manifests into your ksonnet manifests, without having to rewrite them all at once. (It is more common to have Kubernetes manifests in YAML than JSON, but there are several open-source CLI tools such as [yaml2json](https://github.com/bronze1man/yaml2json) that can do this conversion for you).

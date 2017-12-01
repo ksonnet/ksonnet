@@ -1,7 +1,10 @@
 # ksonnet
 
+[**Official Site**](https://ksonnet.io/)
+
 [![Build Status](https://travis-ci.org/ksonnet/ksonnet.svg?branch=master)](https://travis-ci.org/ksonnet/ksonnet)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ksonnet/ksonnet)](https://goreportcard.com/report/github.com/ksonnet/ksonnet)
+
 
 *ksonnet* is a framework for writing, sharing, and deploying Kubernetes application manifests. With its CLI, you can generate a complete application from scratch in only a few commands, or manage a complex system at scale.
 
@@ -14,15 +17,13 @@ Specifically, ksonnet allows you to:
 
 All of this results in a more iterative process for developing manifests, one that can be supplemented by continuous integration (CI).
 
-*STATUS: Development is ongoing—this tool is pre-alpha.*
-
 ## Install
 
 The ksonnet CLI, `ks`, can be installed in three different ways. Choose the method that best matches your setup:
 
 ### Homebrew on macOS
 
-If you are using [Homebrew](https://brew.sh/) on macOS, you can easily install `ks` with the following command:
+If you are using [Homebrew](https://brew.sh/) on macOS, you can install `ks` with the following command:
 
 ```
 brew install ksonnet/tap/ks
@@ -36,7 +37,7 @@ See the [releases page](https://github.com/ksonnet/ksonnet/releases) to download
 
 You can download and manually build from source by following [these instructions](/docs/build-install.md).
 
-## Example
+## Run through an example
 
 Here we provide some commands that show some basic ksonnet features in action. You can run these commands to deploy and update a basic web app UI, via a Kubernetes Service and Deployment. This app is shown below:
 
@@ -57,7 +58,7 @@ Note that we will not be implementing the entire app in this example, so the but
 
 * *Your `$KUBECONFIG` should specify a valid `kubeconfig` file*, which points at the cluster you want to use for this demonstration.
 
-### Example flow
+### Commands
 
 You can copy and paste the commands below to deploy the web app UI:
 
@@ -128,15 +129,15 @@ Now, even though you've made modifications to the Guestbook app and removed it f
 ks show default
 ```
 
-If you're still wondering how ksonnet differs from existing tools, the [tutorial](https://ksonnet-next-site.i.heptio.com/docs/tutorial) shows you how to use other ksonnet features to implement the rest of the Guestbook app (and yes, the buttons will work!).
+If you're still wondering how ksonnet differs from existing tools, the [tutorial](https://ksonnet.io/docs/tutorial) shows you how to use other ksonnet features to implement the rest of the Guestbook app (and yes, the buttons will work!).
 
 ## Additional documentation
 
 ksonnet is a feature-rich framework. To learn more about how to integrate it into your workflow, check out the resources below:
 
-* **[Tutorial](https://ksonnet-next-site.i.heptio.com/docs/tutorial)** - What can I build with ksonnet and why? This finishes the Guestbook app from the [Example](#example) above.
+* **[Tutorial](https://ksonnet.io/docs/tutorial)** - What can I build with ksonnet and why? This finishes the Guestbook app from the [example](#run-through-an-example) above.
 
-* **[Interactive tour of ksonnet](https://ksonnet-next-site.i.heptio.com/docs/tutorial/tour/welcome)** - How do `ks` commands work under the hood?
+* **[Interactive tour of ksonnet](https://ksonnet.io/tour/welcome)** - How do `ks` commands work under the hood?
 
 * **[CLI Reference](/docs/cli-reference#command-line-reference)** - What ksonnet commands are available, and how do I use them?
 
