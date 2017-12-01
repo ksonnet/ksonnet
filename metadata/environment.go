@@ -29,6 +29,7 @@ import (
 
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/ksonnet"
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubespec"
+	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubeversion"
 	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/utils"
 )
@@ -513,7 +514,19 @@ func (m *manager) generateKsonnetLibData(spec ClusterSpec) ([]byte, []byte, []by
 
 	// Emit Jsonnet code.
 	extensionsLibData, k8sLibData, err := ksonnet.Emit(&s, nil, nil)
-	return extensionsLibData, k8sLibData, text, err
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	// Warn where the Kubernetes version is currently only supported as Beta.
+	if kubeversion.Beta(s.Info.Version) {
+		log.Warnf(`!
+============================================================================================
+Kubernetes version %s is currently supported as Beta; you may encounter unexpected behavior
+============================================================================================`, s.Info.Version)
+	}
+
+	return extensionsLibData, k8sLibData, text, nil
 }
 
 func (m *manager) generateOverrideData() []byte {

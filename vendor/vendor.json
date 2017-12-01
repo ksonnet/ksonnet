@@ -191,6 +191,12 @@
 			"revisionTime": "2016-01-25T20:49:56Z"
 		},
 		{
+			"checksumSHA1": "yqF125xVSkmfLpIVGrLlfE05IUk=",
+			"path": "github.com/golang/protobuf/proto",
+			"revision": "1e59b77b52bf8e4b449a57e6f79f21226d571845",
+			"revisionTime": "2017-11-13T18:07:20Z"
+		},
+		{
 			"checksumSHA1": "Ao2L3301Cd7e7VwmiJe23Zhpe5M=",
 			"path": "github.com/google/go-github/github",
 			"revision": "996760c56486beb81e91bb7bdb816f8c6f29284e",
@@ -259,26 +265,26 @@
 		{
 			"checksumSHA1": "ia91LEEbuaR5os39J+5MzEi1xnY=",
 			"path": "github.com/ksonnet/ksonnet-lib/ksonnet-gen/jsonnet",
-			"revision": "46d8bb9e605dc3d3977e2e2054e921ed32dd699f",
-			"revisionTime": "2017-11-21T00:39:10Z"
+			"revision": "e8077023fa84395ad7976fa750136b39d0aa5f08",
+			"revisionTime": "2017-12-01T22:52:12Z"
 		},
 		{
-			"checksumSHA1": "ZQxcZOI8LKx+lAZ9MAW1yb579zo=",
+			"checksumSHA1": "mtQx39QA2n3QzgUmyMY8j5KfYWA=",
 			"path": "github.com/ksonnet/ksonnet-lib/ksonnet-gen/ksonnet",
-			"revision": "46d8bb9e605dc3d3977e2e2054e921ed32dd699f",
-			"revisionTime": "2017-11-21T00:39:10Z"
+			"revision": "e8077023fa84395ad7976fa750136b39d0aa5f08",
+			"revisionTime": "2017-12-01T22:52:12Z"
 		},
 		{
-			"checksumSHA1": "BiiHRiYpSOb+vHiP6h/A9lRotEY=",
+			"checksumSHA1": "vpSUj5+Gg6oVR6v5EyqNpRAPw24=",
 			"path": "github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubespec",
-			"revision": "46d8bb9e605dc3d3977e2e2054e921ed32dd699f",
-			"revisionTime": "2017-11-21T00:39:10Z"
+			"revision": "e8077023fa84395ad7976fa750136b39d0aa5f08",
+			"revisionTime": "2017-12-01T22:52:12Z"
 		},
 		{
-			"checksumSHA1": "hEIHBY6IrJscUYUlgFPCHuW4yBs=",
+			"checksumSHA1": "4Aw3oKxr3qpAqm94AQxQdrImV8w=",
 			"path": "github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubeversion",
-			"revision": "46d8bb9e605dc3d3977e2e2054e921ed32dd699f",
-			"revisionTime": "2017-11-21T00:39:10Z"
+			"revision": "e8077023fa84395ad7976fa750136b39d0aa5f08",
+			"revisionTime": "2017-12-01T22:52:12Z"
 		},
 		{
 			"checksumSHA1": "T8soMJArSZrYnhmdpAnq1bVxQ6Q=",
@@ -495,6 +501,12 @@
 			"path": "github.com/opencontainers/go-digest",
 			"revision": "eaa60544f31ccf3b0653b1a118b76d33418ff41b",
 			"revisionTime": "2017-05-10T16:33:54Z"
+		},
+		{
+			"checksumSHA1": "rJab1YdNhQooDiBWNnt7TLWPyBU=",
+			"path": "github.com/pkg/errors",
+			"revision": "f15c970de5b76fac0b59abb32d62c17cc7bed265",
+			"revisionTime": "2017-10-18T19:55:50Z"
 		},
 		{
 			"checksumSHA1": "LuFv4/jlrmFNnDb/5SCSEPAM9vU=",
@@ -813,6 +825,54 @@
 			"path": "golang.org/x/tools/imports",
 			"revision": "9b61fcc4c548d69663d915801fc4b42a43b6cd9c",
 			"revisionTime": "2017-10-24T20:47:09Z"
+		},
+		{
+			"checksumSHA1": "WPEbk80NB3Esdh4Yk0PXr2K7xVU=",
+			"path": "google.golang.org/appengine",
+			"revision": "9d8544a6b2c7df9cff240fcf92d7b2f59bc13416",
+			"revisionTime": "2017-10-31T19:43:29Z"
+		},
+		{
+			"checksumSHA1": "/XD6hF+tqSNrfPrFmukDeHKFVVA=",
+			"path": "google.golang.org/appengine/internal",
+			"revision": "9d8544a6b2c7df9cff240fcf92d7b2f59bc13416",
+			"revisionTime": "2017-10-31T19:43:29Z"
+		},
+		{
+			"checksumSHA1": "x6Thdfyasqd68dWZWqzWWeIfAfI=",
+			"path": "google.golang.org/appengine/internal/app_identity",
+			"revision": "9d8544a6b2c7df9cff240fcf92d7b2f59bc13416",
+			"revisionTime": "2017-10-31T19:43:29Z"
+		},
+		{
+			"checksumSHA1": "TsNO8P0xUlLNyh3Ic/tzSp/fDWM=",
+			"path": "google.golang.org/appengine/internal/base",
+			"revision": "9d8544a6b2c7df9cff240fcf92d7b2f59bc13416",
+			"revisionTime": "2017-10-31T19:43:29Z"
+		},
+		{
+			"checksumSHA1": "5QsV5oLGSfKZqTCVXP6NRz5T4Tw=",
+			"path": "google.golang.org/appengine/internal/datastore",
+			"revision": "9d8544a6b2c7df9cff240fcf92d7b2f59bc13416",
+			"revisionTime": "2017-10-31T19:43:29Z"
+		},
+		{
+			"checksumSHA1": "Gep2T9zmVYV8qZfK2gu3zrmG6QE=",
+			"path": "google.golang.org/appengine/internal/log",
+			"revision": "9d8544a6b2c7df9cff240fcf92d7b2f59bc13416",
+			"revisionTime": "2017-10-31T19:43:29Z"
+		},
+		{
+			"checksumSHA1": "eLZVX1EHLclFtQnjDIszsdyWRHo=",
+			"path": "google.golang.org/appengine/internal/modules",
+			"revision": "9d8544a6b2c7df9cff240fcf92d7b2f59bc13416",
+			"revisionTime": "2017-10-31T19:43:29Z"
+		},
+		{
+			"checksumSHA1": "a1XY7rz3BieOVqVI2Et6rKiwQCk=",
+			"path": "google.golang.org/appengine/internal/remote_api",
+			"revision": "9d8544a6b2c7df9cff240fcf92d7b2f59bc13416",
+			"revisionTime": "2017-10-31T19:43:29Z"
 		},
 		{
 			"checksumSHA1": "6f8MEU31llHM1sLM/GGH4/Qxu0A=",
