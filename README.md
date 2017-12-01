@@ -71,7 +71,7 @@ cd ks-example
 # Autogenerate a basic manifest
 ks generate deployed-service guestbook-ui \
   --name guestbook \
-  --image alpinejay/dns-single-redis-guestbook:0.3 \
+  --image gcr.io/heptio-images/ks-guestbook-demo:0.1 \
   --type ClusterIP
 
 # Deploy your manifest to your cluster
@@ -100,7 +100,7 @@ Now let's try upgrading the container image to a new version:
 
 ```bash
 # Bump the container image to a different version
-ks param set guestbook-ui image alpinejay/dns-single-redis-guestbook:0.4
+ks param set guestbook-ui image gcr.io/heptio-images/ks-guestbook-demo:0.2
 
 # View updated param values
 ks param list
