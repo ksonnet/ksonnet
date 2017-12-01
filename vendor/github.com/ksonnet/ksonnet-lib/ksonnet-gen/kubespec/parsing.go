@@ -12,83 +12,31 @@ import (
 
 // Parse will parse a `DefinitionName` into a structured
 // `ParsedDefinitionName`.
-func (dn *DefinitionName) Parse() *ParsedDefinitionName {
-	split := strings.Split(string(*dn), ".")
-	if len(split) < 6 {
-		log.Fatalf("Failed to parse definition name '%s'", string(*dn))
-	} else if split[0] != "io" || split[1] != "k8s" || split[3] != "pkg" {
-		log.Fatalf("Failed to parse definition name '%s'", string(*dn))
+func (dn *DefinitionName) Parse() (*ParsedDefinitionName, error) {
+	name := string(*dn)
+
+	desc, err := describeDefinition(name)
+	if err != nil {
+		return nil, fmt.Errorf("describe definition: #v", err)
 	}
 
-	codebase := split[2]
-
-	if split[4] == "api" {
-		// Name is something like: `io.k8s.kubernetes.pkg.api.v1.LimitRangeSpec`.
-		if len(split) < 7 {
-			log.Fatalf(
-				"Expected >= 7 path components for package 'api' in path: '%s'",
-				string(*dn))
-		}
-		versionString := VersionString(split[5])
-		return &ParsedDefinitionName{
-			PackageType: Core,
-			Codebase:    codebase,
-			Group:       nil,
-			Version:     &versionString,
-			Kind:        ObjectKind(split[6]),
-		}
-	} else if split[4] == "apis" {
-		// Name is something like: `io.k8s.kubernetes.pkg.apis.batch.v1.JobList`.
-		if len(split) < 8 {
-			log.Fatalf(
-				"Expected >= 8 path components for package 'apis' in path: '%s'",
-				string(*dn))
-		}
-		groupName := GroupName(split[5])
-		versionString := VersionString(split[6])
-		return &ParsedDefinitionName{
-			PackageType: APIs,
-			Codebase:    codebase,
-			Group:       &groupName,
-			Version:     &versionString,
-			Kind:        ObjectKind(split[7]),
-		}
-	} else if split[4] == "util" {
-		if len(split) < 7 {
-			log.Fatalf(
-				"Expected >= 7 path components for package 'api' in path: '%s'",
-				string(*dn))
-		}
-		versionString := VersionString(split[5])
-		return &ParsedDefinitionName{
-			PackageType: Util,
-			Codebase:    codebase,
-			Group:       nil,
-			Version:     &versionString,
-			Kind:        ObjectKind(split[6]),
-		}
-	} else if split[4] == "runtime" {
-		// Name is something like: `io.k8s.apimachinery.pkg.runtime.RawExtension`.
-		return &ParsedDefinitionName{
-			PackageType: Runtime,
-			Codebase:    codebase,
-			Group:       nil,
-			Version:     nil,
-			Kind:        ObjectKind(split[5]),
-		}
-	} else if split[4] == "version" {
-		// Name is something like: `io.k8s.apimachinery.pkg.version.Info`.
-		return &ParsedDefinitionName{
-			PackageType: Version,
-			Codebase:    codebase,
-			Group:       nil,
-			Version:     nil,
-			Kind:        ObjectKind(split[5]),
-		}
+	pd := ParsedDefinitionName{
+		Codebase:    desc.codebase,
+		Kind:        desc.kind,
+		PackageType: desc.packageType,
 	}
 
-	log.Fatalf("Unknown package name '%s' in path: '%s'", split[4], string(*dn))
-	return nil
+	if desc.group != "" {
+		group := GroupName(desc.group)
+		pd.Group = &group
+	}
+
+	if desc.version != "" {
+		version := VersionString(desc.version)
+		pd.Version = &version
+	}
+
+	return &pd, nil
 }
 
 // Name parses a `DefinitionName` from an `ObjectRef`. `ObjectRef`s
@@ -183,15 +131,25 @@ func (vs VersionString) String() string {
 // Unparse transforms a `ParsedDefinitionName` back into its
 // corresponding string, e.g.,
 // `io.k8s.kubernetes.pkg.api.v1.Container`.
-func (p *ParsedDefinitionName) Unparse() DefinitionName {
+func (p *ParsedDefinitionName) Unparse(isLegacySchema bool) (DefinitionName, error) {
+	withNewSchema := !isLegacySchema
+
+	k8s := "kubernetes"
 	switch p.PackageType {
 	case Core:
 		{
+			if withNewSchema && p.Codebase == k8s {
+				return DefinitionName(fmt.Sprintf(
+					"io.k8s.api.core.%s.%s",
+					*p.Version,
+					p.Kind)), nil
+			}
+
 			return DefinitionName(fmt.Sprintf(
 				"io.k8s.%s.pkg.api.%s.%s",
 				p.Codebase,
 				*p.Version,
-				p.Kind))
+				p.Kind)), nil
 		}
 	case Util:
 		{
@@ -199,37 +157,45 @@ func (p *ParsedDefinitionName) Unparse() DefinitionName {
 				"io.k8s.%s.pkg.util.%s.%s",
 				p.Codebase,
 				*p.Version,
-				p.Kind))
+				p.Kind)), nil
 		}
 	case APIs:
 		{
+			if withNewSchema && p.Codebase == k8s {
+				return DefinitionName(fmt.Sprintf(
+					"io.k8s.api.%s.%s.%s",
+					*p.Group,
+					*p.Version,
+					p.Kind)), nil
+			}
 			return DefinitionName(fmt.Sprintf(
 				"io.k8s.%s.pkg.apis.%s.%s.%s",
 				p.Codebase,
 				*p.Group,
 				*p.Version,
-				p.Kind))
+				p.Kind)), nil
 		}
 	case Version:
 		{
 			return DefinitionName(fmt.Sprintf(
 				"io.k8s.%s.pkg.version.%s",
 				p.Codebase,
-				p.Kind))
+				p.Kind)), nil
 		}
 	case Runtime:
 		{
 			return DefinitionName(fmt.Sprintf(
 				"io.k8s.%s.pkg.runtime.%s",
 				p.Codebase,
-				p.Kind))
+				p.Kind)), nil
 		}
 	default:
 		{
-			log.Fatalf(
-				"Failed to unparse definition name, did not recognize kind '%d'",
-				p.PackageType)
-			return ""
+			return "",
+				fmt.Errorf(
+					"Failed to unparse definition name, did not recognize kind '%d'",
+					p.PackageType)
 		}
 	}
+
 }

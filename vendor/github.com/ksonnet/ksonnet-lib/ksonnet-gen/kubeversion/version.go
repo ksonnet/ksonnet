@@ -11,6 +11,7 @@ package kubeversion
 
 import (
 	"log"
+	"strings"
 
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubespec"
 )
@@ -18,12 +19,40 @@ import (
 // KSource returns the source of `k.libsonnet` for a specific version
 // of Kubernetes.
 func KSource(k8sVersion string) string {
+	var verStrs []string
+	for k := range versions {
+		verStrs = append(verStrs, k)
+	}
+
 	verData, ok := versions[k8sVersion]
 	if !ok {
-		log.Fatalf("Unrecognized Kubernetes version '%s'", k8sVersion)
+		log.Fatalf("Unrecognized Kubernetes version %q. Currently accepts %q",
+			k8sVersion, strings.Join(verStrs, ", "))
 	}
 
 	return verData.kSource
+}
+
+// Beta returns the beta status of the version.
+func Beta(k8sVersion string) bool {
+	k8sVersion = strings.TrimLeft(k8sVersion, "v")
+	ver := strings.Split(k8sVersion, ".")
+	if len(ver) >= 2 {
+		if ver[0] == "1" {
+			if ver[1] == "8" {
+				k8sVersion = "v1.8.0"
+			} else if ver[1] == "7" {
+				k8sVersion = "v1.7.0"
+			}
+		}
+	}
+
+	verData, ok := versions[k8sVersion]
+	if !ok {
+		return false
+	}
+
+	return verData.beta
 }
 
 // MapIdentifier takes a text identifier and maps it to a
@@ -40,6 +69,22 @@ func MapIdentifier(k8sVersion, id string) string {
 		return alias
 	}
 	return id
+}
+
+// IsBlacklistedProperty taks a definition name (e.g.,
+// `io.k8s.kubernetes.pkg.apis.apps.v1beta1.Deployment`), a property
+// name (e.g., `status`), and reports whether it is blacklisted for
+// some Kubernetes version. This is particularly useful when deciding
+// whether or not to generate mixins and property methods for a given
+// property (as we likely wouldn't in the case of, say, `status`).
+func IsBlacklistedID(k8sVersion string, path kubespec.DefinitionName) bool {
+	verData, ok := versions[k8sVersion]
+	if !ok {
+		return false
+	}
+
+	_, ok = verData.idBlacklist[string(path)]
+	return ok
 }
 
 // IsBlacklistedProperty taks a definition name (e.g.,
@@ -85,8 +130,10 @@ func ConstructorSpec(
 type versionData struct {
 	idAliases         map[string]string
 	constructorSpecs  map[string][]CustomConstructorSpec
+	idBlacklist       map[string]interface{}
 	propertyBlacklist map[string]propertySet
 	kSource           string
+	beta              bool
 }
 
 type propertySet map[string]bool
