@@ -51,7 +51,7 @@ func init() {
 	envCmd.AddCommand(envSetCmd)
 
 	// TODO: We need to make this default to checking the `kubeconfig` file.
-	envAddCmd.PersistentFlags().String(flagAPISpec, "version:v1.7.0",
+	envAddCmd.PersistentFlags().String(flagAPISpec, "version:v1.8.0",
 		"Manually specify API version from OpenAPI schema, cluster, or Kubernetes version")
 
 	envSetCmd.PersistentFlags().String(flagEnvName, "",

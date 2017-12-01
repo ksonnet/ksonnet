@@ -35,7 +35,7 @@ const (
 func init() {
 	RootCmd.AddCommand(initCmd)
 	// TODO: We need to make this default to checking the `kubeconfig` file.
-	initCmd.PersistentFlags().String(flagAPISpec, "version:v1.7.0",
+	initCmd.PersistentFlags().String(flagAPISpec, "version:v1.8.0",
 		"Manually specified Kubernetes API version. The corresponding OpenAPI spec is used to generate ksonnet's Kubernetes libraries")
 
 	bindClientGoFlags(initCmd)
