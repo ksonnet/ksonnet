@@ -50,7 +50,7 @@ Note that we will not be implementing the entire app in this example, so the but
 **Minimal explanation is provided here, and only basic ksonnet features are shown---this is intended to be a quick demonstration.** If you are interested in learning more, see [Additional Documentation](#additional-documentation).
 
 ### Prerequisites
-* *You should have access to an up-and-running Kubernetes cluster (**maximum version 1.7**).* Support for Kubernetes 1.8 is under development.
+* *You should have access to an up-and-running Kubernetes cluster — **supported versions are 1.7 (default) and 1.8 (beta)**.*
 
   If you do not have a cluster, [choose a setup solution](https://kubernetes.io/docs/setup/) from the official Kubernetes docs.
 
@@ -60,12 +60,17 @@ Note that we will not be implementing the entire app in this example, so the but
 
 ### Commands
 
+Start by creating your app directory. **If you are running Kubernetes 1.8.x, you'll need to add `--api-spec=version:v1.8.0` to the end of the following command**:
+```bash
+# The ks-example app directory is created at the current path, and the
+# app itself references your current cluster using $KUBECONFIG
+ks init ks-example
+```
+
 You can copy and paste the commands below to deploy the web app UI:
 
 ```bash
-# Start by creating your app directory (this is created at the current path)
-# (This references your current cluster using $KUBECONFIG)
-ks init ks-example
+# 'ks' commands should be run within a ksonnet app directory
 cd ks-example
 
 # Autogenerate a basic manifest
