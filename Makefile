@@ -13,7 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-VERSION = dev-$(shell date +%FT%T%z)
+VERSION = v0.7.0
 
 GO = go
 EXTRA_GO_FLAGS =
