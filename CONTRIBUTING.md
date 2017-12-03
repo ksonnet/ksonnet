@@ -112,9 +112,9 @@ To make a new release, follow these instructions:
   ```
   VERSION=vX.Y.Z
   ```
-2. Build a release binary (this implicitly uses `$VERSION`):
+2. Build a release binary (this will set the `ks` version to `$VERSION`):
   ```
-  make
+  make install -e VERSION=$VERSION
   ```
 3. Add an appropriate tag. We do this via `git` (not the github UI) so that the tag is signed.  This process requires you to have write access to the real `master` branch (not your local fork).
   ```
