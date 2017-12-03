@@ -3,7 +3,9 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/metadata/parts"
 	"github.com/ksonnet/ksonnet/metadata/registry"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -36,6 +39,21 @@ type gitHubRegistryManager struct {
 	registrySpecRepoPath string
 }
 
+func makeGithubClient() *github.Client {
+	var hc *http.Client
+
+	ght := os.Getenv("GITHUB_TOKEN")
+	if len(ght) > 0 {
+		ctx := context.Background()
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: ght},
+		)
+		hc = oauth2.NewClient(ctx, ts)
+	}
+
+	return github.NewClient(hc)
+}
+
 func makeGitHubRegistryManager(registryRef *app.RegistryRefSpec) (*gitHubRegistryManager, error) {
 	gh := gitHubRegistryManager{RegistryRefSpec: registryRef}
 
@@ -52,7 +70,7 @@ func makeGitHubRegistryManager(registryRef *app.RegistryRefSpec) (*gitHubRegistr
 	}
 
 	// Resolve the refspec to a commit SHA.
-	client := github.NewClient(nil)
+	client := makeGithubClient()
 	ctx := context.Background()
 
 	sha, _, err := client.Repositories.GetCommitSHA1(ctx, gh.org, gh.repo, refspec, "")
@@ -80,7 +98,7 @@ func (gh *gitHubRegistryManager) RegistrySpecFilePath() string {
 
 func (gh *gitHubRegistryManager) FetchRegistrySpec() (*registry.Spec, error) {
 	// Fetch app spec at specific commit.
-	client := github.NewClient(nil)
+	client := makeGithubClient()
 	ctx := context.Background()
 
 	// Get contents.
@@ -117,7 +135,7 @@ func (gh *gitHubRegistryManager) MakeRegistryRefSpec() *app.RegistryRefSpec {
 }
 
 func (gh *gitHubRegistryManager) ResolveLibrarySpec(libID, libRefSpec string) (*parts.Spec, error) {
-	client := github.NewClient(nil)
+	client := makeGithubClient()
 
 	// Resolve `version` (a git refspec) to a specific SHA.
 	ctx := context.Background()
@@ -156,7 +174,7 @@ func (gh *gitHubRegistryManager) ResolveLibrary(libID, libAlias, libRefSpec stri
 		defaultRefSpec = "master"
 	)
 
-	client := github.NewClient(nil)
+	client := makeGithubClient()
 
 	// Resolve `version` (a git refspec) to a specific SHA.
 	ctx := context.Background()
