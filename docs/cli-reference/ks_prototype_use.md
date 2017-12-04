@@ -7,9 +7,10 @@ Use the specified prototype to generate a component manifest
 
 
 The `generate` command (aliased from `prototype use`) generates Kubernetes-
-compatible, Jsonnet manifests for components in your ksonnet app. Each prototype
+compatible, Jsonnet manifests for components in your ksonnet app. Each component
 corresponds to a single manifest in the `components/` directory. This manifest
-can define one or more Kubernetes resources.
+can define one or more Kubernetes resources, and is generated from a ksonnet
+*prototype* (a customizable, reusable Kubernetes configuration snippet).
 
 1. The first argument, the **prototype name**, can either be fully qualified
 (e.g. `io.ksonnet.pkg.single-port-service`) or a partial match (e.g. `service`).
@@ -23,11 +24,13 @@ file `components/nginx-depl.jsonnet` . Note that by default ksonnet will
 expand prototypes into Jsonnet files.
 
        ks prototype use io.ksonnet.pkg.single-port-deployment nginx-depl \
-         --name=nginx                                                    \
          --image=nginx
 
+  If the optional `--name` tag is not specified, all Kubernetes API resources
+  declared by this prototype use this argument as their own `metadata.name`
+
 3. Prototypes can be further customized by passing in **parameters** via additional
-command line flags, such as `--name` and `--image` in the example above. Note that
+command line flags, such as  `--image` in the example above. Note that
 different prototypes support their own unique flags.
 
 ### Related Commands
@@ -50,14 +53,16 @@ ks prototype use <prototype-name> <componentName> [type] [parameter-flags]
 # Instantiate prototype 'io.ksonnet.pkg.single-port-deployment', using the
 # 'nginx' image. The expanded prototype is placed in
 # 'components/nginx-depl.jsonnet'.
+# The associated Deployment has metadata.name 'nginx-depl'.
 ks prototype use io.ksonnet.pkg.single-port-deployment nginx-depl \
-  --name=nginx                                                    \
   --image=nginx
 
 # Instantiate prototype 'io.ksonnet.pkg.single-port-deployment' using the
-# suffix, 'deployment'. The expanded prototype is again placed in
-# 'components/nginx-depl.jsonnet'. NOTE: if you have imported another
-# prototype with this suffix, this may resolve ambiguously for you.
+# suffix, 'deployment'. (This works unless there is an ambiguity, e.g. another
+# prototype with 'deployment' in its name.) The expanded prototype is again
+# placed in 'components/nginx-depl.jsonnet'.
+# The associated Deployment has metadata.name 'nginx' instead of 'nginx-depl'
+# (due to --name).
 ks prototype use deployment nginx-depl \
   --name=nginx                         \
   --image=nginx
