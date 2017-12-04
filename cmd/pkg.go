@@ -133,6 +133,11 @@ channels for official ksonnet libraries.
 ### Syntax
 `,
 	Example: `
+# Install an nginx dependency, based on the latest branch.
+# In a ksonnet source file, this can be referenced as:
+#   local nginx = import "incubator/nginx/nginx.libsonnet";
+ks pkg install incubator/nginx
+
 # Install an nginx dependency, based on the 'master' branch.
 # In a ksonnet source file, this can be referenced as:
 #   local nginx = import "incubator/nginx/nginx.libsonnet";
@@ -246,10 +251,10 @@ var pkgListCmd = &cobra.Command{
 		}
 
 		rows := [][]string{
-			[]string{nameHeader, registryHeader, installedHeader},
+			[]string{registryHeader, nameHeader, installedHeader},
 			[]string{
-				strings.Repeat("=", len(nameHeader)),
 				strings.Repeat("=", len(registryHeader)),
+				strings.Repeat("=", len(nameHeader)),
 				strings.Repeat("=", len(installedHeader))},
 		}
 		for name := range app.Registries {
@@ -261,9 +266,9 @@ var pkgListCmd = &cobra.Command{
 			for libName := range reg.Libraries {
 				_, isInstalled := app.Libraries[libName]
 				if isInstalled {
-					rows = append(rows, []string{libName, name, installed})
+					rows = append(rows, []string{name, libName, installed})
 				} else {
-					rows = append(rows, []string{libName, name})
+					rows = append(rows, []string{name, libName})
 				}
 			}
 		}
