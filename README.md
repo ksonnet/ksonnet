@@ -75,7 +75,6 @@ cd ks-example
 
 # Autogenerate a basic manifest
 ks generate deployed-service guestbook-ui \
-  --name guestbook \
   --image gcr.io/heptio-images/ks-guestbook-demo:0.1 \
   --type ClusterIP
 
@@ -83,16 +82,16 @@ ks generate deployed-service guestbook-ui \
 ks apply default
 ```
 
-Now there should be a Deployment and Service running on your cluster! Try accessing the `guestbook` service in your browser. (How you do this may depend on your cluster setup).
+Now there should be a Deployment and Service running on your cluster! Try accessing the `guestbook-ui` service in your browser. (How you do this may depend on your cluster setup).
 
 <details>
 <summary><i>If you are unsure what to do, we suggest using <code>kubectl proxy</code>.</i></summary>
 <pre>
-# Set up an API proxy so that you can access the guestbook service locally
+# Set up an API proxy so that you can access the 'guestbook-ui' service locally
 kubectl proxy > /dev/null &
 PROXY_PID=$!
-QUICKSTART_NAMESPACE=$(kubectl get svc guestbook -o jsonpath="{.metadata.namespace}")
-GUESTBOOK_SERVICE_URL=http://localhost:8001/api/v1/proxy/namespaces/$QUICKSTART_NAMESPACE/services/guestbook
+QUICKSTART_NAMESPACE=$(kubectl get svc guestbook-ui -o jsonpath="{.metadata.namespace}")
+GUESTBOOK_SERVICE_URL=http://localhost:8001/api/v1/proxy/namespaces/$QUICKSTART_NAMESPACE/services/guestbook-ui
 open $GUESTBOOK_SERVICE_URL
 </pre>
 </details>
@@ -122,7 +121,7 @@ Check out the webpage again in your browser (force-refresh to update the javascr
 ks delete default
 
 # There should be no guestbook service left running
-kubectl get svc guestbook
+kubectl get svc guestbook-ui
 ```
 
 *(If you ended up copying and pasting the `kubectl proxy` code above, make sure to clean up that process with `kill -9 $PROXY_PID`).*
