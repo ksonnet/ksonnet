@@ -31,6 +31,11 @@ ks pkg install <registry>/<library>@<version>
 
 ```
 
+# Install an nginx dependency, based on the latest branch.
+# In a ksonnet source file, this can be referenced as:
+#   local nginx = import "incubator/nginx/nginx.libsonnet";
+ks pkg install incubator/nginx
+
 # Install an nginx dependency, based on the 'master' branch.
 # In a ksonnet source file, this can be referenced as:
 #   local nginx = import "incubator/nginx/nginx.libsonnet";
