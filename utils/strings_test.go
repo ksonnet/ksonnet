@@ -53,6 +53,37 @@ func TestIsASCIIIdentifier(t *testing.T) {
 	}
 }
 
+func TestQuoteNonASCII(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			input:    "HelloWorld",
+			expected: "HelloWorld",
+		},
+		{
+			input:    "Hello World",
+			expected: `"Hello World"`,
+		},
+		{
+			input:    "helloworld",
+			expected: "helloworld",
+		},
+		{
+			input:    "hello-world",
+			expected: `"hello-world"`,
+		},
+		{
+			input:    "hello世界",
+			expected: `"hello世界"`,
+		},
+	}
+	for _, test := range tests {
+		require.EqualValues(t, test.expected, QuoteNonASCII(test.input))
+	}
+}
+
 func TestNormalizeURL(t *testing.T) {
 	tests := []struct {
 		input    string
