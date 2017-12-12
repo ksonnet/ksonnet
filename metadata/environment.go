@@ -211,6 +211,10 @@ func (m *manager) GetEnvironments() ([]*Environment, error) {
 
 	log.Debug("Retrieving all environments")
 	err := afero.Walk(m.appFS, string(m.environmentsPath), func(path string, f os.FileInfo, err error) error {
+		if err != nil {
+			log.Debugf("Failed to walk the path at '%s'", path)
+			return err
+		}
 		isDir, err := afero.IsDir(m.appFS, path)
 		if err != nil {
 			log.Debugf("Failed to check whether the path at '%s' is a directory", path)
