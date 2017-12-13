@@ -275,11 +275,11 @@ func TestGetComponentParams(t *testing.T) {
     },
     foo: {
       name: "foo",
-      replicas: 1,
+      "replica-count": 1,
     },
   },
 }`,
-			Params{"name": `"foo"`, "replicas": "1"},
+			Params{"name": `"foo"`, "replica-count": "1"},
 		},
 		// Test getting the parameters for a component name with special characters
 		{
@@ -523,6 +523,30 @@ func TestSetComponentParams(t *testing.T) {
   },
 }`,
 		},
+		// Test adding a parameter with special characters in the param name
+		{
+			"foo",
+			`
+{
+  components: {
+    foo: {
+      "foo-bar": 5,
+      name: "foo",
+    },
+  },
+}`,
+			Params{"replica-count": "5"},
+			`
+{
+  components: {
+    foo: {
+      "foo-bar": 5,
+      name: "foo",
+      "replica-count": 5,
+    },
+  },
+}`,
+		},
 		// Test setting parameter for a component with a special character in name
 		{
 			"foo-bar",
@@ -700,13 +724,13 @@ params + {
     },
     "foo" +: {
       name: "foo",
-      replicas: 5,
+      "replica-count": 5,
     },
   },
 }`,
 			map[string]Params{
 				"bar": Params{"name": `"bar"`, "replicas": "1"},
-				"foo": Params{"name": `"foo"`, "replicas": "5"},
+				"foo": Params{"name": `"foo"`, "replica-count": "5"},
 			},
 		},
 	}
@@ -813,6 +837,38 @@ params + {
       |||,
       name: "foobar",
       replicas: 5,
+    },
+  },
+}`,
+		},
+		// Test special character in param identifier
+		{
+			"foo",
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+    bar +: {
+      name: "bar",
+      "replica-count": 1,
+    },
+    foo +: {
+      name: "foo",
+    },
+  },
+}`,
+			Params{"replica-count": "5"},
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+    bar +: {
+      name: "bar",
+      "replica-count": 1,
+    },
+    foo +: {
+      name: "foo",
+      "replica-count": 5,
     },
   },
 }`,

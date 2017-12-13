@@ -22,9 +22,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ksonnet/ksonnet/utils"
+
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/parser"
-	"github.com/ksonnet/ksonnet/utils"
 )
 
 const (
@@ -66,15 +67,6 @@ func findComponentsObj(node ast.Node) (*ast.Object, error) {
 	return nil, fmt.Errorf("Invalid params schema -- did not expect node type: %T", node)
 }
 
-// SanitizeComponent puts quotes around a component name if it contains special
-// characters.
-func SanitizeComponent(component string) string {
-	if !utils.IsASCIIIdentifier(component) {
-		return fmt.Sprintf(`"%s"`, component)
-	}
-	return component
-}
-
 func getFieldID(field ast.ObjectField) (string, error) {
 	switch field.Kind {
 	case ast.ObjectFieldStr:
@@ -109,14 +101,15 @@ func visitParams(component ast.Node) (Params, *ast.LocationRange, error) {
 
 	loc = n.Loc()
 	for _, field := range n.Fields {
-		if field.Id != nil {
-			key := string(*field.Id)
-			val, err := visitParamValue(field.Expr2)
-			if err != nil {
-				return nil, nil, err
-			}
-			params[key] = val
+		key, err := getFieldID(field)
+		if err != nil {
+			return nil, nil, err
 		}
+		val, err := visitParamValue(field.Expr2)
+		if err != nil {
+			return nil, nil, err
+		}
+		params[key] = val
 	}
 
 	return params, loc, nil
@@ -179,9 +172,9 @@ func writeParams(indent int, params Params) string {
 	buffer.WriteString("\n")
 	for i, key := range keys {
 		param := params[key]
-		if strings.HasPrefix(param, "|||\n") {
-			println(param)
+		key := utils.QuoteNonASCII(key)
 
+		if strings.HasPrefix(param, "|||\n") {
 			// every line in a block string needs to be indented
 			lines := strings.Split(param, "\n")
 			buffer.WriteString(fmt.Sprintf("%s%s: %s\n", indentBuffer.String(), key, lines[0]))
@@ -225,7 +218,7 @@ func appendComponent(component, snippet string, params Params) (string, error) {
 
 	// Create the jsonnet resembling the component params
 	var buffer bytes.Buffer
-	buffer.WriteString("    " + SanitizeComponent(component) + ": {")
+	buffer.WriteString("    " + utils.QuoteNonASCII(component) + ": {")
 	buffer.WriteString(writeParams(6, params))
 	buffer.WriteString("    },")
 
@@ -254,7 +247,7 @@ func getComponentParams(component, snippet string) (Params, *ast.LocationRange, 
 		}
 	}
 
-	return nil, nil, fmt.Errorf("Could not find component identifier '%s' when attempting to set params", component)
+	return nil, nil, fmt.Errorf("Could not find component identifier '%s'", component)
 }
 
 func getAllComponentParams(snippet string) (map[string]Params, error) {
@@ -342,7 +335,7 @@ func setEnvironmentParams(component, snippet string, params Params) (string, err
 	lines := strings.Split(snippet, "\n")
 	if !hasComponent {
 		var buffer bytes.Buffer
-		buffer.WriteString(fmt.Sprintf("\n    %s +: {", SanitizeComponent(component)))
+		buffer.WriteString(fmt.Sprintf("\n    %s +: {", utils.QuoteNonASCII(component)))
 		buffer.WriteString(writeParams(6, params))
 		buffer.WriteString("    },\n")
 		paramsSnippet = buffer.String()

@@ -17,6 +17,7 @@ package utils
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 
 	"github.com/PuerkitoBio/purell"
@@ -32,6 +33,15 @@ func IsASCIIIdentifier(s string) bool {
 		return false
 	}
 	return true
+}
+
+// QuoteNonASCII puts quotes around an identifier that contains non-ASCII
+// characters.
+func QuoteNonASCII(s string) string {
+	if !IsASCIIIdentifier(s) {
+		return fmt.Sprintf(`"%s"`, s)
+	}
+	return s
 }
 
 // NormalizeURL uses purell's "usually safe normalization" algorithm to

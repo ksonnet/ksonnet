@@ -27,8 +27,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/ksonnet/ksonnet/metadata/params"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	log "github.com/sirupsen/logrus"
@@ -480,7 +478,7 @@ func constructBaseObj(componentPaths, componentNames []string) (string, error) {
 
 		// Emit object field. Sanitize the name to guarantee we generate valid
 		// Jsonnet.
-		componentName = params.SanitizeComponent(componentName)
+		componentName = utils.QuoteNonASCII(componentName)
 		fmt.Fprintf(&obj, "  %s: %s,\n", componentName, importExpr)
 	}
 
