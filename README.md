@@ -147,6 +147,8 @@ ksonnet is a feature-rich framework. To learn more about how to integrate it int
 
 * **[Concept Reference](/docs/concepts.md)** - What do all these special ksonnet terms mean (e.g. *prototypes*) ?
 
+* **[Design Docs](/design)** - What are the detailed design specs, and what's next on the feature roadmap?
+
 
 ## Troubleshooting
 
