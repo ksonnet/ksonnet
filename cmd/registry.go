@@ -6,19 +6,28 @@ import (
 	"strings"
 
 	"github.com/ksonnet/ksonnet/metadata"
+	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 	"github.com/ksonnet/ksonnet/utils"
 	"github.com/spf13/cobra"
+)
+
+const (
+	flagRegistryVersion = "version"
 )
 
 var regShortDesc = map[string]string{
 	"list":     "List all registries known to the current ksonnet app.",
 	"describe": "Describe a ksonnet registry and the packages it contains",
+	"add":      "Add a registry to the current ksonnet app",
 }
 
 func init() {
 	RootCmd.AddCommand(registryCmd)
 	registryCmd.AddCommand(registryListCmd)
 	registryCmd.AddCommand(registryDescribeCmd)
+	registryCmd.AddCommand(registryAddCmd)
+
+	registryAddCmd.PersistentFlags().String(flagRegistryVersion, "", "Version of the registry to add")
 }
 
 var registryCmd = &cobra.Command{
@@ -181,4 +190,56 @@ by ` + "`<registry-name>`" + `. Specifically, it displays the following:
 
 ### Syntax
 `,
+}
+
+var registryAddCmd = &cobra.Command{
+	Use:   "add <registry-name> <registry-uri>",
+	Short: regShortDesc["add"],
+	RunE: func(cmd *cobra.Command, args []string) error {
+		flags := cmd.Flags()
+
+		if len(args) != 2 {
+			return fmt.Errorf("Command 'registry add' takes two arguments, which is the name and the repository address of the registry to add")
+		}
+
+		name := args[0]
+		uri := args[1]
+
+		version, err := flags.GetString(flagRegistryVersion)
+		if err != nil {
+			return err
+		}
+
+		// TODO allow protocol to be specified by flag once there is greater
+		// support for other protocol types.
+		return kubecfg.NewRegistryAddCmd(name, "github", uri, version).Run()
+	},
+
+	Long: `
+The ` + "`add`" + ` command allows custom registries to be added to your ksonnet app.
+
+A registry is uniquely identified by its:
+
+1. Name
+2. Version
+
+Currently, only registries supporting the GitHub protocol can be added.
+
+All registries must specify a unique name and URI where the registry lives.
+Optionally, a version can be provided. If a version is not specified, it will
+default to  ` + "`latest`" + `.
+
+
+### Related Commands
+
+* ` + "`ks registry list` " + `— ` + regShortDesc["list"] + `
+
+### Syntax
+`,
+	Example: `# Add a registry with the name 'databases' at the uri 'github.com/example'
+ks registry add databases github.com/example
+
+# Add a registry with the name 'databases' at the uri 'github.com/example' and
+# the version 0.0.1
+ks registry add databases github.com/example --version=0.0.1`,
 }
