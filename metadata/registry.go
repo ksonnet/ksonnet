@@ -351,33 +351,31 @@ func (m *manager) getOrCacheRegistry(gh registry.Manager) (*registry.Spec, error
 	registrySpecFile := m.registryPath(gh)
 	registrySpec, exists, err := m.registrySpecFromFile(registrySpecFile)
 	if !exists {
-		return nil, fmt.Errorf("Registry '%s' does not exist", gh.MakeRegistryRefSpec().Name)
+		// If failed, use the protocol to try to retrieve app specification.
+		registrySpec, err = gh.FetchRegistrySpec()
+		if err != nil {
+			return nil, err
+		}
+
+		registrySpecBytes, err := registrySpec.Marshal()
+		if err != nil {
+			return nil, err
+		}
+
+		// NOTE: We call mkdir after getting the registry spec, since a
+		// network call might fail and leave this half-initialized empty
+		// directory.
+		registrySpecDir := appendToAbsPath(m.registriesPath, gh.RegistrySpecDir())
+		err = m.appFS.MkdirAll(string(registrySpecDir), defaultFolderPermissions)
+		if err != nil {
+			return nil, err
+		}
+
+		err = afero.WriteFile(m.appFS, string(registrySpecFile), registrySpecBytes, defaultFilePermissions)
+		if err != nil {
+			return nil, err
+		}
 	} else if err != nil {
-		return nil, err
-	}
-
-	// If failed, use the protocol to try to retrieve app specification.
-	registrySpec, err = gh.FetchRegistrySpec()
-	if err != nil {
-		return nil, err
-	}
-
-	registrySpecBytes, err := registrySpec.Marshal()
-	if err != nil {
-		return nil, err
-	}
-
-	// NOTE: We call mkdir after getting the registry spec, since a
-	// network call might fail and leave this half-initialized empty
-	// directory.
-	registrySpecDir := appendToAbsPath(m.registriesPath, gh.RegistrySpecDir())
-	err = m.appFS.MkdirAll(string(registrySpecDir), defaultFolderPermissions)
-	if err != nil {
-		return nil, err
-	}
-
-	err = afero.WriteFile(m.appFS, string(registrySpecFile), registrySpecBytes, defaultFilePermissions)
-	if err != nil {
 		return nil, err
 	}
 
