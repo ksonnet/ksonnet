@@ -26,6 +26,10 @@ const (
 	resolvedSHAField = "resolvedSHA"
 )
 
+var (
+	errInvalidURI = fmt.Errorf("Invalid GitHub URI: try navigating in GitHub to the URI of the folder containing the 'registry.yaml', and using that URI instead. Generally, this URI should be of the form 'github.com/{organization}/{repository}/tree/{branch}/[path-to-directory]'")
+)
+
 //
 // GitHub registry manager.
 //
@@ -275,6 +279,10 @@ func (gh *gitHubRegistryManager) registrySpecRawURL() string {
 	return strings.Join([]string{rawGitHubRoot, gh.org, gh.repo, gh.GitVersion.RefSpec, gh.registrySpecRepoPath}, "/")
 }
 
+//
+// Helper functions.
+//
+
 func parseGitHubURI(uri string) (org, repo, refSpec, regRepoPath, regSpecRepoPath string, err error) {
 	// Normalize URI.
 	uri = strings.TrimSpace(uri)
@@ -310,7 +318,7 @@ func parseGitHubURI(uri string) (org, repo, refSpec, regRepoPath, regSpecRepoPat
 	//   * URI points at a directory inside the respoitory, e.g.,
 	//     'http://github.com/ksonnet/parts/tree/master/incubator'
 	//   * URI points at an 'app.yaml', e.g.,
-	//     'http://github.com/ksonnet/parts/blob/master/app.yaml'
+	//     'http://github.com/ksonnet/parts/blob/master/registry.yaml'
 	//   * URI points at a repository root, e.g.,
 	//     'http://github.com/ksonnet/parts'
 	//
@@ -324,13 +332,13 @@ func parseGitHubURI(uri string) (org, repo, refSpec, regRepoPath, regSpecRepoPat
 
 		// See note above about first component being blank.
 		if components[3] == "tree" {
-			regRepoPath = strings.Join(components[5:], "/")
-
-			// If we have a trailing '/' character, last component will be
-			// blank.
+			// If we have a trailing '/' character, last component will be blank. Make
+			// sure that `regRepoPath` does not contain a trailing `/`.
 			if components[len-1] == "" {
+				regRepoPath = strings.Join(components[5:len-1], "/")
 				components[len-1] = registryYAMLFile
 			} else {
+				regRepoPath = strings.Join(components[5:], "/")
 				components = append(components, registryYAMLFile)
 			}
 			regSpecRepoPath = strings.Join(components[5:], "/")
@@ -341,7 +349,7 @@ func parseGitHubURI(uri string) (org, repo, refSpec, regRepoPath, regSpecRepoPat
 			regSpecRepoPath = strings.Join(components[5:], "/")
 			return
 		} else {
-			return "", "", "", "", "", fmt.Errorf("Invalid GitHub URI: try navigating in GitHub to the URI of the folder containing the 'app.yaml', and using that URI instead. Generally, this URI should be of the form 'github.com/{organization}/{repository}/tree/{branch}/[path-to-directory]'")
+			return "", "", "", "", "", errInvalidURI
 		}
 	} else {
 		refSpec = defaultGitHubBranch
