@@ -20,6 +20,11 @@ The following diagram shows how the ksonnet framework works holistically:
 
 ![ksonnet overview diagram](/docs/img/ksonnet_overview.svg)
 
+ksonnet's package management schema can be summed up as follows:
+
+*registry* > *package* > *prototype*<br>
+**Ex:** [`incubator` repo](https://github.com/ksonnet/parts/tree/master/incubator) > [Redis library](https://github.com/ksonnet/parts/tree/master/incubator/redis) > [`redis-stateless` prototype](https://github.com/ksonnet/parts/blob/master/incubator/redis/prototypes/redis-stateless.jsonnet)
+
 ---
 
 ### Application
@@ -94,7 +99,7 @@ Why is this useful? Prototypes allow you to avoid copying and pasting boilerplat
 
 ![prototype parameter component diagram](/docs/img/prototype_and_parameters.svg)
 
-Out of the box, ksonnet comes with some system prototypes (like `io.ksonnet.pkg.deployed-service`) that you can explore with the various [`ks prototype`](/docs/cli-reference/ks_prototype.md) commands. See [*package*](#package) for information on downloading or sharing additional prototypes.
+Out of the box, ksonnet comes with some system prototypes (like `io.ksonnet.pkg.deployed-service`) that you can explore with the various [`ks prototype`](/docs/cli-reference/ks_prototype.md) commands. See [*package*](#package) and [*registry*](#registry) for information on downloading or sharing additional prototypes.
 
 ---
 
@@ -183,11 +188,36 @@ You can take a look at the [nginx](https://github.com/ksonnet/parts/tree/master/
 
 ### Registry
 
-Registries are essentially repositories for *packages*. (We mean registry here in the same sense that there are registries for container images). Registries are identified by a `registry.yaml` in their root that declares a list of packages.
+Registries are essentially repositories for *packages*. (We mean registry here in the same sense as registries for container images). Registries are identified by a `registry.yaml` in their root that declares a list of packages.
 
-The ability to add new registries is under development. In the meantime, ksonnet allows you do download *packages* from the [`ksonnet/parts/incubator`](https://github.com/ksonnet/parts/tree/master/incubator) registry.
+You can use *default* or *custom* registries:
 
-Use the various [`ks registry`](/docs/cli-reference/ks_registry.md) commands to see what packages are available.
+* By **default**, ksonnet allows you do download *packages* from the [`ksonnet/parts/incubator`](https://github.com/ksonnet/parts/tree/master/incubator) registry.
+
+* You can set up your own **custom** registry with `ks registry add`, which accepts **any valid Github path**. *Note that this path needs to point a directory with the following structure:*
+
+  ```
+  .
+  ├── nginx                               // nginx package
+  │   ├── README.md
+  │   ├── nginx.libsonnet
+  │   ├── parts.yaml
+  │   └── prototypes
+  │       ├── nginx-server-block.jsonnet
+  │       ...
+  ├── redis                               // redis package
+  │   ├── README.md
+  │   ├── parts.yaml
+  │   ├── prototypes
+  │   │   ├── redis-all-features.jsonnet
+  │   │   ...
+  │   └── redis.libsonnet
+  └── registry.yaml                       // Lists all packages in the registry
+  ```
+  * For more details on the package schema, see the [*package* definition](#package).
+  * For hand-on references (e.g. for `registry.yaml` and `parts.yaml`), see the files in [`ksonnet/parts/incubator`](https://github.com/ksonnet/parts/tree/master/incubator).
+
+Use the various [`ks registry`](/docs/cli-reference/ks_registry.md) commands to list available registries, add new ones, and see what packages they contain.
 
 ---
 
