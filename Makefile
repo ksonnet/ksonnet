@@ -13,7 +13,8 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-VERSION = dev-$(shell date +%FT%T%z)
+VERSION?=dev-$(shell date +%FT%T%z)
+KS_BIN?=ks
 
 GO = go
 EXTRA_GO_FLAGS =
@@ -37,7 +38,7 @@ INTEGRATION_TEST_FIXTURES = ./fixtures
 all: ks docs
 
 ks:
-	$(GO) build -o ks $(GO_FLAGS) .
+	$(GO) build -o $(KS_BIN) $(GO_FLAGS) .
 
 docs:
 	$(DOC_GEN_FILE)
