@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -20,11 +21,26 @@ type ServerVersion struct {
 
 // ParseVersion parses version.Info into a ServerVersion struct
 func ParseVersion(v *version.Info) (ret ServerVersion, err error) {
-	ret.Major, err = strconv.Atoi(v.Major)
+	re := regexp.MustCompile("[0-9]+")
+
+	major := re.FindAllString(v.Major, 1)
+	if len(major) < 1 {
+		err = fmt.Errorf("Parse major version failed for %s", v.Major)
+		return
+	}
+
+	ret.Major, err = strconv.Atoi(major[0])
 	if err != nil {
 		return
 	}
-	ret.Minor, err = strconv.Atoi(v.Minor)
+
+	minor := re.FindAllString(v.Minor, 1)
+	if len(minor) < 1 {
+		err = fmt.Errorf("Parse minor version failed for %s", v.Minor)
+		return
+	}
+
+	ret.Minor, err = strconv.Atoi(minor[0])
 	if err != nil {
 		return
 	}
