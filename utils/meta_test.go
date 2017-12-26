@@ -26,7 +26,19 @@ func TestParseVersion(t *testing.T) {
 			expected: ServerVersion{Major: 1, Minor: 70},
 		},
 		{
-			input: version.Info{Major: "1", Minor: "6x"},
+			input:    version.Info{Major: "1", Minor: "6x"},
+			expected: ServerVersion{Major: 1, Minor: 6},
+		},
+		{
+			input:    version.Info{Major: "1", Minor: "6+custom7"},
+			expected: ServerVersion{Major: 1, Minor: 6},
+		},
+		{
+			input: version.Info{Major: "", Minor: "6"},
+			error: true,
+		},
+		{
+			input: version.Info{Major: "1", Minor: ""},
 			error: true,
 		},
 	}
