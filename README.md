@@ -161,7 +161,7 @@ Thanks for taking the time to join our community and start contributing!
 * Please familiarize yourself with the [Code of
 Conduct](CODE-OF-CONDUCT.md) before contributing.
 * Read the contribution guidelines in [CONTRIBUTING.md](CONTRIBUTING.md).
-* There is a [mailing list](https://groups.google.com/forum/#!forum/ksonnet) and [Slack channel](https://ksonnet.slack.com/) if you want to interact with
+* There is a [mailing list](https://groups.google.com/forum/#!forum/ksonnet) or the #ksonnet channel on [Slack](http://kubernetes.slack.com/messages/ksonnet) if you want to interact with
 other members of the community.
 
 #### Pull requests
