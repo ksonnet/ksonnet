@@ -149,10 +149,11 @@ func resolveContext(context string) (server, namespace string, err error) {
 
 	// use the default context where context is empty
 	if context == "" {
-		if rawConfig.CurrentContext == "" {
+		if rawConfig.CurrentContext == "" && len(rawConfig.Clusters) == 0 {
 			// User likely does not have a kubeconfig file.
 			return "", "", fmt.Errorf("No current context found. Make sure a kubeconfig file is present")
 		}
+		// Note: "" is a valid rawConfig.CurrentContext
 		context = rawConfig.CurrentContext
 	}
 
