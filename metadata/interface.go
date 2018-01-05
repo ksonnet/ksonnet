@@ -49,6 +49,7 @@ type Manager interface {
 
 	// Components API.
 	ComponentPaths() (AbsPaths, error)
+	GetAllComponents() ([]string, error)
 	CreateComponent(name string, text string, params param.Params, templateType prototype.TemplateType) error
 
 	// Params API.

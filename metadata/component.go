@@ -18,6 +18,7 @@ package metadata
 import (
 	"fmt"
 	"os"
+	"path"
 	"strings"
 
 	param "github.com/ksonnet/ksonnet/metadata/params"
@@ -28,13 +29,14 @@ import (
 
 func (m *manager) ComponentPaths() (AbsPaths, error) {
 	paths := AbsPaths{}
-	err := afero.Walk(m.appFS, string(m.componentsPath), func(path string, info os.FileInfo, err error) error {
+	err := afero.Walk(m.appFS, string(m.componentsPath), func(p string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if !info.IsDir() {
-			paths = append(paths, path)
+		// Only add file paths and exclude the params.libsonnet file
+		if !info.IsDir() && path.Base(p) != componentParamsFile {
+			paths = append(paths, p)
 		}
 		return nil
 	})
@@ -43,6 +45,21 @@ func (m *manager) ComponentPaths() (AbsPaths, error) {
 	}
 
 	return paths, nil
+}
+
+func (m *manager) GetAllComponents() ([]string, error) {
+	componentPaths, err := m.ComponentPaths()
+	if err != nil {
+		return nil, err
+	}
+
+	var components []string
+	for _, p := range componentPaths {
+		component := strings.TrimSuffix(path.Base(p), path.Ext(p))
+		components = append(components, component)
+	}
+
+	return components, nil
 }
 
 func (m *manager) CreateComponent(name string, text string, params param.Params, templateType prototype.TemplateType) error {

@@ -18,16 +18,24 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"testing"
 )
 
-func TestComponentPaths(t *testing.T) {
+const (
+	componentsPath  = "/componentsPath"
+	componentSubdir = "subdir"
+	componentFile1  = "component1.jsonnet"
+	componentFile2  = "component2.jsonnet"
+)
+
+func populateComponentPaths(t *testing.T) *manager {
 	spec, err := parseClusterSpec(fmt.Sprintf("file:%s", blankSwagger), testFS)
 	if err != nil {
 		t.Fatalf("Failed to parse cluster spec: %v", err)
 	}
 
-	appPath := AbsPath("/componentPaths")
+	appPath := AbsPath(componentsPath)
 	reg := newMockRegistryManager("incubator")
 	m, err := initManager("componentPaths", appPath, spec, &mockAPIServer, &mockNamespace, reg, testFS)
 	if err != nil {
@@ -36,7 +44,7 @@ func TestComponentPaths(t *testing.T) {
 
 	// Create empty app file.
 	components := appendToAbsPath(appPath, componentsDir)
-	appFile1 := appendToAbsPath(components, "component1.jsonnet")
+	appFile1 := appendToAbsPath(components, componentFile1)
 	f1, err := testFS.OpenFile(string(appFile1), os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {
 		t.Fatalf("Failed to touch app file '%s'\n%v", appFile1, err)
@@ -44,12 +52,12 @@ func TestComponentPaths(t *testing.T) {
 	f1.Close()
 
 	// Create empty file in a nested directory.
-	appSubdir := appendToAbsPath(components, "appSubdir")
+	appSubdir := appendToAbsPath(components, componentSubdir)
 	err = testFS.MkdirAll(string(appSubdir), os.ModePerm)
 	if err != nil {
 		t.Fatalf("Failed to create directory '%s'\n%v", appSubdir, err)
 	}
-	appFile2 := appendToAbsPath(appSubdir, "component2.jsonnet")
+	appFile2 := appendToAbsPath(appSubdir, componentFile2)
 	f2, err := testFS.OpenFile(string(appFile2), os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {
 		t.Fatalf("Failed to touch app file '%s'\n%v", appFile1, err)
@@ -63,6 +71,17 @@ func TestComponentPaths(t *testing.T) {
 		t.Fatalf("Failed to create directory '%s'\n%v", unlistedDir, err)
 	}
 
+	return m
+}
+
+func cleanComponentPaths(t *testing.T) {
+	testFS.RemoveAll(componentsPath)
+}
+
+func TestComponentPaths(t *testing.T) {
+	m := populateComponentPaths(t)
+	defer cleanComponentPaths(t)
+
 	paths, err := m.ComponentPaths()
 	if err != nil {
 		t.Fatalf("Failed to find component paths: %v", err)
@@ -70,7 +89,35 @@ func TestComponentPaths(t *testing.T) {
 
 	sort.Slice(paths, func(i, j int) bool { return paths[i] < paths[j] })
 
-	if len(paths) != 3 || paths[0] != string(appFile2) || paths[1] != string(appFile1) {
-		t.Fatalf("m.ComponentPaths failed; expected '%s', got '%s'", []string{string(appFile1), string(appFile2)}, paths)
+	expectedPath1 := fmt.Sprintf("%s/components/%s", componentsPath, componentFile1)
+	expectedPath2 := fmt.Sprintf("%s/components/%s/%s", componentsPath, componentSubdir, componentFile2)
+
+	if len(paths) != 2 || paths[0] != expectedPath1 || paths[1] != expectedPath2 {
+		t.Fatalf("m.ComponentPaths failed; expected '%s', got '%s'", []string{expectedPath1, expectedPath2}, paths)
+	}
+}
+
+func TestGetAllComponents(t *testing.T) {
+	m := populateComponentPaths(t)
+	defer cleanComponentPaths(t)
+
+	components, err := m.GetAllComponents()
+	if err != nil {
+		t.Fatalf("Failed to get all components, %v", err)
+	}
+
+	expected1 := strings.TrimSuffix(componentFile1, ".jsonnet")
+	expected2 := strings.TrimSuffix(componentFile2, ".jsonnet")
+
+	if len(components) != 2 {
+		t.Fatalf("Expected exactly 2 components, got %d", len(components))
+	}
+
+	if components[0] != expected1 {
+		t.Fatalf("Expected component %s, got %s", expected1, components)
+	}
+
+	if components[1] != expected2 {
+		t.Fatalf("Expected component %s, got %s", expected2, components)
 	}
 }
