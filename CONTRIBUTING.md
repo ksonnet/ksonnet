@@ -106,22 +106,4 @@ To do so, run `make test` in the root of the ksonnet repo, specifying any additi
 
 ## Make a Release
 
-To make a new release, follow these instructions:
-
-1. Set a release tag (based on [semvar](http://semver.org/)):
-  ```
-  VERSION=vX.Y.Z
-  ```
-2. Build a release binary (this will set the `ks` version to `$VERSION`):
-  ```
-  make install -e VERSION=$VERSION
-  ```
-3. Add an appropriate tag. We do this via `git` (not the github UI) so that the tag is signed.  This process requires you to have write access to the real `master` branch (not your local fork).
-  ```
-  git fetch   # update
-  git tag -s -m $VERSION $VERSION origin/master
-  git push origin tag $VERSION
-  ```
-
-4. *Now* create the Github release, using the existing tag created
-   above.
+See our [release documentation](docs/release.md) for the process of creating a release.

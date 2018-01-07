@@ -10,6 +10,7 @@
 _obj
 _test
 _output
+dist
 
 # Architecture specific extensions/prefixes
 *.[568vq]
