@@ -17,17 +17,14 @@ package metadata
 
 import (
 	"fmt"
-	"os"
 	"os/user"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/metadata/registry"
-	"github.com/ksonnet/ksonnet/prototype"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
@@ -198,58 +195,6 @@ func newManager(rootPath AbsPath, appFS afero.Fs) (*manager, error) {
 
 func (m *manager) Root() AbsPath {
 	return m.rootPath
-}
-
-func (m *manager) ComponentPaths() (AbsPaths, error) {
-	paths := AbsPaths{}
-	err := afero.Walk(m.appFS, string(m.componentsPath), func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if !info.IsDir() {
-			paths = append(paths, path)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return paths, nil
-}
-
-func (m *manager) CreateComponent(name string, text string, params param.Params, templateType prototype.TemplateType) error {
-	if !isValidName(name) || strings.Contains(name, "/") {
-		return fmt.Errorf("Component name '%s' is not valid; must not contain punctuation, spaces, or begin or end with a slash", name)
-	}
-
-	componentPath := string(appendToAbsPath(m.componentsPath, name))
-	switch templateType {
-	case prototype.YAML:
-		componentPath = componentPath + ".yaml"
-	case prototype.JSON:
-		componentPath = componentPath + ".json"
-	case prototype.Jsonnet:
-		componentPath = componentPath + ".jsonnet"
-	default:
-		return fmt.Errorf("Unrecognized prototype template type '%s'", templateType)
-	}
-
-	if exists, err := afero.Exists(m.appFS, componentPath); exists {
-		return fmt.Errorf("Component with name '%s' already exists", name)
-	} else if err != nil {
-		return fmt.Errorf("Could not check whether component '%s' exists:\n\n%v", name, err)
-	}
-
-	log.Infof("Writing component at '%s/%s'", componentsDir, name)
-	err := afero.WriteFile(m.appFS, componentPath, []byte(text), defaultFilePermissions)
-	if err != nil {
-		return err
-	}
-
-	log.Debugf("Writing component parameters at '%s/%s", componentsDir, name)
-	return m.writeComponentParams(name, params)
 }
 
 func (m *manager) LibPaths(envName string) (libPath, vendorPath, envLibPath, envComponentPath, envParamsPath AbsPath) {
