@@ -151,7 +151,7 @@ func (m *manager) CacheDependency(registryName, libID, libName, libVersion strin
 	}
 
 	if _, ok := appSpec.Libraries[libName]; ok {
-		return nil, fmt.Errorf("Library '%s' already exists", libName)
+		return nil, fmt.Errorf("Package '%s' already exists. Use the --name flag to install this package with a unique identifier", libName)
 	}
 
 	// Retrieve registry manager for this specific registry.
