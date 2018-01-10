@@ -51,7 +51,9 @@ const (
 
 	// ComponentsExtCodeKey is the ExtCode key for component imports
 	ComponentsExtCodeKey = "__ksonnet/components"
-	// ParamsExtCodeKey is the ExtCode key for importing environment parameters
+	// EnvExtCodeKey is the ExtCode key for importing environment metadata
+	EnvExtCodeKey = "__ksonnet/environments"
+	// ParamsExtCodeKey is the ExtCode key for importing component parameters
 	ParamsExtCodeKey = "__ksonnet/params"
 
 	// User-level ksonnet directories.
@@ -197,10 +199,23 @@ func (m *manager) Root() AbsPath {
 	return m.rootPath
 }
 
-func (m *manager) LibPaths(envName string) (libPath, vendorPath, envLibPath, envComponentPath, envParamsPath AbsPath) {
-	envPath := appendToAbsPath(m.environmentsPath, envName)
-	return m.libPath, m.vendorPath, appendToAbsPath(envPath, metadataDirName),
-		appendToAbsPath(envPath, envFileName), appendToAbsPath(envPath, componentParamsFile)
+func (m *manager) LibPaths() (libPath, vendorPath AbsPath) {
+	return m.libPath, m.vendorPath
+}
+
+func (m *manager) EnvPaths(env string) (metadataPath, mainPath, paramsPath, specPath AbsPath) {
+	envPath := appendToAbsPath(m.environmentsPath, env)
+
+	// .metadata directory
+	metadataPath = appendToAbsPath(envPath, metadataDirName)
+	// main.jsonnet file
+	mainPath = appendToAbsPath(envPath, envFileName)
+	// params.libsonnet file
+	paramsPath = appendToAbsPath(envPath, componentParamsFile)
+	// spec.json file
+	specPath = appendToAbsPath(envPath, specFilename)
+
+	return
 }
 
 func (m *manager) GetComponentParams(component string) (param.Params, error) {

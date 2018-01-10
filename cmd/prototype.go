@@ -449,7 +449,7 @@ expand prototypes into Jsonnet files.
        ks prototype use io.ksonnet.pkg.single-port-deployment nginx-depl \
          --image=nginx
 
-  If the optional ` + "`--name`"  + ` tag is not specified, all Kubernetes API resources
+  If the optional ` + "`--name`" + ` tag is not specified, all Kubernetes API resources
   declared by this prototype use this argument as their own ` + "`metadata.name`" + `
 
 3. Prototypes can be further customized by passing in **parameters** via additional
@@ -503,7 +503,10 @@ func expandPrototype(proto *prototype.SpecificationSchema, templateType prototyp
 		if !utils.IsASCIIIdentifier(componentName) {
 			componentsText = fmt.Sprintf(`components["%s"]`, componentName)
 		}
-		template = append([]string{`local params = std.extVar("` + metadata.ParamsExtCodeKey + `").` + componentsText + ";"}, template...)
+		template = append([]string{
+			`local env = std.extVar("` + metadata.EnvExtCodeKey + `");`,
+			`local params = std.extVar("` + metadata.ParamsExtCodeKey + `").` + componentsText + ";"},
+			template...)
 		return jsonnet.Parse(componentName, strings.Join(template, "\n"))
 	}
 

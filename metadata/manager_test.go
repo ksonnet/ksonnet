@@ -210,26 +210,38 @@ func TestLibPaths(t *testing.T) {
 	appName := "test-lib-paths"
 	expectedVendorPath := path.Join(appName, vendorDir)
 	expectedLibPath := path.Join(appName, libDir)
-	expectedEnvLibPath := path.Join(appName, environmentsDir, mockEnvName, metadataDirName)
-	expectedEnvComponentPath := path.Join(appName, environmentsDir, mockEnvName, envFileName)
-	expectedEnvParamsPath := path.Join(appName, environmentsDir, mockEnvName, paramsFileName)
 	m := mockEnvironments(t, appName)
 
-	libPath, vendorPath, envLibPath, envComponentPath, envParamsPath := m.LibPaths(mockEnvName)
+	libPath, vendorPath := m.LibPaths()
 	if string(libPath) != expectedLibPath {
 		t.Fatalf("Expected lib path to be:\n  '%s'\n, got:\n  '%s'", expectedLibPath, libPath)
 	}
 	if string(vendorPath) != expectedVendorPath {
 		t.Fatalf("Expected vendor lib path to be:\n  '%s'\n, got:\n  '%s'", expectedVendorPath, vendorPath)
 	}
-	if string(envLibPath) != expectedEnvLibPath {
-		t.Fatalf("Expected environment lib path to be:\n  '%s'\n, got:\n  '%s'", expectedEnvLibPath, envLibPath)
+}
+
+func TestEnvPaths(t *testing.T) {
+	appName := "test-env-paths"
+	expectedMetadataPath := path.Join(appName, environmentsDir, mockEnvName, metadataDirName)
+	expectedMainPath := path.Join(appName, environmentsDir, mockEnvName, envFileName)
+	expectedParamsPath := path.Join(appName, environmentsDir, mockEnvName, paramsFileName)
+	expectedSpecPath := path.Join(appName, environmentsDir, mockEnvName, specFilename)
+	m := mockEnvironments(t, appName)
+
+	metadataPath, mainPath, paramsPath, specPath := m.EnvPaths(mockEnvName)
+
+	if string(metadataPath) != expectedMetadataPath {
+		t.Fatalf("Expected environment metadata dir path to be:\n  '%s'\n, got:\n  '%s'", expectedMetadataPath, metadataPath)
 	}
-	if string(envComponentPath) != expectedEnvComponentPath {
-		t.Fatalf("Expected environment component path to be:\n  '%s'\n, got:\n  '%s'", expectedEnvComponentPath, envComponentPath)
+	if string(mainPath) != expectedMainPath {
+		t.Fatalf("Expected environment main path to be:\n  '%s'\n, got:\n  '%s'", expectedMainPath, mainPath)
 	}
-	if string(envParamsPath) != expectedEnvParamsPath {
-		t.Fatalf("Expected environment params path to be:\n  '%s'\n, got:\n  '%s'", expectedEnvParamsPath, envParamsPath)
+	if string(paramsPath) != expectedParamsPath {
+		t.Fatalf("Expected environment params path to be:\n  '%s'\n, got:\n  '%s'", expectedParamsPath, paramsPath)
+	}
+	if string(specPath) != expectedSpecPath {
+		t.Fatalf("Expected environment spec path to be:\n  '%s'\n, got:\n  '%s'", expectedSpecPath, specPath)
 	}
 }
 

@@ -17,6 +17,7 @@ package jsonnet
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 
@@ -27,6 +28,9 @@ import (
 const (
 	paramPrefix            = "param://"
 	paramReplacementPrefix = "params."
+
+	envPrefix            = "env://"
+	envReplacementPrefix = "env."
 )
 
 // Parse rewrites the imports in a Jsonnet file before returning the snippet.
@@ -52,14 +56,14 @@ func parse(fn string, jsonnet string) (string, error) {
 
 	var imports []ast.Import
 
-	// Gather all parameter imports
+	// Gather all parameter or environment imports
 	err = visit(root, &imports)
 	if err != nil {
 		return "", err
 	}
 
-	// Replace all parameter imports
-	return replace(jsonnet, imports), nil
+	// Replace all parameter or environment imports
+	return replace(jsonnet, imports)
 }
 
 // ---------------------------------------------------------------------------
@@ -67,11 +71,17 @@ func parse(fn string, jsonnet string) (string, error) {
 func visit(node ast.Node, imports *[]ast.Import) error {
 	switch n := node.(type) {
 	case *ast.Import:
-		// Add parameter-type imports to the list of replacements.
+		// Add parameter/environment type imports to the list of replacements.
 		if strings.HasPrefix(n.File.Value, paramPrefix) {
 			param := strings.TrimPrefix(n.File.Value, paramPrefix)
 			if len(param) < 1 {
-				return errors.New("There must be a parameter following import param://")
+				return fmt.Errorf("There must be a parameter following import %s", paramPrefix)
+			}
+			*imports = append(*imports, *n)
+		} else if strings.HasPrefix(n.File.Value, envPrefix) {
+			env := strings.TrimPrefix(n.File.Value, envPrefix)
+			if len(env) < 1 {
+				return fmt.Errorf("There must be a attribute following import %s", envPrefix)
 			}
 			*imports = append(*imports, *n)
 		}
@@ -297,8 +307,10 @@ func visitLocalBind(node ast.LocalBind, imports *[]ast.Import) error {
 // ---------------------------------------------------------------------------
 
 // replace converts all parameters in the passed Jsonnet of form
-// `import 'param://port'` into `params.port`.
-func replace(jsonnet string, imports []ast.Import) string {
+//
+//   1. `import 'param://port'` into `params.port`.
+//   2. `import 'env://namespace'` into `env.namespace`.
+func replace(jsonnet string, imports []ast.Import) (string, error) {
 	lines := strings.Split(jsonnet, "\n")
 
 	// Imports must be sorted by reverse location to avoid indexing problems
@@ -311,28 +323,35 @@ func replace(jsonnet string, imports []ast.Import) string {
 	})
 
 	for _, im := range imports {
-		param := paramReplacementPrefix + strings.TrimPrefix(im.File.Value, paramPrefix)
+		var replacement string
+		if strings.HasPrefix(im.File.Value, paramPrefix) {
+			replacement = paramReplacementPrefix + strings.TrimPrefix(im.File.Value, paramPrefix)
+		} else if strings.HasPrefix(im.File.Value, envPrefix) {
+			replacement = envReplacementPrefix + strings.TrimPrefix(im.File.Value, envPrefix)
+		} else {
+			return "", fmt.Errorf("Found unsupported import prefix in %s", im.File.Value)
+		}
 
 		lineStart := im.Loc().Begin.Line
 		lineEnd := im.Loc().End.Line
 		colStart := im.Loc().Begin.Column
 		colEnd := im.Loc().End.Column
 
-		// Case where import param is split over multiple strings.
+		// Case where import is split over multiple strings.
 		if lineEnd != lineStart {
 			// Replace all intermediate lines with the empty string.
 			for i := lineStart; i < lineEnd-1; i++ {
 				lines[i] = ""
 			}
-			// Remove import param related logic from the last line.
+			// Remove import related logic from the last line.
 			lines[lineEnd-1] = lines[lineEnd-1][colEnd:len(lines[lineEnd-1])]
-			// Perform replacement in the first line of import param occurance.
-			lines[lineStart-1] = lines[lineStart-1][:colStart-1] + param
+			// Perform replacement in the first line of import occurance.
+			lines[lineStart-1] = lines[lineStart-1][:colStart-1] + replacement
 		} else {
 			line := lines[lineStart-1]
-			lines[lineStart-1] = line[:colStart-1] + param + line[colEnd:len(line)]
+			lines[lineStart-1] = line[:colStart-1] + replacement + line[colEnd:len(line)]
 		}
 	}
 
-	return strings.Join(lines, "\n")
+	return strings.Join(lines, "\n"), nil
 }

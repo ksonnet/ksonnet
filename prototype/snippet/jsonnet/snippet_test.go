@@ -135,6 +135,32 @@ func TestParse(t *testing.T) {
 			`local f = f;
 			{ foo: f, }`,
 		},
+		// Test where there are multiple import types.
+		{
+			`
+			local k = import 'ksonnet.beta.2/k.libsonnet';
+			
+			local service = k.core.v1.service;
+			local servicePort = k.core.v1.service.mixin.spec.portsType;
+			local port = servicePort.new((import 'param://port'), (import 'param://portName'));
+			
+			local namespace = import 'env://namespace';
+			
+			local name = import 'param://name';
+			k.core.v1.service.new('%s-service' % [name], {app: name}, port)`,
+
+			`
+			local k = import 'ksonnet.beta.2/k.libsonnet';
+			
+			local service = k.core.v1.service;
+			local servicePort = k.core.v1.service.mixin.spec.portsType;
+			local port = servicePort.new((params.port), (params.portName));
+			
+			local namespace = env.namespace;
+			
+			local name = params.name;
+			k.core.v1.service.new('%s-service' % [name], {app: name}, port)`,
+		},
 	}
 
 	errors := []string{
