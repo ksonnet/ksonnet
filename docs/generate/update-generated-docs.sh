@@ -14,7 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-KSONNET_ROOT=$(realpath $(dirname ${BASH_SOURCE})/../..)
+KSONNET_ROOT=$(cd "$(dirname "$0")/../.."; pwd)
+
 BIN=${KSONNET_ROOT}/_output/bin
 mkdir -p ${BIN}
 go build -o ${BIN}/docs-gen ./docs/generate/ks.go
