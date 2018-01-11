@@ -4,9 +4,8 @@ Thank you for taking the time to contribute to ksonnet! Before you submit any PR
 
 * [Build](#build)
 * [Manage dependencies](#manage-dependencies)
-   * [Add a new dependency](#add-a-new-dependency)
-   * [Pin a dependency to a specific version](#pin-a-dependency-to-a-specific-version)
-   * [Clean up unnecessary dependencies](#clean-up-unnecessary-dependencies)
+  * [Add a new dependency](#add-a-new-dependency)
+  * [Pin a dependency to a specific version](#pin-a-dependency-to-a-specific-version)
 * [Test](#test)
 * [Make a release](#make-a-release)
 
@@ -15,26 +14,29 @@ Thank you for taking the time to contribute to ksonnet! Before you submit any PR
 > Ensure that you already have (1) a proper `$GOPATH` and (2) ksonnet installed. If not, follow [these README instructions](/README.md#install) to get set up.
 
 To build ksonnet locally (e.g. for open-source development), run the following in the root of your ksonnet repo (which is `$GOPATH/src/github.com/ksonnet/ksonnet` unless otherwise specified):
-```
+
+```sh
 make all
 ```
-This indirectly makes the following targets:
-  * `make ks` - Compiles all the code into a local `ks` binary
-  * `make docs` - Regenerates all the documentation for the ksonnet CLI, based on the code inside `cmd/`.
 
-*Troubleshooting*
+This indirectly makes the following targets:
+
+    * `make ks` - Compiles all the code into a local `ks` binary
+    * `make docs` - Regenerates all the documentation for the ksonnet CLI, based on the code inside `cmd/`.
+
+### Troubleshooting
 
 `make docs` relies on the `realpath` Linux utility. If you encounter a `realpath: command not found` error, and you are using OSX, run the following command:
-```
+
+```sh
 brew install coreutils
 ```
+
 Running `make` again afterwards should work.
 
 ## Manage dependencies
 
-This project uses [`govendor`](https://github.com/kardianos/govendor) to manage Go dependencies.
-
-
+This project uses [`dep`](https://github.com/golang/dep) to manage Go dependencies.
 
 To make things easier for reviewers, put updates to `vendor/` in a separate commit within the same PR.
 
@@ -44,58 +46,31 @@ To introduce a new dependency to the ksonnet codebase, follow these steps:
 
 1. [Open an issue](https://github.com/ksonnet/ksonnet/issues) to discuss the use case and need for the dependency with the project maintainers.
 
-2. After building agreement, vendor the dependency using `govendor`.
+1. After building agreement, vendor the dependency using `dep`.
     * Where possible, **please [pin the dependency](#pin-a-dependency-to-a-specific-version) to a specific stable version.** Please do not vendor HEAD if you can avoid it!
     * **Please introduce a vendored dependency in a dedicated commit to make review easier!**
 
-3. Write the code change that imports and uses the new dependency.
+1. Write the code change that imports and uses the new dependency.
 
-4. Run the following in the root of the ksonnet repo:
-    ```
-    # View missing dependencies
-    govendor list +missing
-
-    # Download missing dependencies into vendor/
-    govendor fetch -v +missing
+1. Run the following in the root of the ksonnet repository:
+    ```sh
+    # Add new dependency
+    dep ensure -add github.com/pkg/foo
     ```
 
-5. Consider [cleaning up unused dependencies](#clean-up-unnecessary-dependencies) while you're at it.
+1. Separate your dependencies (i.e. `vendor/`,  `Gopkg.*`) and actual code changes into different pull requests:
+    * Make a separate commit for your dependency changes, and [cherry-pick it](https://git-scm.com/docs/git-cherry-pick) it into a new branch. Submit a PR for review.
+    * After your dependency changes are checked in, rebase your original code change and submit that PR.
 
-6. Separate your `vendor/` and actual code changes into different pull requests:
-  * Make a separate commit for your `vendor/` changes, and [cherry-pick it](https://git-scm.com/docs/git-cherry-pick) it into a new branch. Submit a PR for review.
-  * After your `vendor/` changes are checked in, rebase your original code change and submit that PR.
-
-7. Feel awesome for making a sizeable contribution to ksonnet! :tada:
-
+1. Feel awesome for making a sizeable contribution to ksonnet! :tada:
 
 ### Pin a dependency to a specific version
 
 Pinning a dependency avoids the issue of breaking updates.
 
-We already do this for key libraries like `client-go` and `apimachinery`. To find the current version used for these particular packages, look in `vendor/vendor.json` for the `version` field (not `versionExact`).
-
-Use that same version in the commands below:
-
-```
-# Pin all imported client-go packages to release v3.0
-govendor fetch -v k8s.io/client-go/...@v3.0
-```
-
-*NOTE:* The command above may pull in new packages from `client-go`, which will
-be imported at HEAD.  You need to re-run the above command until *all* imports are at the desired version.
-
-If you make a mistake or miss some libraries, it is safe (and appropriate) to re-run `govendor fetch` with a different version.
-
-### Clean up unnecessary dependencies
-
-Before sending a non-trivial change for review, consider running the following command:
-
-```
-# See unused dependencies
-govendor list +unused
-
-# Remove unused dependencies
-govendor remove +unused
+```sh
+# Pin all imported client-go packages to release >= 3.0.0, < 3.1.0
+dep ensure -add k8s.io/client-go@~v3.0.0
 ```
 
 ## Test
