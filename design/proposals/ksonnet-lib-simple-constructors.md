@@ -48,12 +48,18 @@ Many of the existing constructors adhere to this format. This change would make 
 
 To deprecate the existing the existing custom constructors a new constructor will be introduced, `init()`. Currently, to construct a v1beta2 Deployment, you have to do the following:
 
-```jsonnet
-local params = ...;
+```js
+local params = {
+  name: "appName",
+  replicas: 3,
+  containerPort: 80,
+  image: "nginx:latest",
+  labels: {app: "customName"},
+};
+
 local deployment = k.apps.v1beta2.deployment;
 local container = k.apps.v1beta2.deployment.mixin.spec.template.spec.containersType;
 local containerPort = container.portsType;
-local labels = {app: params.name};
 local targetPort = params.containerPort;
 
 local appDeployment = deployment
@@ -63,7 +69,7 @@ local appDeployment = deployment
     container
       .new(params.name, params.image)
       .withPorts(containerPort.new(targetPort)),
-    labels
+    params.labels
 );
 ```
 
@@ -74,35 +80,71 @@ This snippet illustrates a few issues:
 
 Instead of the custom constructor, instead you can construct using init using the following:
 
-```jsonnet
-local params = ...;
-local deployment = k.apps.v1beta2.deployment;
-local containersType = k.apps.v1beta2.deployment.mixin.spec.template.spec.containersType;
-local containerPort = container.portsType;
-local labels = {app: params.name};
-local targetPort = params.containerPort;
+```js
+local params = {
+  name: "appName",
+  replicas: 3,
+  containerPort: 80,
+  image: "nginx:latest",
+  labels: {app: "customName"},
+};
 
-local port = containerPort
-  .init()
-  .withContainerPort(targetPort)
+// defining the deployment version as a variable means you potentially have the ability to
+// set versions in params. It also means a single prototype can support multiple versions of a
+// resource.
+local deploymentVersion = "v1beta1";
 
-local container = containersType
-  .init()
-  .withName(params.name)
-  .withImage(params.image)
-  .withPorts(port)
+// container creates a container object
+local container = function(version, name, image, containerPort)
+  // create a local variable with our resource
+  local deployment = k.apps[deploymentVersion].deployment;
 
-local appDeployment = deployment
-  .init()
-  .mixin.metadata.withName(params.name)
-  .mixin.spec.withReplicas(params.replicas)
-  .mixin.spec.template.spec.withContainers(containers)
-  .mixin.spec.template.metadata.withLabels(labels);
+  local containersType = deployment.mixin.spec.template.spec.containersType;
+  local portsType = containersType.portsType;
+
+  local port = portsType.withContainerPort(containerPort);
+
+  containersType
+    .withName(name)
+    .withImage(image)
+    .withPorts(port);
+
+// createDeployment is our function for creating a deployment
+local createDeployment = function(version, name, containers, podLabels={}, replicas=1)
+  // create a local variable with our resource
+  local deployment = k.apps[deploymentVersion].deployment;
+
+  local labels = {app: name} + podLabels;
+  local metadata = deployment.mixin.metadata.withName(name);
+  local spec = deployment.mixin.spec.withReplicas(replicas);
+  local templateSpec = spec.template.spec.withContainers(containers);
+  local templateMetadata = spec.template.metadata.withLabels(labels);
+
+  deployment
+    .init()
+    + metadata
+    + spec
+    + templateSpec
+    + templateMetadata;
+
+
+local containers = [
+  container(deploymentVersion, params.name, params.image, params.containerPort),
+];
+
+// The createDeployment function allows authors to generate the objects they would like rather
+// than being confined to what is generated in ksonnet-lib.
+local appDeployment = createDeployment(
+  deploymentVersion,
+  params.name,
+  containers,
+  podLabels=params.labels,
+  replicas=2);
 ```
 
 ### Backwards compatibility
 
-This change will not immediately impact any of the current usages of `ksonnet-lib`. To begin, the inclusion of `init()` constructors will be the only change. Only after a period of time (at most two releases of ksonnet) will existing constructors be removed.
+This change will not immediately affect any of the current usages of `ksonnet-lib`. To begin, the inclusion of `init()` constructors in resources will be the only change. Only after a period of time (at most two releases of ksonnet) will existing constructors be removed.
 
 ## Alternatives considered
 
