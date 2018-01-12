@@ -399,8 +399,10 @@ func expandEnvCmdObjs(cmd *cobra.Command, env string, components []string, cwd m
 		return nil, err
 	}
 
-	libPath, vendorPath, envLibPath, envComponentPath, envParamsPath := manager.LibPaths(env)
-	expander.FlagJpath = append([]string{string(libPath), string(vendorPath), string(envLibPath)}, expander.FlagJpath...)
+	libPath, vendorPath := manager.LibPaths()
+	metadataPath, mainPath, paramsPath, specPath := manager.EnvPaths(env)
+
+	expander.FlagJpath = append([]string{string(libPath), string(vendorPath), string(metadataPath)}, expander.FlagJpath...)
 
 	componentPaths, err := manager.ComponentPaths()
 	if err != nil {
@@ -411,14 +413,20 @@ func expandEnvCmdObjs(cmd *cobra.Command, env string, components []string, cwd m
 	if err != nil {
 		return nil, err
 	}
-	params := importParams(string(envParamsPath))
-	expander.ExtCodes = append([]string{baseObj, params}, expander.ExtCodes...)
+
+	//
+	// Set up ExtCodes to resolve runtime variables such as the environment namespace.
+	//
+
+	params := importParams(string(paramsPath))
+	spec := importEnv(string(specPath))
+	expander.ExtCodes = append([]string{baseObj, params, spec}, expander.ExtCodes...)
 
 	//
 	// Expand the ksonnet app as rendered for environment `env`.
 	//
 
-	return expander.Expand([]string{string(envComponentPath)})
+	return expander.Expand([]string{string(mainPath)})
 }
 
 // constructBaseObj constructs the base Jsonnet object that represents k-v
@@ -501,4 +509,8 @@ func constructBaseObj(componentPaths, componentNames []string) (string, error) {
 
 func importParams(path string) string {
 	return fmt.Sprintf(`%s=import "%s"`, metadata.ParamsExtCodeKey, path)
+}
+
+func importEnv(path string) string {
+	return fmt.Sprintf(`%s=import "%s"`, metadata.EnvExtCodeKey, path)
 }
