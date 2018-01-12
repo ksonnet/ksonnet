@@ -16,9 +16,11 @@
 VERSION?=dev-$(shell date +%FT%T%z)
 KS_BIN?=ks
 
+APIMACHINERY_VER := $(shell dep status | grep k8s.io/apimachinery | awk '{print $$3}')
+
 GO = go
 EXTRA_GO_FLAGS =
-GO_FLAGS = -ldflags="-X main.version=$(VERSION) $(GO_LDFLAGS)" $(EXTRA_GO_FLAGS)
+GO_FLAGS = -ldflags="-X main.version=$(VERSION) -X main.apimachineryVersion=$(APIMACHINERY_VER) $(GO_LDFLAGS)" $(EXTRA_GO_FLAGS)
 GOFMT = gofmt
 # GINKGO = "go test" also works if you want to avoid ginkgo tool
 GINKGO = ginkgo

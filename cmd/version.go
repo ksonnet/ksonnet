@@ -30,14 +30,22 @@ func init() {
 // Version is overridden by main
 var Version = "(dev build)"
 
+var APImachineryVersion = ""
+
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version information for this ksonnet binary",
 	Run: func(cmd *cobra.Command, args []string) {
 		out := cmd.OutOrStdout()
+
+		clientGoVersion := fmt.Sprintf("%s.%s", version.Get().Major, version.Get().Minor)
+		if APImachineryVersion != "" {
+			clientGoVersion += fmt.Sprintf("-%s", APImachineryVersion)
+		}
+
 		fmt.Fprintln(out, "ksonnet version:", Version)
 		fmt.Fprintln(out, "jsonnet version:", jsonnet.Version())
-		fmt.Fprintln(out, "client-go version:", version.Get())
+		fmt.Fprintln(out, "client-go version:", clientGoVersion)
 	},
 	Long: `
 The ` + "`version`" + ` command prints out version info about the current ksonnet CLI,

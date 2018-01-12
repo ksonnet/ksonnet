@@ -26,9 +26,11 @@ import (
 
 // Version is overridden using `-X main.version` during release builds
 var version = "(dev build)"
+var apimachineryVersion = ""
 
 func main() {
 	cmd.Version = version
+	cmd.APImachineryVersion = apimachineryVersion
 
 	if err := cmd.RootCmd.Execute(); err != nil {
 		// PersistentPreRunE may not have been run for early
