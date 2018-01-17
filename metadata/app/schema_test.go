@@ -18,6 +18,8 @@ package app
 import (
 	"fmt"
 	"testing"
+
+	"github.com/blang/semver"
 )
 
 func makeSimpleRefSpec(name, protocol, uri, version string) *RegistryRefSpec {
@@ -29,6 +31,48 @@ func makeSimpleRefSpec(name, protocol, uri, version string) *RegistryRefSpec {
 			RefSpec:   version,
 			CommitSHA: version,
 		},
+	}
+}
+
+func TestApiVersionValidate(t *testing.T) {
+	type spec struct {
+		spec string
+		err  bool
+	}
+	tests := []spec{
+		// Versions that we accept.
+		{spec: "0.0.1", err: false},
+		{spec: "0.0.1+build.1", err: false},
+
+		// Other versions.
+		{spec: "0.0.0", err: true},
+		{spec: "0.1.0", err: true},
+		{spec: "1.0.0", err: true},
+
+		// Builds and pre-releases of current version.
+		{spec: "0.0.1-alpha", err: true},
+		{spec: "0.0.1-beta+build.2", err: true},
+
+		// Other versions.
+		{spec: "0.1.0-alpha", err: true},
+		{spec: "0.1.0+build.1", err: true},
+		{spec: "0.1.0-beta+build.2", err: true},
+		{spec: "1.0.0-alpha", err: true},
+		{spec: "1.0.0+build.1", err: true},
+		{spec: "1.0.0-beta+build.2", err: true},
+	}
+
+	for _, test := range tests {
+		_, err := semver.Make(test.spec)
+		if err != nil {
+			t.Errorf("Failed to parse version '%s':\n%v", test.spec, err)
+		}
+
+		spec := &Spec{APIVersion: test.spec}
+		err = spec.validate()
+		if (test.err && err == nil) || (!test.err && err != nil) {
+			t.Errorf("Expected error for version '%s'? %t. Value of error: '%v'", test.spec, test.err, err)
+		}
 	}
 }
 

@@ -18,7 +18,9 @@ package app
 import (
 	"fmt"
 
+	"github.com/blang/semver"
 	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -46,6 +48,20 @@ type Spec struct {
 	License      string           `json:"license,omitempty"`
 }
 
+func Unmarshal(bytes []byte) (*Spec, error) {
+	schema := Spec{}
+	err := yaml.Unmarshal(bytes, &schema)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = schema.validate(); err != nil {
+		return nil, err
+	}
+
+	return &schema, nil
+}
+
 func (s *Spec) Marshal() ([]byte, error) {
 	return yaml.Marshal(s)
 }
@@ -71,6 +87,21 @@ func (s *Spec) AddRegistryRef(registryRefSpec *RegistryRefSpec) error {
 	}
 
 	s.Registries[registryRefSpec.Name] = registryRefSpec
+	return nil
+}
+
+func (s *Spec) validate() error {
+	compatVer, _ := semver.Make(DefaultAPIVersion)
+	ver, err := semver.Make(s.APIVersion)
+	if err != nil {
+		return errors.Wrap(err, "Failed to parse version in app spec")
+	} else if compatVer.Compare(ver) != 0 {
+		return fmt.Errorf(
+			"Current app uses unsupported spec version '%s' (this client only supports %s)",
+			s.APIVersion,
+			DefaultAPIVersion)
+	}
+
 	return nil
 }
 
