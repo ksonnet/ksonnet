@@ -58,6 +58,12 @@ To introduce a new dependency to the ksonnet codebase, follow these steps:
     dep ensure -add github.com/pkg/foo
     ```
 
+1. Prune unused dependencies in `vendor```
+    ```sh
+    # Prune
+    dep prune
+    ```
+
 1. Separate your dependencies (i.e. `vendor/`,  `Gopkg.*`) and actual code changes into different pull requests:
     * Make a separate commit for your dependency changes, and [cherry-pick it](https://git-scm.com/docs/git-cherry-pick) it into a new branch. Submit a PR for review.
     * After your dependency changes are checked in, rebase your original code change and submit that PR.
