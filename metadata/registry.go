@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ghodss/yaml"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/metadata/parts"
 	"github.com/ksonnet/ksonnet/metadata/registry"
@@ -125,8 +124,7 @@ func (m *manager) GetDependency(libName string) (*parts.Spec, error) {
 		return nil, err
 	}
 
-	var partsSpec parts.Spec
-	err = yaml.Unmarshal(partsBytes, &partsSpec)
+	partsSpec, err := parts.Unmarshal(partsBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +138,7 @@ func (m *manager) GetDependency(libName string) (*parts.Spec, error) {
 		partsSpec.Prototypes = append(partsSpec.Prototypes, protoSpec.Name)
 	}
 
-	return &partsSpec, nil
+	return partsSpec, nil
 }
 
 func (m *manager) CacheDependency(registryName, libID, libName, libVersion string) (*parts.Spec, error) {
@@ -335,12 +333,11 @@ func (m *manager) registrySpecFromFile(path AbsPath) (*registry.Spec, bool, erro
 			return nil, false, err
 		}
 
-		registrySpec := registry.Spec{}
-		err = yaml.Unmarshal(registrySpecBytes, &registrySpec)
+		registrySpec, err := registry.Unmarshal(registrySpecBytes)
 		if err != nil {
 			return nil, false, err
 		}
-		return &registrySpec, true, nil
+		return registrySpec, true, nil
 	}
 
 	return nil, false, nil

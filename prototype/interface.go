@@ -11,6 +11,10 @@ func Unmarshal(bytes []byte) (*SpecificationSchema, error) {
 		return nil, err
 	}
 
+	if err = p.validate(); err != nil {
+		return nil, err
+	}
+
 	return &p, nil
 }
 

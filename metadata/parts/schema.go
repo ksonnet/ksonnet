@@ -16,11 +16,15 @@
 package parts
 
 import (
+	"fmt"
+
+	"github.com/blang/semver"
 	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
 )
 
 const (
-	DefaultApiVersion = "0.1"
+	DefaultAPIVersion = "0.0.1"
 	DefaultKind       = "ksonnet.io/parts"
 )
 
@@ -41,8 +45,38 @@ type Spec struct {
 	License      string            `json:"license"`
 }
 
+func Unmarshal(bytes []byte) (*Spec, error) {
+	schema := Spec{}
+	err := yaml.Unmarshal(bytes, &schema)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = schema.validate(); err != nil {
+		return nil, err
+	}
+
+	return &schema, nil
+}
+
 func (s *Spec) Marshal() ([]byte, error) {
 	return yaml.Marshal(s)
+}
+
+func (s *Spec) validate() error {
+	compatVer, _ := semver.Make(DefaultAPIVersion)
+	ver, err := semver.Make(s.APIVersion)
+	if err != nil {
+		return errors.Wrap(err, "Failed to parse version in app spec")
+	} else if compatVer.Compare(ver) != 0 {
+		return fmt.Errorf(
+			"Library '%s' uses unsupported spec version '%s' (this client only supports %s)",
+			s.Name,
+			s.APIVersion,
+			DefaultAPIVersion)
+	}
+
+	return nil
 }
 
 type ContributorSpec struct {

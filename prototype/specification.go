@@ -7,7 +7,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/ksonnet/ksonnet/utils"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,6 +20,8 @@ import (
 //
 
 const (
+	DefaultAPIVersion = "0.0.1"
+
 	apiVersionTag       = "@apiVersion"
 	nameTag             = "@name"
 	descriptionTag      = "@description"
@@ -133,6 +137,21 @@ type SpecificationSchema struct {
 	Name     string        `json:"name"`
 	Params   ParamSchemas  `json:"params"`
 	Template SnippetSchema `json:"template"`
+}
+
+func (s *SpecificationSchema) validate() error {
+	compatVer, _ := semver.Make(DefaultAPIVersion)
+	ver, err := semver.Make(s.APIVersion)
+	if err != nil {
+		return errors.Wrap(err, "Failed to parse version in app spec")
+	} else if compatVer.Compare(ver) != 0 {
+		return fmt.Errorf(
+			"Current app uses unsupported spec version '%s' (this client only supports %s)",
+			s.APIVersion,
+			DefaultAPIVersion)
+	}
+
+	return nil
 }
 
 // SpecificationSchemas is a slice of pointer to `SpecificationSchema`.

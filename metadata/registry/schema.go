@@ -16,12 +16,16 @@
 package registry
 
 import (
+	"fmt"
+
+	"github.com/blang/semver"
 	"github.com/ghodss/yaml"
 	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/pkg/errors"
 )
 
 const (
-	DefaultApiVersion = "0.1"
+	DefaultAPIVersion = "0.1.0"
 	DefaultKind       = "ksonnet.io/registry"
 )
 
@@ -32,8 +36,43 @@ type Spec struct {
 	Libraries  LibraryRefSpecs     `json:"libraries"`
 }
 
+func Unmarshal(bytes []byte) (*Spec, error) {
+	schema := Spec{}
+	err := yaml.Unmarshal(bytes, &schema)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = schema.validate(); err != nil {
+		return nil, err
+	}
+
+	return &schema, nil
+}
+
 func (s *Spec) Marshal() ([]byte, error) {
 	return yaml.Marshal(s)
+}
+
+func (s *Spec) validate() error {
+	// Originally, the default value for `apiVersion` was `0.1`. This is not a
+	// valid semver, so before we do anything, we need to convert it to one.
+	if s.APIVersion == "0.1" {
+		s.APIVersion = "0.1.0"
+	}
+
+	compatVer, _ := semver.Make(DefaultAPIVersion)
+	ver, err := semver.Make(s.APIVersion)
+	if err != nil {
+		return errors.Wrap(err, "Failed to parse version in app spec")
+	} else if compatVer.Compare(ver) != 0 {
+		return fmt.Errorf(
+			"Registry uses unsupported spec version '%s' (this client only supports %s)",
+			s.APIVersion,
+			DefaultAPIVersion)
+	}
+
+	return nil
 }
 
 type Specs []*Spec

@@ -19,6 +19,12 @@
   revision = "de5bf2ad457846296e2031421a34e2568e304e35"
 
 [[projects]]
+  name = "github.com/blang/semver"
+  packages = ["."]
+  revision = "2ee87856327ba09384cabd113bc6b5d174e9ec0f"
+  version = "v3.5.1"
+
+[[projects]]
   branch = "master"
   name = "github.com/coreos/go-oidc"
   packages = ["http","jose","key","oauth2","oidc"]
@@ -191,6 +197,12 @@
   revision = "c893efa28eb45626cdaa76c9f653b62488858837"
 
 [[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
+
+[[projects]]
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
@@ -308,6 +320,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2f5502fca55733d8c203bf207585b521c711c338786b30e50b9350b1f8b35803"
+  inputs-digest = "25b990527e2ff34920ed56364da9df74136a7534a2f306073d16d5902fc87553"
   solver-name = "gps-cdcl"
   solver-version = 1

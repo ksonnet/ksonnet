@@ -188,7 +188,7 @@ func (m *mockRegistryManager) RegistrySpecFilePath() string {
 
 func (m *mockRegistryManager) FetchRegistrySpec() (*registry.Spec, error) {
 	registrySpec := registry.Spec{
-		APIVersion: registry.DefaultApiVersion,
+		APIVersion: registry.DefaultAPIVersion,
 		Kind:       registry.DefaultKind,
 	}
 

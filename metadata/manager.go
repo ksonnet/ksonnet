@@ -21,7 +21,6 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/ghodss/yaml"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/metadata/registry"
@@ -258,8 +257,7 @@ func (m *manager) AppSpec() (*app.Spec, error) {
 		return nil, err
 	}
 
-	schema := app.Spec{}
-	err = yaml.Unmarshal(bytes, &schema)
+	schema, err := app.Unmarshal(bytes)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +274,7 @@ func (m *manager) AppSpec() (*app.Spec, error) {
 		schema.Libraries = app.LibraryRefSpecs{}
 	}
 
-	return &schema, nil
+	return schema, nil
 }
 
 func (m *manager) createUserDirTree() error {

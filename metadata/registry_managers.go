@@ -9,7 +9,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/ghodss/yaml"
 	"github.com/google/go-github/github"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/metadata/parts"
@@ -120,8 +119,7 @@ func (gh *gitHubRegistryManager) FetchRegistrySpec() (*registry.Spec, error) {
 	}
 
 	// Deserialize, return.
-	registrySpec := registry.Spec{}
-	err = yaml.Unmarshal([]byte(registrySpecText), &registrySpec)
+	registrySpec, err := registry.Unmarshal([]byte(registrySpecText))
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +129,7 @@ func (gh *gitHubRegistryManager) FetchRegistrySpec() (*registry.Spec, error) {
 		CommitSHA: gh.GitVersion.CommitSHA,
 	}
 
-	return &registrySpec, nil
+	return registrySpec, nil
 }
 
 func (gh *gitHubRegistryManager) MakeRegistryRefSpec() *app.RegistryRefSpec {
@@ -164,13 +162,12 @@ func (gh *gitHubRegistryManager) ResolveLibrarySpec(libID, libRefSpec string) (*
 		return nil, err
 	}
 
-	parts := parts.Spec{}
-	err = yaml.Unmarshal([]byte(partsSpecText), &parts)
+	parts, err := parts.Unmarshal([]byte(partsSpecText))
 	if err != nil {
 		return nil, err
 	}
 
-	return &parts, nil
+	return parts, nil
 }
 
 func (gh *gitHubRegistryManager) ResolveLibrary(libID, libAlias, libRefSpec string, onFile registry.ResolveFile, onDir registry.ResolveDirectory) (*parts.Spec, *app.LibraryRefSpec, error) {
@@ -213,8 +210,7 @@ func (gh *gitHubRegistryManager) ResolveLibrary(libID, libAlias, libRefSpec stri
 		return nil, nil, err
 	}
 
-	parts := parts.Spec{}
-	err = yaml.Unmarshal([]byte(partsSpecText), &parts)
+	parts, err := parts.Unmarshal([]byte(partsSpecText))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -228,7 +224,7 @@ func (gh *gitHubRegistryManager) ResolveLibrary(libID, libAlias, libRefSpec stri
 		},
 	}
 
-	return &parts, &refSpec, nil
+	return parts, &refSpec, nil
 }
 
 func (gh *gitHubRegistryManager) resolveDir(client *github.Client, libID, path, version string, onFile registry.ResolveFile, onDir registry.ResolveDirectory) error {
