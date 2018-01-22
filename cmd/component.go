@@ -28,6 +28,9 @@ func init() {
 	RootCmd.AddCommand(componentCmd)
 
 	componentCmd.AddCommand(componentListCmd)
+	componentCmd.AddCommand(componentRmCmd)
+
+	componentRmCmd.PersistentFlags().String(flagComponent, "", "The component to be removed from components/")
 }
 
 var componentCmd = &cobra.Command{
@@ -61,4 +64,26 @@ The ` + "`list`" + ` command displays all known components.
 	Example: `
 # List all components
 ks component list`,
+}
+
+var componentRmCmd = &cobra.Command{
+	Use:   "rm <component-name>",
+	Short: "Delete a component from the ksonnet application",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("'component rm' takes a single argument, that is the name of the component")
+		}
+
+		component := args[0]
+
+		c := kubecfg.NewComponentRmCmd(component)
+		return c.Run()
+	},
+	Long: `Delete a component from the ksonnet application. This is equivalent to deleting the
+component file in the components directory and cleaning up all component
+references throughout the project.`,
+	Example: `# Remove the component 'guestbook'. This is equivalent to deleting guestbook.jsonnet
+# in the components directory, and cleaning up references to the component
+# throughout the ksonnet application.
+ks component rm guestbook`,
 }

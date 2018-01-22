@@ -242,6 +242,209 @@ local bar = import "bar";
 	}
 }
 
+func TestDeleteComponent(t *testing.T) {
+	tests := []struct {
+		componentName string
+		jsonnet       string
+		expected      string
+	}{
+		// Test case with existing component
+		{
+			"bar",
+			`
+{
+  components: {
+    foo: {
+      name: "foo",
+      replicas: 1,
+    },
+    bar: {
+      name: "bar",
+    },
+  },
+}`,
+			`
+{
+  components: {
+    foo: {
+      name: "foo",
+      replicas: 1,
+    },
+  },
+}`,
+		},
+		// Test another case with existing component
+		{
+			"bar",
+			`
+{
+  components: {
+    bar: {
+      name: "bar",
+    },
+  },
+}`,
+			`
+{
+  components: {
+  },
+}`,
+		},
+		// Test case where component doesn't exist
+		{
+			"bar",
+			`
+{
+  components: {
+    foo: {
+      name: "foo",
+      replicas: 1,
+    },
+  },
+}`,
+			`
+{
+  components: {
+    foo: {
+      name: "foo",
+      replicas: 1,
+    },
+  },
+}`,
+		},
+	}
+
+	for _, s := range tests {
+		parsed, err := DeleteComponent(s.componentName, s.jsonnet)
+		if err != nil {
+			t.Errorf("Unexpected error\n  input: %v\n  error: %v", s.jsonnet, err)
+		}
+
+		if parsed != s.expected {
+			t.Errorf("Wrong conversion\n  expected: %v\n  got: %v", s.expected, parsed)
+		}
+	}
+}
+
+func TestDeleteEnvironmentComponent(t *testing.T) {
+	tests := []struct {
+		componentName string
+		jsonnet       string
+		expected      string
+	}{
+		// Test case with existing component
+		{
+			"bar",
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+    bar +: {
+      name: "bar",
+      "replica-count": 1,
+    },
+    foo +: {
+      name: "foo",
+    },
+  },
+}`,
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+    foo +: {
+      name: "foo",
+    },
+  },
+}`,
+		},
+		// Test another case with existing component
+		{
+			"foo",
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+    bar +: {
+      name: "bar",
+      "replica-count": 1,
+    },
+    foo +: {
+      name: "foo",
+    },
+  },
+}`,
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+    bar +: {
+      name: "bar",
+      "replica-count": 1,
+    },
+  },
+}`,
+		},
+		// Test case where component doesn't exist
+		{
+			"baz",
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+    bar +: {
+      name: "bar",
+      "replica-count": 1,
+    },
+    foo +: {
+      name: "foo",
+    },
+  },
+}`,
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+    bar +: {
+      name: "bar",
+      "replica-count": 1,
+    },
+    foo +: {
+      name: "foo",
+    },
+  },
+}`,
+		},
+		// Test case where there are no components
+		{
+			"baz",
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+  },
+}`,
+			`
+local params = import "/fake/path";
+params + {
+  components +: {
+  },
+}`,
+		},
+	}
+
+	for _, s := range tests {
+		parsed, err := DeleteEnvironmentComponent(s.componentName, s.jsonnet)
+		if err != nil {
+			t.Errorf("Unexpected error\n  input: %v\n  error: %v", s.jsonnet, err)
+		}
+
+		if parsed != s.expected {
+			t.Errorf("Wrong conversion\n  expected: %v\n  got: %v", s.expected, parsed)
+		}
+	}
+}
+
 func TestGetComponentParams(t *testing.T) {
 	tests := []struct {
 		componentName string

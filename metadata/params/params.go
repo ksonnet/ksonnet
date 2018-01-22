@@ -194,6 +194,33 @@ func writeParams(indent int, params Params) string {
 	return buffer.String()
 }
 
+func deleteComponent(component, snippet string) (string, error) {
+	componentsNode, err := componentsObj(component, snippet)
+	if err != nil {
+		return "", err
+	}
+
+	for _, field := range componentsNode.Fields {
+		hasComponent, err := hasComponent(component, field)
+		if err != nil {
+			return "", err
+		}
+		if hasComponent {
+			lines := strings.Split(snippet, "\n")
+
+			removeLineBegin := field.Expr2.Loc().Begin.Line - 1
+			removeLineEnd := field.Expr2.Loc().End.Line
+
+			lines = append(lines[:removeLineBegin], lines[removeLineEnd:]...)
+
+			return strings.Join(lines, "\n"), nil
+		}
+	}
+
+	// No component references, just return the original snippet.
+	return snippet, nil
+}
+
 // ---------------------------------------------------------------------------
 // Component Parameter-specific functionality
 

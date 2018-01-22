@@ -28,6 +28,16 @@ func AppendComponent(component, snippet string, params Params) (string, error) {
 	return appendComponent(component, snippet, params)
 }
 
+// DeleteComponent takes
+//
+//   component: the name of the component to be deleted.
+//   snippet: a jsonnet snippet resembling the current component parameters.
+//
+// and returns the jsonnet snippet with the removed component.
+func DeleteComponent(component, snippet string) (string, error) {
+	return deleteComponent(component, snippet)
+}
+
 // GetComponentParams takes
 //
 //  component: the name of the component to retrieve params for.
@@ -81,4 +91,17 @@ func GetAllEnvironmentParams(snippet string) (map[string]Params, error) {
 // and returns the jsonnet snippet with the modified set of environment parameters.
 func SetEnvironmentParams(component, snippet string, params Params) (string, error) {
 	return setEnvironmentParams(component, snippet, params)
+}
+
+// DeleteEnvironmentComponent takes
+//
+//   component: the name of the component to be deleted.
+//   snippet: a jsonnet snippet resembling the current environment parameters (not expanded).
+//
+// and returns the jsonnet snippet with the removed component.
+func DeleteEnvironmentComponent(component, snippet string) (string, error) {
+	// The implementation happens to be the same as DeleteComponent, but we're
+	// keeping the two interfaces separate since we're fundamentally operating
+	// on two different jsonnet schemas.
+	return deleteComponent(component, snippet)
 }
