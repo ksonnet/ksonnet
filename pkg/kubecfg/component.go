@@ -53,6 +53,27 @@ func (c *ComponentListCmd) Run(out io.Writer) error {
 	return err
 }
 
+// ComponentRmCmd stores the information necessary to remove a component from
+// the ksonnet application.
+type ComponentRmCmd struct {
+	component string
+}
+
+// NewComponentRmCmd acts as a constructor for ComponentRmCmd.
+func NewComponentRmCmd(component string) *ComponentRmCmd {
+	return &ComponentRmCmd{component: component}
+}
+
+// Run executes the removing of the component.
+func (c *ComponentRmCmd) Run() error {
+	manager, err := manager()
+	if err != nil {
+		return err
+	}
+
+	return manager.DeleteComponent(c.component)
+}
+
 func printComponents(out io.Writer, components []string) (string, error) {
 	rows := [][]string{
 		[]string{componentNameHeader},

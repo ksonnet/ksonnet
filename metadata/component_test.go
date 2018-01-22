@@ -17,6 +17,7 @@ package metadata
 import (
 	"fmt"
 	"os"
+	"path"
 	"sort"
 	"strings"
 	"testing"
@@ -119,5 +120,21 @@ func TestGetAllComponents(t *testing.T) {
 
 	if components[1] != expected2 {
 		t.Fatalf("Expected component %s, got %s", expected2, components)
+	}
+}
+
+func TestFindComponentPath(t *testing.T) {
+	m := populateComponentPaths(t)
+	defer cleanComponentPaths(t)
+
+	component := strings.TrimSuffix(componentFile1, path.Ext(componentFile1))
+	expected := fmt.Sprintf("%s/components/%s", componentsPath, componentFile1)
+	path, err := m.findComponentPath(component)
+	if err != nil {
+		t.Fatalf("Failed to find component path, %v", err)
+	}
+
+	if path != expected {
+		t.Fatalf("m.findComponentPath failed; expected '%s', got '%s'", expected, path)
 	}
 }

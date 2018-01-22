@@ -20,4 +20,5 @@ ks component
 ### SEE ALSO
 * [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 * [ks component list](ks_component_list.md)	 - List known components
+* [ks component rm](ks_component_rm.md)	 - Delete a component from the ksonnet application
 
