@@ -26,6 +26,7 @@ import (
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
@@ -216,7 +217,7 @@ func getLiveObjs(client *Client) ([]*unstructured.Unstructured, map[string]*unst
 			return nil, nil, err
 		}
 
-		liveObj, err := client.Get(obj.GetName())
+		liveObj, err := client.Get(obj.GetName(), metav1.GetOptions{})
 		if err != nil && errors.IsNotFound(err) {
 			log.Debugf("%s doesn't exist on the server", desc)
 			continue

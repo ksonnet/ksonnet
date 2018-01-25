@@ -84,7 +84,8 @@ ks init app-name --dir=custom-location
 ```
       --api-spec string                Manually specified Kubernetes API version. The corresponding OpenAPI spec is used to generate ksonnet's Kubernetes libraries (default "version:v1.7.0")
       --as string                      Username to impersonate for the operation
-      --certificate-authority string   Path to a cert. file for the certificate authority
+      --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
+      --certificate-authority string   Path to a cert file for the certificate authority
       --client-certificate string      Path to a client certificate file for TLS
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
