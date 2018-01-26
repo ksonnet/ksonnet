@@ -83,7 +83,7 @@ func (c ApplyCmd) Run(apiObjects []*unstructured.Unstructured, wd metadata.AbsPa
 			newobj, err = rc.Patch(obj.GetName(), types.MergePatchType, asPatch)
 			log.Debugf("Patch(%s) returned (%v, %v)", obj.GetName(), newobj, err)
 		} else {
-			newobj, err = rc.Get(obj.GetName())
+			newobj, err = rc.Get(obj.GetName(), metav1.GetOptions{})
 		}
 		if c.Create && errors.IsNotFound(err) {
 			log.Info(" Creating non-existent ", desc, dryRunText)

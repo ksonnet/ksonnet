@@ -15,8 +15,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apimachinery/registered"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -25,9 +25,6 @@ import (
 
 	// For client auth plugins
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
-	// For apimachinery serialisation magic
-	_ "k8s.io/client-go/pkg/api/install"
 )
 
 var kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
@@ -35,7 +32,11 @@ var ksonnetBin = flag.String("ksonnet-bin", "ks", "path to ksonnet executable un
 var ksonnetData = flag.String("fixtures", "integration/fixtures", "path to ksonnet test data")
 
 func init() {
-	if missingVersions := api.Registry.ValidateEnvRequestedVersions(); len(missingVersions) != 0 {
+	registrationManager, err := registered.NewAPIRegistrationManager("")
+	if err != nil {
+		panic(err.Error())
+	}
+	if missingVersions := registrationManager.ValidateEnvRequestedVersions(); len(missingVersions) != 0 {
 		panic(fmt.Sprintf("KUBE_API_VERSIONS contains versions that are not installed: %q.", missingVersions))
 	}
 }
