@@ -23,6 +23,7 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/clientcmd"
@@ -82,7 +83,7 @@ var diffCmd = &cobra.Command{
 			return err
 		}
 
-		c, err := initDiffCmd(cmd, wd, env1, env2, componentNames, diffStrategy)
+		c, err := initDiffCmd(appFs, cmd, wd, env1, env2, componentNames, diffStrategy)
 		if err != nil {
 			return err
 		}
@@ -140,14 +141,14 @@ ks diff dev -c redis
 `,
 }
 
-func initDiffCmd(cmd *cobra.Command, wd metadata.AbsPath, envFq1, envFq2 *string, files []string, diffStrategy string) (kubecfg.DiffCmd, error) {
+func initDiffCmd(fs afero.Fs, cmd *cobra.Command, wd metadata.AbsPath, envFq1, envFq2 *string, files []string, diffStrategy string) (kubecfg.DiffCmd, error) {
 	const (
 		remote = "remote"
 		local  = "local"
 	)
 
 	if envFq2 == nil {
-		return initDiffSingleEnv(*envFq1, diffStrategy, files, cmd, wd)
+		return initDiffSingleEnv(fs, *envFq1, diffStrategy, files, cmd, wd)
 	}
 
 	// expect envs to be of the format local:myenv or remote:myenv
@@ -168,11 +169,11 @@ func initDiffCmd(cmd *cobra.Command, wd metadata.AbsPath, envFq1, envFq2 *string
 	}
 
 	if env1[0] == local && env2[0] == local {
-		return initDiffLocalCmd(env1[1], env2[1], diffStrategy, cmd, manager)
+		return initDiffLocalCmd(fs, env1[1], env2[1], diffStrategy, cmd, manager)
 	}
 
 	if env1[0] == remote && env2[0] == remote {
-		return initDiffRemotesCmd(env1[1], env2[1], diffStrategy, cmd, manager)
+		return initDiffRemotesCmd(fs, env1[1], env2[1], diffStrategy, cmd, manager)
 	}
 
 	localEnv := env1[1]
@@ -181,11 +182,11 @@ func initDiffCmd(cmd *cobra.Command, wd metadata.AbsPath, envFq1, envFq2 *string
 		localEnv = env2[1]
 		remoteEnv = env1[1]
 	}
-	return initDiffRemoteCmd(localEnv, remoteEnv, diffStrategy, cmd, manager)
+	return initDiffRemoteCmd(fs, localEnv, remoteEnv, diffStrategy, cmd, manager)
 }
 
 // initDiffSingleEnv sets up configurations for diffing using one environment
-func initDiffSingleEnv(env, diffStrategy string, files []string, cmd *cobra.Command, wd metadata.AbsPath) (kubecfg.DiffCmd, error) {
+func initDiffSingleEnv(fs afero.Fs, env, diffStrategy string, files []string, cmd *cobra.Command, wd metadata.AbsPath) (kubecfg.DiffCmd, error) {
 	c := kubecfg.DiffRemoteCmd{}
 	c.DiffStrategy = diffStrategy
 	c.Client = &kubecfg.Client{}
@@ -195,7 +196,13 @@ func initDiffSingleEnv(env, diffStrategy string, files []string, cmd *cobra.Comm
 		return nil, fmt.Errorf("single <env> argument with prefix 'local:' or 'remote:' not allowed")
 	}
 
-	c.Client.APIObjects, err = expandEnvCmdObjs(cmd, env, files, wd)
+	te := newCmdObjExpander(cmdObjExpanderConfig{
+		cmd:        cmd,
+		env:        env,
+		components: files,
+		cwd:        wd,
+	})
+	c.Client.APIObjects, err = te.Expand()
 	if err != nil {
 		return nil, err
 	}
@@ -214,21 +221,21 @@ func initDiffSingleEnv(env, diffStrategy string, files []string, cmd *cobra.Comm
 }
 
 // initDiffLocalCmd sets up configurations for diffing between two sets of expanded Kubernetes objects locally
-func initDiffLocalCmd(env1, env2, diffStrategy string, cmd *cobra.Command, m metadata.Manager) (kubecfg.DiffCmd, error) {
+func initDiffLocalCmd(fs afero.Fs, env1, env2, diffStrategy string, cmd *cobra.Command, m metadata.Manager) (kubecfg.DiffCmd, error) {
 	c := kubecfg.DiffLocalCmd{}
 	c.DiffStrategy = diffStrategy
 	var err error
 
 	c.Env1 = &kubecfg.LocalEnv{}
 	c.Env1.Name = env1
-	c.Env1.APIObjects, err = expandEnvObjs(cmd, c.Env1.Name, m)
+	c.Env1.APIObjects, err = expandEnvObjs(fs, cmd, c.Env1.Name, m)
 	if err != nil {
 		return nil, err
 	}
 
 	c.Env2 = &kubecfg.LocalEnv{}
 	c.Env2.Name = env2
-	c.Env2.APIObjects, err = expandEnvObjs(cmd, c.Env2.Name, m)
+	c.Env2.APIObjects, err = expandEnvObjs(fs, cmd, c.Env2.Name, m)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +244,7 @@ func initDiffLocalCmd(env1, env2, diffStrategy string, cmd *cobra.Command, m met
 }
 
 // initDiffRemotesCmd sets up configurations for diffing between objects on two remote clusters
-func initDiffRemotesCmd(env1, env2, diffStrategy string, cmd *cobra.Command, m metadata.Manager) (kubecfg.DiffCmd, error) {
+func initDiffRemotesCmd(fs afero.Fs, env1, env2, diffStrategy string, cmd *cobra.Command, m metadata.Manager) (kubecfg.DiffCmd, error) {
 	c := kubecfg.DiffRemotesCmd{}
 	c.DiffStrategy = diffStrategy
 
@@ -248,11 +255,11 @@ func initDiffRemotesCmd(env1, env2, diffStrategy string, cmd *cobra.Command, m m
 	c.ClientB.Name = env2
 
 	var err error
-	c.ClientA.APIObjects, err = expandEnvObjs(cmd, c.ClientA.Name, m)
+	c.ClientA.APIObjects, err = expandEnvObjs(fs, cmd, c.ClientA.Name, m)
 	if err != nil {
 		return nil, err
 	}
-	c.ClientB.APIObjects, err = expandEnvObjs(cmd, c.ClientB.Name, m)
+	c.ClientB.APIObjects, err = expandEnvObjs(fs, cmd, c.ClientB.Name, m)
 	if err != nil {
 		return nil, err
 	}
@@ -270,13 +277,13 @@ func initDiffRemotesCmd(env1, env2, diffStrategy string, cmd *cobra.Command, m m
 }
 
 // initDiffRemoteCmd sets up configurations for diffing between local objects and objects on a remote cluster
-func initDiffRemoteCmd(localEnv, remoteEnv, diffStrategy string, cmd *cobra.Command, m metadata.Manager) (kubecfg.DiffCmd, error) {
+func initDiffRemoteCmd(fs afero.Fs, localEnv, remoteEnv, diffStrategy string, cmd *cobra.Command, m metadata.Manager) (kubecfg.DiffCmd, error) {
 	c := kubecfg.DiffRemoteCmd{}
 	c.DiffStrategy = diffStrategy
 	c.Client = &kubecfg.Client{}
 
 	var err error
-	c.Client.APIObjects, err = expandEnvObjs(cmd, localEnv, m)
+	c.Client.APIObjects, err = expandEnvObjs(fs, cmd, localEnv, m)
 	if err != nil {
 		return nil, err
 	}
@@ -309,8 +316,8 @@ func setupClientConfig(env *string, cmd *cobra.Command) (dynamic.ClientPool, dis
 }
 
 // expandEnvObjs finds and expands templates for an environment
-func expandEnvObjs(cmd *cobra.Command, env string, manager metadata.Manager) ([]*unstructured.Unstructured, error) {
-	expander, err := newExpander(cmd)
+func expandEnvObjs(fs afero.Fs, cmd *cobra.Command, env string, manager metadata.Manager) ([]*unstructured.Unstructured, error) {
+	expander, err := newExpander(fs, cmd)
 	if err != nil {
 		return nil, err
 	}

@@ -29,7 +29,9 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
 	"k8s.io/client-go/discovery"
@@ -61,11 +63,16 @@ const (
 	flagComponentShort = "c"
 )
 
-var clientConfig clientcmd.ClientConfig
-var overrides clientcmd.ConfigOverrides
-var loadingRules clientcmd.ClientConfigLoadingRules
+var (
+	clientConfig clientcmd.ClientConfig
+	overrides    clientcmd.ConfigOverrides
+	loadingRules clientcmd.ClientConfigLoadingRules
+	appFs        afero.Fs
+)
 
 func init() {
+	appFs = afero.NewOsFs()
+
 	RootCmd.PersistentFlags().CountP(flagVerbose, "v", "Increase verbosity. May be given multiple times.")
 
 	// The "usual" clientcmd/kubectl flags
@@ -222,9 +229,9 @@ func (f *logFormatter) Format(e *log.Entry) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func newExpander(cmd *cobra.Command) (*template.Expander, error) {
+func newExpander(fs afero.Fs, cmd *cobra.Command) (*template.Expander, error) {
 	flags := cmd.Flags()
-	spec := template.Expander{}
+	spec := template.NewExpander(fs)
 	var err error
 
 	spec.EnvJPath = filepath.SplitList(os.Getenv("KUBECFG_JPATH"))
@@ -379,39 +386,64 @@ func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overri
 	return fmt.Errorf("Attempting to deploy to environment '%s' at '%s', but cannot locate a server at that address", envName, env.Server)
 }
 
-// expandEnvCmdObjs finds and expands templates for the family of commands of
+type cmdObjExpanderConfig struct {
+	fs         afero.Fs
+	cmd        *cobra.Command
+	env        string
+	components []string
+	cwd        metadata.AbsPath
+}
+
+// cmdObjExpander finds and expands templates for the family of commands of
 // the form `[<env>|-f <file-name>]`, e.g., `apply` and `delete`. That is, if
 // the user passes a list of files, we will expand all templates in those files,
 // while if a user passes an environment name, we will expand all component
 // files using that environment.
-func expandEnvCmdObjs(cmd *cobra.Command, env string, components []string, cwd metadata.AbsPath) ([]*unstructured.Unstructured, error) {
-	expander, err := newExpander(cmd)
+type cmdObjExpander struct {
+	config             cmdObjExpanderConfig
+	templateExpanderFn func(afero.Fs, *cobra.Command) (*template.Expander, error)
+}
+
+func newCmdObjExpander(c cmdObjExpanderConfig) *cmdObjExpander {
+	if c.fs == nil {
+		c.fs = appFs
+	}
+
+	return &cmdObjExpander{
+		config:             c,
+		templateExpanderFn: newExpander,
+	}
+}
+
+// Expands expands the templates.
+func (te *cmdObjExpander) Expand() ([]*unstructured.Unstructured, error) {
+	expander, err := te.templateExpanderFn(te.config.fs, te.config.cmd)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "template expander")
 	}
 
 	//
 	// Set up the template expander to be able to expand the ksonnet application.
 	//
 
-	manager, err := metadata.Find(cwd)
+	manager, err := metadata.Find(te.config.cwd)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "find metadata")
 	}
 
 	libPath, vendorPath := manager.LibPaths()
-	metadataPath, mainPath, paramsPath, specPath := manager.EnvPaths(env)
+	metadataPath, mainPath, paramsPath, specPath := manager.EnvPaths(te.config.env)
 
 	expander.FlagJpath = append([]string{string(libPath), string(vendorPath), string(metadataPath)}, expander.FlagJpath...)
 
 	componentPaths, err := manager.ComponentPaths()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "component paths")
 	}
 
-	baseObj, err := constructBaseObj(componentPaths, components)
+	baseObj, err := constructBaseObj(componentPaths, te.config.components)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "construct base object")
 	}
 
 	//
