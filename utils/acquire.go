@@ -26,6 +26,7 @@ import (
 
 	jsonnet "github.com/google/go-jsonnet"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -34,7 +35,7 @@ import (
 // Read fetches and decodes K8s objects by path.
 // TODO: Replace this with something supporting more sophisticated
 // content negotiation.
-func Read(vm *jsonnet.VM, path string) ([]runtime.Object, error) {
+func Read(fs afero.Fs, vm *jsonnet.VM, path string) ([]runtime.Object, error) {
 	ext := filepath.Ext(path)
 	if ext == ".json" {
 		f, err := os.Open(path)
@@ -51,7 +52,7 @@ func Read(vm *jsonnet.VM, path string) ([]runtime.Object, error) {
 		defer f.Close()
 		return yamlReader(f)
 	} else if ext == ".jsonnet" {
-		return jsonnetReader(vm, path)
+		return jsonnetReader(fs, vm, path)
 	}
 
 	return nil, fmt.Errorf("Unknown file extension: %s", path)
@@ -125,8 +126,8 @@ func jsonWalk(obj interface{}) ([]interface{}, error) {
 	}
 }
 
-func jsonnetReader(vm *jsonnet.VM, path string) ([]runtime.Object, error) {
-	jsonnetBytes, err := ioutil.ReadFile(path)
+func jsonnetReader(fs afero.Fs, vm *jsonnet.VM, path string) ([]runtime.Object, error) {
+	jsonnetBytes, err := afero.ReadFile(fs, path)
 	if err != nil {
 		return nil, err
 	}

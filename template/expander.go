@@ -2,7 +2,6 @@ package template
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -11,6 +10,7 @@ import (
 	jsonnet "github.com/google/go-jsonnet"
 	"github.com/ksonnet/ksonnet/utils"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
 )
 
 type Expander struct {
@@ -24,8 +24,21 @@ type Expander struct {
 
 	Resolver   string
 	FailAction string
+
+	fs afero.Fs
 }
 
+func NewExpander(fs afero.Fs) Expander {
+	if fs == nil {
+		fs = afero.NewOsFs()
+	}
+
+	return Expander{
+		fs: fs,
+	}
+}
+
+// Expand expands paths to a slice of v1 Unstructured objects.
 func (spec *Expander) Expand(paths []string) ([]*unstructured.Unstructured, error) {
 	vm, err := spec.jsonnetVM()
 	if err != nil {
@@ -34,7 +47,7 @@ func (spec *Expander) Expand(paths []string) ([]*unstructured.Unstructured, erro
 
 	res := []*unstructured.Unstructured{}
 	for _, path := range paths {
-		objs, err := utils.Read(vm, path)
+		objs, err := utils.Read(spec.fs, vm, path)
 		if err != nil {
 			return nil, fmt.Errorf("Error reading %s: %v", path, err)
 		}
@@ -83,7 +96,7 @@ func (spec *Expander) jsonnetVM() (*jsonnet.VM, error) {
 		if len(kv) != 2 {
 			return nil, fmt.Errorf("Failed to parse ext var files: missing '=' in %s", extvar)
 		}
-		v, err := ioutil.ReadFile(kv[1])
+		v, err := afero.ReadFile(spec.fs, kv[1])
 		if err != nil {
 			return nil, err
 		}
@@ -110,7 +123,7 @@ func (spec *Expander) jsonnetVM() (*jsonnet.VM, error) {
 		if len(kv) != 2 {
 			return nil, fmt.Errorf("Failed to parse tla var files: missing '=' in %s", tlavar)
 		}
-		v, err := ioutil.ReadFile(kv[1])
+		v, err := afero.ReadFile(spec.fs, kv[1])
 		if err != nil {
 			return nil, err
 		}

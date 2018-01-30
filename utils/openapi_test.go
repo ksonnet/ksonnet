@@ -18,13 +18,13 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"path"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	swagger "github.com/emicklei/go-restful-swagger12"
+	"github.com/spf13/afero"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -32,11 +32,12 @@ import (
 
 type schemaFromFile struct {
 	dir string
+	fs  afero.Fs
 }
 
 func (s schemaFromFile) SwaggerSchema(gv schema.GroupVersion) (*swagger.ApiDeclaration, error) {
 	file := path.Join(s.dir, fmt.Sprintf("schema-%s.json", gv))
-	data, err := ioutil.ReadFile(file)
+	data, err := afero.ReadFile(s.fs, file)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +51,7 @@ func (s schemaFromFile) SwaggerSchema(gv schema.GroupVersion) (*swagger.ApiDecla
 }
 
 func TestValidate(t *testing.T) {
-	schemaReader := schemaFromFile{dir: filepath.FromSlash("../testdata")}
+	schemaReader := schemaFromFile{dir: filepath.FromSlash("../testdata"), fs: afero.NewOsFs()}
 	s, err := NewSwaggerSchemaFor(schemaReader, schema.GroupVersion{Version: "v1"})
 	if err != nil {
 		t.Fatalf("Error reading schema: %v", err)

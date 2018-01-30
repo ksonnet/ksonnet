@@ -78,7 +78,13 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 
-		objs, err := expandEnvCmdObjs(cmd, env, componentNames, wd)
+		te := newCmdObjExpander(cmdObjExpanderConfig{
+			cmd:        cmd,
+			env:        env,
+			components: componentNames,
+			cwd:        wd,
+		})
+		objs, err := te.Expand()
 		if err != nil {
 			return err
 		}
