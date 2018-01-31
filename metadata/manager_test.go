@@ -277,21 +277,3 @@ func TestDoubleNewFailure(t *testing.T) {
 		t.Fatalf("Expected to fail to create app with message '%s', got '%s'", targetErr, err.Error())
 	}
 }
-
-func TestGenComponentParamsContent(t *testing.T) {
-	expected := `{
-  global: {
-    // User-defined global parameters; accessible to all component and environments, Ex:
-    // replicas: 4,
-  },
-  components: {
-    // Component-level parameters, defined initially from 'ks prototype use ...'
-    // Each object below should correspond to a component in the components/ directory
-  },
-}
-`
-	content := string(genComponentParamsContent())
-	if content != expected {
-		t.Fatalf("Expected to generate:\n%s\n, got:\n%s", expected, content)
-	}
-}
