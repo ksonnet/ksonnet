@@ -87,7 +87,9 @@ All of the component files in an *app* can be deployed to a specified *environme
 
 ### Prototype
 
-Prototypes are often used as the basis for components; they are the reason that `ks generate` allows you to quickly move from a blank app to multiple complete manifests.
+Prototypes are *examples* that you can use as the basis for your components. By `ks generate`-ing components from prototypes, you can quickly move from a blank app to multiple complete manifests.
+
+*Although you can use these components right away, they are really intended as a starting point.* If a prototype-generated component does not fully address your needs, you can directly modify its Jsonnet afterwards (e.g. adding parameters).
 
 By itself, a prototype is a pre-written but incomplete manifest:
 
