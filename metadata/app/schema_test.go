@@ -16,7 +16,6 @@
 package app
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/blang/semver"
@@ -31,6 +30,19 @@ func makeSimpleRefSpec(name, protocol, uri, version string) *RegistryRefSpec {
 			RefSpec:   version,
 			CommitSHA: version,
 		},
+	}
+}
+
+func makeSimpleEnvironmentSpec(name, namespace, server, k8sVersion string) *EnvironmentSpec {
+	return &EnvironmentSpec{
+		Name: name,
+		Destinations: EnvironmentDestinationSpecs{
+			&EnvironmentDestinationSpec{
+				Namespace: namespace,
+				Server:    server,
+			},
+		},
+		KubernetesVersion: k8sVersion,
 	}
 }
 
@@ -87,7 +99,6 @@ func TestGetRegistryRefSuccess(t *testing.T) {
 	}
 
 	r1, ok := example1.GetRegistryRef("simple1")
-	fmt.Println(r1)
 	if r1 == nil || !ok {
 		t.Error("Expected registry to contain 'simple1'")
 	}
@@ -157,5 +168,142 @@ func TestAddRegistryRefFailure(t *testing.T) {
 	err = example1.AddRegistryRef(makeSimpleRefSpec("simple1", "github", "fakeUrl", "master"))
 	if err != ErrRegistryExists {
 		t.Error("Expected registry to fail to add registry with duplicate name and different uri")
+	}
+}
+
+func TestGetEnvironmentSpecSuccess(t *testing.T) {
+	const (
+		env        = "dev"
+		namespace  = "default"
+		server     = "http://example.com"
+		k8sVersion = "1.8.0"
+	)
+
+	example1 := Spec{
+		Environments: EnvironmentSpecs{
+			env: &EnvironmentSpec{
+				Destinations: EnvironmentDestinationSpecs{
+					&EnvironmentDestinationSpec{
+						Namespace: namespace,
+						Server:    server,
+					},
+				},
+				KubernetesVersion: k8sVersion,
+			},
+		},
+	}
+
+	r1, ok := example1.GetEnvironmentSpec(env)
+	if r1 == nil || !ok {
+		t.Errorf("Expected environments to contain '%s'", env)
+	}
+
+	if len(r1.Destinations) != 1 || r1.Destinations[0].Namespace != namespace ||
+		r1.Destinations[0].Server != server || r1.KubernetesVersion != k8sVersion {
+		t.Errorf("Environment did not add correct values:\n%s", r1)
+	}
+}
+
+func TestGetEnvironmentSpecFailure(t *testing.T) {
+	example1 := Spec{
+		Environments: EnvironmentSpecs{
+			"dev": &EnvironmentSpec{
+				Destinations: EnvironmentDestinationSpecs{
+					&EnvironmentDestinationSpec{
+						Namespace: "default",
+						Server:    "http://example.com",
+					},
+				},
+				KubernetesVersion: "1.8.0",
+			},
+		},
+	}
+
+	r1, ok := example1.GetEnvironmentSpec("prod")
+	if r1 != nil || ok {
+		t.Error("Expected environemnts to not contain 'prod'")
+	}
+}
+
+func TestAddEnvironmentSpecSuccess(t *testing.T) {
+	const (
+		env        = "dev"
+		namespace  = "default"
+		server     = "http://example.com"
+		k8sVersion = "1.8.0"
+	)
+
+	example1 := Spec{
+		Environments: EnvironmentSpecs{},
+	}
+
+	err := example1.AddEnvironmentSpec(makeSimpleEnvironmentSpec(env, namespace, server, k8sVersion))
+	if err != nil {
+		t.Errorf("Expected environment add to succeed:\n%s", err)
+	}
+
+	r1, ok1 := example1.GetEnvironmentSpec(env)
+	if !ok1 || len(r1.Destinations) != 1 || r1.Destinations[0].Namespace != namespace ||
+		r1.Destinations[0].Server != server || r1.KubernetesVersion != k8sVersion {
+		t.Errorf("Environment did not add correct values:\n%s", r1)
+	}
+}
+
+func TestAddEnvironmentSpecFailure(t *testing.T) {
+	const (
+		envName1   = "dev"
+		envName2   = ""
+		namespace  = "default"
+		server     = "http://example.com"
+		k8sVersion = "1.8.0"
+	)
+
+	example1 := Spec{
+		Environments: EnvironmentSpecs{
+			envName1: &EnvironmentSpec{
+				Destinations: EnvironmentDestinationSpecs{
+					&EnvironmentDestinationSpec{
+						Namespace: namespace,
+						Server:    server,
+					},
+				},
+				KubernetesVersion: k8sVersion,
+			},
+		},
+	}
+
+	err := example1.AddEnvironmentSpec(makeSimpleEnvironmentSpec(envName2, namespace, server, k8sVersion))
+	if err != ErrEnvironmentNameInvalid {
+		t.Error("Expected failure while adding environment with an invalid name")
+	}
+
+	err = example1.AddEnvironmentSpec(makeSimpleEnvironmentSpec(envName1, namespace, server, k8sVersion))
+	if err != ErrEnvironmentExists {
+		t.Error("Expected failure while adding environment with duplicate name")
+	}
+}
+
+func TestDeleteEnvironmentSpec(t *testing.T) {
+	example1 := Spec{
+		Environments: EnvironmentSpecs{
+			"dev": &EnvironmentSpec{
+				Destinations: EnvironmentDestinationSpecs{
+					&EnvironmentDestinationSpec{
+						Namespace: "default",
+						Server:    "http://example.com",
+					},
+				},
+				KubernetesVersion: "1.8.0",
+			},
+		},
+	}
+
+	err := example1.DeleteEnvironmentSpec("dev")
+	if err != nil {
+		t.Error("Expected to successfully delete an environment in spec")
+	}
+
+	if _, ok := example1.GetEnvironmentSpec("dev"); ok {
+		t.Error("Expected environment 'dev' to be deleted from spec, but still exists")
 	}
 }

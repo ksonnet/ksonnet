@@ -395,11 +395,12 @@ func generateRegistryYAMLData(incubatorReg registry.Manager) ([]byte, error) {
 
 func generateAppYAMLData(name string, refs ...*app.RegistryRefSpec) ([]byte, error) {
 	content := app.Spec{
-		APIVersion: app.DefaultAPIVersion,
-		Kind:       app.Kind,
-		Name:       name,
-		Version:    app.DefaultVersion,
-		Registries: app.RegistryRefSpecs{},
+		APIVersion:   app.DefaultAPIVersion,
+		Kind:         app.Kind,
+		Name:         name,
+		Version:      app.DefaultVersion,
+		Registries:   app.RegistryRefSpecs{},
+		Environments: app.EnvironmentSpecs{},
 	}
 
 	for _, ref := range refs {

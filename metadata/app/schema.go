@@ -29,8 +29,14 @@ const (
 	DefaultVersion    = "0.0.1"
 )
 
-var ErrRegistryNameInvalid = fmt.Errorf("Registry name is invalid")
-var ErrRegistryExists = fmt.Errorf("Registry with name already exists")
+var (
+	ErrRegistryNameInvalid = fmt.Errorf("Registry name is invalid")
+	ErrRegistryExists      = fmt.Errorf("Registry with name already exists")
+	// ErrEnvironmentNameInvalid is the error where an environment name is invalid.
+	ErrEnvironmentNameInvalid = fmt.Errorf("Environment name is invalid")
+	// ErrEnvironmentExists is the error when trying to create an environment that already exists.
+	ErrEnvironmentExists = fmt.Errorf("Environment with name already exists")
+)
 
 type Spec struct {
 	APIVersion   string           `json:"apiVersion,omitempty"`
@@ -44,9 +50,75 @@ type Spec struct {
 	Bugs         string           `json:"bugs,omitempty"`
 	Keywords     []string         `json:"keywords,omitempty"`
 	Registries   RegistryRefSpecs `json:"registries,omitempty"`
+	Environments EnvironmentSpecs `json:"environments,omitempty"`
 	Libraries    LibraryRefSpecs  `json:"libraries,omitempty"`
 	License      string           `json:"license,omitempty"`
 }
+
+type RepositorySpec struct {
+	Type string `json:"type"`
+	URI  string `json:"uri"`
+}
+
+type RegistryRefSpec struct {
+	Name       string          `json:"-"`
+	Protocol   string          `json:"protocol"`
+	URI        string          `json:"uri"`
+	GitVersion *GitVersionSpec `json:"gitVersion"`
+}
+
+type RegistryRefSpecs map[string]*RegistryRefSpec
+
+// EnvironmentSpecs contains one or more EnvironmentSpec.
+type EnvironmentSpecs map[string]*EnvironmentSpec
+
+// EnvironmentSpec contains the specification for ksonnet environments.
+//
+// KubernetesVersion: The Kubernetes version the target cluster is running on.
+// Destinations:      One or more cluster addresses that this environment
+//                    points to.
+// Targets:           The relative component paths that this environment wishes
+//                    to deploy onto it's destinations.
+type EnvironmentSpec struct {
+	Name              string                      `json:"-"`
+	KubernetesVersion string                      `json:"k8sVersion"`
+	Destinations      EnvironmentDestinationSpecs `json:"destinations"`
+	Targets           []string                    `json:"targets"`
+}
+
+// EnvironmentDestinationSpecs contains one or more EnvironmentDestinationSpec.
+type EnvironmentDestinationSpecs []*EnvironmentDestinationSpec
+
+// EnvironmentDestinationSpec contains the specification for the cluster
+// addresses that the environment points to.
+//
+// Server:    The Kubernetes server that the cluster is running on.
+// Namespace: The namespace of the Kubernetes server that targets should
+//            be deployed to. This is "default", by default.
+type EnvironmentDestinationSpec struct {
+	Server    string `json:"server"`
+	Namespace string `json:"namespace"`
+}
+
+type LibraryRefSpec struct {
+	Name       string          `json:"name"`
+	Registry   string          `json:"registry"`
+	GitVersion *GitVersionSpec `json:"gitVersion"`
+}
+
+type GitVersionSpec struct {
+	RefSpec   string `json:"refSpec"`
+	CommitSHA string `json:"commitSha"`
+}
+
+type LibraryRefSpecs map[string]*LibraryRefSpec
+
+type ContributorSpec struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+type ContributorSpecs []*ContributorSpec
 
 func Unmarshal(bytes []byte) (*Spec, error) {
 	schema := Spec{}
@@ -105,36 +177,33 @@ func (s *Spec) validate() error {
 	return nil
 }
 
-type RepositorySpec struct {
-	Type string `json:"type"`
-	URI  string `json:"uri"`
+// GetEnvironmentSpec returns the environment specification for the environment.
+func (s *Spec) GetEnvironmentSpec(name string) (*EnvironmentSpec, bool) {
+	environmentSpec, ok := s.Environments[name]
+	if ok {
+		environmentSpec.Name = name
+	}
+	return environmentSpec, ok
 }
 
-type RegistryRefSpec struct {
-	Name       string          `json:"-"`
-	Protocol   string          `json:"protocol"`
-	URI        string          `json:"uri"`
-	GitVersion *GitVersionSpec `json:"gitVersion"`
+// AddEnvironmentSpec adds an EnvironmentSpec to the list of EnvironmentSpecs.
+// This is equivalent to registering the environment for a ksonnet app.
+func (s *Spec) AddEnvironmentSpec(spec *EnvironmentSpec) error {
+	if spec.Name == "" {
+		return ErrEnvironmentNameInvalid
+	}
+
+	_, environmentSpecExists := s.Environments[spec.Name]
+	if environmentSpecExists {
+		return ErrEnvironmentExists
+	}
+
+	s.Environments[spec.Name] = spec
+	return nil
 }
 
-type RegistryRefSpecs map[string]*RegistryRefSpec
-
-type LibraryRefSpec struct {
-	Name       string          `json:"name"`
-	Registry   string          `json:"registry"`
-	GitVersion *GitVersionSpec `json:"gitVersion"`
+// DeleteEnvironmentSpec removes the environment specification from the app spec.
+func (s *Spec) DeleteEnvironmentSpec(name string) error {
+	delete(s.Environments, name)
+	return nil
 }
-
-type GitVersionSpec struct {
-	RefSpec   string `json:"refSpec"`
-	CommitSHA string `json:"commitSha"`
-}
-
-type LibraryRefSpecs map[string]*LibraryRefSpec
-
-type ContributorSpec struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
-type ContributorSpecs []*ContributorSpec
