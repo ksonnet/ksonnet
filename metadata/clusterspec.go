@@ -42,11 +42,11 @@ type clusterSpecFile struct {
 	fs       afero.Fs
 }
 
-func (cs *clusterSpecFile) data() ([]byte, error) {
+func (cs *clusterSpecFile) OpenAPI() ([]byte, error) {
 	return afero.ReadFile(cs.fs, string(cs.specPath))
 }
 
-func (cs *clusterSpecFile) resource() string {
+func (cs *clusterSpecFile) Resource() string {
 	return string(cs.specPath)
 }
 
@@ -54,11 +54,11 @@ type clusterSpecLive struct {
 	apiServerURL string
 }
 
-func (cs *clusterSpecLive) data() ([]byte, error) {
+func (cs *clusterSpecLive) OpenAPI() ([]byte, error) {
 	return nil, fmt.Errorf("Initializing from OpenAPI spec in live cluster is not implemented")
 }
 
-func (cs *clusterSpecLive) resource() string {
+func (cs *clusterSpecLive) Resource() string {
 	return string(cs.apiServerURL)
 }
 
@@ -66,7 +66,7 @@ type clusterSpecVersion struct {
 	k8sVersion string
 }
 
-func (cs *clusterSpecVersion) data() ([]byte, error) {
+func (cs *clusterSpecVersion) OpenAPI() ([]byte, error) {
 	versionURL := fmt.Sprintf(k8sVersionURLTemplate, cs.k8sVersion)
 	resp, err := http.Get(versionURL)
 	if err != nil {
@@ -83,6 +83,6 @@ func (cs *clusterSpecVersion) data() ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
-func (cs *clusterSpecVersion) resource() string {
+func (cs *clusterSpecVersion) Resource() string {
 	return string(cs.k8sVersion)
 }

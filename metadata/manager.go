@@ -21,6 +21,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/ksonnet/ksonnet/generator"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/metadata/registry"
@@ -117,7 +118,12 @@ func initManager(name string, rootPath AbsPath, spec ClusterSpec, serverURI, nam
 	// either (e.g., GET'ing the spec from a live cluster returns 404) does not
 	// result in a partially-initialized directory structure.
 	//
-	extensionsLibData, k8sLibData, specData, err := m.generateKsonnetLibData(spec)
+	b, err := spec.OpenAPI()
+	if err != nil {
+		return nil, err
+	}
+
+	kl, err := generator.Ksonnet(b)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +155,7 @@ func initManager(name string, rootPath AbsPath, spec ClusterSpec, serverURI, nam
 
 	// Initialize environment, and cache specification data.
 	if serverURI != nil {
-		err := m.createEnvironment(defaultEnvName, *serverURI, *namespace, extensionsLibData, k8sLibData, specData)
+		err := m.createEnvironment(defaultEnvName, *serverURI, *namespace, kl.K, kl.K8s, kl.Swagger)
 		if err != nil {
 			return nil, errorOnCreateFailure(name, err)
 		}

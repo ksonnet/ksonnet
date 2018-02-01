@@ -23,8 +23,8 @@ func TestClusterSpecParsingSuccess(t *testing.T) {
 			t.Errorf("Failed to parse spec: %v", err)
 		}
 
-		parsedResource := parsed.resource()
-		targetResource := test.target.resource()
+		parsedResource := parsed.Resource()
+		targetResource := test.target.Resource()
 
 		switch pt := parsed.(type) {
 		case *clusterSpecLive:

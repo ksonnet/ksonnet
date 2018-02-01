@@ -119,8 +119,8 @@ func Init(name string, rootPath AbsPath, spec ClusterSpec, serverURI, namespace 
 // OpenAPI spec in some file, or consulting the OpenAPI spec released in a
 // specific version of Kubernetes.
 type ClusterSpec interface {
-	data() ([]byte, error)
-	resource() string // For testing parsing logic.
+	OpenAPI() ([]byte, error)
+	Resource() string // For testing parsing logic.
 }
 
 // ParseClusterSpec will parse a cluster spec flag and output a well-formed
