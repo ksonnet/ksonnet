@@ -171,6 +171,38 @@ func (m *manager) DeleteComponent(name string) error {
 	return nil
 }
 
+func (m *manager) GetComponentParams(component string) (param.Params, error) {
+	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
+	if err != nil {
+		return nil, err
+	}
+
+	return param.GetComponentParams(component, string(text))
+}
+
+func (m *manager) GetAllComponentParams() (map[string]param.Params, error) {
+	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
+	if err != nil {
+		return nil, err
+	}
+
+	return param.GetAllComponentParams(string(text))
+}
+
+func (m *manager) SetComponentParams(component string, params param.Params) error {
+	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
+	if err != nil {
+		return err
+	}
+
+	jsonnet, err := param.SetComponentParams(component, string(text), params)
+	if err != nil {
+		return err
+	}
+
+	return afero.WriteFile(m.appFS, string(m.componentParamsPath), []byte(jsonnet), defaultFilePermissions)
+}
+
 func (m *manager) findComponentPath(name string) (string, error) {
 	componentPaths, err := m.ComponentPaths()
 	if err != nil {
@@ -197,4 +229,32 @@ func (m *manager) findComponentPath(name string) (string, error) {
 	}
 
 	return componentPath, nil
+}
+
+func (m *manager) writeComponentParams(componentName string, params param.Params) error {
+	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
+	if err != nil {
+		return err
+	}
+
+	appended, err := param.AppendComponent(componentName, string(text), params)
+	if err != nil {
+		return err
+	}
+
+	return afero.WriteFile(m.appFS, string(m.componentParamsPath), []byte(appended), defaultFilePermissions)
+}
+
+func genComponentParamsContent() []byte {
+	return []byte(`{
+  global: {
+    // User-defined global parameters; accessible to all component and environments, Ex:
+    // replicas: 4,
+  },
+  components: {
+    // Component-level parameters, defined initially from 'ks prototype use ...'
+    // Each object below should correspond to a component in the components/ directory
+  },
+}
+`)
 }

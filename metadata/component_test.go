@@ -138,3 +138,21 @@ func TestFindComponentPath(t *testing.T) {
 		t.Fatalf("m.findComponentPath failed; expected '%s', got '%s'", expected, path)
 	}
 }
+
+func TestGenComponentParamsContent(t *testing.T) {
+	expected := `{
+  global: {
+    // User-defined global parameters; accessible to all component and environments, Ex:
+    // replicas: 4,
+  },
+  components: {
+    // Component-level parameters, defined initially from 'ks prototype use ...'
+    // Each object below should correspond to a component in the components/ directory
+  },
+}
+`
+	content := string(genComponentParamsContent())
+	if content != expected {
+		t.Fatalf("Expected to generate:\n%s\n, got:\n%s", expected, content)
+	}
+}

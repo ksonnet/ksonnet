@@ -23,7 +23,6 @@ import (
 
 	"github.com/ksonnet/ksonnet/generator"
 	"github.com/ksonnet/ksonnet/metadata/app"
-	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/metadata/registry"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -223,38 +222,6 @@ func (m *manager) EnvPaths(env string) (metadataPath, mainPath, paramsPath, spec
 	return
 }
 
-func (m *manager) GetComponentParams(component string) (param.Params, error) {
-	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
-	if err != nil {
-		return nil, err
-	}
-
-	return param.GetComponentParams(component, string(text))
-}
-
-func (m *manager) GetAllComponentParams() (map[string]param.Params, error) {
-	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
-	if err != nil {
-		return nil, err
-	}
-
-	return param.GetAllComponentParams(string(text))
-}
-
-func (m *manager) SetComponentParams(component string, params param.Params) error {
-	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
-	if err != nil {
-		return err
-	}
-
-	jsonnet, err := param.SetComponentParams(component, string(text), params)
-	if err != nil {
-		return err
-	}
-
-	return afero.WriteFile(m.appFS, string(m.componentParamsPath), []byte(jsonnet), defaultFilePermissions)
-}
-
 // AppSpec will return the specification for a ksonnet application
 // (typically stored in `app.yaml`)
 func (m *manager) AppSpec() (*app.Spec, error) {
@@ -356,34 +323,6 @@ func (m *manager) createAppDirTree(name string, appYAMLData, baseLibData []byte,
 	return nil
 }
 
-func (m *manager) writeComponentParams(componentName string, params param.Params) error {
-	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
-	if err != nil {
-		return err
-	}
-
-	appended, err := param.AppendComponent(componentName, string(text), params)
-	if err != nil {
-		return err
-	}
-
-	return afero.WriteFile(m.appFS, string(m.componentParamsPath), []byte(appended), defaultFilePermissions)
-}
-
-func genComponentParamsContent() []byte {
-	return []byte(`{
-  global: {
-    // User-defined global parameters; accessible to all component and environments, Ex:
-    // replicas: 4,
-  },
-  components: {
-    // Component-level parameters, defined initially from 'ks prototype use ...'
-    // Each object below should correspond to a component in the components/ directory
-  },
-}
-`)
-}
-
 func generateRegistryYAMLData(incubatorReg registry.Manager) ([]byte, error) {
 	regSpec, err := incubatorReg.FetchRegistrySpec()
 	if err != nil {
@@ -395,11 +334,12 @@ func generateRegistryYAMLData(incubatorReg registry.Manager) ([]byte, error) {
 
 func generateAppYAMLData(name string, refs ...*app.RegistryRefSpec) ([]byte, error) {
 	content := app.Spec{
-		APIVersion: app.DefaultAPIVersion,
-		Kind:       app.Kind,
-		Name:       name,
-		Version:    app.DefaultVersion,
-		Registries: app.RegistryRefSpecs{},
+		APIVersion:   app.DefaultAPIVersion,
+		Kind:         app.Kind,
+		Name:         name,
+		Version:      app.DefaultVersion,
+		Registries:   app.RegistryRefSpecs{},
+		Environments: app.EnvironmentSpecs{},
 	}
 
 	for _, ref := range refs {
