@@ -226,10 +226,9 @@ func TestEnvPaths(t *testing.T) {
 	expectedMetadataPath := path.Join(appName, environmentsDir, mockEnvName, metadataDirName)
 	expectedMainPath := path.Join(appName, environmentsDir, mockEnvName, envFileName)
 	expectedParamsPath := path.Join(appName, environmentsDir, mockEnvName, paramsFileName)
-	expectedSpecPath := path.Join(appName, environmentsDir, mockEnvName, specFilename)
 	m := mockEnvironments(t, appName)
 
-	metadataPath, mainPath, paramsPath, specPath := m.EnvPaths(mockEnvName)
+	metadataPath, mainPath, paramsPath := m.EnvPaths(mockEnvName)
 
 	if string(metadataPath) != expectedMetadataPath {
 		t.Fatalf("Expected environment metadata dir path to be:\n  '%s'\n, got:\n  '%s'", expectedMetadataPath, metadataPath)
@@ -239,9 +238,6 @@ func TestEnvPaths(t *testing.T) {
 	}
 	if string(paramsPath) != expectedParamsPath {
 		t.Fatalf("Expected environment params path to be:\n  '%s'\n, got:\n  '%s'", expectedParamsPath, paramsPath)
-	}
-	if string(specPath) != expectedSpecPath {
-		t.Fatalf("Expected environment spec path to be:\n  '%s'\n, got:\n  '%s'", expectedSpecPath, specPath)
 	}
 }
 

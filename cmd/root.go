@@ -365,7 +365,8 @@ func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overri
 		return err
 	}
 
-	server, err := utils.NormalizeURL(env.Server)
+	// TODO support multi-cluster deployment.
+	server, err := utils.NormalizeURL(env.Destinations[0].Server)
 	if err != nil {
 		return err
 	}
@@ -377,13 +378,13 @@ func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overri
 			overrides.Context.Cluster = clusterName
 		}
 		if overrides.Context.Namespace == "" {
-			log.Debugf("Overwriting --namespace flag with '%s'", env.Namespace)
-			overrides.Context.Namespace = env.Namespace
+			log.Debugf("Overwriting --namespace flag with '%s'", env.Destinations[0].Namespace)
+			overrides.Context.Namespace = env.Destinations[0].Namespace
 		}
 		return nil
 	}
 
-	return fmt.Errorf("Attempting to deploy to environment '%s' at '%s', but cannot locate a server at that address", envName, env.Server)
+	return fmt.Errorf("Attempting to deploy to environment '%s' at '%s', but cannot locate a server at that address", envName, env.Destinations[0].Server)
 }
 
 type cmdObjExpanderConfig struct {
@@ -432,7 +433,7 @@ func (te *cmdObjExpander) Expand() ([]*unstructured.Unstructured, error) {
 	}
 
 	libPath, vendorPath := manager.LibPaths()
-	metadataPath, mainPath, paramsPath, specPath := manager.EnvPaths(te.config.env)
+	metadataPath, mainPath, paramsPath := manager.EnvPaths(te.config.env)
 
 	expander.FlagJpath = append([]string{string(libPath), string(vendorPath), string(metadataPath)}, expander.FlagJpath...)
 
@@ -451,8 +452,12 @@ func (te *cmdObjExpander) Expand() ([]*unstructured.Unstructured, error) {
 	//
 
 	params := importParams(string(paramsPath))
-	spec := importEnv(string(specPath))
-	expander.ExtCodes = append([]string{baseObj, params, spec}, expander.ExtCodes...)
+	envSpec, err := importEnv(manager, te.config.env)
+	if err != nil {
+		return nil, err
+	}
+
+	expander.ExtCodes = append([]string{baseObj, params, envSpec}, expander.ExtCodes...)
 
 	//
 	// Expand the ksonnet app as rendered for environment `env`.
@@ -543,6 +548,32 @@ func importParams(path string) string {
 	return fmt.Sprintf(`%s=import "%s"`, metadata.ParamsExtCodeKey, path)
 }
 
-func importEnv(path string) string {
-	return fmt.Sprintf(`%s=import "%s"`, metadata.EnvExtCodeKey, path)
+func importEnv(manager metadata.Manager, env string) (string, error) {
+	app, err := manager.AppSpec()
+	if err != nil {
+		return "", err
+	}
+
+	spec, exists := app.GetEnvironmentSpec(env)
+	if !exists {
+		return "", fmt.Errorf("Environment '%s' does not exist in app.yaml", env)
+	}
+
+	// TODO pass namespace and server as params when ks supports multi-cluster deployment
+	type EnvironmentSpec struct {
+		Server    string `json:"server"`
+		Namespace string `json:"namespace"`
+	}
+
+	toMarshal := &EnvironmentSpec{
+		Server:    spec.Destinations[0].Server,
+		Namespace: spec.Destinations[0].Namespace,
+	}
+
+	marshalled, err := json.Marshal(toMarshal)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf(`%s=%s`, metadata.EnvExtCodeKey, string(marshalled)), nil
 }

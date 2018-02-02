@@ -323,7 +323,7 @@ func expandEnvObjs(fs afero.Fs, cmd *cobra.Command, env string, manager metadata
 	}
 
 	libPath, vendorPath := manager.LibPaths()
-	metadataPath, mainPath, paramsPath, specPath := manager.EnvPaths(env)
+	metadataPath, mainPath, paramsPath := manager.EnvPaths(env)
 	componentPaths, err := manager.ComponentPaths()
 	if err != nil {
 		return nil, err
@@ -334,10 +334,13 @@ func expandEnvObjs(fs afero.Fs, cmd *cobra.Command, env string, manager metadata
 		return nil, err
 	}
 	params := importParams(string(paramsPath))
-	spec := importEnv(string(specPath))
+	envSpec, err := importEnv(manager, env)
+	if err != nil {
+		return nil, err
+	}
 
 	expander.FlagJpath = append([]string{string(libPath), string(vendorPath), string(metadataPath)}, expander.FlagJpath...)
-	expander.ExtCodes = append([]string{baseObj, params, spec}, expander.ExtCodes...)
+	expander.ExtCodes = append([]string{baseObj, params, envSpec}, expander.ExtCodes...)
 
 	envFiles := []string{string(mainPath)}
 

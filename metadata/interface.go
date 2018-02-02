@@ -46,7 +46,7 @@ type AbsPaths []string
 type Manager interface {
 	Root() AbsPath
 	LibPaths() (libPath, vendorPath AbsPath)
-	EnvPaths(env string) (metadataPath, mainPath, paramsPath, specPath AbsPath)
+	EnvPaths(env string) (metadataPath, mainPath, paramsPath AbsPath)
 
 	// Components API.
 	ComponentPaths() (AbsPaths, error)
@@ -68,12 +68,13 @@ type Manager interface {
 	// Environment API.
 	CreateEnvironment(name, uri, namespace string, spec ClusterSpec) error
 	DeleteEnvironment(name string) error
-	GetEnvironments() ([]*Environment, error)
-	GetEnvironment(name string) (*Environment, error)
-	SetEnvironment(name string, desired *Environment) error
+	GetEnvironments() (app.EnvironmentSpecs, error)
+	GetEnvironment(name string) (*app.EnvironmentSpec, error)
+	SetEnvironment(name, desiredName string) error
 
 	// Spec API.
 	AppSpec() (*app.Spec, error)
+	WriteAppSpec(*app.Spec) error
 
 	// Dependency/registry API.
 	AddRegistry(name, protocol, uri, version string) (*registry.Spec, error)

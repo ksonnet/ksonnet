@@ -17,19 +17,17 @@ package metadata
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"os"
 	"path"
 	"path/filepath"
-	"strings"
+
+	"github.com/ksonnet/ksonnet/metadata/app"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 
 	"github.com/ksonnet/ksonnet/generator"
 	param "github.com/ksonnet/ksonnet/metadata/params"
-	"github.com/ksonnet/ksonnet/utils"
 )
 
 const (
@@ -58,20 +56,6 @@ var envPaths = []string{
 	specFilename,
 }
 
-// Environment represents all fields of a ksonnet environment
-type Environment struct {
-	Path      string
-	Name      string
-	Server    string
-	Namespace string
-}
-
-// EnvironmentSpec represents the contents in spec.json.
-type EnvironmentSpec struct {
-	Server    string `json:"server"`
-	Namespace string `json:"namespace"`
-}
-
 func (m *manager) CreateEnvironment(name, server, namespace string, spec ClusterSpec) error {
 	b, err := spec.OpenAPI()
 	if err != nil {
@@ -84,26 +68,26 @@ func (m *manager) CreateEnvironment(name, server, namespace string, spec Cluster
 		return err
 	}
 
-	err = m.createEnvironment(name, server, namespace, kl.K, kl.K8s, kl.Swagger)
-	if err == nil {
-		log.Infof("Environment '%s' pointing to namespace '%s' and server address at '%s' successfully created", name, namespace, server)
-	}
-	return err
+	return m.createEnvironment(name, server, namespace, kl.K, kl.K8s, kl.Swagger)
 }
 
 func (m *manager) createEnvironment(name, server, namespace string, extensionsLibData, k8sLibData, specData []byte) error {
-	exists, err := m.environmentExists(name)
+	appSpec, err := m.AppSpec()
 	if err != nil {
-		log.Debug("Failed to check whether environment exists")
 		return err
 	}
-	if exists {
+
+	if _, exists := appSpec.GetEnvironmentSpec(name); exists {
 		return fmt.Errorf("Environment '%s' already exists", name)
 	}
 
 	// ensure environment name does not contain punctuation
 	if !isValidName(name) {
 		return fmt.Errorf("Environment name '%s' is not valid; must not contain punctuation, spaces, or begin or end with a slash", name)
+	}
+
+	if namespace == "" {
+		namespace = "default"
 	}
 
 	log.Infof("Creating environment '%s' with namespace '%s', pointing at server at address '%s'", name, namespace, server)
@@ -121,12 +105,6 @@ func (m *manager) createEnvironment(name, server, namespace string, extensionsLi
 	}
 
 	log.Infof("Generating environment metadata at path '%s'", envPath)
-
-	// Generate the environment spec file.
-	envSpecData, err := generateSpecData(server, namespace)
-	if err != nil {
-		return err
-	}
 
 	metadata := []struct {
 		path AbsPath
@@ -157,11 +135,6 @@ func (m *manager) createEnvironment(name, server, namespace string, extensionsLi
 			appendToAbsPath(envPath, paramsFileName),
 			m.generateParamsData(),
 		},
-		{
-			// spec file
-			appendToAbsPath(envPath, specFilename),
-			envSpecData,
-		},
 	}
 
 	for _, a := range metadata {
@@ -173,26 +146,43 @@ func (m *manager) createEnvironment(name, server, namespace string, extensionsLi
 		}
 	}
 
-	return nil
+	// update app.yaml
+	err = appSpec.AddEnvironmentSpec(&app.EnvironmentSpec{
+		Name: name,
+		Path: name,
+		Destinations: app.EnvironmentDestinationSpecs{
+			&app.EnvironmentDestinationSpec{
+				Server:    server,
+				Namespace: namespace,
+			},
+		},
+		// TODO specify k8s version once metadata is moved.
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return m.WriteAppSpec(appSpec)
 }
 
 func (m *manager) DeleteEnvironment(name string) error {
-	envPath := string(appendToAbsPath(m.environmentsPath, name))
-
-	// Check whether this environment exists
-	envExists, err := m.environmentExists(name)
+	app, err := m.AppSpec()
 	if err != nil {
-		log.Debug("Failed to check whether environment exists")
 		return err
 	}
-	if !envExists {
+
+	env, ok := app.GetEnvironmentSpec(name)
+	if !ok {
 		return fmt.Errorf("Environment '%s' does not exist", name)
 	}
 
-	log.Infof("Deleting environment '%s' at path '%s'", name, envPath)
+	envPath := appendToAbsPath(m.environmentsPath, env.Path)
+
+	log.Infof("Deleting environment '%s' with metadata at path '%s'", name, envPath)
 
 	// Remove the directory and all files within the environment path.
-	err = m.appFS.RemoveAll(envPath)
+	err = m.appFS.RemoveAll(string(envPath))
 	if err != nil {
 		log.Debugf("Failed to remove environment directory at path '%s'", envPath)
 		return err
@@ -205,184 +195,136 @@ func (m *manager) DeleteEnvironment(name string) error {
 		return err
 	}
 
+	// Update app spec.
+	if err := m.WriteAppSpec(app); err != nil {
+		return err
+	}
+
 	log.Infof("Successfully removed environment '%s'", name)
 	return nil
 }
 
-func (m *manager) GetEnvironments() ([]*Environment, error) {
-	envs := []*Environment{}
+func (m *manager) GetEnvironments() (app.EnvironmentSpecs, error) {
+	app, err := m.AppSpec()
+	if err != nil {
+		return nil, err
+	}
 
 	log.Debug("Retrieving all environments")
-	err := afero.Walk(m.appFS, string(m.environmentsPath), func(path string, f os.FileInfo, err error) error {
-		if err != nil {
-			log.Debugf("Failed to walk the path at '%s'", path)
-			return err
-		}
-		isDir, err := afero.IsDir(m.appFS, path)
-		if err != nil {
-			log.Debugf("Failed to check whether the path at '%s' is a directory", path)
-			return err
-		}
+	return app.GetEnvironmentSpecs(), nil
+}
 
-		if isDir {
-			// Only want leaf directories containing a spec.json
-			specPath := filepath.Join(path, specFilename)
-			specFileExists, err := afero.Exists(m.appFS, specPath)
-			if err != nil {
-				log.Debugf("Failed to check whether spec file at '$s' exists", specPath)
-				return err
-			}
-			if specFileExists {
-				envName := filepath.Clean(strings.TrimPrefix(path, string(m.environmentsPath)+"/"))
-				specFile, err := afero.ReadFile(m.appFS, specPath)
-				if err != nil {
-					log.Debugf("Failed to read spec file at path '%s'", specPath)
-					return err
-				}
-				var envSpec EnvironmentSpec
-				err = json.Unmarshal(specFile, &envSpec)
-				if err != nil {
-					log.Debugf("Failed to convert the spec file at path '%s' to JSON", specPath)
-					return err
-				}
+func (m *manager) GetEnvironment(name string) (*app.EnvironmentSpec, error) {
+	app, err := m.AppSpec()
+	if err != nil {
+		return nil, err
+	}
 
-				log.Debugf("Found environment '%s', with server '%s' and namespace '%s'", envName, envSpec.Server, envSpec.Namespace)
-				envs = append(envs, &Environment{Name: envName, Path: path, Server: envSpec.Server, Namespace: envSpec.Namespace})
-			}
-		}
+	env, ok := app.GetEnvironmentSpec(name)
+	if !ok {
+		return nil, fmt.Errorf("Environment '%s' does not exist", name)
+	}
 
+	return env, nil
+}
+
+func (m *manager) SetEnvironment(name, desiredName string) error {
+	if name == desiredName || len(desiredName) == 0 {
 		return nil
+	}
+
+	// ensure new environment name does not contain punctuation
+	if !isValidName(desiredName) {
+		return fmt.Errorf("Environment name '%s' is not valid; must not contain punctuation, spaces, or begin or end with a slash", name)
+	}
+
+	// Ensure not overwriting another environment
+	desiredExists, err := m.environmentExists(desiredName)
+	if err != nil {
+		log.Debugf("Failed to check whether environment '%s' already exists", desiredName)
+		return err
+	}
+	if desiredExists {
+		return fmt.Errorf("Failed to update '%s'; environment '%s' exists", name, desiredName)
+	}
+
+	log.Infof("Setting environment name from '%s' to '%s'", name, desiredName)
+
+	//
+	// Update app spec. We will write out the app spec changes once all file
+	// move operations are complete.
+	//
+
+	appSpec, err := m.AppSpec()
+	if err != nil {
+		return err
+	}
+
+	current, exists := appSpec.GetEnvironmentSpec(name)
+	if !exists {
+		return fmt.Errorf("Trying to update an environment that doesn't exist")
+	}
+
+	err = appSpec.UpdateEnvironmentSpec(name, &app.EnvironmentSpec{
+		Name:              desiredName,
+		Destinations:      current.Destinations,
+		KubernetesVersion: current.KubernetesVersion,
+		Targets:           current.Targets,
+		Path:              desiredName,
 	})
 
 	if err != nil {
-		return nil, err
-	}
-
-	return envs, nil
-}
-
-func (m *manager) GetEnvironment(name string) (*Environment, error) {
-	envs, err := m.GetEnvironments()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, env := range envs {
-		if env.Name == name {
-			return env, nil
-		}
-	}
-
-	return nil, fmt.Errorf("Environment '%s' does not exist", name)
-}
-
-func (m *manager) SetEnvironment(name string, desired *Environment) error {
-	env, err := m.GetEnvironment(name)
-	if err != nil {
 		return err
 	}
 
+	//
 	// If the name has changed, the directory location needs to be moved to
 	// reflect the change.
-	if name != desired.Name && len(desired.Name) != 0 {
-		// ensure new environment name does not contain punctuation
-		if !isValidName(desired.Name) {
-			return fmt.Errorf("Environment name '%s' is not valid; must not contain punctuation, spaces, or begin or end with a slash", name)
-		}
-
-		log.Infof("Setting environment name from '%s' to '%s'", name, desired.Name)
-
-		// Ensure not overwriting another environment
-		desiredExists, err := m.environmentExists(desired.Name)
-		if err != nil {
-			log.Debugf("Failed to check whether environment '%s' already exists", desired.Name)
-			return err
-		}
-		if desiredExists {
-			return fmt.Errorf("Can not update '%s' to '%s', it already exists", name, desired.Name)
-		}
-
-		//
-		// Move the directory
-		//
-
-		pathOld := appendToAbsPath(m.environmentsPath, name)
-		pathNew := appendToAbsPath(m.environmentsPath, desired.Name)
-		exists, err := afero.DirExists(m.appFS, string(pathNew))
-		if err != nil {
-			return err
-		}
-
-		if exists {
-			// we know that the desired path is not an environment from
-			// the check earlier. This is an intermediate directory.
-			// We need to move the file contents.
-			m.tryMvEnvDir(pathOld, pathNew)
-		} else if filepath.HasPrefix(string(pathNew), string(pathOld)) {
-			// the new directory is a child of the old directory --
-			// rename won't work.
-			err = m.appFS.MkdirAll(string(pathNew), defaultFolderPermissions)
-			if err != nil {
-				return err
-			}
-			m.tryMvEnvDir(pathOld, pathNew)
-		} else {
-			// Need to first create subdirectories that don't exist
-			intermediatePath := path.Dir(string(pathNew))
-			log.Debugf("Moving directory at path '%s' to '%s'", string(pathOld), string(pathNew))
-			err = m.appFS.MkdirAll(intermediatePath, defaultFolderPermissions)
-			if err != nil {
-				return err
-			}
-			// finally, move the directory
-			err = m.appFS.Rename(string(pathOld), string(pathNew))
-			if err != nil {
-				log.Debugf("Failed to move path '%s' to '%s", string(pathOld), string(pathNew))
-				return err
-			}
-		}
-
-		// clean up any empty parent directory paths
-		err = m.cleanEmptyParentDirs(name)
-		if err != nil {
-			return err
-		}
-		name = desired.Name
-	}
-
-	//
-	// Update fields in spec.json.
 	//
 
-	var server string
-	if len(desired.Server) != 0 {
-		log.Infof("Setting environment server to '%s'", desired.Server)
-		server = desired.Server
-	} else {
-		server = env.Server
-	}
-	var namespace string
-	if len(desired.Namespace) != 0 {
-		log.Infof("Setting environment namespace to '%s'", desired.Namespace)
-		namespace = desired.Namespace
-	} else {
-		namespace = env.Namespace
-	}
-
-	newSpec, err := generateSpecData(server, namespace)
+	pathOld := appendToAbsPath(m.environmentsPath, name)
+	pathNew := appendToAbsPath(m.environmentsPath, desiredName)
+	exists, err = afero.DirExists(m.appFS, string(pathNew))
 	if err != nil {
-		log.Debugf("Failed to generate %s with server '%s' and namespace '%s'", specFilename, server, namespace)
 		return err
 	}
 
-	envPath := appendToAbsPath(m.environmentsPath, name)
-	specPath := appendToAbsPath(envPath, specFilename)
+	if exists {
+		// we know that the desired path is not an environment from
+		// the check earlier. This is an intermediate directory.
+		// We need to move the file contents.
+		m.tryMvEnvDir(pathOld, pathNew)
+	} else if filepath.HasPrefix(string(pathNew), string(pathOld)) {
+		// the new directory is a child of the old directory --
+		// rename won't work.
+		err = m.appFS.MkdirAll(string(pathNew), defaultFolderPermissions)
+		if err != nil {
+			return err
+		}
+		m.tryMvEnvDir(pathOld, pathNew)
+	} else {
+		// Need to first create subdirectories that don't exist
+		intermediatePath := path.Dir(string(pathNew))
+		log.Debugf("Moving directory at path '%s' to '%s'", string(pathOld), string(pathNew))
+		err = m.appFS.MkdirAll(intermediatePath, defaultFolderPermissions)
+		if err != nil {
+			return err
+		}
+		// finally, move the directory
+		err = m.appFS.Rename(string(pathOld), string(pathNew))
+		if err != nil {
+			log.Debugf("Failed to move path '%s' to '%s", string(pathOld), string(pathNew))
+			return err
+		}
+	}
 
-	err = afero.WriteFile(m.appFS, string(specPath), newSpec, defaultFilePermissions)
+	// clean up any empty parent directory paths
+	err = m.cleanEmptyParentDirs(name)
 	if err != nil {
-		log.Debugf("Failed to write %s at path '%s'", specFilename, specPath)
 		return err
 	}
+
+	m.WriteAppSpec(appSpec)
 
 	log.Infof("Successfully updated environment '%s'", name)
 	return nil
@@ -533,31 +475,14 @@ params + {
 `)
 }
 
-func generateSpecData(server, namespace string) ([]byte, error) {
-	server, err := utils.NormalizeURL(server)
-	if err != nil {
-		return nil, err
-	}
-
-	// Format the spec json and return; preface keys with 2 space idents.
-	return json.MarshalIndent(EnvironmentSpec{Server: server, Namespace: namespace}, "", "  ")
-}
-
 func (m *manager) environmentExists(name string) (bool, error) {
-	envs, err := m.GetEnvironments()
+	appSpec, err := m.AppSpec()
 	if err != nil {
 		return false, err
 	}
 
-	envExists := false
-	for _, env := range envs {
-		if env.Name == name {
-			envExists = true
-			break
-		}
-	}
-
-	return envExists, nil
+	_, ok := appSpec.GetEnvironmentSpec(name)
+	return ok, nil
 }
 
 func mergeParamMaps(base, overrides map[string]param.Params) map[string]param.Params {

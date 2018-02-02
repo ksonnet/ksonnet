@@ -8,4 +8,11 @@ registries:
       refSpec: test-reg
     protocol: github
     uri: github.com/ksonnet/parts/tree/test-reg/incubator
+environments:
+  default:
+    destinations:
+    - namespace: foo
+      server: foo
+    k8sVersion: "1.8.1"
+    path: default
 version: 0.0.1

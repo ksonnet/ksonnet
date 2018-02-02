@@ -36,6 +36,8 @@ var (
 	ErrEnvironmentNameInvalid = fmt.Errorf("Environment name is invalid")
 	// ErrEnvironmentExists is the error when trying to create an environment that already exists.
 	ErrEnvironmentExists = fmt.Errorf("Environment with name already exists")
+	// ErrEnvironmentNotExists is the error when trying to update an environment that doesn't exist.
+	ErrEnvironmentNotExists = fmt.Errorf("Environment with name doesn't exist")
 )
 
 type Spec struct {
@@ -75,6 +77,8 @@ type EnvironmentSpecs map[string]*EnvironmentSpec
 // EnvironmentSpec contains the specification for ksonnet environments.
 //
 // KubernetesVersion: The Kubernetes version the target cluster is running on.
+// Path:              The relative path containing metadata for this environment,
+//                    rooted at the directory 'environments'.
 // Destinations:      One or more cluster addresses that this environment
 //                    points to.
 // Targets:           The relative component paths that this environment wishes
@@ -82,8 +86,9 @@ type EnvironmentSpecs map[string]*EnvironmentSpec
 type EnvironmentSpec struct {
 	Name              string                      `json:"-"`
 	KubernetesVersion string                      `json:"k8sVersion"`
+	Path              string                      `json:"path"`
 	Destinations      EnvironmentDestinationSpecs `json:"destinations"`
-	Targets           []string                    `json:"targets"`
+	Targets           []string                    `json:"targets,omitempty"`
 }
 
 // EnvironmentDestinationSpecs contains one or more EnvironmentDestinationSpec.
@@ -177,6 +182,16 @@ func (s *Spec) validate() error {
 	return nil
 }
 
+// GetEnvironmentSpecs returns all environment specifications.
+// We need to pre-populate th EnvironmentSpec name before returning.
+func (s *Spec) GetEnvironmentSpecs() EnvironmentSpecs {
+	for k, v := range s.Environments {
+		v.Name = k
+	}
+
+	return s.Environments
+}
+
 // GetEnvironmentSpec returns the environment specification for the environment.
 func (s *Spec) GetEnvironmentSpec(name string) (*EnvironmentSpec, bool) {
 	environmentSpec, ok := s.Environments[name]
@@ -205,5 +220,27 @@ func (s *Spec) AddEnvironmentSpec(spec *EnvironmentSpec) error {
 // DeleteEnvironmentSpec removes the environment specification from the app spec.
 func (s *Spec) DeleteEnvironmentSpec(name string) error {
 	delete(s.Environments, name)
+	return nil
+}
+
+// UpdateEnvironmentSpec updates the environment with the provided name to the
+// specified spec.
+func (s *Spec) UpdateEnvironmentSpec(name string, spec *EnvironmentSpec) error {
+	if spec.Name == "" {
+		return ErrEnvironmentNameInvalid
+	}
+
+	_, environmentSpecExists := s.Environments[name]
+	if !environmentSpecExists {
+		return ErrEnvironmentNotExists
+	}
+
+	if name != spec.Name {
+		if err := s.DeleteEnvironmentSpec(name); err != nil {
+			return err
+		}
+	}
+
+	s.Environments[spec.Name] = spec
 	return nil
 }
