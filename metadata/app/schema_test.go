@@ -171,6 +171,31 @@ func TestAddRegistryRefFailure(t *testing.T) {
 	}
 }
 
+func TestGetEnvironmentSpecs(t *testing.T) {
+	example1 := Spec{
+		Environments: EnvironmentSpecs{
+			"dev": &EnvironmentSpec{
+				Destinations: EnvironmentDestinationSpecs{
+					&EnvironmentDestinationSpec{
+						Namespace: "default",
+						Server:    "http://example.com",
+					},
+				},
+				KubernetesVersion: "1.8.0",
+			},
+		},
+	}
+
+	r1 := example1.GetEnvironmentSpecs()
+	if len(r1) != 1 {
+		t.Error("Expected environments to contain to be of length 1")
+	}
+
+	if r1["dev"].Name != "dev" {
+		t.Error("Expected to populate name value")
+	}
+}
+
 func TestGetEnvironmentSpecSuccess(t *testing.T) {
 	const (
 		env        = "dev"
@@ -221,7 +246,7 @@ func TestGetEnvironmentSpecFailure(t *testing.T) {
 
 	r1, ok := example1.GetEnvironmentSpec("prod")
 	if r1 != nil || ok {
-		t.Error("Expected environemnts to not contain 'prod'")
+		t.Error("Expected environments to not contain 'prod'")
 	}
 }
 
@@ -305,5 +330,45 @@ func TestDeleteEnvironmentSpec(t *testing.T) {
 
 	if _, ok := example1.GetEnvironmentSpec("dev"); ok {
 		t.Error("Expected environment 'dev' to be deleted from spec, but still exists")
+	}
+}
+
+func TestUpdateEnvironmentSpec(t *testing.T) {
+	example1 := Spec{
+		Environments: EnvironmentSpecs{
+			"dev": &EnvironmentSpec{
+				Destinations: EnvironmentDestinationSpecs{
+					&EnvironmentDestinationSpec{
+						Namespace: "default",
+						Server:    "http://example.com",
+					},
+				},
+				KubernetesVersion: "1.8.0",
+			},
+		},
+	}
+
+	example2 := EnvironmentSpec{
+		Name: "foo",
+		Destinations: EnvironmentDestinationSpecs{
+			&EnvironmentDestinationSpec{
+				Namespace: "foo",
+				Server:    "http://example.com",
+			},
+		},
+		KubernetesVersion: "1.8.0",
+	}
+
+	err := example1.UpdateEnvironmentSpec("dev", &example2)
+	if err != nil {
+		t.Error("Expected to successfully update an environment in spec")
+	}
+
+	if _, ok := example1.GetEnvironmentSpec("dev"); ok {
+		t.Error("Expected environment 'dev' to be deleted from spec, but still exists")
+	}
+
+	if _, ok := example1.GetEnvironmentSpec("foo"); !ok {
+		t.Error("Expected environment 'foo' to be created in spec, but does not exists")
 	}
 }

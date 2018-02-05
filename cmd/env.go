@@ -313,9 +313,7 @@ var envSetCmd = &cobra.Command{
 			return err
 		}
 
-		server, namespace, err := resolveEnvFlags(flags)
-
-		c, err := kubecfg.NewEnvSetCmd(originalName, name, server, namespace, manager)
+		c, err := kubecfg.NewEnvSetCmd(originalName, name, manager)
 		if err != nil {
 			return err
 		}
@@ -324,8 +322,7 @@ var envSetCmd = &cobra.Command{
 	},
 	Long: `
 The ` + "`set`" + ` command lets you change the fields of an existing environment.
-You can update any of your environment's (1) name (2) namespace and
-(3) server (cluster URI).
+You can currently only update your environment's name.
 
 Note that changing the name of an environment will also update the corresponding
 directory structure in ` + "`environments/`" + `.
@@ -336,19 +333,9 @@ directory structure in ` + "`environments/`" + `.
 
 ### Syntax
 `,
-	Example: `# Update the API server address of the environment 'us-west/staging'.
-ks env set us-west/staging --server=http://example.com
-
-# Update the namespace of the environment 'us-west/staging'.
-ks env set us-west/staging --namespace=staging
-
-# Update both the name and the server of the environment 'us-west/staging'.
+	Example: `#Update the name of the environment 'us-west/staging'.
 # Updating the name will update the directory structure in 'environments/'.
-ks env set us-west/staging --server=http://example.com --name=us-east/staging
-
-# Update the API server address of the environment 'us-west/staging' based on the
-# server in the 'staging-west' context of your kubeconfig file.
-ks env set us-west/staging --context=staging-west`,
+ks env set us-west/staging --name=us-east/staging`,
 }
 
 func commonEnvFlags(flags *pflag.FlagSet) (server, namespace, context string, err error) {

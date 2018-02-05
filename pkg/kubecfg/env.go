@@ -21,6 +21,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/ksonnet/ksonnet/metadata/app"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/ksonnet/ksonnet/metadata"
@@ -78,28 +80,38 @@ func NewEnvListCmd(manager metadata.Manager) (*EnvListCmd, error) {
 
 func (c *EnvListCmd) Run(out io.Writer) error {
 	const (
-		nameHeader      = "NAME"
-		namespaceHeader = "NAMESPACE"
-		serverHeader    = "SERVER"
+		nameHeader       = "NAME"
+		k8sVersionHeader = "KUBERNETES-VERSION"
+		namespaceHeader  = "NAMESPACE"
+		serverHeader     = "SERVER"
 	)
 
-	envs, err := c.manager.GetEnvironments()
+	envMap, err := c.manager.GetEnvironments()
 	if err != nil {
 		return err
+	}
+
+	envs := make([]app.EnvironmentSpec, len(envMap))
+	for _, e := range envMap {
+		envs = append(envs, *e)
 	}
 
 	// Sort environments by ascending alphabetical name
 	sort.Slice(envs, func(i, j int) bool { return envs[i].Name < envs[j].Name })
 
 	rows := [][]string{
-		[]string{nameHeader, namespaceHeader, serverHeader},
+		[]string{nameHeader, k8sVersionHeader, namespaceHeader, serverHeader},
 		[]string{
 			strings.Repeat("=", len(nameHeader)),
+			strings.Repeat("=", len(k8sVersionHeader)),
 			strings.Repeat("=", len(namespaceHeader)),
 			strings.Repeat("=", len(serverHeader))},
 	}
+
 	for _, env := range envs {
-		rows = append(rows, []string{env.Name, env.Namespace, env.Server})
+		for _, dest := range env.Destinations {
+			rows = append(rows, []string{env.Name, env.KubernetesVersion, dest.Namespace, dest.Server})
+		}
 	}
 
 	formattedEnvsList, err := utils.PadRows(rows)
@@ -114,21 +126,16 @@ func (c *EnvListCmd) Run(out io.Writer) error {
 // ==================================================================
 
 type EnvSetCmd struct {
-	name string
-
-	desiredName      string
-	desiredServer    string
-	desiredNamespace string
+	name        string
+	desiredName string
 
 	manager metadata.Manager
 }
 
-func NewEnvSetCmd(name, desiredName, desiredServer, desiredNamespace string, manager metadata.Manager) (*EnvSetCmd, error) {
-	return &EnvSetCmd{name: name, desiredName: desiredName, desiredServer: desiredServer, desiredNamespace: desiredNamespace,
-		manager: manager}, nil
+func NewEnvSetCmd(name, desiredName string, manager metadata.Manager) (*EnvSetCmd, error) {
+	return &EnvSetCmd{name: name, desiredName: desiredName, manager: manager}, nil
 }
 
 func (c *EnvSetCmd) Run() error {
-	desired := metadata.Environment{Name: c.desiredName, Server: c.desiredServer, Namespace: c.desiredNamespace}
-	return c.manager.SetEnvironment(c.name, &desired)
+	return c.manager.SetEnvironment(c.name, c.desiredName)
 }

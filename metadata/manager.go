@@ -207,7 +207,7 @@ func (m *manager) LibPaths() (libPath, vendorPath AbsPath) {
 	return m.libPath, m.vendorPath
 }
 
-func (m *manager) EnvPaths(env string) (metadataPath, mainPath, paramsPath, specPath AbsPath) {
+func (m *manager) EnvPaths(env string) (metadataPath, mainPath, paramsPath AbsPath) {
 	envPath := appendToAbsPath(m.environmentsPath, env)
 
 	// .metadata directory
@@ -216,38 +216,8 @@ func (m *manager) EnvPaths(env string) (metadataPath, mainPath, paramsPath, spec
 	mainPath = appendToAbsPath(envPath, envFileName)
 	// params.libsonnet file
 	paramsPath = appendToAbsPath(envPath, componentParamsFile)
-	// spec.json file
-	specPath = appendToAbsPath(envPath, specFilename)
 
 	return
-}
-
-// AppSpec will return the specification for a ksonnet application
-// (typically stored in `app.yaml`)
-func (m *manager) AppSpec() (*app.Spec, error) {
-	bytes, err := afero.ReadFile(m.appFS, string(m.appYAMLPath))
-	if err != nil {
-		return nil, err
-	}
-
-	schema, err := app.Unmarshal(bytes)
-	if err != nil {
-		return nil, err
-	}
-
-	if schema.Contributors == nil {
-		schema.Contributors = app.ContributorSpecs{}
-	}
-
-	if schema.Registries == nil {
-		schema.Registries = app.RegistryRefSpecs{}
-	}
-
-	if schema.Libraries == nil {
-		schema.Libraries = app.LibraryRefSpecs{}
-	}
-
-	return schema, nil
 }
 
 func (m *manager) createUserDirTree() error {

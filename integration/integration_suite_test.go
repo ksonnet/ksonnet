@@ -3,7 +3,7 @@
 package integration
 
 import (
-	"encoding/json"
+	"github.com/ksonnet/ksonnet/metadata/app"
 	"flag"
 	"fmt"
 	"io"
@@ -89,25 +89,35 @@ func containsString(haystack []string, needle string) bool {
 }
 
 func runKsonnetWith(flags []string, host, ns string) error {
-	type envSpec struct {
-		Server    string `json:"server"`
-		Namespace string `json:"namespace"`
+	spec := app.Spec{
+		Version: "0.0.1",
+		APIVersion: "0.0.1",
+		Environments: app.EnvironmentSpecs{
+			"default": &app.EnvironmentSpec{
+				Destinations: app.EnvironmentDestinationSpecs{
+					&app.EnvironmentDestinationSpec{
+						Namespace: ns,
+						Server:    host,
+					},
+				},
+			},
+		},
 	}
 
-	defaultEnvSpecPath := path.Join(*ksonnetData, "sampleapp/environments/default/spec.json")
-	defaultEnvSpecFile, err := os.Create(defaultEnvSpecPath)
+	appSpecPath := path.Join(*ksonnetData, "sampleapp/app.yaml")
+	specFile, err := os.Create(appSpecPath)
 	if err != nil {
 		return err
 	}
-	data, err := json.MarshalIndent(envSpec{Server: host, Namespace: ns}, "", "  ")
+	data, err := spec.Marshal()
 	if err != nil {
 		return err
 	}
-	defaultEnvSpecFile.Write(data)
-	if err := defaultEnvSpecFile.Close(); err != nil {
+	specFile.Write(data)
+	if err := specFile.Close(); err != nil {
 		return err
 	}
-	defer os.Remove(defaultEnvSpecPath)
+	defer os.Remove(appSpecPath)
 
 	args := []string{}
 	if *kubeconfig != "" && !containsString(flags, "--kubeconfig") {
