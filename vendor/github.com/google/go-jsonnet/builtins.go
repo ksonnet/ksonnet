@@ -17,21 +17,16 @@ limitations under the License.
 package jsonnet
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 
 	"github.com/google/go-jsonnet/ast"
 )
-
-// TODO(sbarzowski) Is this the best option? It's the first one that worked for me...
-//go:generate esc -o std.go -pkg=jsonnet std/std.jsonnet
-
-func getStdCode() string {
-	return FSMustString(false, "/std/std.jsonnet")
-}
 
 func builtinPlus(e *evaluator, xp, yp potentialValue) (value, error) {
 	// TODO(sbarzowski) more types, mixing types
@@ -240,11 +235,12 @@ func builtinToString(e *evaluator, xp potentialValue) (value, error) {
 	case *valueString:
 		return x, nil
 	}
-	s, err := e.i.manifestAndSerializeJSON(e.trace, x, false, "")
+	var buf bytes.Buffer
+	err = e.i.manifestAndSerializeJSON(&buf, e.trace, x, false, "")
 	if err != nil {
 		return nil, err
 	}
-	return makeValueString(s), nil
+	return makeValueString(buf.String()), nil
 }
 
 func builtinMakeArray(e *evaluator, szp potentialValue, funcp potentialValue) (value, error) {
@@ -290,6 +286,78 @@ func builtinFlatMap(e *evaluator, funcp potentialValue, arrp potentialValue) (va
 	return makeValueArray(elems), nil
 }
 
+func joinArrays(e *evaluator, sep *valueArray, arr *valueArray) (value, error) {
+	result := make([]potentialValue, 0, arr.length())
+	first := true
+	for _, elem := range arr.elements {
+		elemValue, err := e.evaluate(elem)
+		if err != nil {
+			return nil, err
+		}
+		switch v := elemValue.(type) {
+		case *valueNull:
+			continue
+		case *valueArray:
+			if !first {
+				for _, subElem := range sep.elements {
+					result = append(result, subElem)
+				}
+			}
+			for _, subElem := range v.elements {
+				result = append(result, subElem)
+			}
+		default:
+			return nil, e.typeErrorSpecific(elemValue, &valueArray{})
+		}
+		first = false
+
+	}
+	return makeValueArray(result), nil
+}
+
+func joinStrings(e *evaluator, sep *valueString, arr *valueArray) (value, error) {
+	result := make([]rune, 0, arr.length())
+	first := true
+	for _, elem := range arr.elements {
+		elemValue, err := e.evaluate(elem)
+		if err != nil {
+			return nil, err
+		}
+		switch v := elemValue.(type) {
+		case *valueNull:
+			continue
+		case *valueString:
+			if !first {
+				result = append(result, sep.value...)
+			}
+			result = append(result, v.value...)
+		default:
+			return nil, e.typeErrorSpecific(elemValue, &valueString{})
+		}
+		first = false
+	}
+	return &valueString{value: result}, nil
+}
+
+func builtinJoin(e *evaluator, sepp potentialValue, arrp potentialValue) (value, error) {
+	arr, err := e.evaluateArray(arrp)
+	if err != nil {
+		return nil, err
+	}
+	sep, err := e.evaluate(sepp)
+	if err != nil {
+		return nil, err
+	}
+	switch sep := sep.(type) {
+	case *valueString:
+		return joinStrings(e, sep, arr)
+	case *valueArray:
+		return joinArrays(e, sep, arr)
+	default:
+		return nil, e.Error("join first parameter should be string or array, got " + sep.getType().name)
+	}
+}
+
 func builtinFilter(e *evaluator, funcp potentialValue, arrp potentialValue) (value, error) {
 	arr, err := e.evaluateArray(arrp)
 	if err != nil {
@@ -312,6 +380,22 @@ func builtinFilter(e *evaluator, funcp potentialValue, arrp potentialValue) (val
 		if included.value {
 			elems = append(elems, arr.elements[i])
 		}
+	}
+	return makeValueArray(elems), nil
+}
+
+func builtinRange(e *evaluator, fromp potentialValue, top potentialValue) (value, error) {
+	from, err := e.evaluateInt(fromp)
+	if err != nil {
+		return nil, err
+	}
+	to, err := e.evaluateInt(top)
+	if err != nil {
+		return nil, err
+	}
+	elems := make([]potentialValue, to-from+1)
+	for i := from; i <= to; i++ {
+		elems[i-from] = &readyValue{intToValue(i)}
 	}
 	return makeValueArray(elems), nil
 }
@@ -466,7 +550,14 @@ var builtinAsin = liftNumeric(math.Asin)
 var builtinAcos = liftNumeric(math.Acos)
 var builtinAtan = liftNumeric(math.Atan)
 var builtinLog = liftNumeric(math.Log)
-var builtinExp = liftNumeric(math.Exp)
+var builtinExp = liftNumeric(func(f float64) float64 {
+	res := math.Exp(f)
+	if res == 0 && f > 0 {
+		return math.Inf(1)
+	} else {
+		return res
+	}
+})
 var builtinMantissa = liftNumeric(func(f float64) float64 {
 	mantissa, _ := math.Frexp(f)
 	return mantissa
@@ -478,15 +569,15 @@ var builtinExponent = liftNumeric(func(f float64) float64 {
 
 func liftBitwise(f func(int64, int64) int64) func(*evaluator, potentialValue, potentialValue) (value, error) {
 	return func(e *evaluator, xp, yp potentialValue) (value, error) {
-		x, err := e.evaluateInt64(xp)
+		x, err := e.evaluateNumber(xp)
 		if err != nil {
 			return nil, err
 		}
-		y, err := e.evaluateInt64(yp)
+		y, err := e.evaluateNumber(yp)
 		if err != nil {
 			return nil, err
 		}
-		return makeDoubleCheck(e, float64(f(x, y)))
+		return makeDoubleCheck(e, float64(f(int64(x.value), int64(y.value))))
 	}
 }
 
@@ -543,6 +634,28 @@ func builtinPow(e *evaluator, basep potentialValue, expp potentialValue) (value,
 		return nil, err
 	}
 	return makeDoubleCheck(e, math.Pow(base.value, exp.value))
+}
+
+func builtinStrReplace(e *evaluator, strp, fromp, top potentialValue) (value, error) {
+	str, err := e.evaluateString(strp)
+	if err != nil {
+		return nil, err
+	}
+	from, err := e.evaluateString(fromp)
+	if err != nil {
+		return nil, err
+	}
+	to, err := e.evaluateString(top)
+	if err != nil {
+		return nil, err
+	}
+	sStr := str.getString()
+	sFrom := from.getString()
+	sTo := to.getString()
+	if len(sFrom) == 0 {
+		return nil, e.Error("'from' string must not be zero length.")
+	}
+	return makeValueString(strings.Replace(sStr, sFrom, sTo, -1)), nil
 }
 
 func builtinUglyObjectFlatMerge(e *evaluator, objarrp potentialValue) (value, error) {
@@ -760,7 +873,9 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&UnaryBuiltin{name: "toString", function: builtinToString, parameters: ast.Identifiers{"a"}},
 	&BinaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: ast.Identifiers{"sz", "func"}},
 	&BinaryBuiltin{name: "flatMap", function: builtinFlatMap, parameters: ast.Identifiers{"func", "arr"}},
+	&BinaryBuiltin{name: "join", function: builtinJoin, parameters: ast.Identifiers{"sep", "arr"}},
 	&BinaryBuiltin{name: "filter", function: builtinFilter, parameters: ast.Identifiers{"func", "arr"}},
+	&BinaryBuiltin{name: "range", function: builtinRange, parameters: ast.Identifiers{"from", "to"}},
 	&BinaryBuiltin{name: "primitiveEquals", function: primitiveEquals, parameters: ast.Identifiers{"sz", "func"}},
 	&BinaryBuiltin{name: "objectFieldsEx", function: builtinObjectFieldsEx, parameters: ast.Identifiers{"obj", "hidden"}},
 	&TernaryBuiltin{name: "objectHasEx", function: builtinObjectHasEx, parameters: ast.Identifiers{"obj", "fname", "hidden"}},
@@ -783,6 +898,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&BinaryBuiltin{name: "pow", function: builtinPow, parameters: ast.Identifiers{"base", "exp"}},
 	&BinaryBuiltin{name: "modulo", function: builtinModulo, parameters: ast.Identifiers{"x", "y"}},
 	&UnaryBuiltin{name: "md5", function: builtinMd5, parameters: ast.Identifiers{"x"}},
+	&TernaryBuiltin{name: "strReplace", function: builtinStrReplace, parameters: ast.Identifiers{"str", "from", "to"}},
 	&UnaryBuiltin{name: "native", function: builtinNative, parameters: ast.Identifiers{"x"}},
 
 	// internal

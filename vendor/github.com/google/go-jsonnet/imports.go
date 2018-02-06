@@ -24,20 +24,23 @@ import (
 )
 
 type ImportedData struct {
-	err       error
-	foundHere string
-	content   string
+	FoundHere string
+	Content   string
 }
 
 type Importer interface {
-	Import(codeDir string, importedPath string) *ImportedData
+	Import(codeDir string, importedPath string) (*ImportedData, error)
 }
 
 type ImportCacheValue struct {
+	// nil if we got an error
 	data *ImportedData
 
-	// nil if we have only imported it via importstr
+	// nil if we got an error or have only imported it via importstr
 	asCode potentialValue
+
+	// Errors can occur during import, we have to cache these too.
+	err error
 }
 
 type importCacheKey struct {
@@ -45,7 +48,7 @@ type importCacheKey struct {
 	importedPath string
 }
 
-type importCacheMap map[importCacheKey]ImportCacheValue
+type importCacheMap map[importCacheKey]*ImportCacheValue
 
 type ImportCache struct {
 	cache    importCacheMap
@@ -57,23 +60,24 @@ func MakeImportCache(importer Importer) *ImportCache {
 }
 
 func (cache *ImportCache) importData(key importCacheKey) *ImportCacheValue {
-	if value, ok := cache.cache[key]; ok {
-		return &value
+	if cached, ok := cache.cache[key]; ok {
+		return cached
 	}
-	data := cache.importer.Import(key.dir, key.importedPath)
-	val := ImportCacheValue{
+	data, err := cache.importer.Import(key.dir, key.importedPath)
+	cached := &ImportCacheValue{
 		data: data,
+		err:  err,
 	}
-	cache.cache[key] = val
-	return &val
+	cache.cache[key] = cached
+	return cached
 }
 
 func (cache *ImportCache) ImportString(codeDir, importedPath string, e *evaluator) (*valueString, error) {
-	data := cache.importData(importCacheKey{codeDir, importedPath})
-	if data.data.err != nil {
-		return nil, e.Error(data.data.err.Error())
+	cached := cache.importData(importCacheKey{codeDir, importedPath})
+	if cached.err != nil {
+		return nil, e.Error(cached.err.Error())
 	}
-	return makeValueString(data.data.content), nil
+	return makeValueString(cached.data.Content), nil
 }
 
 func codeToPV(e *evaluator, filename string, code string) potentialValue {
@@ -91,11 +95,12 @@ func codeToPV(e *evaluator, filename string, code string) potentialValue {
 
 func (cache *ImportCache) ImportCode(codeDir, importedPath string, e *evaluator) (value, error) {
 	cached := cache.importData(importCacheKey{codeDir, importedPath})
-	if cached.data.err != nil {
-		return nil, e.Error(cached.data.err.Error())
+	if cached.err != nil {
+		return nil, e.Error(cached.err.Error())
 	}
 	if cached.asCode == nil {
-		cached.asCode = codeToPV(e, cached.data.foundHere, cached.data.content)
+		// File hasn't been parsed before, update the cache record.
+		cached.asCode = codeToPV(e, cached.data.FoundHere, cached.data.Content)
 	}
 	return e.evaluate(cached.asCode)
 }
@@ -104,7 +109,6 @@ func (cache *ImportCache) ImportCode(codeDir, importedPath string, e *evaluator)
 // -------------------------------------
 
 type FileImporter struct {
-	// TODO(sbarzowski) fill it in
 	JPaths []string
 }
 
@@ -122,34 +126,32 @@ func tryPath(dir, importedPath string) (found bool, content []byte, foundHere st
 	return true, content, absPath, err
 }
 
-func (importer *FileImporter) Import(dir, importedPath string) *ImportedData {
+func (importer *FileImporter) Import(dir, importedPath string) (*ImportedData, error) {
 	found, content, foundHere, err := tryPath(dir, importedPath)
 	if err != nil {
-		return &ImportedData{err: err}
+		return nil, err
 	}
 
-	for i := 0; !found && i < len(importer.JPaths); i++ {
+	for i := len(importer.JPaths) - 1; !found && i >= 0; i-- {
 		found, content, foundHere, err = tryPath(importer.JPaths[i], importedPath)
 		if err != nil {
-			return &ImportedData{err: err}
+			return nil, err
 		}
 	}
 
 	if !found {
-		return &ImportedData{
-			err: fmt.Errorf("Couldn't open import %#v: No match locally or in the Jsonnet library paths.", importedPath),
-		}
+		return nil, fmt.Errorf("Couldn't open import %#v: No match locally or in the Jsonnet library paths.", importedPath)
 	}
-	return &ImportedData{content: string(content), foundHere: foundHere}
+	return &ImportedData{Content: string(content), FoundHere: foundHere}, nil
 }
 
 type MemoryImporter struct {
-	data map[string]string
+	Data map[string]string
 }
 
-func (importer *MemoryImporter) Import(dir, importedPath string) *ImportedData {
-	if content, ok := importer.data[importedPath]; ok {
-		return &ImportedData{content: content, foundHere: importedPath}
+func (importer *MemoryImporter) Import(dir, importedPath string) (*ImportedData, error) {
+	if content, ok := importer.Data[importedPath]; ok {
+		return &ImportedData{Content: content, FoundHere: importedPath}, nil
 	}
-	return &ImportedData{err: fmt.Errorf("Import not available %v", importedPath)}
+	return nil, fmt.Errorf("Import not available %v", importedPath)
 }

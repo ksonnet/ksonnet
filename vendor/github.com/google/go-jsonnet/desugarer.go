@@ -52,7 +52,7 @@ func stringUnescape(loc *ast.LocationRange, s string) (string, error) {
 			case '\\':
 				buf.WriteRune('\\')
 			case '/':
-				buf.WriteRune('/') // This one is odd, maybe a mistake.
+				buf.WriteRune('/') // See json.org, \/ is a valid escape.
 			case 'b':
 				buf.WriteRune('\b')
 			case 'f':
@@ -267,7 +267,7 @@ func buildDesugaredObject(nodeBase ast.NodeBase, fields ast.ObjectFields) *ast.D
 		} else if field.Kind == ast.ObjectFieldExpr {
 			newFields = append(newFields, ast.DesugaredObjectField{field.Hide, field.Expr1, field.Expr2, field.SuperSugar})
 		} else {
-			panic(fmt.Sprintf("INTERNAL ERROR: field should have been desugared: %s", field.Kind))
+			panic(fmt.Sprintf("INTERNAL ERROR: field should have been desugared: %v", field.Kind))
 		}
 	}
 

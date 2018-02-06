@@ -19,18 +19,20 @@ package jsonnet
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"io/ioutil"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
-	"unicode/utf8"
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
 var update = flag.Bool("update", false, "update .golden files")
+var jsonnetCmd = flag.String("cmd", "", "path to jsonnet command (if not specified or empty, internal implementation is used)")
 
 // TODO(sbarzowski) figure out how to measure coverage on the external tests
 
@@ -70,6 +72,152 @@ type mainTest struct {
 	meta   *testMetadata
 }
 
+var jsonToString = &NativeFunction{
+	Name:   "jsonToString",
+	Params: ast.Identifiers{"x"},
+	Func: func(x []interface{}) (interface{}, error) {
+		bytes, err := json.Marshal(x[0])
+		if err != nil {
+			return nil, err
+		}
+		return string(bytes), nil
+	},
+}
+
+var nativeError = &NativeFunction{
+	Name: "nativeError",
+	Params: ast.Identifiers{},
+	Func: func(x []interface{}) (interface{}, error) {
+		return nil, errors.New("Native function error")
+	},
+}
+
+type jsonnetInput struct {
+	name    string
+	input   []byte
+	eKind   evalKind
+	extVars map[string]string
+	extCode map[string]string
+}
+
+type jsonnetResult struct {
+	output  string
+	isError bool
+}
+
+func runInternalJsonnet(i jsonnetInput) jsonnetResult {
+	vm := MakeVM()
+	errFormatter := termErrorFormatter{pretty: true, maxStackTraceSize: 9}
+
+	for name, value := range i.extVars {
+		vm.ExtVar(name, value)
+	}
+	for name, value := range i.extCode {
+		vm.ExtCode(name, value)
+	}
+
+	vm.NativeFunction(jsonToString)
+	vm.NativeFunction(nativeError)
+
+	var output string
+
+	rawOutput, err := vm.evaluateSnippet(i.name, string(i.input), i.eKind)
+	var isError bool
+	if err != nil {
+		// TODO(sbarzowski) perhaps somehow mark that we are processing
+		// an error. But for now we can treat them the same.
+		output = errFormatter.Format(err)
+		output += "\n"
+		isError = true
+	} else {
+		output = rawOutput.(string)
+		isError = false
+	}
+
+	return jsonnetResult{
+		output:  output,
+		isError: isError,
+	}
+}
+
+func runJsonnetCommand(i jsonnetInput) jsonnetResult {
+	// TODO(sbarzowski) Special handling of errors (which may differ between versions)
+	input := bytes.NewBuffer(i.input)
+	var output bytes.Buffer
+	isError := false
+	cmd := exec.Cmd{
+		Path:   *jsonnetCmd,
+		Stdin:  input,
+		Stdout: &output,
+		Stderr: &output,
+		Args:   []string{"jsonnet", "-"},
+	}
+	err := cmd.Run()
+	if err != nil {
+		switch err := err.(type) {
+		case *exec.ExitError:
+			// It finished with non-zero exit code
+			isError = true
+		default:
+			// We weren't able to run it
+			panic(err)
+		}
+	}
+	return jsonnetResult{
+		output:  output.String(),
+		isError: isError,
+	}
+}
+
+func runJsonnet(i jsonnetInput) jsonnetResult {
+	if jsonnetCmd != nil && *jsonnetCmd != "" {
+		return runJsonnetCommand(i)
+	} else {
+		return runInternalJsonnet(i)
+	}
+}
+
+func runTest(t *testing.T, test *mainTest) {
+
+	read := func(file string) []byte {
+		bytz, err := ioutil.ReadFile(file)
+		if err != nil {
+			t.Fatalf("reading file: %s: %v", file, err)
+		}
+		return bytz
+	}
+
+	input := read(test.input)
+
+	result := runJsonnet(jsonnetInput{
+		name:    test.name,
+		input:   input,
+		eKind:   evalKindRegular,
+		extVars: test.meta.extVars,
+		extCode: test.meta.extCode,
+	})
+
+	// TODO(sbarzowski) report which files were updated
+	if *update {
+		err := ioutil.WriteFile(test.golden, []byte(result.output), 0666)
+		if err != nil {
+			t.Errorf("error updating golden files: %v", err)
+		}
+		return
+	}
+	golden := read(test.golden)
+	if bytes.Compare(golden, []byte(result.output)) != 0 {
+		// TODO(sbarzowski) better reporting of differences in whitespace
+		// missing newline issues can be very subtle now
+		t.Fail()
+		t.Errorf("Mismatch when running %s.jsonnet. Golden: %s\n", test.name, test.golden)
+		data := diff(result.output, string(golden))
+		t.Errorf("diff %s jsonnet %s.jsonnet\n", test.golden, test.name)
+		t.Errorf(string(data))
+
+	}
+}
+
 func TestMain(t *testing.T) {
 	flag.Parse()
 	var mainTests []mainTest
@@ -77,6 +225,7 @@ func TestMain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	for _, input := range match {
 		golden := input
 		name := input
@@ -90,66 +239,9 @@ func TestMain(t *testing.T) {
 		}
 		mainTests = append(mainTests, mainTest{name: name, input: input, golden: golden, meta: &meta})
 	}
-	errFormatter := ErrorFormatter{pretty: true, MaxStackTraceSize: 9}
 	for _, test := range mainTests {
 		t.Run(test.name, func(t *testing.T) {
-			vm := MakeVM()
-
-			for name, value := range test.meta.extVars {
-				vm.ExtVar(name, value)
-			}
-			for name, value := range test.meta.extCode {
-				vm.ExtCode(name, value)
-			}
-
-			vm.NativeFunction(&NativeFunction{
-				Name:   "jsonToString",
-				Params: ast.Identifiers{"x"},
-				Func: func(x []interface{}) (interface{}, error) {
-					bytes, err := json.Marshal(x[0])
-					if err != nil {
-						return nil, err
-					}
-					return string(bytes), nil
-				},
-			})
-			read := func(file string) []byte {
-				bytz, err := ioutil.ReadFile(file)
-				if err != nil {
-					t.Fatalf("reading file: %s: %v", file, err)
-				}
-				return bytz
-			}
-
-			input := read(test.input)
-			output, err := vm.evaluateSnippet(test.name, string(input))
-			if err != nil {
-				// TODO(sbarzowski) perhaps somehow mark that we are processing
-				// an error. But for now we can treat them the same.
-				output = errFormatter.format(err)
-			}
-			output += "\n"
-			if *update {
-				err := ioutil.WriteFile(test.golden, []byte(output), 0666)
-				if err != nil {
-					t.Errorf("error updating golden files: %v", err)
-				}
-				return
-			}
-			golden := read(test.golden)
-			if bytes.Compare(golden, []byte(output)) != 0 {
-				// TODO(sbarzowski) better reporting of differences in whitespace
-				// missing newline issues can be very subtle now
-				t.Fail()
-				t.Errorf("Mismatch when running %s.jsonnet. Golden: %s\n", test.name, test.golden)
-				data := diff(output, string(golden))
-				if err != nil {
-					t.Errorf("computing diff: %s", err)
-				}
-				t.Errorf("diff %s jsonnet %s.jsonnet\n", test.golden, test.name)
-				t.Errorf(string(data))
-
-			}
+			runTest(t, &test)
 		})
 	}
 }
@@ -158,115 +250,4 @@ func diff(a, b string) string {
 	dmp := diffmatchpatch.New()
 	diffs := dmp.DiffMain(a, b, false)
 	return dmp.DiffPrettyText(diffs)
-}
-
-type errorFormattingTest struct {
-	name      string
-	input     string
-	errString string
-}
-
-func genericTestErrorMessage(t *testing.T, tests []errorFormattingTest, format func(RuntimeError) string) {
-	for _, test := range tests {
-		vm := MakeVM()
-		output, err := vm.evaluateSnippet(test.name, test.input)
-		var errString string
-		if err != nil {
-			switch typedErr := err.(type) {
-			case RuntimeError:
-				errString = format(typedErr)
-			default:
-				t.Errorf("%s: unexpected error: %v", test.name, err)
-			}
-
-		}
-		if errString != test.errString {
-			t.Errorf("%s: error result does not match. got\n\t%+#v\nexpected\n\t%+#v",
-				test.name, errString, test.errString)
-		}
-		if err == nil {
-			t.Errorf("%s, Expected error, but execution succeded and the here's the result:\n %v\n", test.name, output)
-		}
-	}
-}
-
-// TODO(sbarzowski) Perhaps we should have just one set of tests with all the variants?
-// TODO(sbarzowski) Perhaps this should be handled in external tests?
-var oneLineTests = []errorFormattingTest{
-	{"error", `error "x"`, "RUNTIME ERROR: x"},
-}
-
-func TestOneLineError(t *testing.T) {
-	genericTestErrorMessage(t, oneLineTests, func(r RuntimeError) string {
-		return r.Error()
-	})
-}
-
-// TODO(sbarzowski) checking if the whitespace is right is quite unpleasant, what can we do about it?
-var minimalErrorTests = []errorFormattingTest{
-	{"error", `error "x"`, "RUNTIME ERROR: x\n" +
-		"	error:1:1-9	$\n" + // TODO(sbarzowski) if seems we have off-by-one in location
-		"	During evaluation	\n" +
-		""},
-	{"error_in_func", `local x(n) = if n == 0 then error "x" else x(n - 1); x(3)`, "RUNTIME ERROR: x\n" +
-		"	error_in_func:1:29-37	function <x>\n" +
-		"	error_in_func:1:44-52	function <x>\n" +
-		"	error_in_func:1:44-52	function <x>\n" +
-		"	error_in_func:1:44-52	function <x>\n" +
-		"	error_in_func:1:54-58	$\n" +
-		"	During evaluation	\n" +
-		""},
-	{"error_in_error", `error (error "x")`, "RUNTIME ERROR: x\n" +
-		"	error_in_error:1:8-16	$\n" +
-		"	During evaluation	\n" +
-		""},
-}
-
-func TestMinimalError(t *testing.T) {
-	formatter := ErrorFormatter{MaxStackTraceSize: 20}
-	genericTestErrorMessage(t, minimalErrorTests, func(r RuntimeError) string {
-		return formatter.format(r)
-	})
-}
-
-// TODO(sbarzowski) test pretty errors once they are stable-ish
-// probably "golden" pattern is the right one for that
-
-func removeExcessiveWhitespace(s string) string {
-	var buf bytes.Buffer
-	separated := true
-	for i, w := 0, 0; i < len(s); i += w {
-		runeValue, width := utf8.DecodeRuneInString(s[i:])
-		if runeValue == '\n' || runeValue == ' ' {
-			if !separated {
-				buf.WriteString(" ")
-				separated = true
-			}
-		} else {
-			buf.WriteRune(runeValue)
-			separated = false
-		}
-		w = width
-	}
-	return buf.String()
-}
-
-func TestCustomImporter(t *testing.T) {
-	vm := MakeVM()
-	vm.Importer(&MemoryImporter{
-		map[string]string{
-			"a.jsonnet": "2 + 2",
-			"b.jsonnet": "3 + 3",
-		},
-	})
-	input := `[import "a.jsonnet", importstr "b.jsonnet"]`
-	expected := `[ 4, "3 + 3" ]`
-	actual, err := vm.EvaluateSnippet("custom_import.jsonnet", input)
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-	actual = removeExcessiveWhitespace(actual)
-	if actual != expected {
-		t.Errorf("Expected %v, but got %v", expected, actual)
-	}
 }
