@@ -38,7 +38,7 @@ var defaultFilePermissions = os.FileMode(0644)
 type Manager interface {
 	Root() string
 	LibPaths() (libPath, vendorPath string)
-	EnvPaths(env string) (metadataPath, mainPath, paramsPath string)
+	EnvPaths(env string) (libPath, mainPath, paramsPath string, err error)
 
 	// Components API.
 	ComponentPaths() ([]string, error)
@@ -58,7 +58,7 @@ type Manager interface {
 	SetEnvironmentParams(env, component string, params param.Params) error
 
 	// Environment API.
-	CreateEnvironment(name, uri, namespace string, spec ClusterSpec) error
+	CreateEnvironment(name, uri, namespace, spec string) error
 	DeleteEnvironment(name string) error
 	GetEnvironments() (app.EnvironmentSpecs, error)
 	GetEnvironment(name string) (*app.EnvironmentSpec, error)
@@ -84,10 +84,8 @@ func Find(path string) (Manager, error) {
 	return findManager(path, afero.NewOsFs())
 }
 
-// Init will retrieve a cluster API specification, generate a
-// capabilities-compliant version of ksonnet-lib, and then generate the
-// directory tree for an application.
-func Init(name, rootPath string, spec ClusterSpec, serverURI, namespace *string) (Manager, error) {
+// Init will generate the directory tree for a ksonnet project.
+func Init(name, rootPath string, k8sSpecFlag, serverURI, namespace *string) (Manager, error) {
 	// Generate `incubator` registry. We do this before before creating
 	// directory tree, in case the network call fails.
 	const (
@@ -104,24 +102,7 @@ func Init(name, rootPath string, spec ClusterSpec, serverURI, namespace *string)
 		return nil, err
 	}
 
-	return initManager(name, rootPath, spec, serverURI, namespace, gh, appFS)
-}
-
-// ClusterSpec represents the API supported by some cluster. There are several
-// ways to specify a cluster, including: querying the API server, reading an
-// OpenAPI spec in some file, or consulting the OpenAPI spec released in a
-// specific version of Kubernetes.
-type ClusterSpec interface {
-	OpenAPI() ([]byte, error)
-	Resource() string // For testing parsing logic.
-}
-
-// ParseClusterSpec will parse a cluster spec flag and output a well-formed
-// ClusterSpec object. For example, if the flag is `--version:v1.7.1`, then we
-// will output a ClusterSpec representing the cluster specification associated
-// with the `v1.7.1` build of Kubernetes.
-func ParseClusterSpec(specFlag string) (ClusterSpec, error) {
-	return parseClusterSpec(specFlag, appFS)
+	return initManager(name, rootPath, k8sSpecFlag, serverURI, namespace, gh, appFS)
 }
 
 // isValidName returns true if a name (e.g., for an environment) is valid.

@@ -45,13 +45,10 @@ func mockEnvironments(t *testing.T, appName string) *manager {
 }
 
 func mockEnvironmentsWith(t *testing.T, appName string, envNames []string) *manager {
-	spec, err := parseClusterSpec(fmt.Sprintf("file:%s", blankSwagger), testFS)
-	if err != nil {
-		t.Fatalf("Failed to parse cluster spec: %v", err)
-	}
+	specFlag := fmt.Sprintf("file:%s", blankSwagger)
 
 	reg := newMockRegistryManager("incubator")
-	m, err := initManager(appName, appName, spec, &mockAPIServer, &mockNamespace, reg, testFS)
+	m, err := initManager(appName, appName, &specFlag, &mockAPIServer, &mockNamespace, reg, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}

@@ -55,14 +55,11 @@ func init() {
 }
 
 func TestInitSuccess(t *testing.T) {
-	spec, err := parseClusterSpec(fmt.Sprintf("file:%s", blankSwagger), testFS)
-	if err != nil {
-		t.Fatalf("Failed to parse cluster spec: %v", err)
-	}
+	specFlag := fmt.Sprintf("file:%s", blankSwagger)
 
 	appPath := "/fromEmptySwagger"
 	reg := newMockRegistryManager("incubator")
-	_, err = initManager("fromEmptySwagger", appPath, spec, &mockAPIServer, &mockNamespace, reg, testFS)
+	_, err := initManager("fromEmptySwagger", appPath, &specFlag, &mockAPIServer, &mockNamespace, reg, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
@@ -110,31 +107,6 @@ func TestInitSuccess(t *testing.T) {
 
 	// Verify contents of metadata.
 	envPath := str.AppendToPath(appPath, environmentsDir)
-	metadataPath := str.AppendToPath(appPath, defaultEnvDir, metadataDirName)
-
-	schemaPath := str.AppendToPath(metadataPath, schemaFilename)
-	bytes, err := afero.ReadFile(testFS, schemaPath)
-	if err != nil {
-		t.Fatalf("Failed to read swagger file at '%s':\n%v", schemaPath, err)
-	} else if actualSwagger := string(bytes); actualSwagger != blankSwaggerData {
-		t.Fatalf("Expected swagger file at '%s' to have value: '%s', got: '%s'", schemaPath, blankSwaggerData, actualSwagger)
-	}
-
-	k8sLibPath := str.AppendToPath(metadataPath, k8sLibFilename)
-	k8sLibBytes, err := afero.ReadFile(testFS, k8sLibPath)
-	if err != nil {
-		t.Fatalf("Failed to read ksonnet-lib file at '%s':\n%v", k8sLibPath, err)
-	} else if actualK8sLib := string(k8sLibBytes); actualK8sLib != blankK8sLib {
-		t.Fatalf("Expected swagger file at '%s' to have value: '%s', got: '%s'", k8sLibPath, blankK8sLib, actualK8sLib)
-	}
-
-	extensionsLibPath := str.AppendToPath(metadataPath, extensionsLibFilename)
-	extensionsLibBytes, err := afero.ReadFile(testFS, extensionsLibPath)
-	if err != nil {
-		t.Fatalf("Failed to read ksonnet-lib file at '%s':\n%v", extensionsLibPath, err)
-	} else if string(extensionsLibBytes) == "" {
-		t.Fatalf("Expected extension library file at '%s' to be non-empty", extensionsLibPath)
-	}
 
 	componentParamsPath := str.AppendToPath(appPath, componentsDir, componentParamsFile)
 	componentParamsBytes, err := afero.ReadFile(testFS, componentParamsPath)
@@ -179,14 +151,11 @@ func TestFindSuccess(t *testing.T) {
 		}
 	}
 
-	spec, err := parseClusterSpec(fmt.Sprintf("file:%s", blankSwagger), testFS)
-	if err != nil {
-		t.Fatalf("Failed to parse cluster spec: %v", err)
-	}
+	specFlag := fmt.Sprintf("file:%s", blankSwagger)
 
 	appPath := "/findSuccess"
 	reg := newMockRegistryManager("incubator")
-	_, err = initManager("findSuccess", appPath, spec, &mockAPIServer, &mockNamespace, reg, testFS)
+	_, err := initManager("findSuccess", appPath, &specFlag, &mockAPIServer, &mockNamespace, reg, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
@@ -224,16 +193,15 @@ func TestLibPaths(t *testing.T) {
 
 func TestEnvPaths(t *testing.T) {
 	appName := "test-env-paths"
-	expectedMetadataPath := path.Join(appName, environmentsDir, mockEnvName, metadataDirName)
 	expectedMainPath := path.Join(appName, environmentsDir, mockEnvName, envFileName)
 	expectedParamsPath := path.Join(appName, environmentsDir, mockEnvName, paramsFileName)
 	m := mockEnvironments(t, appName)
 
-	metadataPath, mainPath, paramsPath := m.EnvPaths(mockEnvName)
-
-	if metadataPath != expectedMetadataPath {
-		t.Fatalf("Expected environment metadata dir path to be:\n  '%s'\n, got:\n  '%s'", expectedMetadataPath, metadataPath)
+	_, mainPath, paramsPath, err := m.EnvPaths(mockEnvName)
+	if err != nil {
+		t.Fatalf("Failure retrieving EnvPaths")
 	}
+
 	if mainPath != expectedMainPath {
 		t.Fatalf("Expected environment main path to be:\n  '%s'\n, got:\n  '%s'", expectedMainPath, mainPath)
 	}
@@ -256,20 +224,17 @@ func TestFindFailure(t *testing.T) {
 }
 
 func TestDoubleNewFailure(t *testing.T) {
-	spec, err := parseClusterSpec(fmt.Sprintf("file:%s", blankSwagger), testFS)
-	if err != nil {
-		t.Fatalf("Failed to parse cluster spec: %v", err)
-	}
+	specFlag := fmt.Sprintf("file:%s", blankSwagger)
 
 	appPath := "/doubleNew"
 	reg := newMockRegistryManager("incubator")
-	_, err = initManager("doubleNew", appPath, spec, &mockAPIServer, &mockNamespace, reg, testFS)
+	_, err := initManager("doubleNew", appPath, &specFlag, &mockAPIServer, &mockNamespace, reg, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
 
 	targetErr := fmt.Sprintf("Could not create app; directory '%s' already exists", appPath)
-	_, err = initManager("doubleNew", appPath, spec, &mockAPIServer, &mockNamespace, reg, testFS)
+	_, err = initManager("doubleNew", appPath, &specFlag, &mockAPIServer, &mockNamespace, reg, testFS)
 	if err == nil || err.Error() != targetErr {
 		t.Fatalf("Expected to fail to create app with message '%s', got '%s'", targetErr, err.Error())
 	}

@@ -21,7 +21,6 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/ksonnet/ksonnet/generator"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/metadata/registry"
 	str "github.com/ksonnet/ksonnet/strings"
@@ -99,26 +98,8 @@ func findManager(p string, appFS afero.Fs) (*manager, error) {
 	}
 }
 
-func initManager(name, rootPath string, spec ClusterSpec, serverURI, namespace *string, incubatorReg registry.Manager, appFS afero.Fs) (*manager, error) {
+func initManager(name, rootPath string, k8sSpecFlag, serverURI, namespace *string, incubatorReg registry.Manager, appFS afero.Fs) (*manager, error) {
 	m, err := newManager(rootPath, appFS)
-	if err != nil {
-		return nil, err
-	}
-
-	//
-	// Generate the program text for ksonnet-lib.
-	//
-	// IMPLEMENTATION NOTE: We get the cluster specification and generate
-	// ksonnet-lib before initializing the directory structure so that failure of
-	// either (e.g., GET'ing the spec from a live cluster returns 404) does not
-	// result in a partially-initialized directory structure.
-	//
-	b, err := spec.OpenAPI()
-	if err != nil {
-		return nil, err
-	}
-
-	kl, err := generator.Ksonnet(b)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +131,7 @@ func initManager(name, rootPath string, spec ClusterSpec, serverURI, namespace *
 
 	// Initialize environment, and cache specification data.
 	if serverURI != nil {
-		err := m.createEnvironment(defaultEnvName, *serverURI, *namespace, kl.K, kl.K8s, kl.Swagger)
+		err := m.CreateEnvironment(defaultEnvName, *serverURI, *namespace, *k8sSpecFlag)
 		if err != nil {
 			return nil, errorOnCreateFailure(name, err)
 		}
@@ -201,19 +182,6 @@ func (m *manager) Root() string {
 
 func (m *manager) LibPaths() (libPath, vendorPath string) {
 	return m.libPath, m.vendorPath
-}
-
-func (m *manager) EnvPaths(env string) (metadataPath, mainPath, paramsPath string) {
-	envPath := str.AppendToPath(m.environmentsPath, env)
-
-	// .metadata directory
-	metadataPath = str.AppendToPath(envPath, metadataDirName)
-	// main.jsonnet file
-	mainPath = str.AppendToPath(envPath, envFileName)
-	// params.libsonnet file
-	paramsPath = str.AppendToPath(envPath, componentParamsFile)
-
-	return
 }
 
 func (m *manager) createUserDirTree() error {

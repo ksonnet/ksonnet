@@ -432,10 +432,13 @@ func (te *cmdObjExpander) Expand() ([]*unstructured.Unstructured, error) {
 		return nil, errors.Wrap(err, "find metadata")
 	}
 
-	libPath, vendorPath := manager.LibPaths()
-	metadataPath, mainPath, paramsPath := manager.EnvPaths(te.config.env)
+	_, vendorPath := manager.LibPaths()
+	libPath, mainPath, paramsPath, err := manager.EnvPaths(te.config.env)
+	if err != nil {
+		return nil, err
+	}
 
-	expander.FlagJpath = append([]string{string(libPath), string(vendorPath), string(metadataPath)}, expander.FlagJpath...)
+	expander.FlagJpath = append([]string{string(vendorPath), string(libPath)}, expander.FlagJpath...)
 
 	componentPaths, err := manager.ComponentPaths()
 	if err != nil {

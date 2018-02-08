@@ -77,7 +77,7 @@ var initCmd = &cobra.Command{
 		}
 
 		log.Infof("Creating a new app '%s' at path '%s'", appName, appRoot)
-		c, err := kubecfg.NewInitCmd(appName, appRoot, specFlag, &server, &namespace)
+		c, err := kubecfg.NewInitCmd(appName, appRoot, &specFlag, &server, &namespace)
 		if err != nil {
 			return err
 		}

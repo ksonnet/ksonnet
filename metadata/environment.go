@@ -22,57 +22,42 @@ import (
 	"path/filepath"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/metadata/lib"
 	str "github.com/ksonnet/ksonnet/strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 
-	"github.com/ksonnet/ksonnet/generator"
 	param "github.com/ksonnet/ksonnet/metadata/params"
 )
 
 const (
-	defaultEnvName  = "default"
-	metadataDirName = ".metadata"
-
-	// hidden metadata files
-	schemaFilename        = "swagger.json"
-	extensionsLibFilename = "k.libsonnet"
-	k8sLibFilename        = "k8s.libsonnet"
+	defaultEnvName = "default"
 
 	// primary environment files
 	envFileName    = "main.jsonnet"
 	paramsFileName = "params.libsonnet"
-	specFilename   = "spec.json"
 )
 
 var envPaths = []string{
-	// metadata Dir.wh
-	metadataDirName,
 	// environment base override file
 	envFileName,
 	// params file
 	paramsFileName,
-	// spec file
-	specFilename,
 }
 
-func (m *manager) CreateEnvironment(name, server, namespace string, spec ClusterSpec) error {
-	b, err := spec.OpenAPI()
+func (m *manager) CreateEnvironment(name, server, namespace, k8sSpecFlag string) error {
+	// generate the lib data for this kubernetes version
+	libManager, err := lib.NewManagerWithSpec(k8sSpecFlag, m.appFS, m.libPath)
 	if err != nil {
 		return err
 	}
 
-	kl, err := generator.Ksonnet(b)
-	if err != nil {
-		log.Debugf("Failed to write '%s'", specFilename)
+	if err := libManager.GenerateLibData(); err != nil {
 		return err
 	}
 
-	return m.createEnvironment(name, server, namespace, kl.K, kl.K8s, kl.Swagger)
-}
-
-func (m *manager) createEnvironment(name, server, namespace string, extensionsLibData, k8sLibData, specData []byte) error {
+	// add the environment to the app spec
 	appSpec, err := m.AppSpec()
 	if err != nil {
 		return err
@@ -99,33 +84,10 @@ func (m *manager) createEnvironment(name, server, namespace string, extensionsLi
 		return err
 	}
 
-	metadataPath := str.AppendToPath(envPath, metadataDirName)
-	err = m.appFS.MkdirAll(metadataPath, defaultFolderPermissions)
-	if err != nil {
-		return err
-	}
-
-	log.Infof("Generating environment metadata at path '%s'", envPath)
-
 	metadata := []struct {
 		path string
 		data []byte
 	}{
-		{
-			// schema file
-			str.AppendToPath(metadataPath, schemaFilename),
-			specData,
-		},
-		{
-			// k8s file
-			str.AppendToPath(metadataPath, k8sLibFilename),
-			k8sLibData,
-		},
-		{
-			// extensions file
-			str.AppendToPath(metadataPath, extensionsLibFilename),
-			extensionsLibData,
-		},
 		{
 			// environment base override file
 			str.AppendToPath(envPath, envFileName),
@@ -157,7 +119,7 @@ func (m *manager) createEnvironment(name, server, namespace string, extensionsLi
 				Namespace: namespace,
 			},
 		},
-		// TODO specify k8s version once metadata is moved.
+		KubernetesVersion: libManager.K8sVersion,
 	})
 
 	if err != nil {
@@ -391,6 +353,31 @@ func (m *manager) SetEnvironmentParams(env, component string, params param.Param
 	return nil
 }
 
+func (m *manager) EnvPaths(env string) (libPath, mainPath, paramsPath string, err error) {
+	app, err := m.AppSpec()
+	if err != nil {
+		return
+	}
+
+	envSpec, ok := app.GetEnvironmentSpec(env)
+	if !ok {
+		err = fmt.Errorf("Environment '%s' does not exist", env)
+		return
+	}
+
+	libManager := lib.NewManager(envSpec.KubernetesVersion, m.appFS, m.libPath)
+
+	envPath := str.AppendToPath(m.environmentsPath, env)
+
+	// main.jsonnet file
+	mainPath = str.AppendToPath(envPath, envFileName)
+	// params.libsonnet file
+	paramsPath = str.AppendToPath(envPath, componentParamsFile)
+	// ksonnet-lib file directory
+	libPath, err = libManager.GetLibPath()
+	return
+}
+
 func (m *manager) tryMvEnvDir(dirPathOld, dirPathNew string) error {
 	// first ensure none of these paths exists in the new directory
 	for _, p := range envPaths {
@@ -450,7 +437,7 @@ func (m *manager) generateOverrideData() []byte {
 
 	var buf bytes.Buffer
 	buf.WriteString(fmt.Sprintf("local base = import \"%s\";\n", relBaseLibsonnetPath))
-	buf.WriteString(fmt.Sprintf("local k = import \"%s\";\n\n", extensionsLibFilename))
+	buf.WriteString(fmt.Sprintf("local k = import \"%s\";\n\n", lib.ExtensionsLibFilename))
 	buf.WriteString("base + {\n")
 	buf.WriteString("  // Insert user-specified overrides here. For example if a component is named \"nginx-deployment\", you might have something like:\n")
 	buf.WriteString("  //   \"nginx-deployment\"+: k.deployment.mixin.metadata.labels({foo: \"bar\"})\n")

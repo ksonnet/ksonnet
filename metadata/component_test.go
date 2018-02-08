@@ -33,14 +33,11 @@ const (
 )
 
 func populateComponentPaths(t *testing.T) *manager {
-	spec, err := parseClusterSpec(fmt.Sprintf("file:%s", blankSwagger), testFS)
-	if err != nil {
-		t.Fatalf("Failed to parse cluster spec: %v", err)
-	}
+	specFlag := fmt.Sprintf("file:%s", blankSwagger)
 
 	appPath := componentsPath
 	reg := newMockRegistryManager("incubator")
-	m, err := initManager("componentPaths", appPath, spec, &mockAPIServer, &mockNamespace, reg, testFS)
+	m, err := initManager("componentPaths", appPath, &specFlag, &mockAPIServer, &mockNamespace, reg, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
