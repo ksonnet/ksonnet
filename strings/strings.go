@@ -1,4 +1,4 @@
-// Copyright 2017 The kubecfg authors
+// Copyright 2017 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,11 +13,12 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package utils
+package strings
 
 import (
 	"bytes"
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/PuerkitoBio/purell"
@@ -106,4 +107,10 @@ func PadRows(rows [][]string) (string, error) {
 	}
 
 	return buf.String(), nil
+}
+
+// AppendToPath appends one or more paths to the specified original path.
+func AppendToPath(originalPath string, toAppend ...string) string {
+	paths := append([]string{originalPath}, toAppend...)
+	return path.Join(paths...)
 }

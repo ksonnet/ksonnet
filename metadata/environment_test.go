@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
+	str "github.com/ksonnet/ksonnet/strings"
 
 	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/spf13/afero"
@@ -44,38 +45,34 @@ func mockEnvironments(t *testing.T, appName string) *manager {
 }
 
 func mockEnvironmentsWith(t *testing.T, appName string, envNames []string) *manager {
-	spec, err := parseClusterSpec(fmt.Sprintf("file:%s", blankSwagger), testFS)
-	if err != nil {
-		t.Fatalf("Failed to parse cluster spec: %v", err)
-	}
+	specFlag := fmt.Sprintf("file:%s", blankSwagger)
 
-	appPath := AbsPath(appName)
 	reg := newMockRegistryManager("incubator")
-	m, err := initManager(appName, appPath, spec, &mockAPIServer, &mockNamespace, reg, testFS)
+	m, err := initManager(appName, appName, &specFlag, &mockAPIServer, &mockNamespace, reg, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
 
 	for _, env := range envNames {
-		envPath := appendToAbsPath(m.environmentsPath, env)
-		testFS.Mkdir(string(envPath), defaultFolderPermissions)
-		testDirExists(t, string(envPath))
+		envPath := str.AppendToPath(m.environmentsPath, env)
+		testFS.Mkdir(envPath, defaultFolderPermissions)
+		testDirExists(t, envPath)
 
-		envFilePath := appendToAbsPath(envPath, envFileName)
+		envFilePath := str.AppendToPath(envPath, envFileName)
 		envFileData := m.generateOverrideData()
-		err = afero.WriteFile(testFS, string(envFilePath), envFileData, defaultFilePermissions)
+		err = afero.WriteFile(testFS, envFilePath, envFileData, defaultFilePermissions)
 		if err != nil {
 			t.Fatalf("Could not write file at path: %s", envFilePath)
 		}
-		testFileExists(t, string(envFilePath))
+		testFileExists(t, envFilePath)
 
-		paramsPath := appendToAbsPath(envPath, paramsFileName)
+		paramsPath := str.AppendToPath(envPath, paramsFileName)
 		paramsData := m.generateParamsData()
-		err = afero.WriteFile(testFS, string(paramsPath), paramsData, defaultFilePermissions)
+		err = afero.WriteFile(testFS, paramsPath, paramsData, defaultFilePermissions)
 		if err != nil {
 			t.Fatalf("Could not write file at path: %s", paramsPath)
 		}
-		testFileExists(t, string(paramsPath))
+		testFileExists(t, paramsPath)
 
 		appSpec, err := m.AppSpec()
 		if err != nil {
@@ -129,26 +126,26 @@ func TestDeleteEnvironment(t *testing.T) {
 	m := mockEnvironments(t, appName)
 
 	// Test that both directory and empty parent directory is deleted.
-	expectedPath := appendToAbsPath(m.environmentsPath, mockEnvName3)
+	expectedPath := str.AppendToPath(m.environmentsPath, mockEnvName3)
 	parentDir := strings.Split(mockEnvName3, "/")[0]
-	expectedParentPath := appendToAbsPath(m.environmentsPath, parentDir)
+	expectedParentPath := str.AppendToPath(m.environmentsPath, parentDir)
 	err := m.DeleteEnvironment(mockEnvName3)
 	if err != nil {
 		t.Fatalf("Expected %s to be deleted but got err:\n  %s", mockEnvName3, err)
 	}
-	testDirNotExists(t, string(expectedPath))
-	testDirNotExists(t, string(expectedParentPath))
+	testDirNotExists(t, expectedPath)
+	testDirNotExists(t, expectedParentPath)
 
 	// Test that only leaf directory is deleted if parent directory is shared
-	expectedPath = appendToAbsPath(m.environmentsPath, mockEnvName2)
+	expectedPath = str.AppendToPath(m.environmentsPath, mockEnvName2)
 	parentDir = strings.Split(mockEnvName2, "/")[0]
-	expectedParentPath = appendToAbsPath(m.environmentsPath, parentDir)
+	expectedParentPath = str.AppendToPath(m.environmentsPath, parentDir)
 	err = m.DeleteEnvironment(mockEnvName2)
 	if err != nil {
 		t.Fatalf("Expected %s to be deleted but got err:\n  %s", mockEnvName3, err)
 	}
-	testDirNotExists(t, string(expectedPath))
-	testDirExists(t, string(expectedParentPath))
+	testDirNotExists(t, expectedPath)
+	testDirExists(t, expectedParentPath)
 }
 
 func TestGetEnvironments(t *testing.T) {
@@ -199,11 +196,11 @@ func TestSetEnvironment(t *testing.T) {
 	}
 
 	// Ensure new env directory is created, and old directory no longer exists.
-	envPath := appendToAbsPath(AbsPath(appName), environmentsDir)
-	expectedPathExists := appendToAbsPath(envPath, setName)
-	expectedPathNotExists := appendToAbsPath(envPath, mockEnvName)
-	testDirExists(t, string(expectedPathExists))
-	testDirNotExists(t, string(expectedPathNotExists))
+	envPath := str.AppendToPath(appName, environmentsDir)
+	expectedPathExists := str.AppendToPath(envPath, setName)
+	expectedPathNotExists := str.AppendToPath(envPath, mockEnvName)
+	testDirExists(t, expectedPathExists)
+	testDirNotExists(t, expectedPathNotExists)
 
 	// BUG: https://github.com/spf13/afero/issues/141
 	// we aren't able to test this until the above is fixed.
@@ -246,8 +243,8 @@ func TestSetEnvironment(t *testing.T) {
 			t.Fatalf("Could not set '%s', got:\n  %s", v.nameOld, err)
 		}
 		// Ensure new env directory is created
-		expectedPath := appendToAbsPath(AbsPath(v.appName), environmentsDir, v.nameNew)
-		testDirExists(t, string(expectedPath))
+		expectedPath := str.AppendToPath(v.appName, environmentsDir, v.nameNew)
+		testDirExists(t, expectedPath)
 	}
 }
 

@@ -13,6 +13,6 @@ environments:
     destinations:
     - namespace: foo
       server: foo
-    k8sVersion: "1.8.1"
+    k8sVersion: "v1.8.1"
     path: default
 version: 0.0.1

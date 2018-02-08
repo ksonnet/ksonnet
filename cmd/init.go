@@ -21,7 +21,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -62,12 +61,10 @@ var initCmd = &cobra.Command{
 			return err
 		}
 
-		path, err := genKsRoot(appName, wd, initDir)
+		appRoot, err := genKsRoot(appName, wd, initDir)
 		if err != nil {
 			return err
 		}
-
-		appRoot := metadata.AbsPath(path)
 
 		specFlag, err := flags.GetString(flagAPISpec)
 		if err != nil {
@@ -80,7 +77,7 @@ var initCmd = &cobra.Command{
 		}
 
 		log.Infof("Creating a new app '%s' at path '%s'", appName, appRoot)
-		c, err := kubecfg.NewInitCmd(appName, appRoot, specFlag, &server, &namespace)
+		c, err := kubecfg.NewInitCmd(appName, appRoot, &specFlag, &server, &namespace)
 		if err != nil {
 			return err
 		}

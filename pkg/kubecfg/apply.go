@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/ksonnet/ksonnet/utils"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -17,9 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
-
-	"github.com/ksonnet/ksonnet/metadata"
-	"github.com/ksonnet/ksonnet/utils"
 )
 
 const (
@@ -51,7 +49,8 @@ type ApplyCmd struct {
 	DryRun bool
 }
 
-func (c ApplyCmd) Run(apiObjects []*unstructured.Unstructured, wd metadata.AbsPath) error {
+// Run applies the components to the designated environment cluster.
+func (c ApplyCmd) Run(apiObjects []*unstructured.Unstructured, wd string) error {
 	dryRunText := ""
 	if c.DryRun {
 		dryRunText = " (dry-run)"

@@ -23,29 +23,21 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata/app"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/ksonnet/ksonnet/metadata"
-	"github.com/ksonnet/ksonnet/utils"
+	str "github.com/ksonnet/ksonnet/strings"
 )
 
 type EnvAddCmd struct {
 	name      string
 	server    string
 	namespace string
+	spec      string
 
-	spec    metadata.ClusterSpec
 	manager metadata.Manager
 }
 
 func NewEnvAddCmd(name, server, namespace, specFlag string, manager metadata.Manager) (*EnvAddCmd, error) {
-	spec, err := metadata.ParseClusterSpec(specFlag)
-	if err != nil {
-		return nil, err
-	}
-	log.Debugf("Generating ksonnetLib data with spec: %s", specFlag)
-
-	return &EnvAddCmd{name: name, server: server, namespace: namespace, spec: spec, manager: manager}, nil
+	return &EnvAddCmd{name: name, server: server, namespace: namespace, spec: specFlag, manager: manager}, nil
 }
 
 func (c *EnvAddCmd) Run() error {
@@ -114,7 +106,7 @@ func (c *EnvListCmd) Run(out io.Writer) error {
 		}
 	}
 
-	formattedEnvsList, err := utils.PadRows(rows)
+	formattedEnvsList, err := str.PadRows(rows)
 	if err != nil {
 		return err
 	}

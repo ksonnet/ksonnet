@@ -22,7 +22,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/metadata/parts"
-	"github.com/ksonnet/ksonnet/utils"
+	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/spf13/cobra"
 )
 
@@ -101,9 +101,8 @@ var pkgInstallCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		wd := metadata.AbsPath(cwd)
 
-		manager, err := metadata.Find(wd)
+		manager, err := metadata.Find(cwd)
 		if err != nil {
 			return err
 		}
@@ -165,9 +164,8 @@ var pkgDescribeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		wd := metadata.AbsPath(cwd)
 
-		manager, err := metadata.Find(wd)
+		manager, err := metadata.Find(cwd)
 		if err != nil {
 			return err
 		}
@@ -238,9 +236,8 @@ var pkgListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		wd := metadata.AbsPath(cwd)
 
-		manager, err := metadata.Find(wd)
+		manager, err := metadata.Find(cwd)
 		if err != nil {
 			return err
 		}
@@ -273,7 +270,7 @@ var pkgListCmd = &cobra.Command{
 			}
 		}
 
-		formatted, err := utils.PadRows(rows)
+		formatted, err := str.PadRows(rows)
 		if err != nil {
 			return err
 		}

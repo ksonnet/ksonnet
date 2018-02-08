@@ -39,6 +39,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/ksonnet/ksonnet/metadata"
+	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/ksonnet/ksonnet/template"
 	"github.com/ksonnet/ksonnet/utils"
 
@@ -332,9 +333,8 @@ func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overri
 	if err != nil {
 		return err
 	}
-	wd := metadata.AbsPath(cwd)
 
-	metadataManager, err := metadata.Find(wd)
+	metadataManager, err := metadata.Find(cwd)
 	if err != nil {
 		return err
 	}
@@ -346,7 +346,7 @@ func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overri
 
 	var servers = make(map[string]string)
 	for name, cluster := range rawConfig.Clusters {
-		server, err := utils.NormalizeURL(cluster.Server)
+		server, err := str.NormalizeURL(cluster.Server)
 		if err != nil {
 			return err
 		}
@@ -366,7 +366,7 @@ func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overri
 	}
 
 	// TODO support multi-cluster deployment.
-	server, err := utils.NormalizeURL(env.Destinations[0].Server)
+	server, err := str.NormalizeURL(env.Destinations[0].Server)
 	if err != nil {
 		return err
 	}
@@ -392,7 +392,7 @@ type cmdObjExpanderConfig struct {
 	cmd        *cobra.Command
 	env        string
 	components []string
-	cwd        metadata.AbsPath
+	cwd        string
 }
 
 // cmdObjExpander finds and expands templates for the family of commands of
@@ -432,10 +432,13 @@ func (te *cmdObjExpander) Expand() ([]*unstructured.Unstructured, error) {
 		return nil, errors.Wrap(err, "find metadata")
 	}
 
-	libPath, vendorPath := manager.LibPaths()
-	metadataPath, mainPath, paramsPath := manager.EnvPaths(te.config.env)
+	_, vendorPath := manager.LibPaths()
+	libPath, mainPath, paramsPath, err := manager.EnvPaths(te.config.env)
+	if err != nil {
+		return nil, err
+	}
 
-	expander.FlagJpath = append([]string{string(libPath), string(vendorPath), string(metadataPath)}, expander.FlagJpath...)
+	expander.FlagJpath = append([]string{string(vendorPath), string(libPath)}, expander.FlagJpath...)
 
 	componentPaths, err := manager.ComponentPaths()
 	if err != nil {
@@ -524,7 +527,7 @@ func constructBaseObj(componentPaths, componentNames []string) (string, error) {
 
 		// Emit object field. Sanitize the name to guarantee we generate valid
 		// Jsonnet.
-		componentName = utils.QuoteNonASCII(componentName)
+		componentName = str.QuoteNonASCII(componentName)
 		fmt.Fprintf(&obj, "  %s: %s,\n", componentName, importExpr)
 	}
 

@@ -21,7 +21,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
 
@@ -104,7 +103,6 @@ var applyCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		wd := metadata.AbsPath(cwd)
 
 		c.ClientPool, c.Discovery, err = restClientPool(cmd, &env)
 		if err != nil {
@@ -120,14 +118,14 @@ var applyCmd = &cobra.Command{
 			cmd:        cmd,
 			env:        env,
 			components: componentNames,
-			cwd:        wd,
+			cwd:        cwd,
 		})
 		objs, err := te.Expand()
 		if err != nil {
 			return err
 		}
 
-		return c.Run(objs, wd)
+		return c.Run(objs, cwd)
 	},
 	Long: `
 The ` + "`apply`" + `command uses local manifest(s) to update (and optionally create)

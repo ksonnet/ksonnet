@@ -24,7 +24,7 @@ import (
 	"strings"
 
 	param "github.com/ksonnet/ksonnet/metadata/params"
-	"github.com/ksonnet/ksonnet/utils"
+	str "github.com/ksonnet/ksonnet/strings"
 
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
@@ -167,7 +167,7 @@ func outputParamsFor(component string, params param.Params, out io.Writer) error
 		rows = append(rows, []string{k, params[k]})
 	}
 
-	formatted, err := utils.PadRows(rows)
+	formatted, err := str.PadRows(rows)
 	if err != nil {
 		return err
 	}
@@ -194,7 +194,7 @@ func outputParams(params map[string]param.Params, out io.Writer) error {
 		}
 	}
 
-	formatted, err := utils.PadRows(rows)
+	formatted, err := str.PadRows(rows)
 	if err != nil {
 		return err
 	}

@@ -21,7 +21,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ksonnet/ksonnet/utils"
+	str "github.com/ksonnet/ksonnet/strings"
 )
 
 const (
@@ -85,7 +85,7 @@ func printComponents(out io.Writer, components []string) (string, error) {
 		rows = append(rows, []string{component})
 	}
 
-	formatted, err := utils.PadRows(rows)
+	formatted, err := str.PadRows(rows)
 	if err != nil {
 		return "", err
 	}

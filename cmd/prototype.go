@@ -26,7 +26,7 @@ import (
 	"github.com/ksonnet/ksonnet/prototype"
 	"github.com/ksonnet/ksonnet/prototype/snippet"
 	"github.com/ksonnet/ksonnet/prototype/snippet/jsonnet"
-	"github.com/ksonnet/ksonnet/utils"
+	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/spf13/cobra"
 )
 
@@ -87,9 +87,8 @@ var prototypeListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		wd := metadata.AbsPath(cwd)
 
-		manager, err := metadata.Find(wd)
+		manager, err := metadata.Find(cwd)
 		if err != nil {
 			return err
 		}
@@ -143,10 +142,9 @@ var prototypeDescribeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		wd := metadata.AbsPath(cwd)
 
 		extProtos := prototype.SpecificationSchemas{}
-		manager, err := metadata.Find(wd)
+		manager, err := metadata.Find(cwd)
 		if err == nil {
 			extProtos, err = manager.GetAllPrototypes()
 			if err != nil {
@@ -255,10 +253,9 @@ var prototypePreviewCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		wd := metadata.AbsPath(cwd)
 
 		extProtos := prototype.SpecificationSchemas{}
-		manager, err := metadata.Find(wd)
+		manager, err := metadata.Find(cwd)
 		if err == nil {
 			extProtos, err = manager.GetAllPrototypes()
 			if err != nil {
@@ -356,7 +353,7 @@ var prototypeUseCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		manager, err := metadata.Find(metadata.AbsPath(cwd))
+		manager, err := metadata.Find(cwd)
 		if err != nil {
 			return fmt.Errorf("Command can only be run in a ksonnet application directory:\n\n%v", err)
 		}
@@ -500,7 +497,7 @@ func expandPrototype(proto *prototype.SpecificationSchema, templateType prototyp
 	}
 	if templateType == prototype.Jsonnet {
 		componentsText := "components." + componentName
-		if !utils.IsASCIIIdentifier(componentName) {
+		if !str.IsASCIIIdentifier(componentName) {
 			componentsText = fmt.Sprintf(`components["%s"]`, componentName)
 		}
 		template = append([]string{

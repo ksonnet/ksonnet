@@ -21,17 +21,12 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/ksonnet/ksonnet/generator"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/metadata/registry"
+	str "github.com/ksonnet/ksonnet/strings"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
-
-func appendToAbsPath(originalPath AbsPath, toAppend ...string) AbsPath {
-	paths := append([]string{string(originalPath)}, toAppend...)
-	return AbsPath(path.Join(paths...))
-}
 
 const (
 	ksonnetDir      = ".ksonnet"
@@ -64,26 +59,26 @@ type manager struct {
 	appFS afero.Fs
 
 	// Application paths.
-	rootPath         AbsPath
-	ksonnetPath      AbsPath
-	registriesPath   AbsPath
-	libPath          AbsPath
-	componentsPath   AbsPath
-	environmentsPath AbsPath
-	vendorPath       AbsPath
+	rootPath         string
+	ksonnetPath      string
+	registriesPath   string
+	libPath          string
+	componentsPath   string
+	environmentsPath string
+	vendorPath       string
 
-	componentParamsPath AbsPath
-	baseLibsonnetPath   AbsPath
-	appYAMLPath         AbsPath
+	componentParamsPath string
+	baseLibsonnetPath   string
+	appYAMLPath         string
 
 	// User-level paths.
-	userKsonnetRootPath AbsPath
-	pkgSrcCachePath     AbsPath
+	userKsonnetRootPath string
+	pkgSrcCachePath     string
 }
 
-func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
+func findManager(p string, appFS afero.Fs) (*manager, error) {
 	var lastBase string
-	currBase := string(abs)
+	currBase := p
 
 	for {
 		currPath := path.Join(currBase, ksonnetDir)
@@ -92,7 +87,7 @@ func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
 			return nil, err
 		}
 		if exists {
-			return newManager(AbsPath(currBase), appFS)
+			return newManager(currBase, appFS)
 		}
 
 		lastBase = currBase
@@ -103,26 +98,8 @@ func findManager(abs AbsPath, appFS afero.Fs) (*manager, error) {
 	}
 }
 
-func initManager(name string, rootPath AbsPath, spec ClusterSpec, serverURI, namespace *string, incubatorReg registry.Manager, appFS afero.Fs) (*manager, error) {
+func initManager(name, rootPath string, k8sSpecFlag, serverURI, namespace *string, incubatorReg registry.Manager, appFS afero.Fs) (*manager, error) {
 	m, err := newManager(rootPath, appFS)
-	if err != nil {
-		return nil, err
-	}
-
-	//
-	// Generate the program text for ksonnet-lib.
-	//
-	// IMPLEMENTATION NOTE: We get the cluster specification and generate
-	// ksonnet-lib before initializing the directory structure so that failure of
-	// either (e.g., GET'ing the spec from a live cluster returns 404) does not
-	// result in a partially-initialized directory structure.
-	//
-	b, err := spec.OpenAPI()
-	if err != nil {
-		return nil, err
-	}
-
-	kl, err := generator.Ksonnet(b)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +131,7 @@ func initManager(name string, rootPath AbsPath, spec ClusterSpec, serverURI, nam
 
 	// Initialize environment, and cache specification data.
 	if serverURI != nil {
-		err := m.createEnvironment(defaultEnvName, *serverURI, *namespace, kl.K, kl.K8s, kl.Swagger)
+		err := m.CreateEnvironment(defaultEnvName, *serverURI, *namespace, *k8sSpecFlag)
 		if err != nil {
 			return nil, errorOnCreateFailure(name, err)
 		}
@@ -170,64 +147,51 @@ func initManager(name string, rootPath AbsPath, spec ClusterSpec, serverURI, nam
 	return m, nil
 }
 
-func newManager(rootPath AbsPath, appFS afero.Fs) (*manager, error) {
+func newManager(rootPath string, appFS afero.Fs) (*manager, error) {
 	usr, err := user.Current()
 	if err != nil {
 		return nil, err
 	}
-	userRootPath := appendToAbsPath(AbsPath(usr.HomeDir), userKsonnetRootDir)
+	userRootPath := str.AppendToPath(usr.HomeDir, userKsonnetRootDir)
 
 	return &manager{
 		appFS: appFS,
 
 		// Application paths.
 		rootPath:         rootPath,
-		ksonnetPath:      appendToAbsPath(rootPath, ksonnetDir),
-		registriesPath:   appendToAbsPath(rootPath, registriesDir),
-		libPath:          appendToAbsPath(rootPath, libDir),
-		componentsPath:   appendToAbsPath(rootPath, componentsDir),
-		environmentsPath: appendToAbsPath(rootPath, environmentsDir),
-		vendorPath:       appendToAbsPath(rootPath, vendorDir),
+		ksonnetPath:      str.AppendToPath(rootPath, ksonnetDir),
+		registriesPath:   str.AppendToPath(rootPath, registriesDir),
+		libPath:          str.AppendToPath(rootPath, libDir),
+		componentsPath:   str.AppendToPath(rootPath, componentsDir),
+		environmentsPath: str.AppendToPath(rootPath, environmentsDir),
+		vendorPath:       str.AppendToPath(rootPath, vendorDir),
 
-		componentParamsPath: appendToAbsPath(rootPath, componentsDir, componentParamsFile),
-		baseLibsonnetPath:   appendToAbsPath(rootPath, environmentsDir, baseLibsonnetFile),
-		appYAMLPath:         appendToAbsPath(rootPath, appYAMLFile),
+		componentParamsPath: str.AppendToPath(rootPath, componentsDir, componentParamsFile),
+		baseLibsonnetPath:   str.AppendToPath(rootPath, environmentsDir, baseLibsonnetFile),
+		appYAMLPath:         str.AppendToPath(rootPath, appYAMLFile),
 
 		// User-level paths.
 		userKsonnetRootPath: userRootPath,
-		pkgSrcCachePath:     appendToAbsPath(userRootPath, pkgSrcCacheDir),
+		pkgSrcCachePath:     str.AppendToPath(userRootPath, pkgSrcCacheDir),
 	}, nil
 }
 
-func (m *manager) Root() AbsPath {
+func (m *manager) Root() string {
 	return m.rootPath
 }
 
-func (m *manager) LibPaths() (libPath, vendorPath AbsPath) {
+func (m *manager) LibPaths() (libPath, vendorPath string) {
 	return m.libPath, m.vendorPath
 }
 
-func (m *manager) EnvPaths(env string) (metadataPath, mainPath, paramsPath AbsPath) {
-	envPath := appendToAbsPath(m.environmentsPath, env)
-
-	// .metadata directory
-	metadataPath = appendToAbsPath(envPath, metadataDirName)
-	// main.jsonnet file
-	mainPath = appendToAbsPath(envPath, envFileName)
-	// params.libsonnet file
-	paramsPath = appendToAbsPath(envPath, componentParamsFile)
-
-	return
-}
-
 func (m *manager) createUserDirTree() error {
-	dirPaths := []AbsPath{
+	dirPaths := []string{
 		m.userKsonnetRootPath,
 		m.pkgSrcCachePath,
 	}
 
 	for _, p := range dirPaths {
-		if err := m.appFS.MkdirAll(string(p), defaultFolderPermissions); err != nil {
+		if err := m.appFS.MkdirAll(p, defaultFolderPermissions); err != nil {
 			return err
 		}
 	}
@@ -236,14 +200,14 @@ func (m *manager) createUserDirTree() error {
 }
 
 func (m *manager) createAppDirTree(name string, appYAMLData, baseLibData []byte, gh registry.Manager) error {
-	exists, err := afero.DirExists(m.appFS, string(m.rootPath))
+	exists, err := afero.DirExists(m.appFS, m.rootPath)
 	if err != nil {
 		return fmt.Errorf("Could not check existance of directory '%s':\n%v", m.rootPath, err)
 	} else if exists {
 		return fmt.Errorf("Could not create app; directory '%s' already exists", m.rootPath)
 	}
 
-	dirPaths := []AbsPath{
+	dirPaths := []string{
 		m.rootPath,
 		m.ksonnetPath,
 		m.registriesPath,
@@ -262,7 +226,7 @@ func (m *manager) createAppDirTree(name string, appYAMLData, baseLibData []byte,
 	}
 
 	filePaths := []struct {
-		path    AbsPath
+		path    string
 		content []byte
 	}{
 		{
@@ -285,7 +249,7 @@ func (m *manager) createAppDirTree(name string, appYAMLData, baseLibData []byte,
 
 	for _, f := range filePaths {
 		log.Debugf("Creating file '%s'", f.path)
-		if err := afero.WriteFile(m.appFS, string(f.path), f.content, defaultFilePermissions); err != nil {
+		if err := afero.WriteFile(m.appFS, f.path, f.content, defaultFilePermissions); err != nil {
 			return err
 		}
 	}

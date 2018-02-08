@@ -21,7 +21,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
 
@@ -97,13 +96,12 @@ ks show dev -c redis -c nginx-server
 		if err != nil {
 			return err
 		}
-		wd := metadata.AbsPath(cwd)
 
 		te := newCmdObjExpander(cmdObjExpanderConfig{
 			cmd:        cmd,
 			env:        env,
 			components: componentNames,
-			cwd:        wd,
+			cwd:        cwd,
 		})
 		objs, err := te.Expand()
 		if err != nil {

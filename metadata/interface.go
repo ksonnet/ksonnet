@@ -32,24 +32,16 @@ var appFS afero.Fs
 var defaultFolderPermissions = os.FileMode(0755)
 var defaultFilePermissions = os.FileMode(0644)
 
-// AbsPath is an advisory type that represents an absolute path. It is advisory
-// in that it is not forced to be absolute, but rather, meant to indicate
-// intent, and make code easier to read.
-type AbsPath string
-
-// AbsPaths is a slice of `AbsPath`.
-type AbsPaths []string
-
 // Manager abstracts over a ksonnet application's metadata, allowing users to do
 // things like: create and delete environments; search for prototypes; vendor
 // libraries; and other non-core-application tasks.
 type Manager interface {
-	Root() AbsPath
-	LibPaths() (libPath, vendorPath AbsPath)
-	EnvPaths(env string) (metadataPath, mainPath, paramsPath AbsPath)
+	Root() string
+	LibPaths() (libPath, vendorPath string)
+	EnvPaths(env string) (libPath, mainPath, paramsPath string, err error)
 
 	// Components API.
-	ComponentPaths() (AbsPaths, error)
+	ComponentPaths() ([]string, error)
 	GetAllComponents() ([]string, error)
 	CreateComponent(name string, text string, params param.Params, templateType prototype.TemplateType) error
 	DeleteComponent(name string) error
@@ -66,7 +58,7 @@ type Manager interface {
 	SetEnvironmentParams(env, component string, params param.Params) error
 
 	// Environment API.
-	CreateEnvironment(name, uri, namespace string, spec ClusterSpec) error
+	CreateEnvironment(name, uri, namespace, spec string) error
 	DeleteEnvironment(name string) error
 	GetEnvironments() (app.EnvironmentSpecs, error)
 	GetEnvironment(name string) (*app.EnvironmentSpec, error)
@@ -88,14 +80,12 @@ type Manager interface {
 // Find will recursively search the current directory and its parents for a
 // `.ksonnet` folder, which marks the application root. Returns error if there
 // is no application root.
-func Find(path AbsPath) (Manager, error) {
+func Find(path string) (Manager, error) {
 	return findManager(path, afero.NewOsFs())
 }
 
-// Init will retrieve a cluster API specification, generate a
-// capabilities-compliant version of ksonnet-lib, and then generate the
-// directory tree for an application.
-func Init(name string, rootPath AbsPath, spec ClusterSpec, serverURI, namespace *string) (Manager, error) {
+// Init will generate the directory tree for a ksonnet project.
+func Init(name, rootPath string, k8sSpecFlag, serverURI, namespace *string) (Manager, error) {
 	// Generate `incubator` registry. We do this before before creating
 	// directory tree, in case the network call fails.
 	const (
@@ -112,24 +102,7 @@ func Init(name string, rootPath AbsPath, spec ClusterSpec, serverURI, namespace 
 		return nil, err
 	}
 
-	return initManager(name, rootPath, spec, serverURI, namespace, gh, appFS)
-}
-
-// ClusterSpec represents the API supported by some cluster. There are several
-// ways to specify a cluster, including: querying the API server, reading an
-// OpenAPI spec in some file, or consulting the OpenAPI spec released in a
-// specific version of Kubernetes.
-type ClusterSpec interface {
-	OpenAPI() ([]byte, error)
-	Resource() string // For testing parsing logic.
-}
-
-// ParseClusterSpec will parse a cluster spec flag and output a well-formed
-// ClusterSpec object. For example, if the flag is `--version:v1.7.1`, then we
-// will output a ClusterSpec representing the cluster specification associated
-// with the `v1.7.1` build of Kubernetes.
-func ParseClusterSpec(specFlag string) (ClusterSpec, error) {
-	return parseClusterSpec(specFlag, appFS)
+	return initManager(name, rootPath, k8sSpecFlag, serverURI, namespace, gh, appFS)
 }
 
 // isValidName returns true if a name (e.g., for an environment) is valid.

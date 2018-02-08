@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/ksonnet/ksonnet/utils"
+	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
@@ -173,7 +173,7 @@ func (ss SpecificationSchemas) String() string {
 		rows = append(rows, []string{proto.Name, proto.Template.ShortDescription})
 	}
 
-	formatted, err := utils.PadRows(rows)
+	formatted, err := str.PadRows(rows)
 	if err != nil {
 		log.Errorf("Failed to print spec rows:\n%v", err)
 	}

@@ -125,9 +125,8 @@ var envAddCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		appRoot := metadata.AbsPath(appDir)
 
-		manager, err := metadata.Find(appRoot)
+		manager, err := metadata.Find(appDir)
 		if err != nil {
 			return err
 		}
@@ -209,9 +208,8 @@ var envRmCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		appRoot := metadata.AbsPath(appDir)
 
-		manager, err := metadata.Find(appRoot)
+		manager, err := metadata.Find(appDir)
 		if err != nil {
 			return err
 		}
@@ -258,9 +256,8 @@ var envListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		appRoot := metadata.AbsPath(appDir)
 
-		manager, err := metadata.Find(appRoot)
+		manager, err := metadata.Find(appDir)
 		if err != nil {
 			return err
 		}
@@ -301,9 +298,8 @@ var envSetCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		appRoot := metadata.AbsPath(appDir)
 
-		manager, err := metadata.Find(appRoot)
+		manager, err := metadata.Find(appDir)
 		if err != nil {
 			return err
 		}

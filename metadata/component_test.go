@@ -21,6 +21,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	str "github.com/ksonnet/ksonnet/strings"
 )
 
 const (
@@ -31,42 +33,39 @@ const (
 )
 
 func populateComponentPaths(t *testing.T) *manager {
-	spec, err := parseClusterSpec(fmt.Sprintf("file:%s", blankSwagger), testFS)
-	if err != nil {
-		t.Fatalf("Failed to parse cluster spec: %v", err)
-	}
+	specFlag := fmt.Sprintf("file:%s", blankSwagger)
 
-	appPath := AbsPath(componentsPath)
+	appPath := componentsPath
 	reg := newMockRegistryManager("incubator")
-	m, err := initManager("componentPaths", appPath, spec, &mockAPIServer, &mockNamespace, reg, testFS)
+	m, err := initManager("componentPaths", appPath, &specFlag, &mockAPIServer, &mockNamespace, reg, testFS)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
 
 	// Create empty app file.
-	components := appendToAbsPath(appPath, componentsDir)
-	appFile1 := appendToAbsPath(components, componentFile1)
-	f1, err := testFS.OpenFile(string(appFile1), os.O_RDONLY|os.O_CREATE, 0777)
+	components := str.AppendToPath(appPath, componentsDir)
+	appFile1 := str.AppendToPath(components, componentFile1)
+	f1, err := testFS.OpenFile(appFile1, os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {
 		t.Fatalf("Failed to touch app file '%s'\n%v", appFile1, err)
 	}
 	f1.Close()
 
 	// Create empty file in a nested directory.
-	appSubdir := appendToAbsPath(components, componentSubdir)
-	err = testFS.MkdirAll(string(appSubdir), os.ModePerm)
+	appSubdir := str.AppendToPath(components, componentSubdir)
+	err = testFS.MkdirAll(appSubdir, os.ModePerm)
 	if err != nil {
 		t.Fatalf("Failed to create directory '%s'\n%v", appSubdir, err)
 	}
-	appFile2 := appendToAbsPath(appSubdir, componentFile2)
-	f2, err := testFS.OpenFile(string(appFile2), os.O_RDONLY|os.O_CREATE, 0777)
+	appFile2 := str.AppendToPath(appSubdir, componentFile2)
+	f2, err := testFS.OpenFile(appFile2, os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {
 		t.Fatalf("Failed to touch app file '%s'\n%v", appFile1, err)
 	}
 	f2.Close()
 
 	// Create a directory that won't be listed in the call to `ComponentPaths`.
-	unlistedDir := string(appendToAbsPath(components, "doNotListMe"))
+	unlistedDir := str.AppendToPath(components, "doNotListMe")
 	err = testFS.MkdirAll(unlistedDir, os.ModePerm)
 	if err != nil {
 		t.Fatalf("Failed to create directory '%s'\n%v", unlistedDir, err)

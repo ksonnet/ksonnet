@@ -22,56 +22,42 @@ import (
 	"path/filepath"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/metadata/lib"
+	str "github.com/ksonnet/ksonnet/strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 
-	"github.com/ksonnet/ksonnet/generator"
 	param "github.com/ksonnet/ksonnet/metadata/params"
 )
 
 const (
-	defaultEnvName  = "default"
-	metadataDirName = ".metadata"
-
-	// hidden metadata files
-	schemaFilename        = "swagger.json"
-	extensionsLibFilename = "k.libsonnet"
-	k8sLibFilename        = "k8s.libsonnet"
+	defaultEnvName = "default"
 
 	// primary environment files
 	envFileName    = "main.jsonnet"
 	paramsFileName = "params.libsonnet"
-	specFilename   = "spec.json"
 )
 
 var envPaths = []string{
-	// metadata Dir.wh
-	metadataDirName,
 	// environment base override file
 	envFileName,
 	// params file
 	paramsFileName,
-	// spec file
-	specFilename,
 }
 
-func (m *manager) CreateEnvironment(name, server, namespace string, spec ClusterSpec) error {
-	b, err := spec.OpenAPI()
+func (m *manager) CreateEnvironment(name, server, namespace, k8sSpecFlag string) error {
+	// generate the lib data for this kubernetes version
+	libManager, err := lib.NewManagerWithSpec(k8sSpecFlag, m.appFS, m.libPath)
 	if err != nil {
 		return err
 	}
 
-	kl, err := generator.Ksonnet(b)
-	if err != nil {
-		log.Debugf("Failed to write '%s'", specFilename)
+	if err := libManager.GenerateLibData(); err != nil {
 		return err
 	}
 
-	return m.createEnvironment(name, server, namespace, kl.K, kl.K8s, kl.Swagger)
-}
-
-func (m *manager) createEnvironment(name, server, namespace string, extensionsLibData, k8sLibData, specData []byte) error {
+	// add the environment to the app spec
 	appSpec, err := m.AppSpec()
 	if err != nil {
 		return err
@@ -92,55 +78,32 @@ func (m *manager) createEnvironment(name, server, namespace string, extensionsLi
 
 	log.Infof("Creating environment '%s' with namespace '%s', pointing at server at address '%s'", name, namespace, server)
 
-	envPath := appendToAbsPath(m.environmentsPath, name)
-	err = m.appFS.MkdirAll(string(envPath), defaultFolderPermissions)
+	envPath := str.AppendToPath(m.environmentsPath, name)
+	err = m.appFS.MkdirAll(envPath, defaultFolderPermissions)
 	if err != nil {
 		return err
 	}
-
-	metadataPath := appendToAbsPath(envPath, metadataDirName)
-	err = m.appFS.MkdirAll(string(metadataPath), defaultFolderPermissions)
-	if err != nil {
-		return err
-	}
-
-	log.Infof("Generating environment metadata at path '%s'", envPath)
 
 	metadata := []struct {
-		path AbsPath
+		path string
 		data []byte
 	}{
 		{
-			// schema file
-			appendToAbsPath(metadataPath, schemaFilename),
-			specData,
-		},
-		{
-			// k8s file
-			appendToAbsPath(metadataPath, k8sLibFilename),
-			k8sLibData,
-		},
-		{
-			// extensions file
-			appendToAbsPath(metadataPath, extensionsLibFilename),
-			extensionsLibData,
-		},
-		{
 			// environment base override file
-			appendToAbsPath(envPath, envFileName),
+			str.AppendToPath(envPath, envFileName),
 			m.generateOverrideData(),
 		},
 		{
 			// params file
-			appendToAbsPath(envPath, paramsFileName),
+			str.AppendToPath(envPath, paramsFileName),
 			m.generateParamsData(),
 		},
 	}
 
 	for _, a := range metadata {
-		fileName := path.Base(string(a.path))
+		fileName := path.Base(a.path)
 		log.Debugf("Generating '%s', length: %d", fileName, len(a.data))
-		if err = afero.WriteFile(m.appFS, string(a.path), a.data, defaultFilePermissions); err != nil {
+		if err = afero.WriteFile(m.appFS, a.path, a.data, defaultFilePermissions); err != nil {
 			log.Debugf("Failed to write '%s'", fileName)
 			return err
 		}
@@ -156,7 +119,7 @@ func (m *manager) createEnvironment(name, server, namespace string, extensionsLi
 				Namespace: namespace,
 			},
 		},
-		// TODO specify k8s version once metadata is moved.
+		KubernetesVersion: libManager.K8sVersion,
 	})
 
 	if err != nil {
@@ -177,12 +140,12 @@ func (m *manager) DeleteEnvironment(name string) error {
 		return fmt.Errorf("Environment '%s' does not exist", name)
 	}
 
-	envPath := appendToAbsPath(m.environmentsPath, env.Path)
+	envPath := str.AppendToPath(m.environmentsPath, env.Path)
 
 	log.Infof("Deleting environment '%s' with metadata at path '%s'", name, envPath)
 
 	// Remove the directory and all files within the environment path.
-	err = m.appFS.RemoveAll(string(envPath))
+	err = m.appFS.RemoveAll(envPath)
 	if err != nil {
 		log.Debugf("Failed to remove environment directory at path '%s'", envPath)
 		return err
@@ -282,9 +245,9 @@ func (m *manager) SetEnvironment(name, desiredName string) error {
 	// reflect the change.
 	//
 
-	pathOld := appendToAbsPath(m.environmentsPath, name)
-	pathNew := appendToAbsPath(m.environmentsPath, desiredName)
-	exists, err = afero.DirExists(m.appFS, string(pathNew))
+	pathOld := str.AppendToPath(m.environmentsPath, name)
+	pathNew := str.AppendToPath(m.environmentsPath, desiredName)
+	exists, err = afero.DirExists(m.appFS, pathNew)
 	if err != nil {
 		return err
 	}
@@ -294,26 +257,26 @@ func (m *manager) SetEnvironment(name, desiredName string) error {
 		// the check earlier. This is an intermediate directory.
 		// We need to move the file contents.
 		m.tryMvEnvDir(pathOld, pathNew)
-	} else if filepath.HasPrefix(string(pathNew), string(pathOld)) {
+	} else if filepath.HasPrefix(pathNew, pathOld) {
 		// the new directory is a child of the old directory --
 		// rename won't work.
-		err = m.appFS.MkdirAll(string(pathNew), defaultFolderPermissions)
+		err = m.appFS.MkdirAll(pathNew, defaultFolderPermissions)
 		if err != nil {
 			return err
 		}
 		m.tryMvEnvDir(pathOld, pathNew)
 	} else {
 		// Need to first create subdirectories that don't exist
-		intermediatePath := path.Dir(string(pathNew))
-		log.Debugf("Moving directory at path '%s' to '%s'", string(pathOld), string(pathNew))
+		intermediatePath := path.Dir(pathNew)
+		log.Debugf("Moving directory at path '%s' to '%s'", pathOld, pathNew)
 		err = m.appFS.MkdirAll(intermediatePath, defaultFolderPermissions)
 		if err != nil {
 			return err
 		}
 		// finally, move the directory
-		err = m.appFS.Rename(string(pathOld), string(pathNew))
+		err = m.appFS.Rename(pathOld, pathNew)
 		if err != nil {
-			log.Debugf("Failed to move path '%s' to '%s", string(pathOld), string(pathNew))
+			log.Debugf("Failed to move path '%s' to '%s", pathOld, pathNew)
 			return err
 		}
 	}
@@ -340,8 +303,8 @@ func (m *manager) GetEnvironmentParams(name string) (map[string]param.Params, er
 	}
 
 	// Get the environment specific params
-	envParamsPath := appendToAbsPath(m.environmentsPath, name, paramsFileName)
-	envParamsText, err := afero.ReadFile(m.appFS, string(envParamsPath))
+	envParamsPath := str.AppendToPath(m.environmentsPath, name, paramsFileName)
+	envParamsText, err := afero.ReadFile(m.appFS, envParamsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -369,9 +332,9 @@ func (m *manager) SetEnvironmentParams(env, component string, params param.Param
 		return fmt.Errorf("Environment '%s' does not exist", env)
 	}
 
-	path := appendToAbsPath(m.environmentsPath, env, paramsFileName)
+	path := str.AppendToPath(m.environmentsPath, env, paramsFileName)
 
-	text, err := afero.ReadFile(m.appFS, string(path))
+	text, err := afero.ReadFile(m.appFS, path)
 	if err != nil {
 		return err
 	}
@@ -381,7 +344,7 @@ func (m *manager) SetEnvironmentParams(env, component string, params param.Param
 		return err
 	}
 
-	err = afero.WriteFile(m.appFS, string(path), []byte(appended), defaultFilePermissions)
+	err = afero.WriteFile(m.appFS, path, []byte(appended), defaultFilePermissions)
 	if err != nil {
 		return err
 	}
@@ -390,10 +353,35 @@ func (m *manager) SetEnvironmentParams(env, component string, params param.Param
 	return nil
 }
 
-func (m *manager) tryMvEnvDir(dirPathOld, dirPathNew AbsPath) error {
+func (m *manager) EnvPaths(env string) (libPath, mainPath, paramsPath string, err error) {
+	app, err := m.AppSpec()
+	if err != nil {
+		return
+	}
+
+	envSpec, ok := app.GetEnvironmentSpec(env)
+	if !ok {
+		err = fmt.Errorf("Environment '%s' does not exist", env)
+		return
+	}
+
+	libManager := lib.NewManager(envSpec.KubernetesVersion, m.appFS, m.libPath)
+
+	envPath := str.AppendToPath(m.environmentsPath, env)
+
+	// main.jsonnet file
+	mainPath = str.AppendToPath(envPath, envFileName)
+	// params.libsonnet file
+	paramsPath = str.AppendToPath(envPath, componentParamsFile)
+	// ksonnet-lib file directory
+	libPath, err = libManager.GetLibPath()
+	return
+}
+
+func (m *manager) tryMvEnvDir(dirPathOld, dirPathNew string) error {
 	// first ensure none of these paths exists in the new directory
 	for _, p := range envPaths {
-		path := string(appendToAbsPath(dirPathNew, p))
+		path := str.AppendToPath(dirPathNew, p)
 		if exists, err := afero.Exists(m.appFS, path); err != nil {
 			return err
 		} else if exists {
@@ -404,16 +392,16 @@ func (m *manager) tryMvEnvDir(dirPathOld, dirPathNew AbsPath) error {
 	// note: afero and go does not provide simple ways to move the
 	// contents. We'll have to rename them individually.
 	for _, p := range envPaths {
-		err := m.appFS.Rename(string(appendToAbsPath(dirPathOld, p)), string(appendToAbsPath(dirPathNew, p)))
+		err := m.appFS.Rename(str.AppendToPath(dirPathOld, p), str.AppendToPath(dirPathNew, p))
 		if err != nil {
 			return err
 		}
 	}
 	// clean up the old directory if it is empty
-	if empty, err := afero.IsEmpty(m.appFS, string(dirPathOld)); err != nil {
+	if empty, err := afero.IsEmpty(m.appFS, dirPathOld); err != nil {
 		return err
 	} else if empty {
-		return m.appFS.RemoveAll(string(dirPathOld))
+		return m.appFS.RemoveAll(dirPathOld)
 	}
 	return nil
 }
@@ -424,7 +412,7 @@ func (m *manager) cleanEmptyParentDirs(name string) error {
 	parentDir := name
 	for parentDir != "." {
 		parentDir = filepath.Dir(parentDir)
-		parentPath := string(appendToAbsPath(m.environmentsPath, parentDir))
+		parentPath := str.AppendToPath(m.environmentsPath, parentDir)
 
 		isEmpty, err := afero.IsEmpty(m.appFS, parentPath)
 		if err != nil {
@@ -449,7 +437,7 @@ func (m *manager) generateOverrideData() []byte {
 
 	var buf bytes.Buffer
 	buf.WriteString(fmt.Sprintf("local base = import \"%s\";\n", relBaseLibsonnetPath))
-	buf.WriteString(fmt.Sprintf("local k = import \"%s\";\n\n", extensionsLibFilename))
+	buf.WriteString(fmt.Sprintf("local k = import \"%s\";\n\n", lib.ExtensionsLibFilename))
 	buf.WriteString("base + {\n")
 	buf.WriteString("  // Insert user-specified overrides here. For example if a component is named \"nginx-deployment\", you might have something like:\n")
 	buf.WriteString("  //   \"nginx-deployment\"+: k.deployment.mixin.metadata.labels({foo: \"bar\"})\n")

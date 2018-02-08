@@ -100,6 +100,7 @@ func runKsonnetWith(flags []string, host, ns string) error {
 						Server:    host,
 					},
 				},
+				KubernetesVersion: "v1.7.0",
 			},
 		},
 	}
