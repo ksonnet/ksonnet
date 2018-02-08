@@ -1,4 +1,4 @@
-// Copyright 2017 The kubecfg authors
+// Copyright 2017 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,7 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package utils
+package strings
 
 import (
 	"bytes"

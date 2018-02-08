@@ -26,7 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/ksonnet/ksonnet/metadata"
-	"github.com/ksonnet/ksonnet/utils"
+	str "github.com/ksonnet/ksonnet/strings"
 )
 
 type EnvAddCmd struct {
@@ -114,7 +114,7 @@ func (c *EnvListCmd) Run(out io.Writer) error {
 		}
 	}
 
-	formattedEnvsList, err := utils.PadRows(rows)
+	formattedEnvsList, err := str.PadRows(rows)
 	if err != nil {
 		return err
 	}

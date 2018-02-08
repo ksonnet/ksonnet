@@ -22,6 +22,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/metadata/parts"
+	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/ksonnet/ksonnet/utils"
 	"github.com/spf13/cobra"
 )
@@ -273,7 +274,7 @@ var pkgListCmd = &cobra.Command{
 			}
 		}
 
-		formatted, err := utils.PadRows(rows)
+		formatted, err := str.PadRows(rows)
 		if err != nil {
 			return err
 		}

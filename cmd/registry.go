@@ -7,6 +7,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
+	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/ksonnet/ksonnet/utils"
 	"github.com/spf13/cobra"
 )
@@ -100,7 +101,7 @@ var registryListCmd = &cobra.Command{
 			rows = append(rows, []string{name, regRef.Protocol, regRef.URI})
 		}
 
-		formatted, err := utils.PadRows(rows)
+		formatted, err := str.PadRows(rows)
 		if err != nil {
 			return err
 		}

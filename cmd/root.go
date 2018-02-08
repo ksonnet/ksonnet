@@ -39,6 +39,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/ksonnet/ksonnet/metadata"
+	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/ksonnet/ksonnet/template"
 	"github.com/ksonnet/ksonnet/utils"
 
@@ -346,7 +347,7 @@ func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overri
 
 	var servers = make(map[string]string)
 	for name, cluster := range rawConfig.Clusters {
-		server, err := utils.NormalizeURL(cluster.Server)
+		server, err := str.NormalizeURL(cluster.Server)
 		if err != nil {
 			return err
 		}
@@ -366,7 +367,7 @@ func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overri
 	}
 
 	// TODO support multi-cluster deployment.
-	server, err := utils.NormalizeURL(env.Destinations[0].Server)
+	server, err := str.NormalizeURL(env.Destinations[0].Server)
 	if err != nil {
 		return err
 	}
@@ -524,7 +525,7 @@ func constructBaseObj(componentPaths, componentNames []string) (string, error) {
 
 		// Emit object field. Sanitize the name to guarantee we generate valid
 		// Jsonnet.
-		componentName = utils.QuoteNonASCII(componentName)
+		componentName = str.QuoteNonASCII(componentName)
 		fmt.Fprintf(&obj, "  %s: %s,\n", componentName, importExpr)
 	}
 

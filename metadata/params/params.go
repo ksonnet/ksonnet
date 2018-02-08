@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ksonnet/ksonnet/utils"
+	str "github.com/ksonnet/ksonnet/strings"
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/parser"
@@ -172,7 +172,7 @@ func writeParams(indent int, params Params) string {
 	buffer.WriteString("\n")
 	for i, key := range keys {
 		param := params[key]
-		key := utils.QuoteNonASCII(key)
+		key := str.QuoteNonASCII(key)
 
 		if strings.HasPrefix(param, "|||\n") {
 			// every line in a block string needs to be indented
@@ -245,7 +245,7 @@ func appendComponent(component, snippet string, params Params) (string, error) {
 
 	// Create the jsonnet resembling the component params
 	var buffer bytes.Buffer
-	buffer.WriteString("    " + utils.QuoteNonASCII(component) + ": {")
+	buffer.WriteString("    " + str.QuoteNonASCII(component) + ": {")
 	buffer.WriteString(writeParams(6, params))
 	buffer.WriteString("    },")
 
@@ -362,7 +362,7 @@ func setEnvironmentParams(component, snippet string, params Params) (string, err
 	lines := strings.Split(snippet, "\n")
 	if !hasComponent {
 		var buffer bytes.Buffer
-		buffer.WriteString(fmt.Sprintf("\n    %s +: {", utils.QuoteNonASCII(component)))
+		buffer.WriteString(fmt.Sprintf("\n    %s +: {", str.QuoteNonASCII(component)))
 		buffer.WriteString(writeParams(6, params))
 		buffer.WriteString("    },\n")
 		paramsSnippet = buffer.String()
