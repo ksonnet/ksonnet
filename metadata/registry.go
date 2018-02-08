@@ -9,6 +9,7 @@ import (
 	"github.com/ksonnet/ksonnet/metadata/parts"
 	"github.com/ksonnet/ksonnet/metadata/registry"
 	"github.com/ksonnet/ksonnet/prototype"
+	str "github.com/ksonnet/ksonnet/strings"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
@@ -48,7 +49,7 @@ func (m *manager) AddRegistry(name, protocol, uri, version string) (*registry.Sp
 		return nil, err
 	}
 
-	err = afero.WriteFile(m.appFS, string(m.appYAMLPath), specBytes, defaultFilePermissions)
+	err = afero.WriteFile(m.appFS, m.appYAMLPath, specBytes, defaultFilePermissions)
 	if err != nil {
 		return nil, err
 	}
@@ -118,8 +119,8 @@ func (m *manager) GetDependency(libName string) (*parts.Spec, error) {
 		return nil, fmt.Errorf("Library '%s' is not a dependency in current ksonnet app", libName)
 	}
 
-	partsYAMLPath := appendToAbsPath(m.vendorPath, libRef.Registry, libName, partsYAMLFile)
-	partsBytes, err := afero.ReadFile(m.appFS, string(partsYAMLPath))
+	partsYAMLPath := str.AppendToPath(m.vendorPath, libRef.Registry, libName, partsYAMLFile)
+	partsBytes, err := afero.ReadFile(m.appFS, partsYAMLPath)
 	if err != nil {
 		return nil, err
 	}
@@ -166,18 +167,18 @@ func (m *manager) CacheDependency(registryName, libID, libName, libVersion strin
 	// Get all directories and files first, then write to disk. This
 	// protects us from failing with a half-cached dependency because of
 	// a network failure.
-	directories := []AbsPath{}
-	files := map[AbsPath][]byte{}
+	directories := []string{}
+	files := map[string][]byte{}
 	parts, libRef, err := registryManager.ResolveLibrary(
 		libID,
 		libName,
 		libVersion,
 		func(relPath string, contents []byte) error {
-			files[appendToAbsPath(m.vendorPath, relPath)] = contents
+			files[str.AppendToPath(m.vendorPath, relPath)] = contents
 			return nil
 		},
 		func(relPath string) error {
-			directories = append(directories, appendToAbsPath(m.vendorPath, relPath))
+			directories = append(directories, str.AppendToPath(m.vendorPath, relPath))
 			return nil
 		})
 	if err != nil {
@@ -195,18 +196,18 @@ func (m *manager) CacheDependency(registryName, libID, libName, libVersion strin
 	log.Infof("Retrieved %d files", len(files))
 
 	for _, dir := range directories {
-		if err := m.appFS.MkdirAll(string(dir), defaultFolderPermissions); err != nil {
+		if err := m.appFS.MkdirAll(dir, defaultFolderPermissions); err != nil {
 			return nil, err
 		}
 	}
 
 	for path, content := range files {
-		if err := afero.WriteFile(m.appFS, string(path), content, defaultFilePermissions); err != nil {
+		if err := afero.WriteFile(m.appFS, path, content, defaultFilePermissions); err != nil {
 			return nil, err
 		}
 	}
 
-	err = afero.WriteFile(m.appFS, string(m.appYAMLPath), appSpecData, defaultFilePermissions)
+	err = afero.WriteFile(m.appFS, m.appYAMLPath, appSpecData, defaultFilePermissions)
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +218,7 @@ func (m *manager) CacheDependency(registryName, libID, libName, libVersion strin
 func (m *manager) GetPrototypesForDependency(registryName, libID string) (prototype.SpecificationSchemas, error) {
 	// TODO: Remove `registryName` when we flatten vendor/.
 	specs := prototype.SpecificationSchemas{}
-	protos := string(appendToAbsPath(m.vendorPath, registryName, libID, "prototypes"))
+	protos := str.AppendToPath(m.vendorPath, registryName, libID, "prototypes")
 	exists, err := afero.DirExists(m.appFS, protos)
 	if err != nil {
 		return nil, err
@@ -270,12 +271,12 @@ func (m *manager) GetAllPrototypes() (prototype.SpecificationSchemas, error) {
 	return specs, nil
 }
 
-func (m *manager) registryDir(regManager registry.Manager) AbsPath {
-	return appendToAbsPath(m.registriesPath, regManager.RegistrySpecDir())
+func (m *manager) registryDir(regManager registry.Manager) string {
+	return str.AppendToPath(m.registriesPath, regManager.RegistrySpecDir())
 }
 
-func (m *manager) registryPath(regManager registry.Manager) AbsPath {
-	return appendToAbsPath(m.registriesPath, regManager.RegistrySpecFilePath())
+func (m *manager) registryPath(regManager registry.Manager) string {
+	return str.AppendToPath(m.registriesPath, regManager.RegistrySpecFilePath())
 }
 
 func (m *manager) getRegistryManager(registryName string) (registry.Manager, string, error) {
@@ -312,14 +313,13 @@ func (m *manager) getRegistryManagerFor(registryRefSpec *app.RegistryRefSpec) (r
 	return manager, protocol, nil
 }
 
-func (m *manager) registrySpecFromFile(path AbsPath) (*registry.Spec, bool, error) {
-	registrySpecFile := string(path)
-	exists, err := afero.Exists(m.appFS, registrySpecFile)
+func (m *manager) registrySpecFromFile(path string) (*registry.Spec, bool, error) {
+	exists, err := afero.Exists(m.appFS, path)
 	if err != nil {
 		return nil, false, err
 	}
 
-	isDir, err := afero.IsDir(m.appFS, registrySpecFile)
+	isDir, err := afero.IsDir(m.appFS, path)
 	if err != nil {
 		return nil, false, err
 	}
@@ -328,7 +328,7 @@ func (m *manager) registrySpecFromFile(path AbsPath) (*registry.Spec, bool, erro
 	// fine, most filesystems allow you to have a directory and file of
 	// the same name.
 	if exists && !isDir {
-		registrySpecBytes, err := afero.ReadFile(m.appFS, registrySpecFile)
+		registrySpecBytes, err := afero.ReadFile(m.appFS, path)
 		if err != nil {
 			return nil, false, err
 		}
@@ -362,13 +362,13 @@ func (m *manager) getOrCacheRegistry(gh registry.Manager) (*registry.Spec, error
 		// NOTE: We call mkdir after getting the registry spec, since a
 		// network call might fail and leave this half-initialized empty
 		// directory.
-		registrySpecDir := appendToAbsPath(m.registriesPath, gh.RegistrySpecDir())
-		err = m.appFS.MkdirAll(string(registrySpecDir), defaultFolderPermissions)
+		registrySpecDir := str.AppendToPath(m.registriesPath, gh.RegistrySpecDir())
+		err = m.appFS.MkdirAll(registrySpecDir, defaultFolderPermissions)
 		if err != nil {
 			return nil, err
 		}
 
-		err = afero.WriteFile(m.appFS, string(registrySpecFile), registrySpecBytes, defaultFilePermissions)
+		err = afero.WriteFile(m.appFS, registrySpecFile, registrySpecBytes, defaultFilePermissions)
 		if err != nil {
 			return nil, err
 		}

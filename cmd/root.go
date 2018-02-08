@@ -333,9 +333,8 @@ func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overri
 	if err != nil {
 		return err
 	}
-	wd := metadata.AbsPath(cwd)
 
-	metadataManager, err := metadata.Find(wd)
+	metadataManager, err := metadata.Find(cwd)
 	if err != nil {
 		return err
 	}
@@ -393,7 +392,7 @@ type cmdObjExpanderConfig struct {
 	cmd        *cobra.Command
 	env        string
 	components []string
-	cwd        metadata.AbsPath
+	cwd        string
 }
 
 // cmdObjExpander finds and expands templates for the family of commands of

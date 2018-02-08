@@ -182,3 +182,32 @@ Hi World
 		require.EqualValues(t, test.expected, padded)
 	}
 }
+
+func TestAppendToPath(t *testing.T) {
+	tests := []struct {
+		originalPath string
+		toAppend     string
+		expected     string
+	}{
+		{
+			originalPath: "host/path/",
+			toAppend:     "appended",
+			expected:     "host/path/appended",
+		},
+		{
+			originalPath: "host/path",
+			toAppend:     "appended/",
+			expected:     "host/path/appended",
+		},
+		{
+			originalPath: "host/path/",
+			toAppend:     "//appended//",
+			expected:     "host/path/appended",
+		},
+	}
+	for _, test := range tests {
+		result := AppendToPath(test.originalPath, test.toAppend)
+
+		require.EqualValues(t, test.expected, result)
+	}
+}

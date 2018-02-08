@@ -61,7 +61,6 @@ var diffCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		wd := metadata.AbsPath(cwd)
 
 		componentNames, err := flags.GetStringArray(flagComponent)
 		if err != nil {
@@ -83,7 +82,7 @@ var diffCmd = &cobra.Command{
 			return err
 		}
 
-		c, err := initDiffCmd(appFs, cmd, wd, env1, env2, componentNames, diffStrategy)
+		c, err := initDiffCmd(appFs, cmd, cwd, env1, env2, componentNames, diffStrategy)
 		if err != nil {
 			return err
 		}
@@ -141,7 +140,7 @@ ks diff dev -c redis
 `,
 }
 
-func initDiffCmd(fs afero.Fs, cmd *cobra.Command, wd metadata.AbsPath, envFq1, envFq2 *string, files []string, diffStrategy string) (kubecfg.DiffCmd, error) {
+func initDiffCmd(fs afero.Fs, cmd *cobra.Command, wd string, envFq1, envFq2 *string, files []string, diffStrategy string) (kubecfg.DiffCmd, error) {
 	const (
 		remote = "remote"
 		local  = "local"
@@ -186,7 +185,7 @@ func initDiffCmd(fs afero.Fs, cmd *cobra.Command, wd metadata.AbsPath, envFq1, e
 }
 
 // initDiffSingleEnv sets up configurations for diffing using one environment
-func initDiffSingleEnv(fs afero.Fs, env, diffStrategy string, files []string, cmd *cobra.Command, wd metadata.AbsPath) (kubecfg.DiffCmd, error) {
+func initDiffSingleEnv(fs afero.Fs, env, diffStrategy string, files []string, cmd *cobra.Command, wd string) (kubecfg.DiffCmd, error) {
 	c := kubecfg.DiffRemoteCmd{}
 	c.DiffStrategy = diffStrategy
 	c.Client = &kubecfg.Client{}

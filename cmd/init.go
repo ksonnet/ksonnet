@@ -21,7 +21,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -62,12 +61,10 @@ var initCmd = &cobra.Command{
 			return err
 		}
 
-		path, err := genKsRoot(appName, wd, initDir)
+		appRoot, err := genKsRoot(appName, wd, initDir)
 		if err != nil {
 			return err
 		}
-
-		appRoot := metadata.AbsPath(path)
 
 		specFlag, err := flags.GetString(flagAPISpec)
 		if err != nil {

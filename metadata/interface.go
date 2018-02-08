@@ -32,24 +32,16 @@ var appFS afero.Fs
 var defaultFolderPermissions = os.FileMode(0755)
 var defaultFilePermissions = os.FileMode(0644)
 
-// AbsPath is an advisory type that represents an absolute path. It is advisory
-// in that it is not forced to be absolute, but rather, meant to indicate
-// intent, and make code easier to read.
-type AbsPath string
-
-// AbsPaths is a slice of `AbsPath`.
-type AbsPaths []string
-
 // Manager abstracts over a ksonnet application's metadata, allowing users to do
 // things like: create and delete environments; search for prototypes; vendor
 // libraries; and other non-core-application tasks.
 type Manager interface {
-	Root() AbsPath
-	LibPaths() (libPath, vendorPath AbsPath)
-	EnvPaths(env string) (metadataPath, mainPath, paramsPath AbsPath)
+	Root() string
+	LibPaths() (libPath, vendorPath string)
+	EnvPaths(env string) (metadataPath, mainPath, paramsPath string)
 
 	// Components API.
-	ComponentPaths() (AbsPaths, error)
+	ComponentPaths() ([]string, error)
 	GetAllComponents() ([]string, error)
 	CreateComponent(name string, text string, params param.Params, templateType prototype.TemplateType) error
 	DeleteComponent(name string) error
@@ -88,14 +80,14 @@ type Manager interface {
 // Find will recursively search the current directory and its parents for a
 // `.ksonnet` folder, which marks the application root. Returns error if there
 // is no application root.
-func Find(path AbsPath) (Manager, error) {
+func Find(path string) (Manager, error) {
 	return findManager(path, afero.NewOsFs())
 }
 
 // Init will retrieve a cluster API specification, generate a
 // capabilities-compliant version of ksonnet-lib, and then generate the
 // directory tree for an application.
-func Init(name string, rootPath AbsPath, spec ClusterSpec, serverURI, namespace *string) (Manager, error) {
+func Init(name, rootPath string, spec ClusterSpec, serverURI, namespace *string) (Manager, error) {
 	// Generate `incubator` registry. We do this before before creating
 	// directory tree, in case the network call fails.
 	const (

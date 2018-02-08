@@ -26,7 +26,6 @@ func manager() (metadata.Manager, error) {
 	if err != nil {
 		return nil, err
 	}
-	appRoot := metadata.AbsPath(appDir)
 
-	return metadata.Find(appRoot)
+	return metadata.Find(appDir)
 }

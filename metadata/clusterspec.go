@@ -24,12 +24,11 @@ func parseClusterSpec(specFlag string, fs afero.Fs) (ClusterSpec, error) {
 	case "version":
 		return &clusterSpecVersion{k8sVersion: split[1]}, nil
 	case "file":
-		abs, err := filepath.Abs(split[1])
+		p, err := filepath.Abs(split[1])
 		if err != nil {
 			return nil, err
 		}
-		absPath := AbsPath(abs)
-		return &clusterSpecFile{specPath: absPath, fs: fs}, nil
+		return &clusterSpecFile{specPath: p, fs: fs}, nil
 	case "url":
 		return &clusterSpecLive{apiServerURL: split[1]}, nil
 	default:
@@ -38,7 +37,7 @@ func parseClusterSpec(specFlag string, fs afero.Fs) (ClusterSpec, error) {
 }
 
 type clusterSpecFile struct {
-	specPath AbsPath
+	specPath string
 	fs       afero.Fs
 }
 

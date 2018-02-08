@@ -23,13 +23,14 @@ import (
 
 	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/prototype"
+	str "github.com/ksonnet/ksonnet/strings"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
-func (m *manager) ComponentPaths() (AbsPaths, error) {
-	paths := AbsPaths{}
-	err := afero.Walk(m.appFS, string(m.componentsPath), func(p string, info os.FileInfo, err error) error {
+func (m *manager) ComponentPaths() ([]string, error) {
+	paths := []string{}
+	err := afero.Walk(m.appFS, m.componentsPath, func(p string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -67,7 +68,7 @@ func (m *manager) CreateComponent(name string, text string, params param.Params,
 		return fmt.Errorf("Component name '%s' is not valid; must not contain punctuation, spaces, or begin or end with a slash", name)
 	}
 
-	componentPath := string(appendToAbsPath(m.componentsPath, name))
+	componentPath := str.AppendToPath(m.componentsPath, name)
 	switch templateType {
 	case prototype.YAML:
 		componentPath = componentPath + ".yaml"
@@ -105,7 +106,7 @@ func (m *manager) DeleteComponent(name string) error {
 	}
 
 	// Build the new component/params.libsonnet file.
-	componentParamsFile, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
+	componentParamsFile, err := afero.ReadFile(m.appFS, m.componentParamsPath)
 	if err != nil {
 		return err
 	}
@@ -122,8 +123,8 @@ func (m *manager) DeleteComponent(name string) error {
 		return err
 	}
 	for _, env := range envs {
-		path := appendToAbsPath(m.environmentsPath, env.Name, paramsFileName)
-		envParamsFile, err := afero.ReadFile(m.appFS, string(path))
+		path := str.AppendToPath(m.environmentsPath, env.Name, paramsFileName)
+		envParamsFile, err := afero.ReadFile(m.appFS, path)
 		if err != nil {
 			return err
 		}
@@ -141,16 +142,16 @@ func (m *manager) DeleteComponent(name string) error {
 
 	// Remove the references in component/params.libsonnet.
 	log.Debugf("... deleting references in %s", m.componentParamsPath)
-	err = afero.WriteFile(m.appFS, string(m.componentParamsPath), []byte(componentJsonnet), defaultFilePermissions)
+	err = afero.WriteFile(m.appFS, m.componentParamsPath, []byte(componentJsonnet), defaultFilePermissions)
 	if err != nil {
 		return err
 	}
 	// Remove the component references in each environment's
 	// environment/<env>/params.libsonnet.
 	for _, env := range envs {
-		path := appendToAbsPath(m.environmentsPath, env.Name, paramsFileName)
+		path := str.AppendToPath(m.environmentsPath, env.Name, paramsFileName)
 		log.Debugf("... deleting references in %s", path)
-		err = afero.WriteFile(m.appFS, string(path), []byte(envJsonnets[env.Name]), defaultFilePermissions)
+		err = afero.WriteFile(m.appFS, path, []byte(envJsonnets[env.Name]), defaultFilePermissions)
 		if err != nil {
 			return err
 		}
@@ -172,7 +173,7 @@ func (m *manager) DeleteComponent(name string) error {
 }
 
 func (m *manager) GetComponentParams(component string) (param.Params, error) {
-	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
+	text, err := afero.ReadFile(m.appFS, m.componentParamsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +182,7 @@ func (m *manager) GetComponentParams(component string) (param.Params, error) {
 }
 
 func (m *manager) GetAllComponentParams() (map[string]param.Params, error) {
-	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
+	text, err := afero.ReadFile(m.appFS, m.componentParamsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +191,7 @@ func (m *manager) GetAllComponentParams() (map[string]param.Params, error) {
 }
 
 func (m *manager) SetComponentParams(component string, params param.Params) error {
-	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
+	text, err := afero.ReadFile(m.appFS, m.componentParamsPath)
 	if err != nil {
 		return err
 	}
@@ -200,7 +201,7 @@ func (m *manager) SetComponentParams(component string, params param.Params) erro
 		return err
 	}
 
-	return afero.WriteFile(m.appFS, string(m.componentParamsPath), []byte(jsonnet), defaultFilePermissions)
+	return afero.WriteFile(m.appFS, m.componentParamsPath, []byte(jsonnet), defaultFilePermissions)
 }
 
 func (m *manager) findComponentPath(name string) (string, error) {
@@ -232,7 +233,7 @@ func (m *manager) findComponentPath(name string) (string, error) {
 }
 
 func (m *manager) writeComponentParams(componentName string, params param.Params) error {
-	text, err := afero.ReadFile(m.appFS, string(m.componentParamsPath))
+	text, err := afero.ReadFile(m.appFS, m.componentParamsPath)
 	if err != nil {
 		return err
 	}
@@ -242,7 +243,7 @@ func (m *manager) writeComponentParams(componentName string, params param.Params
 		return err
 	}
 
-	return afero.WriteFile(m.appFS, string(m.componentParamsPath), []byte(appended), defaultFilePermissions)
+	return afero.WriteFile(m.appFS, m.componentParamsPath, []byte(appended), defaultFilePermissions)
 }
 
 func genComponentParamsContent() []byte {

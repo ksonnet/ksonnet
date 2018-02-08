@@ -21,7 +21,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
 
@@ -54,7 +53,6 @@ var validateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		wd := metadata.AbsPath(cwd)
 
 		componentNames, err := flags.GetStringArray(flagComponent)
 		if err != nil {
@@ -70,7 +68,7 @@ var validateCmd = &cobra.Command{
 			cmd:        cmd,
 			env:        env,
 			components: componentNames,
-			cwd:        wd,
+			cwd:        cwd,
 		})
 		objs, err := te.Expand()
 		if err != nil {

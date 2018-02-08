@@ -8,7 +8,6 @@ import (
 	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 	str "github.com/ksonnet/ksonnet/strings"
-	"github.com/ksonnet/ksonnet/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -77,9 +76,8 @@ var registryListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		wd := metadata.AbsPath(cwd)
 
-		manager, err := metadata.Find(wd)
+		manager, err := metadata.Find(cwd)
 		if err != nil {
 			return err
 		}
@@ -137,9 +135,8 @@ var registryDescribeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		wd := metadata.AbsPath(cwd)
 
-		manager, err := metadata.Find(wd)
+		manager, err := metadata.Find(cwd)
 		if err != nil {
 			return err
 		}

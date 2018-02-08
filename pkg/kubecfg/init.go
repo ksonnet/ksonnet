@@ -7,13 +7,13 @@ import (
 
 type InitCmd struct {
 	name      string
-	rootPath  metadata.AbsPath
+	rootPath  string
 	spec      metadata.ClusterSpec
 	serverURI *string
 	namespace *string
 }
 
-func NewInitCmd(name string, rootPath metadata.AbsPath, specFlag string, serverURI, namespace *string) (*InitCmd, error) {
+func NewInitCmd(name, rootPath, specFlag string, serverURI, namespace *string) (*InitCmd, error) {
 	// NOTE: We're taking `rootPath` here as an absolute path (rather than a partial path we expand to an absolute path)
 	// to make it more testable.
 
