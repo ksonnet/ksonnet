@@ -46,7 +46,7 @@
 
 [[constraint]]
   name = "github.com/google/go-jsonnet"
-  revision = "e8f6d25f61d163deee16a78b545f4aaa0f295c01"
+  revision = "f46dea2835bc4d5138d279753643c970250ef683"
 
 [[constraint]]
   name = "github.com/googleapis/gnostic"

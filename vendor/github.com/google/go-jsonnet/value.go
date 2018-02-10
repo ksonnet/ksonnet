@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package jsonnet
 
 import (
@@ -197,6 +198,13 @@ func (*valueNull) getType() *valueType {
 type valueArray struct {
 	valueBase
 	elements []potentialValue
+}
+
+func (arr *valueArray) index(e *evaluator, index int, tc tailCallStatus) (value, error) {
+	if 0 <= index && index < arr.length() {
+		return e.evaluateTailCall(arr.elements[index], tc)
+	}
+	return nil, e.Error(fmt.Sprintf("Index %d out of bounds, not within [0, %v)", index, arr.length()))
 }
 
 func (arr *valueArray) length() int {
