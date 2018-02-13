@@ -49,7 +49,7 @@ type Manager interface {
 	// Params API.
 	SetComponentParams(component string, params param.Params) error
 	GetComponentParams(name string) (param.Params, error)
-	GetAllComponentParams() (map[string]param.Params, error)
+	GetAllComponentParams(cwd string) (map[string]param.Params, error)
 	// GetEnvironmentParams will take the name of an environment and return a
 	// mapping of parameters of the form:
 	// componentName => {param key => param val}

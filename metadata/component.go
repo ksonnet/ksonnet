@@ -16,14 +16,15 @@
 package metadata
 
 import (
-	"fmt"
 	"os"
 	"path"
-	"strings"
+	"path/filepath"
 
+	"github.com/ksonnet/ksonnet/component"
 	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/prototype"
 	str "github.com/ksonnet/ksonnet/strings"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
@@ -49,64 +50,47 @@ func (m *manager) ComponentPaths() ([]string, error) {
 }
 
 func (m *manager) GetAllComponents() ([]string, error) {
-	componentPaths, err := m.ComponentPaths()
+	namespaces, err := component.Namespaces(m.appFS, m.rootPath)
 	if err != nil {
 		return nil, err
 	}
 
 	var components []string
-	for _, p := range componentPaths {
-		component := strings.TrimSuffix(path.Base(p), path.Ext(p))
-		components = append(components, component)
+	for _, ns := range namespaces {
+
+		comps, err := ns.Components()
+		if err != nil {
+			return nil, err
+		}
+
+		components = append(components, comps...)
 	}
 
 	return components, nil
 }
 
 func (m *manager) CreateComponent(name string, text string, params param.Params, templateType prototype.TemplateType) error {
-	if !isValidName(name) || strings.Contains(name, "/") {
-		return fmt.Errorf("Component name '%s' is not valid; must not contain punctuation, spaces, or begin or end with a slash", name)
-	}
-
-	componentPath := str.AppendToPath(m.componentsPath, name)
-	switch templateType {
-	case prototype.YAML:
-		componentPath = componentPath + ".yaml"
-	case prototype.JSON:
-		componentPath = componentPath + ".json"
-	case prototype.Jsonnet:
-		componentPath = componentPath + ".jsonnet"
-	default:
-		return fmt.Errorf("Unrecognized prototype template type '%s'", templateType)
-	}
-
-	if exists, err := afero.Exists(m.appFS, componentPath); exists {
-		return fmt.Errorf("Component with name '%s' already exists", name)
-	} else if err != nil {
-		return fmt.Errorf("Could not check whether component '%s' exists:\n\n%v", name, err)
-	}
-
-	log.Infof("Writing component at '%s/%s'", componentsDir, name)
-	err := afero.WriteFile(m.appFS, componentPath, []byte(text), defaultFilePermissions)
+	_, err := component.Create(m.appFS, m.rootPath, name, text, params, templateType)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "create component")
 	}
 
-	log.Debugf("Writing component parameters at '%s/%s", componentsDir, name)
-	return m.writeComponentParams(name, params)
+	return nil
 }
 
 // DeleteComponent removes the component file and all references.
 // Write operations will happen at the end to minimalize failures that leave
 // the directory structure in a half-finished state.
 func (m *manager) DeleteComponent(name string) error {
-	componentPath, err := m.findComponentPath(name)
+	componentPath, err := component.Path(m.appFS, m.rootPath, name)
 	if err != nil {
 		return err
 	}
 
+	ns, _ := component.ExtractNamespacedComponent(m.appFS, m.rootPath, name)
+
 	// Build the new component/params.libsonnet file.
-	componentParamsFile, err := afero.ReadFile(m.appFS, m.componentParamsPath)
+	componentParamsFile, err := afero.ReadFile(m.appFS, ns.ParamsPath())
 	if err != nil {
 		return err
 	}
@@ -142,7 +126,7 @@ func (m *manager) DeleteComponent(name string) error {
 
 	// Remove the references in component/params.libsonnet.
 	log.Debugf("... deleting references in %s", m.componentParamsPath)
-	err = afero.WriteFile(m.appFS, m.componentParamsPath, []byte(componentJsonnet), defaultFilePermissions)
+	err = afero.WriteFile(m.appFS, ns.ParamsPath(), []byte(componentJsonnet), defaultFilePermissions)
 	if err != nil {
 		return err
 	}
@@ -168,11 +152,12 @@ func (m *manager) DeleteComponent(name string) error {
 	// TODO: Remove,
 	// references in main.jsonnet.
 	// component references in other component files (feature does not yet exist).
-	log.Infof("Succesfully deleted component '%s'", name)
+	log.Infof("Successfully deleted component '%s'", name)
 	return nil
 }
 
 func (m *manager) GetComponentParams(component string) (param.Params, error) {
+	log.Infof("get component params for %s", component)
 	text, err := afero.ReadFile(m.appFS, m.componentParamsPath)
 	if err != nil {
 		return nil, err
@@ -181,81 +166,51 @@ func (m *manager) GetComponentParams(component string) (param.Params, error) {
 	return param.GetComponentParams(component, string(text))
 }
 
-func (m *manager) GetAllComponentParams() (map[string]param.Params, error) {
-	text, err := afero.ReadFile(m.appFS, m.componentParamsPath)
+func (m *manager) GetAllComponentParams(root string) (map[string]param.Params, error) {
+	namespaces, err := component.Namespaces(m.appFS, root)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "find component namespaces")
 	}
 
-	return param.GetAllComponentParams(string(text))
-}
+	out := make(map[string]param.Params)
 
-func (m *manager) SetComponentParams(component string, params param.Params) error {
-	text, err := afero.ReadFile(m.appFS, m.componentParamsPath)
-	if err != nil {
-		return err
-	}
+	for _, ns := range namespaces {
+		paramsPath := filepath.Join(root, "components", ns.Path, "params.libsonnet")
 
-	jsonnet, err := param.SetComponentParams(component, string(text), params)
-	if err != nil {
-		return err
-	}
+		text, err := afero.ReadFile(m.appFS, paramsPath)
+		if err != nil {
+			return nil, err
+		}
 
-	return afero.WriteFile(m.appFS, m.componentParamsPath, []byte(jsonnet), defaultFilePermissions)
-}
+		params, err := param.GetAllComponentParams(string(text))
+		if err != nil {
+			return nil, errors.Wrapf(err, "get all component params for %s", ns.Path)
+		}
 
-func (m *manager) findComponentPath(name string) (string, error) {
-	componentPaths, err := m.ComponentPaths()
-	if err != nil {
-		log.Debugf("Failed to retrieve component paths")
-		return "", err
-	}
-
-	var componentPath string
-	for _, p := range componentPaths {
-		fileName := path.Base(p)
-		component := strings.TrimSuffix(fileName, path.Ext(fileName))
-
-		if component == name {
-			// need to make sure we don't have multiple files with the same component name
-			if componentPath != "" {
-				return "", fmt.Errorf("Found multiple component files with component name '%s'", name)
+		for k, v := range params {
+			if ns.Path != "" {
+				k = ns.Path + "/" + k
 			}
-			componentPath = p
+			out[k] = v
 		}
 	}
 
-	if componentPath == "" {
-		return "", fmt.Errorf("No component with name '%s' found", name)
-	}
-
-	return componentPath, nil
+	return out, nil
 }
 
-func (m *manager) writeComponentParams(componentName string, params param.Params) error {
-	text, err := afero.ReadFile(m.appFS, m.componentParamsPath)
+func (m *manager) SetComponentParams(path string, params param.Params) error {
+	ns, componentName := component.ExtractNamespacedComponent(m.appFS, m.rootPath, path)
+	paramsPath := ns.ParamsPath()
+
+	text, err := afero.ReadFile(m.appFS, paramsPath)
 	if err != nil {
 		return err
 	}
 
-	appended, err := param.AppendComponent(componentName, string(text), params)
+	jsonnet, err := param.SetComponentParams(componentName, string(text), params)
 	if err != nil {
 		return err
 	}
 
-	return afero.WriteFile(m.appFS, m.componentParamsPath, []byte(appended), defaultFilePermissions)
-}
-
-func genComponentParamsContent() []byte {
-	return []byte(`{
-  global: {
-    // User-defined global parameters; accessible to all component and environments, Ex:
-    // replicas: 4,
-  },
-  components: {
-    // Component-level parameters, defined initially from 'ks prototype use ...'
-    // Each object below should correspond to a component in the components/ directory
-  },
-}
-`)
+	return afero.WriteFile(m.appFS, paramsPath, []byte(jsonnet), defaultFilePermissions)
 }

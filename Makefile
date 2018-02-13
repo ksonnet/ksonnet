@@ -30,8 +30,7 @@ GUESTBOOK_FILE = examples/guestbook.jsonnet
 DOC_GEN_FILE = ./docs/generate/update-generated-docs.sh
 DOC_TEST_FILE = ./docs/generate/verify-generated-docs.sh
 JSONNET_FILES = $(KCFG_TEST_FILE) $(GUESTBOOK_FILE)
-# TODO: Simplify this once ./... ignores ./vendor
-GO_PACKAGES = ./cmd/... ./utils/... ./pkg/... ./metadata/... ./prototype/...
+GO_PACKAGES = ./...
 
 # Default cluster from this config is used for integration tests
 KUBECONFIG = $(HOME)/.kube/config
@@ -60,7 +59,7 @@ integrationtest: ks
 	$(GINKGO) -tags 'integration' integration -- -fixtures $(INTEGRATION_TEST_FIXTURES) -kubeconfig $(KUBECONFIG) -ksonnet-bin $(abspath $<)
 
 vet:
-	$(GO) vet $(GO_FLAGS) $(GO_PACKAGES)
+	$(GO) vet $(GO_PACKAGES)
 
 fmt:
 	$(GOFMT) -s -w $(shell $(GO) list -f '{{.Dir}}' $(GO_PACKAGES))

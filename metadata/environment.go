@@ -18,12 +18,14 @@ package metadata
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/metadata/lib"
 	str "github.com/ksonnet/ksonnet/strings"
+	"github.com/pkg/errors"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -313,8 +315,13 @@ func (m *manager) GetEnvironmentParams(name string) (map[string]param.Params, er
 		return nil, err
 	}
 
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, errors.Wrap(err, "get working directory")
+	}
+
 	// Get all component params
-	componentParams, err := m.GetAllComponentParams()
+	componentParams, err := m.GetAllComponentParams(cwd)
 	if err != nil {
 		return nil, err
 	}

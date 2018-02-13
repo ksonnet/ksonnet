@@ -38,6 +38,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/ksonnet/ksonnet/component"
 	"github.com/ksonnet/ksonnet/metadata"
 	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/ksonnet/ksonnet/template"
@@ -433,40 +434,54 @@ func (te *cmdObjExpander) Expand() ([]*unstructured.Unstructured, error) {
 	}
 
 	_, vendorPath := manager.LibPaths()
-	libPath, mainPath, paramsPath, err := manager.EnvPaths(te.config.env)
+	libPath, mainPath, _, err := manager.EnvPaths(te.config.env)
 	if err != nil {
 		return nil, err
 	}
 
 	expander.FlagJpath = append([]string{string(vendorPath), string(libPath)}, expander.FlagJpath...)
 
-	componentPaths, err := manager.ComponentPaths()
+	namespacedComponentPaths, err := component.MakePathsByNamespace(te.config.fs, manager, te.config.cwd, te.config.env)
 	if err != nil {
 		return nil, errors.Wrap(err, "component paths")
-	}
-
-	baseObj, err := constructBaseObj(componentPaths, te.config.components)
-	if err != nil {
-		return nil, errors.Wrap(err, "construct base object")
 	}
 
 	//
 	// Set up ExtCodes to resolve runtime variables such as the environment namespace.
 	//
 
-	params := importParams(string(paramsPath))
 	envSpec, err := importEnv(manager, te.config.env)
 	if err != nil {
 		return nil, err
 	}
 
-	expander.ExtCodes = append([]string{baseObj, params, envSpec}, expander.ExtCodes...)
+	baseCodes := expander.ExtCodes
 
-	//
-	// Expand the ksonnet app as rendered for environment `env`.
-	//
+	slUnstructured := make([]*unstructured.Unstructured, 0)
+	for ns, componentPaths := range namespacedComponentPaths {
 
-	return expander.Expand([]string{string(mainPath)})
+		paramsPath := ns.ParamsPath()
+		params := importParams(string(paramsPath))
+
+		baseObj, err := constructBaseObj(componentPaths, te.config.components)
+		if err != nil {
+			return nil, errors.Wrap(err, "construct base object")
+		}
+
+		//
+		// Expand the ksonnet app as rendered for environment `env`.
+		//
+		expander.ExtCodes = append([]string{baseObj, params, envSpec}, baseCodes...)
+		u, err := expander.Expand([]string{string(mainPath)})
+		if err != nil {
+			return nil, errors.Wrapf(err, "generate objects for namespace %s", ns.Path)
+		}
+
+		slUnstructured = append(slUnstructured, u...)
+	}
+
+	return slUnstructured, nil
+
 }
 
 // constructBaseObj constructs the base Jsonnet object that represents k-v

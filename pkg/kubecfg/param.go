@@ -18,6 +18,7 @@ package kubecfg
 import (
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 	"sort"
 	"strconv"
@@ -25,6 +26,7 @@ import (
 
 	param "github.com/ksonnet/ksonnet/metadata/params"
 	str "github.com/ksonnet/ksonnet/strings"
+	"github.com/pkg/errors"
 
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
@@ -126,6 +128,11 @@ func NewParamListCmd(component, env string) *ParamListCmd {
 
 // Run executes the displaying of params.
 func (c *ParamListCmd) Run(out io.Writer) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return errors.Wrap(err, "get current working directory")
+	}
+
 	manager, err := manager()
 	if err != nil {
 		return err
@@ -138,7 +145,7 @@ func (c *ParamListCmd) Run(out io.Writer) error {
 			return err
 		}
 	} else {
-		params, err = manager.GetAllComponentParams()
+		params, err = manager.GetAllComponentParams(cwd)
 		if err != nil {
 			return err
 		}

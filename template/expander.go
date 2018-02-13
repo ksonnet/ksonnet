@@ -9,6 +9,7 @@ import (
 
 	jsonnet "github.com/google/go-jsonnet"
 	"github.com/ksonnet/ksonnet/utils"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
@@ -42,17 +43,18 @@ func NewExpander(fs afero.Fs) Expander {
 func (spec *Expander) Expand(paths []string) ([]*unstructured.Unstructured, error) {
 	vm, err := spec.jsonnetVM()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "initialize jsonnet VM")
 	}
 
 	res := []*unstructured.Unstructured{}
 	for _, path := range paths {
 		objs, err := utils.Read(spec.fs, vm, path)
 		if err != nil {
-			return nil, fmt.Errorf("Error reading %s: %v", path, err)
+			return nil, errors.Wrapf(err, "unable to read %s", path)
 		}
 		res = append(res, utils.FlattenToV1(objs)...)
 	}
+
 	return res, nil
 }
 
