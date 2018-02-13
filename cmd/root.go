@@ -440,14 +440,9 @@ func (te *cmdObjExpander) Expand() ([]*unstructured.Unstructured, error) {
 
 	expander.FlagJpath = append([]string{string(vendorPath), string(libPath)}, expander.FlagJpath...)
 
-	componentPaths, err := manager.ComponentPaths()
+	componentPaths, err := makeComponentPaths(manager, te.config.cwd, te.config.env)
 	if err != nil {
 		return nil, errors.Wrap(err, "component paths")
-	}
-
-	baseObj, err := constructBaseObj(componentPaths, te.config.components)
-	if err != nil {
-		return nil, errors.Wrap(err, "construct base object")
 	}
 
 	//
@@ -458,6 +453,11 @@ func (te *cmdObjExpander) Expand() ([]*unstructured.Unstructured, error) {
 	envSpec, err := importEnv(manager, te.config.env)
 	if err != nil {
 		return nil, err
+	}
+
+	baseObj, err := constructBaseObj(componentPaths, te.config.components)
+	if err != nil {
+		return nil, errors.Wrap(err, "construct base object")
 	}
 
 	expander.ExtCodes = append([]string{baseObj, params, envSpec}, expander.ExtCodes...)
@@ -579,4 +579,29 @@ func importEnv(manager metadata.Manager, env string) (string, error) {
 	}
 
 	return fmt.Sprintf(`%s=%s`, metadata.EnvExtCodeKey, string(marshalled)), nil
+}
+
+func makeComponentPaths(manager metadata.Manager, cwd, env string) ([]string, error) {
+	appSpec, err := manager.AppSpec()
+	if err != nil {
+		return nil, errors.Wrap(err, "lookup application spec")
+	}
+
+	envSpec, ok := appSpec.GetEnvironmentSpec(env)
+	if !ok {
+		return nil, errors.Errorf("can't find %s environment", env)
+	}
+
+	if len(envSpec.Targets) == 0 {
+		return manager.ComponentPaths()
+	}
+
+	var paths []string
+
+	for _, target := range envSpec.Targets {
+		path := filepath.Join(cwd, "components", target)
+		paths = append(paths, path)
+	}
+
+	return paths, nil
 }
