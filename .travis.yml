@@ -1,7 +1,7 @@
 language: go
 
 go:
-  - 1.8.x
+  - 1.9.x
 
 os:
   - linux
@@ -22,15 +22,15 @@ osx_image: xcode8.3
 matrix:
   include:
     - env: TARGET=x86_64-linux-musl EXTRA_GO_FLAGS_TEST=""
-      go: 1.8.x
+      go: 1.9.x
     - env: DO_INTEGRATION_TEST=1 INT_KVERS=v1.7.0
     - os: osx
-      go: 1.8.x
+      go: 1.9.x
   fast_finish: true
   allow_failures:
     # Let us know if/when 'go test' works again on MacOS..
     - os: osx
-      go: 1.8.x
+      go: 1.9.x
 
 services:
   - docker
