@@ -20,6 +20,10 @@
 #  name = "github.com/x/y"
 #  version = "2.4.0"
 
+[prune]
+  unused-packages = true
+  go-tests = true
+
 [[constraint]]
   name = "github.com/PuerkitoBio/purell"
   revision = "b938d81255b5473c57635324295cb0fe398c7a58"
@@ -35,10 +39,6 @@
 [[constraint]]
   name = "github.com/ghodss/yaml"
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
-
-[[constraint]]
-  name = "github.com/go-openapi/spec"
-  revision = "fa03337d7da5735229ee8f5e9d5d0b996014b7f8"
 
 [[constraint]]
   name = "github.com/google/go-github"
@@ -115,7 +115,3 @@
 [[constraint]]
   name = "k8s.io/client-go"
   version = "5.0.0"
-
-[[constraint]]
-  name = "github.com/ugorji/go"
-  revision = "708a42d246822952f38190a8d8c4e6b16a0e600c"
