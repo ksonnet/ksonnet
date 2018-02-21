@@ -21,7 +21,12 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/ksonnet/ksonnet/client"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
+)
+
+var (
+	applyClientConfig *client.Config
 )
 
 const (
@@ -52,7 +57,8 @@ func init() {
 	RootCmd.AddCommand(applyCmd)
 
 	addEnvCmdFlags(applyCmd)
-	bindClientGoFlags(applyCmd)
+	applyClientConfig = client.NewDefaultClientConfig()
+	applyClientConfig.BindClientGoFlags(applyCmd)
 	bindJsonnetFlags(applyCmd)
 	applyCmd.PersistentFlags().Bool(flagCreate, true, "Option to create resources if they do not already exist on the cluster")
 	applyCmd.PersistentFlags().Bool(flagSkipGc, false, "Option to skip garbage collection, even with --"+flagGcTag+" specified")
@@ -94,22 +100,15 @@ var applyCmd = &cobra.Command{
 			return err
 		}
 
+		c.ClientConfig = applyClientConfig
+		c.Env = env
+
 		componentNames, err := flags.GetStringArray(flagComponent)
 		if err != nil {
 			return err
 		}
 
 		cwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		c.ClientPool, c.Discovery, err = restClientPool(cmd, &env)
-		if err != nil {
-			return err
-		}
-
-		c.Namespace, err = namespace()
 		if err != nil {
 			return err
 		}

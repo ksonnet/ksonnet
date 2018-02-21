@@ -23,23 +23,25 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/dynamic"
 
+	"github.com/ksonnet/ksonnet/client"
 	"github.com/ksonnet/ksonnet/utils"
 )
 
 // DeleteCmd represents the delete subcommand
 type DeleteCmd struct {
-	ClientPool dynamic.ClientPool
-	Discovery  discovery.DiscoveryInterface
-	Namespace  string
-
-	GracePeriod int64
+	ClientConfig *client.Config
+	Env          string
+	GracePeriod  int64
 }
 
 func (c DeleteCmd) Run(apiObjects []*unstructured.Unstructured) error {
-	version, err := utils.FetchVersion(c.Discovery)
+	clientPool, discovery, namespace, err := c.ClientConfig.RestClient(&c.Env)
+	if err != nil {
+		return err
+	}
+
+	version, err := utils.FetchVersion(discovery)
 	if err != nil {
 		return err
 	}
@@ -61,10 +63,10 @@ func (c DeleteCmd) Run(apiObjects []*unstructured.Unstructured) error {
 	}
 
 	for _, obj := range apiObjects {
-		desc := fmt.Sprintf("%s %s", utils.ResourceNameFor(c.Discovery, obj), utils.FqName(obj))
+		desc := fmt.Sprintf("%s %s", utils.ResourceNameFor(discovery, obj), utils.FqName(obj))
 		log.Info("Deleting ", desc)
 
-		client, err := utils.ClientForResource(c.ClientPool, c.Discovery, obj, c.Namespace)
+		client, err := utils.ClientForResource(clientPool, discovery, obj, namespace)
 		if err != nil {
 			return err
 		}

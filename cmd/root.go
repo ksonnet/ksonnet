@@ -24,25 +24,19 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"reflect"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
-	"golang.org/x/crypto/ssh/terminal"
-	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/ksonnet/ksonnet/component"
 	"github.com/ksonnet/ksonnet/metadata"
 	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/ksonnet/ksonnet/template"
-	"github.com/ksonnet/ksonnet/utils"
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
+	"golang.org/x/crypto/ssh/terminal"
 
 	// Register auth plugins
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -66,22 +60,13 @@ const (
 )
 
 var (
-	clientConfig clientcmd.ClientConfig
-	overrides    clientcmd.ConfigOverrides
-	loadingRules clientcmd.ClientConfigLoadingRules
-	appFs        afero.Fs
+	appFs afero.Fs
 )
 
 func init() {
 	appFs = afero.NewOsFs()
 
 	RootCmd.PersistentFlags().CountP(flagVerbose, "v", "Increase verbosity. May be given multiple times.")
-
-	// The "usual" clientcmd/kubectl flags
-	loadingRules = *clientcmd.NewDefaultClientConfigLoadingRules()
-	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-	clientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(&loadingRules, &overrides, os.Stdin)
-
 	RootCmd.PersistentFlags().Set("logtostderr", "true")
 }
 
@@ -93,13 +78,6 @@ func bindJsonnetFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringSlice(flagTlaVarFile, nil, "Read top level argument from a file")
 	cmd.PersistentFlags().String(flagResolver, "noop", "Change implementation of resolveImage native function. One of: noop, registry")
 	cmd.PersistentFlags().String(flagResolvFail, "warn", "Action when resolveImage fails. One of ignore,warn,error")
-}
-
-func bindClientGoFlags(cmd *cobra.Command) {
-	kflags := clientcmd.RecommendedConfigOverrideFlags("")
-	ep := &loadingRules.ExplicitPath
-	cmd.PersistentFlags().StringVar(ep, "kubeconfig", "", "Path to a kubeconfig file. Alternative to env var $KUBECONFIG.")
-	clientcmd.BindOverrideFlags(&overrides, cmd.PersistentFlags(), kflags)
 }
 
 // RootCmd is the root of cobra subcommand tree
@@ -131,53 +109,6 @@ application configuration to remote clusters.
 
 		return nil
 	},
-}
-
-// clientConfig.Namespace() is broken in client-go 3.0:
-// namespace in config erroneously overrides explicit --namespace
-func namespace() (string, error) {
-	return namespaceFor(clientConfig, &overrides)
-}
-
-func namespaceFor(c clientcmd.ClientConfig, overrides *clientcmd.ConfigOverrides) (string, error) {
-	if overrides.Context.Namespace != "" {
-		return overrides.Context.Namespace, nil
-	}
-	ns, _, err := clientConfig.Namespace()
-	return ns, err
-}
-
-// resolveContext returns the server and namespace of the cluster at the
-// provided context. If the context string is empty, the default context is
-// used.
-func resolveContext(context string) (server, namespace string, err error) {
-	rawConfig, err := clientConfig.RawConfig()
-	if err != nil {
-		return "", "", err
-	}
-
-	// use the default context where context is empty
-	if context == "" {
-		if rawConfig.CurrentContext == "" && len(rawConfig.Clusters) == 0 {
-			// User likely does not have a kubeconfig file.
-			return "", "", fmt.Errorf("No current context found. Make sure a kubeconfig file is present")
-		}
-		// Note: "" is a valid rawConfig.CurrentContext
-		context = rawConfig.CurrentContext
-	}
-
-	ctx := rawConfig.Contexts[context]
-	if ctx == nil {
-		return "", "", fmt.Errorf("context '%s' does not exist in the kubeconfig file", context)
-	}
-
-	log.Infof("Using context '%s' from the kubeconfig file specified at the environment variable $KUBECONFIG", context)
-	cluster, exists := rawConfig.Clusters[ctx.Cluster]
-	if !exists {
-		return "", "", fmt.Errorf("No cluster with name '%s' exists", ctx.Cluster)
-	}
-
-	return cluster.Server, ctx.Namespace, nil
 }
 
 func logLevel(verbosity int) log.Level {
@@ -286,106 +217,10 @@ func dumpJSON(v interface{}) string {
 	return string(buf.Bytes())
 }
 
-func restClient(cmd *cobra.Command, envName *string, config clientcmd.ClientConfig, overrides *clientcmd.ConfigOverrides) (dynamic.ClientPool, discovery.DiscoveryInterface, error) {
-	if envName != nil {
-		err := overrideCluster(*envName, config, overrides)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-
-	conf, err := config.ClientConfig()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	disco, err := discovery.NewDiscoveryClientForConfig(conf)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	discoCache := utils.NewMemcachedDiscoveryClient(disco)
-	mapper := discovery.NewDeferredDiscoveryRESTMapper(discoCache, dynamic.VersionInterfaces)
-	pathresolver := dynamic.LegacyAPIPathResolverFunc
-
-	pool := dynamic.NewClientPool(conf, mapper, pathresolver)
-	return pool, discoCache, nil
-}
-
-func restClientPool(cmd *cobra.Command, envName *string) (dynamic.ClientPool, discovery.DiscoveryInterface, error) {
-	return restClient(cmd, envName, clientConfig, &overrides)
-}
-
 // addEnvCmdFlags adds the flags that are common to the family of commands
 // whose form is `[<env>|-f <file-name>]`, e.g., `apply` and `delete`.
 func addEnvCmdFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringArrayP(flagComponent, flagComponentShort, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
-}
-
-// overrideCluster ensures that the server specified in the environment is
-// associated in the user's kubeconfig file during deployment to a ksonnet
-// environment. We will error out if it is not.
-//
-// If the environment server the user is attempting to deploy to is not the current
-// kubeconfig context, we must manually override the client-go --cluster flag
-// to ensure we are deploying to the correct cluster.
-func overrideCluster(envName string, clientConfig clientcmd.ClientConfig, overrides *clientcmd.ConfigOverrides) error {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	metadataManager, err := metadata.Find(cwd)
-	if err != nil {
-		return err
-	}
-
-	rawConfig, err := clientConfig.RawConfig()
-	if err != nil {
-		return err
-	}
-
-	var servers = make(map[string]string)
-	for name, cluster := range rawConfig.Clusters {
-		server, err := str.NormalizeURL(cluster.Server)
-		if err != nil {
-			return err
-		}
-
-		servers[server] = name
-	}
-
-	//
-	// check to ensure that the environment we are trying to deploy to is
-	// created, and that the server is located in kubeconfig.
-	//
-
-	log.Debugf("Validating deployment at '%s' with server '%v'", envName, reflect.ValueOf(servers).MapKeys())
-	env, err := metadataManager.GetEnvironment(envName)
-	if err != nil {
-		return err
-	}
-
-	// TODO support multi-cluster deployment.
-	server, err := str.NormalizeURL(env.Destinations[0].Server)
-	if err != nil {
-		return err
-	}
-
-	if _, ok := servers[server]; ok {
-		clusterName := servers[server]
-		if overrides.Context.Cluster == "" {
-			log.Debugf("Overwriting --cluster flag with '%s'", clusterName)
-			overrides.Context.Cluster = clusterName
-		}
-		if overrides.Context.Namespace == "" {
-			log.Debugf("Overwriting --namespace flag with '%s'", env.Destinations[0].Namespace)
-			overrides.Context.Namespace = env.Destinations[0].Namespace
-		}
-		return nil
-	}
-
-	return fmt.Errorf("Attempting to deploy to environment '%s' at '%s', but cannot locate a server at that address", envName, env.Destinations[0].Server)
 }
 
 type cmdObjExpanderConfig struct {

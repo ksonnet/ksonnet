@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/ksonnet/ksonnet/client"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -31,13 +32,18 @@ const (
 	initShortDesc = "Initialize a ksonnet application"
 )
 
+var (
+	initClientConfig *client.Config
+)
+
 func init() {
 	RootCmd.AddCommand(initCmd)
 	// TODO: We need to make this default to checking the `kubeconfig` file.
 	initCmd.PersistentFlags().String(flagAPISpec, "version:v1.7.0",
 		"Manually specified Kubernetes API version. The corresponding OpenAPI spec is used to generate ksonnet's Kubernetes libraries")
 
-	bindClientGoFlags(initCmd)
+	initClientConfig = client.NewDefaultClientConfig()
+	initClientConfig.BindClientGoFlags(initCmd)
 	initCmd.Flags().String(flagInitDir, "", "Ksonnet application directory")
 }
 

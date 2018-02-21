@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/ksonnet/ksonnet/client"
 	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
@@ -34,16 +35,20 @@ const (
 	flagEnvContext   = "context"
 )
 
-var envShortDesc = map[string]string{
-	"add":  "Add a new environment to a ksonnet application",
-	"list": "List all environments in a ksonnet application",
-	"rm":   "Delete an environment from a ksonnet application",
-	"set":  "Set environment-specific fields (name, namespace, server)",
-}
+var (
+	envClientConfig *client.Config
+	envShortDesc    = map[string]string{
+		"add":  "Add a new environment to a ksonnet application",
+		"list": "List all environments in a ksonnet application",
+		"rm":   "Delete an environment from a ksonnet application",
+		"set":  "Set environment-specific fields (name, namespace, server)",
+	}
+)
 
 func init() {
 	RootCmd.AddCommand(envCmd)
-	bindClientGoFlags(envCmd)
+	envClientConfig = client.NewDefaultClientConfig()
+	envClientConfig.BindClientGoFlags(envCmd)
 
 	envCmd.AddCommand(envAddCmd)
 	envCmd.AddCommand(envRmCmd)
@@ -368,7 +373,7 @@ func resolveEnvFlags(flags *pflag.FlagSet) (string, string, error) {
 
 	if server == "" {
 		// server is not provided -- use the context.
-		server, defaultNamespace, err = resolveContext(context)
+		server, defaultNamespace, err = envClientConfig.ResolveContext(context)
 		if err != nil {
 			return "", "", err
 		}

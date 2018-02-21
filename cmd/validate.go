@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/ksonnet/ksonnet/client"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
 
@@ -28,11 +29,16 @@ const (
 	valShortDesc = "Check generated component manifests against the server's API"
 )
 
+var (
+	validateClientConfig *client.Config
+)
+
 func init() {
 	RootCmd.AddCommand(validateCmd)
 	addEnvCmdFlags(validateCmd)
 	bindJsonnetFlags(validateCmd)
-	bindClientGoFlags(validateCmd)
+	validateClientConfig = client.NewDefaultClientConfig()
+	validateClientConfig.BindClientGoFlags(validateCmd)
 }
 
 var validateCmd = &cobra.Command{
@@ -59,10 +65,8 @@ var validateCmd = &cobra.Command{
 			return err
 		}
 
-		_, c.Discovery, err = restClientPool(cmd, nil)
-		if err != nil {
-			return err
-		}
+		c.ClientConfig = validateClientConfig
+		c.Env = env
 
 		te := newCmdObjExpander(cmdObjExpanderConfig{
 			cmd:        cmd,
