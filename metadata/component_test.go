@@ -17,7 +17,6 @@ package metadata
 import (
 	"fmt"
 	"os"
-	"path"
 	"sort"
 	"strings"
 	"testing"
@@ -97,6 +96,7 @@ func TestComponentPaths(t *testing.T) {
 	}
 }
 
+// TODO: this logic and tests should be moved to the components namespace.
 func TestGetAllComponents(t *testing.T) {
 	m := populateComponentPaths(t)
 	defer cleanComponentPaths(t)
@@ -107,51 +107,13 @@ func TestGetAllComponents(t *testing.T) {
 	}
 
 	expected1 := strings.TrimSuffix(componentFile1, ".jsonnet")
-	expected2 := strings.TrimSuffix(componentFile2, ".jsonnet")
 
-	if len(components) != 2 {
-		t.Fatalf("Expected exactly 2 components, got %d", len(components))
+	if len(components) != 1 {
+		t.Fatalf("Expected exactly 1 components, got %d", len(components))
 	}
 
 	if components[0] != expected1 {
 		t.Fatalf("Expected component %s, got %s", expected1, components)
 	}
 
-	if components[1] != expected2 {
-		t.Fatalf("Expected component %s, got %s", expected2, components)
-	}
-}
-
-func TestFindComponentPath(t *testing.T) {
-	m := populateComponentPaths(t)
-	defer cleanComponentPaths(t)
-
-	component := strings.TrimSuffix(componentFile1, path.Ext(componentFile1))
-	expected := fmt.Sprintf("%s/components/%s", componentsPath, componentFile1)
-	path, err := m.findComponentPath(component)
-	if err != nil {
-		t.Fatalf("Failed to find component path, %v", err)
-	}
-
-	if path != expected {
-		t.Fatalf("m.findComponentPath failed; expected '%s', got '%s'", expected, path)
-	}
-}
-
-func TestGenComponentParamsContent(t *testing.T) {
-	expected := `{
-  global: {
-    // User-defined global parameters; accessible to all component and environments, Ex:
-    // replicas: 4,
-  },
-  components: {
-    // Component-level parameters, defined initially from 'ks prototype use ...'
-    // Each object below should correspond to a component in the components/ directory
-  },
-}
-`
-	content := string(genComponentParamsContent())
-	if content != expected {
-		t.Fatalf("Expected to generate:\n%s\n, got:\n%s", expected, content)
-	}
 }

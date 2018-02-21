@@ -21,6 +21,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/ksonnet/ksonnet/component"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/metadata/registry"
 	str "github.com/ksonnet/ksonnet/strings"
@@ -231,7 +232,7 @@ func (m *manager) createAppDirTree(name string, appYAMLData, baseLibData []byte,
 	}{
 		{
 			m.componentParamsPath,
-			genComponentParamsContent(),
+			component.GenParamsContent(),
 		},
 		{
 			m.baseLibsonnetPath,

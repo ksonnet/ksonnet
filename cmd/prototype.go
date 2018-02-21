@@ -20,6 +20,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ksonnet/ksonnet/component"
+
 	"github.com/spf13/pflag"
 
 	"github.com/ksonnet/ksonnet/metadata"
@@ -417,7 +419,9 @@ var prototypeUseCmd = &cobra.Command{
 			return err
 		}
 
-		text, err := expandPrototype(proto, templateType, params, componentName)
+		_, prototypeName := component.ExtractNamespacedComponent(appFs, cwd, componentName)
+
+		text, err := expandPrototype(proto, templateType, params, prototypeName)
 		if err != nil {
 			return err
 		}
