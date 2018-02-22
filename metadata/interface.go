@@ -63,6 +63,8 @@ type Manager interface {
 	GetEnvironments() (app.EnvironmentSpecs, error)
 	GetEnvironment(name string) (*app.EnvironmentSpec, error)
 	SetEnvironment(name, desiredName string) error
+	// ErrorOnSpecFile is a temporary API to inform < 0.9.0 ks users of environment directory changes.
+	ErrorOnSpecFile() error
 
 	// Spec API.
 	AppSpec() (*app.Spec, error)

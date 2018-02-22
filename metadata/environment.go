@@ -385,6 +385,34 @@ func (m *manager) EnvPaths(env string) (libPath, mainPath, paramsPath string, er
 	return
 }
 
+func (m *manager) ErrorOnSpecFile() error {
+	return afero.Walk(m.appFS, m.environmentsPath, func(p string, f os.FileInfo, err error) error {
+		if err != nil {
+			log.Debugf("Failed to walk path %s", p)
+			return err
+		}
+		isDir, err := afero.IsDir(m.appFS, p)
+		if err != nil {
+			log.Debugf("Failed to check whether the path at %s is a directory", p)
+			return err
+		}
+		if isDir {
+			specPath := filepath.Join(p, "spec.json")
+			specFileExists, err := afero.Exists(m.appFS, specPath)
+			if err != nil {
+				log.Debugf("Failed to check whether spec.json exists")
+				return err
+			}
+			if specFileExists {
+				// TODO, we should point users to a tutorial.
+				return fmt.Errorf("Environment's directory contains a dated model containing the 'spec.json' file. Please migrate to the new model by adding environments data to app.yaml")
+			}
+		}
+
+		return nil
+	})
+}
+
 func (m *manager) tryMvEnvDir(dirPathOld, dirPathNew string) error {
 	// first ensure none of these paths exists in the new directory
 	for _, p := range envPaths {

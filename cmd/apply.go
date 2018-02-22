@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ksonnet/ksonnet/client"
+	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
 
@@ -121,6 +122,21 @@ var applyCmd = &cobra.Command{
 		})
 		objs, err := te.Expand()
 		if err != nil {
+			return err
+		}
+
+		// TODO remove after 1.0.0
+		// We are ensuring here that users aren't running a deprecated ksonnet
+		// app structure against a newer version of ks.
+		appDir, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		manager, err := metadata.Find(appDir)
+		if err != nil {
+			return err
+		}
+		if err := manager.ErrorOnSpecFile(); err != nil {
 			return err
 		}
 
