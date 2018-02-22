@@ -21,26 +21,31 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/discovery"
 
+	"github.com/ksonnet/ksonnet/client"
 	"github.com/ksonnet/ksonnet/utils"
 )
 
 // ValidateCmd represents the validate subcommand
 type ValidateCmd struct {
-	Discovery discovery.DiscoveryInterface
+	ClientConfig *client.Config
+	Env          string
 }
 
 func (c ValidateCmd) Run(apiObjects []*unstructured.Unstructured, out io.Writer) error {
+	_, discovery, _, err := client.InitClient(c.Env)
+	if err != nil {
+		return err
+	}
 	hasError := false
 
 	for _, obj := range apiObjects {
-		desc := fmt.Sprintf("%s %s", utils.ResourceNameFor(c.Discovery, obj), utils.FqName(obj))
+		desc := fmt.Sprintf("%s %s", utils.ResourceNameFor(discovery, obj), utils.FqName(obj))
 		log.Info("Validating ", desc)
 
 		var allErrs []error
 
-		schema, err := utils.NewSwaggerSchemaFor(c.Discovery, obj.GroupVersionKind().GroupVersion())
+		schema, err := utils.NewSwaggerSchemaFor(discovery, obj.GroupVersionKind().GroupVersion())
 		if err != nil {
 			allErrs = append(allErrs, fmt.Errorf("Unable to fetch schema: %v", err))
 		} else {

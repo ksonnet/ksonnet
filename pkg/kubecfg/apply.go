@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/ksonnet/ksonnet/client"
 	"github.com/ksonnet/ksonnet/utils"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -39,18 +40,21 @@ const (
 
 // ApplyCmd represents the apply subcommand
 type ApplyCmd struct {
-	ClientPool dynamic.ClientPool
-	Discovery  discovery.DiscoveryInterface
-	Namespace  string
-
-	Create bool
-	GcTag  string
-	SkipGc bool
-	DryRun bool
+	ClientConfig *client.Config
+	Env          string
+	Create       bool
+	GcTag        string
+	SkipGc       bool
+	DryRun       bool
 }
 
 // Run applies the components to the designated environment cluster.
 func (c ApplyCmd) Run(apiObjects []*unstructured.Unstructured, wd string) error {
+	clientPool, discovery, namespace, err := c.ClientConfig.RestClient(&c.Env)
+	if err != nil {
+		return err
+	}
+
 	dryRunText := ""
 	if c.DryRun {
 		dryRunText = " (dry-run)"
@@ -65,10 +69,10 @@ func (c ApplyCmd) Run(apiObjects []*unstructured.Unstructured, wd string) error 
 			utils.SetMetaDataAnnotation(obj, AnnotationGcTag, c.GcTag)
 		}
 
-		desc := fmt.Sprintf("%s %s", utils.ResourceNameFor(c.Discovery, obj), utils.FqName(obj))
+		desc := fmt.Sprintf("%s %s", utils.ResourceNameFor(discovery, obj), utils.FqName(obj))
 		log.Info("Updating ", desc, dryRunText)
 
-		rc, err := utils.ClientForResource(c.ClientPool, c.Discovery, obj, c.Namespace)
+		rc, err := utils.ClientForResource(clientPool, discovery, obj, namespace)
 		if err != nil {
 			return err
 		}
@@ -110,23 +114,23 @@ func (c ApplyCmd) Run(apiObjects []*unstructured.Unstructured, wd string) error 
 	}
 
 	if c.GcTag != "" && !c.SkipGc {
-		version, err := utils.FetchVersion(c.Discovery)
+		version, err := utils.FetchVersion(discovery)
 		if err != nil {
 			return err
 		}
 
-		err = walkObjects(c.ClientPool, c.Discovery, metav1.ListOptions{}, func(o runtime.Object) error {
+		err = walkObjects(clientPool, discovery, metav1.ListOptions{}, func(o runtime.Object) error {
 			meta, err := meta.Accessor(o)
 			if err != nil {
 				return err
 			}
 			gvk := o.GetObjectKind().GroupVersionKind()
-			desc := fmt.Sprintf("%s %s (%s)", utils.ResourceNameFor(c.Discovery, o), utils.FqName(meta), gvk.GroupVersion())
+			desc := fmt.Sprintf("%s %s (%s)", utils.ResourceNameFor(discovery, o), utils.FqName(meta), gvk.GroupVersion())
 			log.Debugf("Considering %v for gc", desc)
 			if eligibleForGc(meta, c.GcTag) && !seenUids.Has(string(meta.GetUID())) {
 				log.Info("Garbage collecting ", desc, dryRunText)
 				if !c.DryRun {
-					err := gcDelete(c.ClientPool, c.Discovery, &version, o)
+					err := gcDelete(clientPool, discovery, &version, o)
 					if err != nil {
 						return err
 					}

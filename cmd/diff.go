@@ -20,14 +20,11 @@ import (
 	"os"
 	"strings"
 
-	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/dynamic"
-
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/ksonnet/ksonnet/client"
 	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
@@ -206,12 +203,7 @@ func initDiffSingleEnv(fs afero.Fs, env, diffStrategy string, files []string, cm
 		return nil, err
 	}
 
-	c.Client.ClientPool, c.Client.Discovery, err = restClientPool(cmd, &env)
-	if err != nil {
-		return nil, err
-	}
-
-	c.Client.Namespace, err = namespace()
+	c.Client.ClientPool, c.Client.Discovery, c.Client.Namespace, err = client.InitClient(env)
 	if err != nil {
 		return nil, err
 	}
@@ -263,11 +255,12 @@ func initDiffRemotesCmd(fs afero.Fs, env1, env2, diffStrategy string, cmd *cobra
 		return nil, err
 	}
 
-	c.ClientA.ClientPool, c.ClientA.Discovery, c.ClientA.Namespace, err = setupClientConfig(&c.ClientA.Name, cmd)
+	c.ClientA.ClientPool, c.ClientA.Discovery, c.ClientA.Namespace, err = client.InitClient(c.ClientA.Name)
 	if err != nil {
 		return nil, err
 	}
-	c.ClientB.ClientPool, c.ClientB.Discovery, c.ClientB.Namespace, err = setupClientConfig(&c.ClientB.Name, cmd)
+
+	c.ClientB.ClientPool, c.ClientB.Discovery, c.ClientB.Namespace, err = client.InitClient(c.ClientB.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -287,31 +280,12 @@ func initDiffRemoteCmd(fs afero.Fs, localEnv, remoteEnv, diffStrategy string, cm
 		return nil, err
 	}
 
-	c.Client.ClientPool, c.Client.Discovery, c.Client.Namespace, err = setupClientConfig(&remoteEnv, cmd)
+	c.Client.ClientPool, c.Client.Discovery, c.Client.Namespace, err = client.InitClient(remoteEnv)
 	if err != nil {
 		return nil, err
 	}
 
 	return &c, nil
-}
-
-func setupClientConfig(env *string, cmd *cobra.Command) (dynamic.ClientPool, discovery.DiscoveryInterface, string, error) {
-	overrides := &clientcmd.ConfigOverrides{}
-	loadingRules := *clientcmd.NewDefaultClientConfigLoadingRules()
-	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-	config := clientcmd.NewInteractiveDeferredLoadingClientConfig(&loadingRules, overrides, os.Stdin)
-
-	clientPool, discovery, err := restClient(cmd, env, config, overrides)
-	if err != nil {
-		return nil, nil, "", err
-	}
-
-	namespace, err := namespaceFor(config, overrides)
-	if err != nil {
-		return nil, nil, "", err
-	}
-
-	return clientPool, discovery, namespace, nil
 }
 
 // expandEnvObjs finds and expands templates for an environment
