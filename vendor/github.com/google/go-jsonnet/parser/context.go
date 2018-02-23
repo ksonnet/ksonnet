@@ -99,6 +99,8 @@ func directChildren(node ast.Node) []ast.Node {
 			spec = spec.Outer
 		}
 		return result
+	case *ast.Parens:
+		return []ast.Node{node.Inner}
 	case *ast.Self:
 		return nil
 	case *ast.SuperIndex:
@@ -171,6 +173,8 @@ func thunkChildren(node ast.Node) []ast.Node {
 	case *ast.ArrayComp:
 		return []ast.Node{node.Body}
 	case *ast.ObjectComp:
+		return nil
+	case *ast.Parens:
 		return nil
 	case *ast.Self:
 		return nil
@@ -274,7 +278,7 @@ func specialChildren(node ast.Node) []ast.Node {
 	panic(fmt.Sprintf("specialChildren: Unknown node %#v", node))
 }
 
-func children(node ast.Node) []ast.Node {
+func Children(node ast.Node) []ast.Node {
 	var result []ast.Node
 	result = append(result, directChildren(node)...)
 	result = append(result, thunkChildren(node)...)

@@ -145,7 +145,7 @@
     "ast",
     "parser"
   ]
-  revision = "e8f6d25f61d163deee16a78b545f4aaa0f295c01"
+  revision = "bed2cd89bc517714e591781928a856c29611422d"
 
 [[projects]]
   branch = "master"
@@ -600,6 +600,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3ec216adf8721873a210ca86de7f6477993f990d180563ba88a2e167a0b7be88"
+  inputs-digest = "70f60229f911a1422dc54a7eba157a7dd9d08eb4b94bd7054c1fe79f99ab7e2c"
   solver-name = "gps-cdcl"
   solver-version = 1

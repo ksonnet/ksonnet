@@ -444,6 +444,9 @@ const (
 	ObjectFieldExpr                        // '['expr1']':[:[:]] expr2
 	ObjectFieldStr                         // expr1:[:[:]] expr2
 	ObjectLocal                            // local id = expr2
+	ObjectNullID                           // null id
+	ObjectNullExpr                         // null '['expr1']'
+	ObjectNullStr                          // null expr1
 )
 
 type ObjectFieldHide int
@@ -513,6 +516,15 @@ type ObjectComp struct {
 	Fields        ObjectFields
 	TrailingComma bool
 	Spec          ForSpec
+}
+
+// ---------------------------------------------------------------------------
+
+// Parens represents parentheses
+//   ( e )
+type Parens struct {
+	NodeBase
+	Inner        Node
 }
 
 // ---------------------------------------------------------------------------

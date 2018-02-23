@@ -208,6 +208,7 @@ func (p *parser) parseParameters(elementKind string) (*ast.Parameters, bool, err
 	return &params, trailingComma, nil
 }
 
+// TODO(sbarzowski) add location to all individual binds
 func (p *parser) parseBind(binds *ast.LocalBinds) error {
 	varID, err := p.popExpect(tokenIdentifier)
 	if err != nil {
@@ -242,6 +243,7 @@ func (p *parser) parseBind(binds *ast.LocalBinds) error {
 	}
 
 	if fun != nil {
+		fun.NodeBase = ast.NewNodeBaseLoc(locFromTokenAST(varID, body))
 		fun.Body = body
 		*binds = append(*binds, ast.LocalBind{
 			Variable: ast.Identifier(varID.data),
@@ -722,11 +724,14 @@ func (p *parser) parseTerminal() (ast.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		_, err = p.popExpect(tokenParenR)
+		tokRight, err := p.popExpect(tokenParenR)
 		if err != nil {
 			return nil, err
 		}
-		return inner, nil
+		return &ast.Parens{
+			NodeBase: ast.NewNodeBaseLoc(locFromTokens(tok, tokRight)),
+			Inner: inner,
+		}, nil
 
 	// Literals
 	case tokenNumber:

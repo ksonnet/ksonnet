@@ -577,12 +577,22 @@ func (l *lexer) lexSymbol() error {
 		}
 	}
 
-	if r == '|' && strings.HasPrefix(l.input[l.pos.byteNo:], "||\n") {
+	if r == '|' && strings.HasPrefix(l.input[l.pos.byteNo:], "||") {
 		commentStartLoc := l.tokenStartLoc
-		l.acceptN(3) // Skip "||\n"
+		l.acceptN(2) // Skip "||"
 		var cb bytes.Buffer
 
-		// Skip leading blank lines
+		// Skip whitespace
+		for r = l.next(); r == ' ' || r == '\t' || r == '\r'; r = l.next() {
+		}
+
+		// Skip \n
+		if r != '\n' {
+			return l.makeStaticErrorPoint("Text block requires new line after |||.",
+				commentStartLoc)
+		}
+
+		// Process leading blank lines before calculating stringBlockIndent
 		for r = l.next(); r == '\n'; r = l.next() {
 			cb.WriteRune(r)
 		}
@@ -711,15 +721,13 @@ func Lex(fn string, input string) (tokens, error) {
 			// String literals
 		case '"':
 			stringStartLoc := l.prevLocation()
-			l.resetTokenStart() // Don't include the quotes in the token data
 			for r = l.next(); ; r = l.next() {
 				if r == lexEOF {
 					return nil, l.makeStaticErrorPoint("Unterminated String", stringStartLoc)
 				}
 				if r == '"' {
-					l.backup()
-					l.emitToken(tokenStringDouble)
-					_ = l.next()
+					// Don't include the quotes in the token data
+					l.emitFullToken(tokenStringDouble, l.input[l.tokenStart+1:l.pos.byteNo-1], "", "")
 					l.resetTokenStart()
 					break
 				}
@@ -729,15 +737,13 @@ func Lex(fn string, input string) (tokens, error) {
 			}
 		case '\'':
 			stringStartLoc := l.prevLocation()
-			l.resetTokenStart() // Don't include the quotes in the token data
 			for r = l.next(); ; r = l.next() {
 				if r == lexEOF {
 					return nil, l.makeStaticErrorPoint("Unterminated String", stringStartLoc)
 				}
 				if r == '\'' {
-					l.backup()
-					l.emitToken(tokenStringSingle)
-					r = l.next()
+					// Don't include the quotes in the token data
+					l.emitFullToken(tokenStringSingle, l.input[l.tokenStart+1:l.pos.byteNo-1], "", "")
 					l.resetTokenStart()
 					break
 				}
