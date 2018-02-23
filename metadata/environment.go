@@ -464,12 +464,8 @@ func (m *manager) cleanEmptyParentDirs(name string) error {
 }
 
 func (m *manager) generateOverrideData() []byte {
-	const (
-		relBaseLibsonnetPath = "../" + baseLibsonnetFile
-	)
-
 	var buf bytes.Buffer
-	buf.WriteString(fmt.Sprintf("local base = import \"%s\";\n", relBaseLibsonnetPath))
+	buf.WriteString(fmt.Sprintf("local base = import \"%s\";\n", baseLibsonnetFile))
 	buf.WriteString(fmt.Sprintf("local k = import \"%s\";\n\n", lib.ExtensionsLibFilename))
 	buf.WriteString("base + {\n")
 	buf.WriteString("  // Insert user-specified overrides here. For example if a component is named \"nginx-deployment\", you might have something like:\n")

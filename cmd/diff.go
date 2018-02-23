@@ -295,7 +295,7 @@ func expandEnvObjs(fs afero.Fs, cmd *cobra.Command, env string, manager metadata
 		return nil, err
 	}
 
-	_, vendorPath := manager.LibPaths()
+	envPath, vendorPath := manager.LibPaths()
 	libPath, mainPath, paramsPath, err := manager.EnvPaths(env)
 	if err != nil {
 		return nil, err
@@ -315,7 +315,7 @@ func expandEnvObjs(fs afero.Fs, cmd *cobra.Command, env string, manager metadata
 		return nil, err
 	}
 
-	expander.FlagJpath = append([]string{string(vendorPath), string(libPath)}, expander.FlagJpath...)
+	expander.FlagJpath = append([]string{string(vendorPath), string(libPath), string(envPath)}, expander.FlagJpath...)
 	expander.ExtCodes = append([]string{baseObj, params, envSpec}, expander.ExtCodes...)
 
 	envFiles := []string{string(mainPath)}

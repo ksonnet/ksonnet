@@ -181,8 +181,8 @@ func (m *manager) Root() string {
 	return m.rootPath
 }
 
-func (m *manager) LibPaths() (libPath, vendorPath string) {
-	return m.libPath, m.vendorPath
+func (m *manager) LibPaths() (envPath, vendorPath string) {
+	return m.environmentsPath, m.vendorPath
 }
 
 func (m *manager) createUserDirTree() error {

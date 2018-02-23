@@ -37,7 +37,7 @@ var defaultFilePermissions = os.FileMode(0644)
 // libraries; and other non-core-application tasks.
 type Manager interface {
 	Root() string
-	LibPaths() (libPath, vendorPath string)
+	LibPaths() (envPath, vendorPath string)
 	EnvPaths(env string) (libPath, mainPath, paramsPath string, err error)
 
 	// Components API.
