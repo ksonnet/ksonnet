@@ -94,11 +94,9 @@ func runKsonnetWith(flags []string, host, ns string) error {
 		APIVersion: "0.0.1",
 		Environments: app.EnvironmentSpecs{
 			"default": &app.EnvironmentSpec{
-				Destinations: app.EnvironmentDestinationSpecs{
-					&app.EnvironmentDestinationSpec{
-						Namespace: ns,
-						Server:    host,
-					},
+				Destination: &app.EnvironmentDestinationSpec{
+					Namespace: ns,
+					Server:    host,
 				},
 				KubernetesVersion: "v1.7.0",
 			},

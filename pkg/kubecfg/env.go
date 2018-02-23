@@ -83,7 +83,7 @@ func (c *EnvListCmd) Run(out io.Writer) error {
 		return err
 	}
 
-	envs := make([]app.EnvironmentSpec, len(envMap))
+	var envs []app.EnvironmentSpec
 	for _, e := range envMap {
 		envs = append(envs, *e)
 	}
@@ -101,9 +101,7 @@ func (c *EnvListCmd) Run(out io.Writer) error {
 	}
 
 	for _, env := range envs {
-		for _, dest := range env.Destinations {
-			rows = append(rows, []string{env.Name, env.KubernetesVersion, dest.Namespace, dest.Server})
-		}
+		rows = append(rows, []string{env.Name, env.KubernetesVersion, env.Destination.Namespace, env.Destination.Server})
 	}
 
 	formattedEnvsList, err := str.PadRows(rows)

@@ -24,14 +24,19 @@ import (
 )
 
 const (
+	// DefaultAPIVersion is the default ks API version to use if not specified.
 	DefaultAPIVersion = "0.0.1"
-	Kind              = "ksonnet.io/app"
-	DefaultVersion    = "0.0.1"
+	// Kind is the schema resource type.
+	Kind = "ksonnet.io/app"
+	// DefaultVersion is the default version of the app schema.
+	DefaultVersion = "0.0.1"
 )
 
 var (
+	// ErrRegistryNameInvalid is the error where a registry name is invalid.
 	ErrRegistryNameInvalid = fmt.Errorf("Registry name is invalid")
-	ErrRegistryExists      = fmt.Errorf("Registry with name already exists")
+	// ErrRegistryExists is the error when trying to create a registry that already exists.
+	ErrRegistryExists = fmt.Errorf("Registry with name already exists")
 	// ErrEnvironmentNameInvalid is the error where an environment name is invalid.
 	ErrEnvironmentNameInvalid = fmt.Errorf("Environment name is invalid")
 	// ErrEnvironmentExists is the error when trying to create an environment that already exists.
@@ -40,6 +45,8 @@ var (
 	ErrEnvironmentNotExists = fmt.Errorf("Environment with name doesn't exist")
 )
 
+// Spec defines all the ksonnet project metadata. This includes details such as
+// the project name, authors, environments, and registries.
 type Spec struct {
 	APIVersion   string           `json:"apiVersion,omitempty"`
 	Kind         string           `json:"kind,omitempty"`
@@ -57,11 +64,14 @@ type Spec struct {
 	License      string           `json:"license,omitempty"`
 }
 
+// RepositorySpec defines the spec for the upstream repository of this project.
 type RepositorySpec struct {
 	Type string `json:"type"`
 	URI  string `json:"uri"`
 }
 
+// RegistryRefSpec defines the spec for a registry. A registry is a collection
+// of library parts.
 type RegistryRefSpec struct {
 	Name       string          `json:"-"`
 	Protocol   string          `json:"protocol"`
@@ -69,62 +79,66 @@ type RegistryRefSpec struct {
 	GitVersion *GitVersionSpec `json:"gitVersion"`
 }
 
+// RegistryRefSpecs is a map of the registry name to a RegistryRefSpec.
 type RegistryRefSpecs map[string]*RegistryRefSpec
 
 // EnvironmentSpecs contains one or more EnvironmentSpec.
 type EnvironmentSpecs map[string]*EnvironmentSpec
 
 // EnvironmentSpec contains the specification for ksonnet environments.
-//
-// KubernetesVersion: The Kubernetes version the target cluster is running on.
-// Path:              The relative path containing metadata for this environment,
-//                    rooted at the directory 'environments'.
-// Destinations:      One or more cluster addresses that this environment
-//                    points to.
-// Targets:           The relative component paths that this environment wishes
-//                    to deploy onto it's destinations.
 type EnvironmentSpec struct {
-	Name              string                      `json:"-"`
-	KubernetesVersion string                      `json:"k8sVersion"`
-	Path              string                      `json:"path"`
-	Destinations      EnvironmentDestinationSpecs `json:"destinations"`
-	Targets           []string                    `json:"targets,omitempty"`
+	// Name is the user defined name of an environment
+	Name string `json:"-"`
+	// KubernetesVersion is the kubernetes version the targetted cluster is
+	// running on.
+	KubernetesVersion string `json:"k8sVersion"`
+	// Path is the relative project path containing metadata for this
+	// environment.
+	Path string `json:"path"`
+	// Destination stores the cluster address that this environment points to.
+	Destination *EnvironmentDestinationSpec `json:"destination"`
+	// Targets contain the relative component paths that this environment
+	// wishes to deploy on it's destination.
+	Targets []string `json:"targets,omitempty"`
 }
 
-// EnvironmentDestinationSpecs contains one or more EnvironmentDestinationSpec.
-type EnvironmentDestinationSpecs []*EnvironmentDestinationSpec
-
 // EnvironmentDestinationSpec contains the specification for the cluster
-// addresses that the environment points to.
-//
-// Server:    The Kubernetes server that the cluster is running on.
-// Namespace: The namespace of the Kubernetes server that targets should
-//            be deployed to. This is "default", by default.
+// address that the environment points to.
 type EnvironmentDestinationSpec struct {
-	Server    string `json:"server"`
+	// Server is the Kubernetes server that the cluster is running on.
+	Server string `json:"server"`
+	// Namespace is the namespace of the Kubernetes server that targets should
+	// be deployed to. This is "default", if not specified.
 	Namespace string `json:"namespace"`
 }
 
+// LibraryRefSpec is the specification for a library part.
 type LibraryRefSpec struct {
 	Name       string          `json:"name"`
 	Registry   string          `json:"registry"`
 	GitVersion *GitVersionSpec `json:"gitVersion"`
 }
 
+// GitVersionSpec is the specification for a Registry's Git Version.
 type GitVersionSpec struct {
 	RefSpec   string `json:"refSpec"`
 	CommitSHA string `json:"commitSha"`
 }
 
+// LibraryRefSpecs is a mapping of a library name to it's LibraryRefSpec.
 type LibraryRefSpecs map[string]*LibraryRefSpec
 
+// ContributorSpec is a specification for the project contributors.
 type ContributorSpec struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 }
 
+// ContributorSpecs is a list of 0 or more contributors.
 type ContributorSpecs []*ContributorSpec
 
+// Unmarshal attempts to parse the bytes representing a spec file and convert
+// it into a app.Spec.
 func Unmarshal(bytes []byte) (*Spec, error) {
 	schema := Spec{}
 	err := yaml.Unmarshal(bytes, &schema)
@@ -139,10 +153,12 @@ func Unmarshal(bytes []byte) (*Spec, error) {
 	return &schema, nil
 }
 
+// Marshal converts a app.Spec into bytes for file writing.
 func (s *Spec) Marshal() ([]byte, error) {
 	return yaml.Marshal(s)
 }
 
+// GetRegistryRef returns a populated RegistryRefSpec given a registry name.
 func (s *Spec) GetRegistryRef(name string) (*RegistryRefSpec, bool) {
 	registryRefSpec, ok := s.Registries[name]
 	if ok {
@@ -153,6 +169,7 @@ func (s *Spec) GetRegistryRef(name string) (*RegistryRefSpec, bool) {
 	return registryRefSpec, ok
 }
 
+// AddRegistryRef adds the RegistryRefSpec to the app spec.
 func (s *Spec) AddRegistryRef(registryRefSpec *RegistryRefSpec) error {
 	if registryRefSpec.Name == "" {
 		return ErrRegistryNameInvalid

@@ -81,11 +81,9 @@ func mockEnvironmentsWith(t *testing.T, appName string, envNames []string) *mana
 		appSpec.AddEnvironmentSpec(&app.EnvironmentSpec{
 			Name: env,
 			Path: env,
-			Destinations: app.EnvironmentDestinationSpecs{
-				&app.EnvironmentDestinationSpec{
-					Server:    mockAPIServer,
-					Namespace: mockNamespace,
-				},
+			Destination: &app.EnvironmentDestinationSpec{
+				Server:    mockAPIServer,
+				Namespace: mockNamespace,
 			},
 		})
 		m.WriteAppSpec(appSpec)
@@ -165,7 +163,7 @@ func TestGetEnvironments(t *testing.T) {
 		t.Fatalf("Expected env name to be '%s', got '%s'", mockEnvName, name)
 	}
 
-	server := envs[mockEnvName].Destinations[0].Server
+	server := envs[mockEnvName].Destination.Server
 	if server != mockAPIServer {
 		t.Fatalf("Expected env server to be %s, got %s", mockAPIServer, server)
 	}

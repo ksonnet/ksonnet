@@ -36,11 +36,9 @@ func makeSimpleRefSpec(name, protocol, uri, version string) *RegistryRefSpec {
 func makeSimpleEnvironmentSpec(name, namespace, server, k8sVersion string) *EnvironmentSpec {
 	return &EnvironmentSpec{
 		Name: name,
-		Destinations: EnvironmentDestinationSpecs{
-			&EnvironmentDestinationSpec{
-				Namespace: namespace,
-				Server:    server,
-			},
+		Destination: &EnvironmentDestinationSpec{
+			Namespace: namespace,
+			Server:    server,
 		},
 		KubernetesVersion: k8sVersion,
 	}
@@ -175,11 +173,9 @@ func TestGetEnvironmentSpecs(t *testing.T) {
 	example1 := Spec{
 		Environments: EnvironmentSpecs{
 			"dev": &EnvironmentSpec{
-				Destinations: EnvironmentDestinationSpecs{
-					&EnvironmentDestinationSpec{
-						Namespace: "default",
-						Server:    "http://example.com",
-					},
+				Destination: &EnvironmentDestinationSpec{
+					Namespace: "default",
+					Server:    "http://example.com",
 				},
 				KubernetesVersion: "1.8.0",
 			},
@@ -207,11 +203,9 @@ func TestGetEnvironmentSpecSuccess(t *testing.T) {
 	example1 := Spec{
 		Environments: EnvironmentSpecs{
 			env: &EnvironmentSpec{
-				Destinations: EnvironmentDestinationSpecs{
-					&EnvironmentDestinationSpec{
-						Namespace: namespace,
-						Server:    server,
-					},
+				Destination: &EnvironmentDestinationSpec{
+					Namespace: namespace,
+					Server:    server,
 				},
 				KubernetesVersion: k8sVersion,
 			},
@@ -223,8 +217,8 @@ func TestGetEnvironmentSpecSuccess(t *testing.T) {
 		t.Errorf("Expected environments to contain '%s'", env)
 	}
 
-	if len(r1.Destinations) != 1 || r1.Destinations[0].Namespace != namespace ||
-		r1.Destinations[0].Server != server || r1.KubernetesVersion != k8sVersion {
+	if r1.Destination.Namespace != namespace ||
+		r1.Destination.Server != server || r1.KubernetesVersion != k8sVersion {
 		t.Errorf("Environment did not add correct values:\n%s", r1)
 	}
 }
@@ -233,11 +227,9 @@ func TestGetEnvironmentSpecFailure(t *testing.T) {
 	example1 := Spec{
 		Environments: EnvironmentSpecs{
 			"dev": &EnvironmentSpec{
-				Destinations: EnvironmentDestinationSpecs{
-					&EnvironmentDestinationSpec{
-						Namespace: "default",
-						Server:    "http://example.com",
-					},
+				Destination: &EnvironmentDestinationSpec{
+					Namespace: "default",
+					Server:    "http://example.com",
 				},
 				KubernetesVersion: "1.8.0",
 			},
@@ -268,8 +260,8 @@ func TestAddEnvironmentSpecSuccess(t *testing.T) {
 	}
 
 	r1, ok1 := example1.GetEnvironmentSpec(env)
-	if !ok1 || len(r1.Destinations) != 1 || r1.Destinations[0].Namespace != namespace ||
-		r1.Destinations[0].Server != server || r1.KubernetesVersion != k8sVersion {
+	if !ok1 || r1.Destination.Namespace != namespace ||
+		r1.Destination.Server != server || r1.KubernetesVersion != k8sVersion {
 		t.Errorf("Environment did not add correct values:\n%s", r1)
 	}
 }
@@ -286,11 +278,9 @@ func TestAddEnvironmentSpecFailure(t *testing.T) {
 	example1 := Spec{
 		Environments: EnvironmentSpecs{
 			envName1: &EnvironmentSpec{
-				Destinations: EnvironmentDestinationSpecs{
-					&EnvironmentDestinationSpec{
-						Namespace: namespace,
-						Server:    server,
-					},
+				Destination: &EnvironmentDestinationSpec{
+					Namespace: namespace,
+					Server:    server,
 				},
 				KubernetesVersion: k8sVersion,
 			},
@@ -312,11 +302,9 @@ func TestDeleteEnvironmentSpec(t *testing.T) {
 	example1 := Spec{
 		Environments: EnvironmentSpecs{
 			"dev": &EnvironmentSpec{
-				Destinations: EnvironmentDestinationSpecs{
-					&EnvironmentDestinationSpec{
-						Namespace: "default",
-						Server:    "http://example.com",
-					},
+				Destination: &EnvironmentDestinationSpec{
+					Namespace: "default",
+					Server:    "http://example.com",
 				},
 				KubernetesVersion: "1.8.0",
 			},
@@ -337,11 +325,9 @@ func TestUpdateEnvironmentSpec(t *testing.T) {
 	example1 := Spec{
 		Environments: EnvironmentSpecs{
 			"dev": &EnvironmentSpec{
-				Destinations: EnvironmentDestinationSpecs{
-					&EnvironmentDestinationSpec{
-						Namespace: "default",
-						Server:    "http://example.com",
-					},
+				Destination: &EnvironmentDestinationSpec{
+					Namespace: "default",
+					Server:    "http://example.com",
 				},
 				KubernetesVersion: "1.8.0",
 			},
@@ -350,11 +336,9 @@ func TestUpdateEnvironmentSpec(t *testing.T) {
 
 	example2 := EnvironmentSpec{
 		Name: "foo",
-		Destinations: EnvironmentDestinationSpecs{
-			&EnvironmentDestinationSpec{
-				Namespace: "foo",
-				Server:    "http://example.com",
-			},
+		Destination: &EnvironmentDestinationSpec{
+			Namespace: "foo",
+			Server:    "http://example.com",
 		},
 		KubernetesVersion: "1.8.0",
 	}

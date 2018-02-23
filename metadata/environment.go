@@ -115,11 +115,9 @@ func (m *manager) CreateEnvironment(name, server, namespace, k8sSpecFlag string)
 	err = appSpec.AddEnvironmentSpec(&app.EnvironmentSpec{
 		Name: name,
 		Path: name,
-		Destinations: app.EnvironmentDestinationSpecs{
-			&app.EnvironmentDestinationSpec{
-				Server:    server,
-				Namespace: namespace,
-			},
+		Destination: &app.EnvironmentDestinationSpec{
+			Server:    server,
+			Namespace: namespace,
 		},
 		KubernetesVersion: libManager.K8sVersion,
 	})
@@ -232,7 +230,7 @@ func (m *manager) SetEnvironment(name, desiredName string) error {
 
 	err = appSpec.UpdateEnvironmentSpec(name, &app.EnvironmentSpec{
 		Name:              desiredName,
-		Destinations:      current.Destinations,
+		Destination:       current.Destination,
 		KubernetesVersion: current.KubernetesVersion,
 		Targets:           current.Targets,
 		Path:              desiredName,

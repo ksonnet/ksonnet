@@ -412,15 +412,14 @@ func importEnv(manager metadata.Manager, env string) (string, error) {
 		return "", fmt.Errorf("Environment '%s' does not exist in app.yaml", env)
 	}
 
-	// TODO pass namespace and server as params when ks supports multi-cluster deployment
 	type EnvironmentSpec struct {
 		Server    string `json:"server"`
 		Namespace string `json:"namespace"`
 	}
 
 	toMarshal := &EnvironmentSpec{
-		Server:    spec.Destinations[0].Server,
-		Namespace: spec.Destinations[0].Namespace,
+		Server:    spec.Destination.Server,
+		Namespace: spec.Destination.Namespace,
 	}
 
 	marshalled, err := json.Marshal(toMarshal)
