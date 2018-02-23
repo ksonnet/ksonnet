@@ -184,8 +184,7 @@ func (c *Config) overrideCluster(envName string) error {
 		return err
 	}
 
-	// TODO support multi-cluster deployment.
-	server, err := str.NormalizeURL(env.Destinations[0].Server)
+	server, err := str.NormalizeURL(env.Destination.Server)
 	if err != nil {
 		return err
 	}
@@ -197,11 +196,11 @@ func (c *Config) overrideCluster(envName string) error {
 			c.Overrides.Context.Cluster = clusterName
 		}
 		if c.Overrides.Context.Namespace == "" {
-			log.Debugf("Overwriting --namespace flag with '%s'", env.Destinations[0].Namespace)
-			c.Overrides.Context.Namespace = env.Destinations[0].Namespace
+			log.Debugf("Overwriting --namespace flag with '%s'", env.Destination.Namespace)
+			c.Overrides.Context.Namespace = env.Destination.Namespace
 		}
 		return nil
 	}
 
-	return fmt.Errorf("Attempting to deploy to environment '%s' at '%s', but cannot locate a server at that address", envName, env.Destinations[0].Server)
+	return fmt.Errorf("Attempting to deploy to environment '%s' at '%s', but cannot locate a server at that address", envName, env.Destination.Server)
 }

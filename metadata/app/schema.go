@@ -75,33 +75,29 @@ type RegistryRefSpecs map[string]*RegistryRefSpec
 type EnvironmentSpecs map[string]*EnvironmentSpec
 
 // EnvironmentSpec contains the specification for ksonnet environments.
-//
-// KubernetesVersion: The Kubernetes version the target cluster is running on.
-// Path:              The relative path containing metadata for this environment,
-//                    rooted at the directory 'environments'.
-// Destinations:      One or more cluster addresses that this environment
-//                    points to.
-// Targets:           The relative component paths that this environment wishes
-//                    to deploy onto it's destinations.
 type EnvironmentSpec struct {
-	Name              string                      `json:"-"`
-	KubernetesVersion string                      `json:"k8sVersion"`
-	Path              string                      `json:"path"`
-	Destinations      EnvironmentDestinationSpecs `json:"destinations"`
-	Targets           []string                    `json:"targets,omitempty"`
+	// Name is the user defined name of an environment
+	Name string `json:"-"`
+	// KubernetesVersion is the kubernetes version the targetted cluster is
+	// running on.
+	KubernetesVersion string `json:"k8sVersion"`
+	// Path is the relative project path containing metadata for this
+	// environment.
+	Path string `json:"path"`
+	// Destination stores the cluster address that this environment points to.
+	Destination *EnvironmentDestinationSpec `json:"destination"`
+	// Targets contain the relative component paths that this environment
+	// wishes to deploy on it's destination.
+	Targets []string `json:"targets,omitempty"`
 }
 
-// EnvironmentDestinationSpecs contains one or more EnvironmentDestinationSpec.
-type EnvironmentDestinationSpecs []*EnvironmentDestinationSpec
-
 // EnvironmentDestinationSpec contains the specification for the cluster
-// addresses that the environment points to.
-//
-// Server:    The Kubernetes server that the cluster is running on.
-// Namespace: The namespace of the Kubernetes server that targets should
-//            be deployed to. This is "default", by default.
+// address that the environment points to.
 type EnvironmentDestinationSpec struct {
-	Server    string `json:"server"`
+	// Server is the Kubernetes server that the cluster is running on.
+	Server string `json:"server"`
+	// Namespace is the namespace of the Kubernetes server that targets should
+	// be deployed to. This is "default", if not specified.
 	Namespace string `json:"namespace"`
 }
 
