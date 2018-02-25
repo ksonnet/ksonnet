@@ -5,7 +5,6 @@ List all locally available ksonnet prototypes
 ### Synopsis
 
 
-
 The `list` command displays all prototypes that are available locally, as
 well as brief descriptions of what they generate.
 
@@ -25,7 +24,13 @@ from the *incubator* registry.
 
 
 ```
-ks prototype list
+ks prototype list [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for list
 ```
 
 ### Options inherited from parent commands
@@ -35,5 +40,6 @@ ks prototype list
 ```
 
 ### SEE ALSO
+
 * [ks prototype](ks_prototype.md)	 - Instantiate, inspect, and get examples for ksonnet prototypes
 

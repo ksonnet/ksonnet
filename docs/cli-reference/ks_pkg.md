@@ -5,7 +5,6 @@ Manage packages and dependencies for the current ksonnet application
 ### Synopsis
 
 
-
 A ksonnet package contains:
 
 * A set of prototypes (see `ks prototype --help` for more info on prototypes), which
@@ -33,7 +32,13 @@ See the annotated file tree below, as an example:
 
 
 ```
-ks pkg
+ks pkg [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for pkg
 ```
 
 ### Options inherited from parent commands
@@ -43,6 +48,7 @@ ks pkg
 ```
 
 ### SEE ALSO
+
 * [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 * [ks pkg describe](ks_pkg_describe.md)	 - Describe a ksonnet package and its contents
 * [ks pkg install](ks_pkg_install.md)	 - Install a package (e.g. extra prototypes) for the current ksonnet app

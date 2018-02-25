@@ -5,7 +5,6 @@ List known component parameters
 ### Synopsis
 
 
-
 The `list` command displays all known component parameters or environment parameters.
 
 If a component is specified, this command displays all of its specific parameters.
@@ -20,7 +19,7 @@ Furthermore, parameters can be listed on a per-environment basis.
 
 
 ```
-ks param list [<component-name>] [--env <env-name>]
+ks param list [<component-name>] [--env <env-name>] [flags]
 ```
 
 ### Examples
@@ -44,6 +43,7 @@ ks param list guestbook --env=dev
 
 ```
       --env string   Specify environment to list parameters for
+  -h, --help         help for list
 ```
 
 ### Options inherited from parent commands
@@ -53,5 +53,6 @@ ks param list guestbook --env=dev
 ```
 
 ### SEE ALSO
+
 * [ks param](ks_param.md)	 - Manage ksonnet parameters for components and environments
 

@@ -4,13 +4,12 @@ Delete a component from the ksonnet application
 
 ### Synopsis
 
-
 Delete a component from the ksonnet application. This is equivalent to deleting the
 component file in the components directory and cleaning up all component
 references throughout the project.
 
 ```
-ks component rm <component-name>
+ks component rm <component-name> [flags]
 ```
 
 ### Examples
@@ -26,6 +25,7 @@ ks component rm guestbook
 
 ```
       --component string   The component to be removed from components/
+  -h, --help               help for rm
 ```
 
 ### Options inherited from parent commands
@@ -35,5 +35,6 @@ ks component rm guestbook
 ```
 
 ### SEE ALSO
+
 * [ks component](ks_component.md)	 - Manage ksonnet components
 

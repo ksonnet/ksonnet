@@ -5,7 +5,6 @@ Preview a prototype's output without creating a component (stdout)
 ### Synopsis
 
 
-
 This `preview` command expands a prototype with CLI flag parameters, and
 emits the resulting manifest to stdout. This allows you to see the potential
 output of a `ks generate` command without actually creating a new component file.
@@ -21,7 +20,7 @@ a component with `ks generate` and then use `ks show`.
 
 
 ```
-ks prototype preview <prototype-name> [parameter-flags]
+ks prototype preview <prototype-name> [parameter-flags] [flags]
 ```
 
 ### Examples
@@ -36,6 +35,12 @@ ks prototype preview single-port-deployment \
   --port=80
 ```
 
+### Options
+
+```
+  -h, --help   help for preview
+```
+
 ### Options inherited from parent commands
 
 ```
@@ -43,5 +48,6 @@ ks prototype preview single-port-deployment \
 ```
 
 ### SEE ALSO
+
 * [ks prototype](ks_prototype.md)	 - Instantiate, inspect, and get examples for ksonnet prototypes
 

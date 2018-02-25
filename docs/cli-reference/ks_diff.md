@@ -5,7 +5,6 @@ Compare manifests, based on environment or location (local or remote)
 ### Synopsis
 
 
-
 The `diff` command displays standard file diffs, and can be used to compare manifests
 based on *environment* or location ('local' ksonnet app manifests or what's running
 on a 'remote' server).
@@ -34,7 +33,7 @@ the manifest for that particular component.
 
 
 ```
-ks diff <location1:env1> [location2:env2] [-c <component-name>]
+ks diff <location1:env1> [location2:env2] [-c <component-name>] [flags]
 ```
 
 ### Examples
@@ -71,6 +70,7 @@ ks diff dev -c redis
       --diff-strategy string          Diff strategy, all or subset. (default "all")
   -V, --ext-str stringSlice           Values of external variables
       --ext-str-file stringSlice      Read external variable from a file
+  -h, --help                          help for diff
   -J, --jpath stringSlice             Additional jsonnet library search path
       --resolve-images string         Change implementation of resolveImage native function. One of: noop, registry (default "noop")
       --resolve-images-error string   Action when resolveImage fails. One of ignore,warn,error (default "warn")
@@ -85,5 +85,6 @@ ks diff dev -c redis
 ```
 
 ### SEE ALSO
+
 * [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 

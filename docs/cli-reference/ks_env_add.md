@@ -5,7 +5,6 @@ Add a new environment to a ksonnet application
 ### Synopsis
 
 
-
 The `add` command creates a new environment (specifically for the ksonnet app
 whose directory it's executed in). This environment is cached with the following
 info:
@@ -34,7 +33,7 @@ Note that an environment *DOES NOT* contain user-specific data such as private k
 
 
 ```
-ks env add <env-name>
+ks env add <env-name> [flags]
 ```
 
 ### Examples
@@ -67,6 +66,7 @@ ks env add prod --server=https://ksonnet-1.us-west.elb.amazonaws.com
 
 ```
       --api-spec string   Manually specify API version from OpenAPI schema, cluster, or Kubernetes version (default "version:v1.7.0")
+  -h, --help              help for add
 ```
 
 ### Options inherited from parent commands
@@ -92,5 +92,6 @@ ks env add prod --server=https://ksonnet-1.us-west.elb.amazonaws.com
 ```
 
 ### SEE ALSO
+
 * [ks env](ks_env.md)	 - Manage ksonnet environments
 

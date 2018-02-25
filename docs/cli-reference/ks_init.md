@@ -5,7 +5,6 @@ Initialize a ksonnet application
 ### Synopsis
 
 
-
 The `init` command initializes a ksonnet application in a new directory, `app-name`.
 
 This command generates all the project scaffolding required to begin creating and
@@ -91,6 +90,7 @@ ks init app-name --dir=custom-location
       --cluster string                 The name of the kubeconfig cluster to use
       --context string                 The name of the kubeconfig context to use
       --dir string                     Ksonnet application directory
+  -h, --help                           help for init
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
       --kubeconfig string              Path to a kubeconfig file. Alternative to env var $KUBECONFIG.
   -n, --namespace string               If present, the namespace scope for this CLI request
@@ -109,5 +109,6 @@ ks init app-name --dir=custom-location
 ```
 
 ### SEE ALSO
+
 * [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 

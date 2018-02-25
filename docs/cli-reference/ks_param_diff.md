@@ -5,7 +5,6 @@ Display differences between the component parameters of two environments
 ### Synopsis
 
 
-
 The `diff` command pretty prints differences between the component parameters
 of two environments.
 
@@ -21,7 +20,7 @@ is supported via a component flag.
 
 
 ```
-ks param diff <env1> <env2> [--component <component-name>]
+ks param diff <env1> <env2> [--component <component-name>] [flags]
 ```
 
 ### Examples
@@ -40,6 +39,7 @@ ks param diff dev prod --component=guestbook
 
 ```
       --component string   Specify the component to diff against
+  -h, --help               help for diff
 ```
 
 ### Options inherited from parent commands
@@ -49,5 +49,6 @@ ks param diff dev prod --component=guestbook
 ```
 
 ### SEE ALSO
+
 * [ks param](ks_param.md)	 - Manage ksonnet parameters for components and environments
 

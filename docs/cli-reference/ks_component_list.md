@@ -5,14 +5,13 @@ List known components
 ### Synopsis
 
 
-
 The `list` command displays all known components.
 
 ### Syntax
 
 
 ```
-ks component list
+ks component list [flags]
 ```
 
 ### Examples
@@ -23,6 +22,12 @@ ks component list
 ks component list
 ```
 
+### Options
+
+```
+  -h, --help   help for list
+```
+
 ### Options inherited from parent commands
 
 ```
@@ -30,5 +35,6 @@ ks component list
 ```
 
 ### SEE ALSO
+
 * [ks component](ks_component.md)	 - Manage ksonnet components
 

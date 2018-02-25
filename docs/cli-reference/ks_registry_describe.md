@@ -5,7 +5,6 @@ Describe a ksonnet registry and the packages it contains
 ### Synopsis
 
 
-
 The `describe` command outputs documentation for the ksonnet registry identified
 by `<registry-name>`. Specifically, it displays the following:
 
@@ -21,7 +20,13 @@ by `<registry-name>`. Specifically, it displays the following:
 
 
 ```
-ks registry describe <registry-name>
+ks registry describe <registry-name> [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for describe
 ```
 
 ### Options inherited from parent commands
@@ -31,5 +36,6 @@ ks registry describe <registry-name>
 ```
 
 ### SEE ALSO
+
 * [ks registry](ks_registry.md)	 - Manage registries for current project
 

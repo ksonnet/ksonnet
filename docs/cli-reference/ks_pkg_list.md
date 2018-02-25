@@ -5,7 +5,6 @@ List all packages known (downloaded or not) for the current ksonnet app
 ### Synopsis
 
 
-
 The `list` command outputs a table that describes all *known* packages (not
 necessarily downloaded, but available from existing registries). This includes
 the following info:
@@ -24,7 +23,13 @@ the following info:
 
 
 ```
-ks pkg list
+ks pkg list [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for list
 ```
 
 ### Options inherited from parent commands
@@ -34,5 +39,6 @@ ks pkg list
 ```
 
 ### SEE ALSO
+
 * [ks pkg](ks_pkg.md)	 - Manage packages and dependencies for the current ksonnet application
 

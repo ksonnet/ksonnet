@@ -5,7 +5,6 @@ Manage ksonnet parameters for components and environments
 ### Synopsis
 
 
-
 Parameters are customizable fields that are used inside ksonnet *component*
 manifests. Examples might include a deployment's 'name' or 'image'. Parameters
 can also be defined on a *per-environment* basis. (Environments are ksonnet
@@ -36,7 +35,13 @@ Jsonnet files.
 
 
 ```
-ks param
+ks param [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for param
 ```
 
 ### Options inherited from parent commands
@@ -46,6 +51,7 @@ ks param
 ```
 
 ### SEE ALSO
+
 * [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 * [ks param diff](ks_param_diff.md)	 - Display differences between the component parameters of two environments
 * [ks param list](ks_param_list.md)	 - List known component parameters

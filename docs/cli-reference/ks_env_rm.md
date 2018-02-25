@@ -5,7 +5,6 @@ Delete an environment from a ksonnet application
 ### Synopsis
 
 
-
 The `rm` command deletes an environment from a ksonnet application. This is
 the same as removing the `<env-name>` environment directory and all files
 contained. All empty parent directories are also subsequently deleted.
@@ -24,7 +23,7 @@ need to use the `ks delete` command.
 
 
 ```
-ks env rm <env-name>
+ks env rm <env-name> [flags]
 ```
 
 ### Examples
@@ -34,6 +33,12 @@ ks env rm <env-name>
 # Remove the directory 'environments/us-west/staging' and all of its contents.
 # This will also remove the parent directory 'us-west' if it is empty.
 ks env rm us-west/staging
+```
+
+### Options
+
+```
+  -h, --help   help for rm
 ```
 
 ### Options inherited from parent commands
@@ -59,5 +64,6 @@ ks env rm us-west/staging
 ```
 
 ### SEE ALSO
+
 * [ks env](ks_env.md)	 - Manage ksonnet environments
 

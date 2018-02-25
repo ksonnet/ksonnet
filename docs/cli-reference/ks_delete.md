@@ -5,7 +5,6 @@ Remove component-specified Kubernetes resources from remote clusters
 ### Synopsis
 
 
-
 The `delete` command removes Kubernetes resources (described in local
 *component* manifests) from a cluster. This cluster is determined by the mandatory
 `<env-name>`argument.
@@ -24,7 +23,7 @@ components.
 
 
 ```
-ks delete [env-name] [-c <component-name>]
+ks delete [env-name] [-c <component-name>] [flags]
 ```
 
 ### Examples
@@ -55,6 +54,7 @@ ks delete --kubeconfig=./kubeconfig -c nginx
   -V, --ext-str stringSlice            Values of external variables
       --ext-str-file stringSlice       Read external variable from a file
       --grace-period int               Number of seconds given to resources to terminate gracefully. A negative value is ignored (default -1)
+  -h, --help                           help for delete
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
   -J, --jpath stringSlice              Additional jsonnet library search path
       --kubeconfig string              Path to a kubeconfig file. Alternative to env var $KUBECONFIG.
@@ -78,5 +78,6 @@ ks delete --kubeconfig=./kubeconfig -c nginx
 ```
 
 ### SEE ALSO
+
 * [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 

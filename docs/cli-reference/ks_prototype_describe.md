@@ -5,7 +5,6 @@ See more info about a prototype's output and usage
 ### Synopsis
 
 
-
 This command outputs documentation, examples, and other information for
 the specified prototype (identified by name). Specifically, this describes:
 
@@ -23,7 +22,7 @@ the specified prototype (identified by name). Specifically, this describes:
 
 
 ```
-ks prototype describe <prototype-name>
+ks prototype describe <prototype-name> [flags]
 ```
 
 ### Examples
@@ -34,6 +33,12 @@ ks prototype describe <prototype-name>
 ks prototype describe deployment
 ```
 
+### Options
+
+```
+  -h, --help   help for describe
+```
+
 ### Options inherited from parent commands
 
 ```
@@ -41,5 +46,6 @@ ks prototype describe deployment
 ```
 
 ### SEE ALSO
+
 * [ks prototype](ks_prototype.md)	 - Instantiate, inspect, and get examples for ksonnet prototypes
 

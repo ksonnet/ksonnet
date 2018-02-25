@@ -5,7 +5,6 @@ Search for a prototype
 ### Synopsis
 
 
-
 The `prototype search` command allows you to search for specific prototypes by name.
 Specifically, it matches any prototypes with names that contain the string <name-substring>.
 
@@ -18,7 +17,7 @@ Specifically, it matches any prototypes with names that contain the string <name
 
 
 ```
-ks prototype search <name-substring>
+ks prototype search <name-substring> [flags]
 ```
 
 ### Examples
@@ -29,6 +28,12 @@ ks prototype search <name-substring>
 ks prototype search service
 ```
 
+### Options
+
+```
+  -h, --help   help for search
+```
+
 ### Options inherited from parent commands
 
 ```
@@ -36,5 +41,6 @@ ks prototype search service
 ```
 
 ### SEE ALSO
+
 * [ks prototype](ks_prototype.md)	 - Instantiate, inspect, and get examples for ksonnet prototypes
 
