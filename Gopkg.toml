@@ -115,6 +115,3 @@
 [[constraint]]
   name = "k8s.io/client-go"
   version = "5.0.0"
-[[constraint]]
-  branch = "master"
-  name = "github.com/shibukawa/configdir"
