@@ -94,10 +94,6 @@ func (c *ParamSetCmd) Run() error {
 // sanitizeParamValue does a best effort to identify value types. It will put
 // quotes around values which it categorizes as strings.
 func sanitizeParamValue(value string) string {
-	// boolean
-	if value == "true" || value == "false" {
-		return value
-	}
 	// numeric
 	if _, err := strconv.ParseFloat(value, 64); err == nil {
 		return value
