@@ -268,13 +268,13 @@ func (te *cmdObjExpander) Expand() ([]*unstructured.Unstructured, error) {
 		return nil, errors.Wrap(err, "find metadata")
 	}
 
-	_, vendorPath := manager.LibPaths()
+	envPath, vendorPath := manager.LibPaths()
 	libPath, mainPath, _, err := manager.EnvPaths(te.config.env)
 	if err != nil {
 		return nil, err
 	}
 
-	expander.FlagJpath = append([]string{string(vendorPath), string(libPath)}, expander.FlagJpath...)
+	expander.FlagJpath = append([]string{string(vendorPath), string(libPath), string(envPath)}, expander.FlagJpath...)
 
 	namespacedComponentPaths, err := component.MakePathsByNamespace(te.config.fs, manager, te.config.cwd, te.config.env)
 	if err != nil {

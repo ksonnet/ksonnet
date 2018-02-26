@@ -179,12 +179,12 @@ func TestFindSuccess(t *testing.T) {
 func TestLibPaths(t *testing.T) {
 	appName := "test-lib-paths"
 	expectedVendorPath := path.Join(appName, vendorDir)
-	expectedLibPath := path.Join(appName, libDir)
+	expectedEnvPath := path.Join(appName, environmentsDir)
 	m := mockEnvironments(t, appName)
 
-	libPath, vendorPath := m.LibPaths()
-	if libPath != expectedLibPath {
-		t.Fatalf("Expected lib path to be:\n  '%s'\n, got:\n  '%s'", expectedLibPath, libPath)
+	envPath, vendorPath := m.LibPaths()
+	if envPath != expectedEnvPath {
+		t.Fatalf("Expected env path to be:\n  '%s'\n, got:\n  '%s'", expectedEnvPath, envPath)
 	}
 	if vendorPath != expectedVendorPath {
 		t.Fatalf("Expected vendor lib path to be:\n  '%s'\n, got:\n  '%s'", expectedVendorPath, vendorPath)

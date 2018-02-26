@@ -249,7 +249,7 @@ func TestSetEnvironment(t *testing.T) {
 func TestGenerateOverrideData(t *testing.T) {
 	m := mockEnvironments(t, "test-gen-override-data")
 
-	expected := `local base = import "../base.libsonnet";
+	expected := `local base = import "base.libsonnet";
 local k = import "k.libsonnet";
 
 base + {
