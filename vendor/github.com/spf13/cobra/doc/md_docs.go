@@ -52,6 +52,9 @@ func GenMarkdown(cmd *cobra.Command, w io.Writer) error {
 
 // GenMarkdownCustom creates custom markdown output.
 func GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {
+	cmd.InitDefaultHelpCmd()
+	cmd.InitDefaultHelpFlag()
+
 	buf := new(bytes.Buffer)
 	name := cmd.CommandPath()
 
@@ -64,7 +67,7 @@ func GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 	buf.WriteString("## " + name + "\n\n")
 	buf.WriteString(short + "\n\n")
 	buf.WriteString("### Synopsis\n\n")
-	buf.WriteString("\n" + long + "\n\n")
+	buf.WriteString(long + "\n\n")
 
 	if cmd.Runnable() {
 		buf.WriteString(fmt.Sprintf("```\n%s\n```\n\n", cmd.UseLine()))
@@ -79,7 +82,7 @@ func GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 		return err
 	}
 	if hasSeeAlso(cmd) {
-		buf.WriteString("### SEE ALSO\n")
+		buf.WriteString("### SEE ALSO\n\n")
 		if cmd.HasParent() {
 			parent := cmd.Parent()
 			pname := parent.CommandPath()

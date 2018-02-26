@@ -5,7 +5,6 @@ Instantiate, inspect, and get examples for ksonnet prototypes
 ### Synopsis
 
 
-
 Use the `prototype` subcommands to manage, inspect, instantiate, and get
 examples for ksonnet prototypes.
 
@@ -23,7 +22,13 @@ for your use case.
 
 
 ```
-ks prototype
+ks prototype [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for prototype
 ```
 
 ### Options inherited from parent commands
@@ -33,6 +38,7 @@ ks prototype
 ```
 
 ### SEE ALSO
+
 * [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 * [ks prototype describe](ks_prototype_describe.md)	 - See more info about a prototype's output and usage
 * [ks prototype list](ks_prototype_list.md)	 - List all locally available ksonnet prototypes

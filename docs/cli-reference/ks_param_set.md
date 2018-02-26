@@ -5,7 +5,6 @@ Change component or environment parameters (e.g. replica count, name)
 ### Synopsis
 
 
-
 The `set` command sets component or environment parameters such as replica count
 or name. Parameters are set individually, one at a time. All of these changes are
 reflected in the `params.libsonnet` files.
@@ -26,7 +25,7 @@ for greater customization of environment parameters, we suggest modifying the
 
 
 ```
-ks param set <component-name> <param-key> <param-value>
+ks param set <component-name> <param-key> <param-value> [flags]
 ```
 
 ### Examples
@@ -45,6 +44,7 @@ ks param set guestbook replicas 2 --env=dev
 
 ```
       --env string   Specify environment to set parameters for
+  -h, --help         help for set
 ```
 
 ### Options inherited from parent commands
@@ -54,5 +54,6 @@ ks param set guestbook replicas 2 --env=dev
 ```
 
 ### SEE ALSO
+
 * [ks param](ks_param.md)	 - Manage ksonnet parameters for components and environments
 

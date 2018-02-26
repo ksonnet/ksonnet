@@ -5,7 +5,6 @@ Set environment-specific fields (name, namespace, server)
 ### Synopsis
 
 
-
 The `set` command lets you change the fields of an existing environment.
 You can currently only update your environment's name.
 
@@ -20,7 +19,7 @@ directory structure in `environments/`.
 
 
 ```
-ks env set <env-name>
+ks env set <env-name> [flags]
 ```
 
 ### Examples
@@ -34,6 +33,7 @@ ks env set us-west/staging --name=us-east/staging
 ### Options
 
 ```
+  -h, --help          help for set
       --name string   Name used to uniquely identify the environment. Must not already exist within the ksonnet app
 ```
 
@@ -60,5 +60,6 @@ ks env set us-west/staging --name=us-east/staging
 ```
 
 ### SEE ALSO
+
 * [ks env](ks_env.md)	 - Manage ksonnet environments
 

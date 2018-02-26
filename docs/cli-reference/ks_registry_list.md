@@ -5,7 +5,6 @@ List all registries known to the current ksonnet app.
 ### Synopsis
 
 
-
 The `list` command displays all known ksonnet registries in a table. This
 table includes the following info:
 
@@ -21,7 +20,13 @@ table includes the following info:
 
 
 ```
-ks registry list
+ks registry list [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for list
 ```
 
 ### Options inherited from parent commands
@@ -31,5 +36,6 @@ ks registry list
 ```
 
 ### SEE ALSO
+
 * [ks registry](ks_registry.md)	 - Manage registries for current project
 

@@ -5,7 +5,6 @@ List all environments in a ksonnet application
 ### Synopsis
 
 
-
 The `list` command lists all of the available environments for the
 current ksonnet app. Specifically, this will display the (1) *name*,
 (2) *server*, and (3) *namespace* of each environment.
@@ -20,7 +19,13 @@ current ksonnet app. Specifically, this will display the (1) *name*,
 
 
 ```
-ks env list
+ks env list [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for list
 ```
 
 ### Options inherited from parent commands
@@ -46,5 +51,6 @@ ks env list
 ```
 
 ### SEE ALSO
+
 * [ks env](ks_env.md)	 - Manage ksonnet environments
 

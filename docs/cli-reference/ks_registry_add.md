@@ -5,7 +5,6 @@ Add a registry to the current ksonnet app
 ### Synopsis
 
 
-
 The `add` command allows custom registries to be added to your ksonnet app,
 provided that their file structures follow the appropriate schema. *You can look
 at the `incubator` repo (https://github.com/ksonnet/parts/tree/master/incubator)
@@ -31,7 +30,7 @@ name*). If a version is not specified, it will default to `latest`.
 
 
 ```
-ks registry add <registry-name> <registry-uri>
+ks registry add <registry-name> <registry-uri> [flags]
 ```
 
 ### Examples
@@ -49,6 +48,7 @@ ks registry add databases github.com/example/tree/master/reg --version=0.0.1
 ### Options
 
 ```
+  -h, --help             help for add
       --version string   Version of the registry to add
 ```
 
@@ -59,5 +59,6 @@ ks registry add databases github.com/example/tree/master/reg --version=0.0.1
 ```
 
 ### SEE ALSO
+
 * [ks registry](ks_registry.md)	 - Manage registries for current project
 

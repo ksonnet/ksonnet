@@ -5,7 +5,6 @@ Manage registries for current project
 ### Synopsis
 
 
-
 A ksonnet registry is basically a repository for *packages*. (Registry here is
 used in the same sense as a container image registry). Registries are identified
 by a `registry.yaml` in their root that declares which packages they contain.
@@ -24,7 +23,13 @@ described above. (See `ks prototype --help` for more information.)
 
 
 ```
-ks registry
+ks registry [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for registry
 ```
 
 ### Options inherited from parent commands
@@ -34,6 +39,7 @@ ks registry
 ```
 
 ### SEE ALSO
+
 * [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 * [ks registry add](ks_registry_add.md)	 - Add a registry to the current ksonnet app
 * [ks registry describe](ks_registry_describe.md)	 - Describe a ksonnet registry and the packages it contains

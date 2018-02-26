@@ -349,7 +349,7 @@
     ".",
     "doc"
   ]
-  revision = "4673102358fdd630e3bb0eb6dee96e4b533d53ec"
+  revision = "a1e4933ab784095895e33dbe9f001ba10cfe2060"
 
 [[projects]]
   name = "github.com/spf13/pflag"
@@ -600,6 +600,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3ec216adf8721873a210ca86de7f6477993f990d180563ba88a2e167a0b7be88"
+  inputs-digest = "2d8337f0b0870fb8b2c0a041d7b5e3e77b66b414fe9c2d7962ee5c5842bb94e0"
   solver-name = "gps-cdcl"
   solver-version = 1

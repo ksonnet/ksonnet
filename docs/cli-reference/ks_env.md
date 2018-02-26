@@ -5,7 +5,6 @@ Manage ksonnet environments
 ### Synopsis
 
 
-
 An environment is a deployment target for your ksonnet app and its constituent
 components. You can use ksonnet to deploy a given app to *multiple* environments,
 such as `dev` and `prod`.
@@ -43,7 +42,7 @@ represented as a hierarchy in the `environments/` directory of a ksonnet app, li
 
 
 ```
-ks env
+ks env [flags]
 ```
 
 ### Options
@@ -56,6 +55,7 @@ ks env
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
       --context string                 The name of the kubeconfig context to use
+  -h, --help                           help for env
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
       --kubeconfig string              Path to a kubeconfig file. Alternative to env var $KUBECONFIG.
   -n, --namespace string               If present, the namespace scope for this CLI request
@@ -74,6 +74,7 @@ ks env
 ```
 
 ### SEE ALSO
+
 * [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 * [ks env add](ks_env_add.md)	 - Add a new environment to a ksonnet application
 * [ks env list](ks_env_list.md)	 - List all environments in a ksonnet application

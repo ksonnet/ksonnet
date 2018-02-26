@@ -30,6 +30,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/component"
 	"github.com/ksonnet/ksonnet/metadata"
+	"github.com/ksonnet/ksonnet/plugin"
 	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/ksonnet/ksonnet/template"
 	"github.com/pkg/errors"
@@ -109,6 +110,57 @@ application configuration to remote clusters.
 
 		return nil
 	},
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			return cobra.NoArgs(cmd, args)
+		}
+
+		pluginName := args[0]
+		_, err := plugin.Find(appFs, pluginName)
+		if err != nil {
+			return cobra.NoArgs(cmd, args)
+		}
+
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			return cmd.Help()
+		}
+		pluginName, args := args[0], args[1:]
+		p, err := plugin.Find(appFs, pluginName)
+		if err != nil {
+			return err
+		}
+
+		return runPlugin(p, args)
+	},
+}
+
+func runPlugin(p plugin.Plugin, args []string) error {
+	env := []string{
+		fmt.Sprintf("KS_PLUGIN_DIR=%s", p.RootDir),
+		fmt.Sprintf("KS_PLUGIN_NAME=%s", p.Config.Name),
+	}
+
+	root, err := appRoot()
+	if err != nil {
+		return err
+	}
+
+	appConfig := filepath.Join(root, "app.yaml")
+	exists, err := afero.Exists(appFs, appConfig)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		env = append(env, fmt.Sprintf("KS_APP_DIR=%s", root))
+		// TODO: make kube context or something similar available to the plugin
+	}
+
+	cmd := p.BuildRunCmd(env, args)
+	return cmd.Run()
 }
 
 func logLevel(verbosity int) log.Level {
@@ -428,4 +480,8 @@ func importEnv(manager metadata.Manager, env string) (string, error) {
 	}
 
 	return fmt.Sprintf(`%s=%s`, metadata.EnvExtCodeKey, string(marshalled)), nil
+}
+
+func appRoot() (string, error) {
+	return os.Getwd()
 }

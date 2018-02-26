@@ -5,7 +5,6 @@ Use the specified prototype to generate a component manifest
 ### Synopsis
 
 
-
 The `generate` command (aliased from `prototype use`) generates Kubernetes-
 compatible, Jsonnet manifests for components in your ksonnet app. Each component
 corresponds to a single manifest in the `components/` directory. This manifest
@@ -43,7 +42,7 @@ different prototypes support their own unique flags.
 
 
 ```
-ks generate <prototype-name> <component-name> [type] [parameter-flags]
+ks generate <prototype-name> <component-name> [type] [parameter-flags] [flags]
 ```
 
 ### Examples
@@ -68,6 +67,12 @@ ks prototype use deployment nginx-depl \
   --image=nginx
 ```
 
+### Options
+
+```
+  -h, --help   help for generate
+```
+
 ### Options inherited from parent commands
 
 ```
@@ -75,5 +80,6 @@ ks prototype use deployment nginx-depl \
 ```
 
 ### SEE ALSO
+
 * [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 

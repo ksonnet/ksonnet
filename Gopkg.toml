@@ -78,7 +78,7 @@
 
 [[constraint]]
   name = "github.com/spf13/cobra"
-  revision = "4673102358fdd630e3bb0eb6dee96e4b533d53ec"
+  revision = "a1e4933ab784095895e33dbe9f001ba10cfe2060"
 
 [[constraint]]
   name = "github.com/spf13/pflag"

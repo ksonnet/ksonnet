@@ -5,7 +5,6 @@ Check generated component manifests against the server's API
 ### Synopsis
 
 
-
 The `validate` command checks that an application or file is compliant with the
 server API's Kubernetes specification. Note that this command actually communicates
 *with* the server for the specified `<env-name>`, so it only works if your
@@ -27,7 +26,7 @@ the manifest for that particular component.
 
 
 ```
-ks validate <env-name> [-c <component-name>]
+ks validate <env-name> [-c <component-name>] [flags]
 ```
 
 ### Examples
@@ -59,6 +58,7 @@ ksonnet validate prod -c redis
       --context string                 The name of the kubeconfig context to use
   -V, --ext-str stringSlice            Values of external variables
       --ext-str-file stringSlice       Read external variable from a file
+  -h, --help                           help for validate
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
   -J, --jpath stringSlice              Additional jsonnet library search path
       --kubeconfig string              Path to a kubeconfig file. Alternative to env var $KUBECONFIG.
@@ -82,5 +82,6 @@ ksonnet validate prod -c redis
 ```
 
 ### SEE ALSO
+
 * [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 

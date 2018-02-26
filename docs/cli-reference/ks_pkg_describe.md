@@ -5,7 +5,6 @@ Describe a ksonnet package and its contents
 ### Synopsis
 
 
-
 The `describe` command outputs documentation for a package that is available
 (e.g. downloaded) in the current ksonnet application. (This must belong to an already
 known `<registry-name>` like *incubator*). The output includes:
@@ -24,7 +23,13 @@ known `<registry-name>` like *incubator*). The output includes:
 
 
 ```
-ks pkg describe [<registry-name>/]<package-name>
+ks pkg describe [<registry-name>/]<package-name> [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for describe
 ```
 
 ### Options inherited from parent commands
@@ -34,5 +39,6 @@ ks pkg describe [<registry-name>/]<package-name>
 ```
 
 ### SEE ALSO
+
 * [ks pkg](ks_pkg.md)	 - Manage packages and dependencies for the current ksonnet application
 

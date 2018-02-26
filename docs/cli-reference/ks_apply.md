@@ -5,7 +5,6 @@ Apply local Kubernetes manifests (components) to remote clusters
 ### Synopsis
 
 
-
 The `apply`command uses local manifest(s) to update (and optionally create)
 Kubernetes resources on a remote cluster. This cluster is determined by the
 mandatory `<env-name>` argument.
@@ -28,7 +27,7 @@ Note that this command needs to be run *within* a ksonnet app directory.
 
 
 ```
-ks apply <env-name> [-c <component-name>] [--dry-run]
+ks apply <env-name> [-c <component-name>] [--dry-run] [flags]
 ```
 
 ### Examples
@@ -78,6 +77,7 @@ ks apply dev -c guestbook-ui -c nginx-depl --create false
   -V, --ext-str stringSlice            Values of external variables
       --ext-str-file stringSlice       Read external variable from a file
       --gc-tag string                  A tag that's (1) added to all updated objects (2) used to garbage collect existing objects that are no longer in the manifest
+  -h, --help                           help for apply
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
   -J, --jpath stringSlice              Additional jsonnet library search path
       --kubeconfig string              Path to a kubeconfig file. Alternative to env var $KUBECONFIG.
@@ -102,5 +102,6 @@ ks apply dev -c guestbook-ui -c nginx-depl --create false
 ```
 
 ### SEE ALSO
+
 * [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 

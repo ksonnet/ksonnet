@@ -5,7 +5,6 @@ Install a package (e.g. extra prototypes) for the current ksonnet app
 ### Synopsis
 
 
-
 The `install` command caches a ksonnet library locally, and makes it available
 for use in the current ksonnet application. Enough info and metadata is recorded in
 `app.yaml` that new users can retrieve the dependency after a fresh clone of this app.
@@ -24,7 +23,7 @@ channels for official ksonnet libraries.
 
 
 ```
-ks pkg install <registry>/<library>@<version>
+ks pkg install <registry>/<library>@<version> [flags]
 ```
 
 ### Examples
@@ -46,6 +45,7 @@ ks pkg install incubator/nginx@master
 ### Options
 
 ```
+  -h, --help          help for install
       --name string   Name to give the dependency, to use within the ksonnet app
 ```
 
@@ -56,5 +56,6 @@ ks pkg install incubator/nginx@master
 ```
 
 ### SEE ALSO
+
 * [ks pkg](ks_pkg.md)	 - Manage packages and dependencies for the current ksonnet application
 

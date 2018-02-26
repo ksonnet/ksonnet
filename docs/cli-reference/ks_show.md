@@ -5,7 +5,6 @@ Show expanded manifests for a specific environment.
 ### Synopsis
 
 
-
 Show expanded manifests (resource definitions) for a specific environment.
 Jsonnet manifests, each defining a ksonnet component, are expanded into their
 JSON or YAML equivalents (YAML is the default). Any parameters in these Jsonnet
@@ -28,7 +27,7 @@ manifest for that particular component.
 
 
 ```
-ks show <env> [-c <component-filename>]
+ks show <env> [-c <component-filename>] [flags]
 ```
 
 ### Examples
@@ -54,6 +53,7 @@ ks show dev -c redis -c nginx-server
   -V, --ext-str stringSlice           Values of external variables
       --ext-str-file stringSlice      Read external variable from a file
   -o, --format string                 Output format.  Supported values are: json, yaml (default "yaml")
+  -h, --help                          help for show
   -J, --jpath stringSlice             Additional jsonnet library search path
       --resolve-images string         Change implementation of resolveImage native function. One of: noop, registry (default "noop")
       --resolve-images-error string   Action when resolveImage fails. One of ignore,warn,error (default "warn")
@@ -68,5 +68,6 @@ ks show dev -c redis -c nginx-server
 ```
 
 ### SEE ALSO
+
 * [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 
