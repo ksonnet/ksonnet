@@ -82,3 +82,35 @@ func TestDiffParams(t *testing.T) {
 		}
 	}
 }
+
+func TestSanitizeParamValue(t *testing.T) {
+	tests := []struct {
+		value    string
+		expected string
+	}{
+		// numbers
+		{
+			value:    "64.5",
+			expected: "64.5",
+		},
+		{
+			value:    "64",
+			expected: "64",
+		},
+		// boolean
+		{
+			value:    "false",
+			expected: `"false"`,
+		},
+		// string
+		{
+			value:    "my string",
+			expected: `"my string"`,
+		},
+	}
+
+	for _, te := range tests {
+		got := sanitizeParamValue(te.value)
+		require.Equal(t, got, te.expected, "Unexpected sanitized param value")
+	}
+}
