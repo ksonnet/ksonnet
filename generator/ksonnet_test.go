@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubespec"
+	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/ksonnet"
 )
 
 func TestKsonnet(t *testing.T) {
@@ -16,19 +16,22 @@ func TestKsonnet(t *testing.T) {
 	var (
 		ext            = []byte("k")
 		lib            = []byte("k8s")
-		successfulEmit = func(*kubespec.APISpec, *string, *string) ([]byte, []byte, error) {
-			return ext, lib, nil
+		successfulEmit = func(string) (*ksonnet.Lib, error) {
+			return &ksonnet.Lib{
+				Version:    "v1.7.0",
+				K8s:        lib,
+				Extensions: ext,
+			}, nil
 		}
-		failureEmit = func(*kubespec.APISpec, *string, *string) ([]byte, []byte, error) {
-			return nil, nil, errors.New("failure")
+		failureEmit = func(string) (*ksonnet.Lib, error) {
+			return nil, errors.New("failure")
 		}
 		v170swagger = []byte(`{"info":{"version":"v1.7.0"}}`)
-		v180swagger = []byte(`{"info":{"version":"v1.8.0"}}`)
 	)
 
 	cases := []struct {
 		name        string
-		emitter     func(*kubespec.APISpec, *string, *string) ([]byte, []byte, error)
+		emitter     func(string) (*ksonnet.Lib, error)
 		swaggerData []byte
 		version     string
 		isErr       bool
@@ -41,6 +44,7 @@ func TestKsonnet(t *testing.T) {
 		},
 		{
 			name:        "invalid swagger",
+			emitter:     failureEmit,
 			swaggerData: []byte(`{`),
 			isErr:       true,
 		},
@@ -50,16 +54,12 @@ func TestKsonnet(t *testing.T) {
 			swaggerData: v170swagger,
 			isErr:       true,
 		},
-		{
-			name:        "valid beta swagger",
-			emitter:     successfulEmit,
-			swaggerData: v180swagger,
-			version:     "v1.8.0",
-		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			ogKSEmitter := ksonnetEmitter
+			defer func() { ksonnetEmitter = ogKSEmitter }()
 			ksonnetEmitter = tc.emitter
 
 			kl, err := Ksonnet(tc.swaggerData)
@@ -70,7 +70,7 @@ func TestKsonnet(t *testing.T) {
 				}
 			} else {
 				if err != nil {
-					t.Fatal("Ksonnet() returned unexpected error")
+					t.Fatalf("Ksonnet() returned unexpected error: %#v", err)
 				}
 
 				if got, expected := string(kl.K), string(ext); got != expected {
