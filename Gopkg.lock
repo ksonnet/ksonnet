@@ -224,12 +224,15 @@
 [[projects]]
   name = "github.com/ksonnet/ksonnet-lib"
   packages = [
+    "ksonnet-gen/astext",
     "ksonnet-gen/jsonnet",
     "ksonnet-gen/ksonnet",
     "ksonnet-gen/kubespec",
-    "ksonnet-gen/kubeversion"
+    "ksonnet-gen/kubeversion",
+    "ksonnet-gen/nodemaker",
+    "ksonnet-gen/printer"
   ]
-  revision = "e8077023fa84395ad7976fa750136b39d0aa5f08"
+  revision = "b13dc1c505011ee838ae45324994dac432233000"
 
 [[projects]]
   branch = "master"
@@ -600,6 +603,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2d8337f0b0870fb8b2c0a041d7b5e3e77b66b414fe9c2d7962ee5c5842bb94e0"
+  inputs-digest = "f44fb422720ed1d7e1a654a9c4b6f6d9baa90492bb28c459bf30552527255e83"
   solver-name = "gps-cdcl"
   solver-version = 1
