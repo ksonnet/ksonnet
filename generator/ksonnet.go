@@ -1,17 +1,16 @@
 package generator
 
 import (
-	"encoding/json"
+	"io/ioutil"
+	"os"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/ksonnet"
-	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubespec"
-	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubeversion"
-	log "github.com/sirupsen/logrus"
 )
 
 var (
 	// ksonnetEmitter is the function which emits the ksonnet standard library.
-	ksonnetEmitter = ksonnet.Emit
+	ksonnetEmitter = ksonnet.GenerateLib
 )
 
 // KsonnetLib is the ksonnet standard library for a version of swagger.
@@ -29,33 +28,34 @@ type KsonnetLib struct {
 // Ksonnet generates the ksonnet standard library or returns an error if there was
 // a problem.
 func Ksonnet(swaggerData []byte) (*KsonnetLib, error) {
-	// Deserialize the API object.
-	s := kubespec.APISpec{}
-	if err := json.Unmarshal(swaggerData, &s); err != nil {
-		return nil, err
-	}
-
-	s.Text = swaggerData
-
-	// Emit Jsonnet code.
-	extensionsLibData, k8sLibData, err := ksonnetEmitter(&s, nil, nil)
+	f, err := ioutil.TempFile("", "")
 	if err != nil {
 		return nil, err
 	}
 
-	// Warn where the Kubernetes version is currently only supported as Beta.
-	if kubeversion.Beta(s.Info.Version) {
-		log.Warnf(`!
-============================================================================================
-Kubernetes version %s is currently supported as Beta; you may encounter unexpected behavior
-============================================================================================`, s.Info.Version)
+	defer os.Remove(f.Name())
+
+	_, err = f.Write(swaggerData)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = f.Close(); err != nil {
+		return nil, err
+	}
+
+	spew.Dump("---", f.Name(), ksonnetEmitter)
+
+	lib, err := ksonnetEmitter(f.Name())
+	if err != nil {
+		return nil, err
 	}
 
 	kl := &KsonnetLib{
-		K:       extensionsLibData,
-		K8s:     k8sLibData,
+		K:       lib.Extensions,
+		K8s:     lib.K8s,
 		Swagger: swaggerData,
-		Version: s.Info.Version,
+		Version: lib.Version,
 	}
 
 	return kl, nil

@@ -54,7 +54,7 @@
 
 [[constraint]]
   name = "github.com/ksonnet/ksonnet-lib"
-  revision = "e8077023fa84395ad7976fa750136b39d0aa5f08"
+  revision = "b13dc1c505011ee838ae45324994dac432233000"
 
 [[constraint]]
   name = "github.com/mattn/go-isatty"

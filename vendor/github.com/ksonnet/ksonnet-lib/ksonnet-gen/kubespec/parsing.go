@@ -17,7 +17,7 @@ func (dn *DefinitionName) Parse() (*ParsedDefinitionName, error) {
 
 	desc, err := describeDefinition(name)
 	if err != nil {
-		return nil, fmt.Errorf("describe definition: #v", err)
+		return nil, fmt.Errorf("describe definition: %#v", err)
 	}
 
 	pd := ParsedDefinitionName{
