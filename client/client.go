@@ -16,9 +16,15 @@
 package client
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"reflect"
+	"time"
 
 	"github.com/ksonnet/ksonnet/metadata"
 	str "github.com/ksonnet/ksonnet/strings"
@@ -59,6 +65,59 @@ func NewDefaultClientConfig() *Config {
 func InitClient(env string) (dynamic.ClientPool, discovery.DiscoveryInterface, string, error) {
 	clientConfig := NewDefaultClientConfig()
 	return clientConfig.RestClient(&env)
+}
+
+// GetAPISpec reads the kubernetes API version from this client's swagger.json.
+// We anticipate the swagger.json to be located at <server>/swagger.json.
+// If no swagger is found, or we are unable to authenticate to the server, we
+// will default to version:v1.7.0.
+func (c *Config) GetAPISpec(server string) string {
+	const (
+		defaultVersion = "version:v1.7.0"
+	)
+
+	type Info struct {
+		Version string `json:"version"`
+	}
+
+	type Spec struct {
+		Info Info `json:"info"`
+	}
+
+	u, err := url.Parse(server)
+	u.Path = path.Join(u.Path, "swagger.json")
+	url := u.String()
+
+	client := http.Client{
+		Timeout: time.Second * 2,
+	}
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		log.Debugf("Failed to create request at %s\n%s", url, err.Error())
+		return defaultVersion
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Debugf("Failed to open swagger at %s\n%s", url, err.Error())
+		return defaultVersion
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Debugf("Failed to read swagger at %s\n%s", url, err.Error())
+		return defaultVersion
+	}
+
+	spec := Spec{}
+	jsonErr := json.Unmarshal(body, &spec)
+	if jsonErr != nil {
+		log.Debugf("Failed to parse swagger at %s\n%s", url, err.Error())
+		return defaultVersion
+	}
+
+	return fmt.Sprintf("version:%s", spec.Info.Version)
 }
 
 // Namespace returns the namespace for the provided ClientConfig.
