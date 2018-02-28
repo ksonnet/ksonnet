@@ -50,7 +50,7 @@ func TestGenerateLibData(t *testing.T) {
 	specFlag := fmt.Sprintf("file:%s", blankSwagger)
 	libPath := "lib"
 
-	libManager, err := NewManagerWithSpec(specFlag, testFS, libPath)
+	libManager, err := NewManager(specFlag, testFS, libPath)
 	if err != nil {
 		t.Fatal("Failed to initialize lib.Manager")
 	}
