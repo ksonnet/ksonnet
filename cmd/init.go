@@ -23,7 +23,6 @@ import (
 
 	"github.com/ksonnet/ksonnet/client"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -39,7 +38,7 @@ var (
 func init() {
 	RootCmd.AddCommand(initCmd)
 	// TODO: We need to make this default to checking the `kubeconfig` file.
-	initCmd.PersistentFlags().String(flagAPISpec, "version:v1.7.0",
+	initCmd.PersistentFlags().String(flagAPISpec, "",
 		"Manually specified Kubernetes API version. The corresponding OpenAPI spec is used to generate ksonnet's Kubernetes libraries")
 
 	initClientConfig = client.NewDefaultClientConfig()
@@ -72,17 +71,19 @@ var initCmd = &cobra.Command{
 			return err
 		}
 
-		specFlag, err := flags.GetString(flagAPISpec)
-		if err != nil {
-			return err
-		}
-
 		server, namespace, err := resolveEnvFlags(flags)
 		if err != nil {
 			return err
 		}
 
-		log.Infof("Creating a new app '%s' at path '%s'", appName, appRoot)
+		specFlag, err := flags.GetString(flagAPISpec)
+		if err != nil {
+			return err
+		}
+		if specFlag == "" {
+			specFlag = initClientConfig.GetAPISpec(server)
+		}
+
 		c, err := kubecfg.NewInitCmd(appName, appRoot, &specFlag, &server, &namespace)
 		if err != nil {
 			return err

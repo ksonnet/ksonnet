@@ -140,6 +140,9 @@ var envAddCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		if specFlag == "" {
+			specFlag = envClientConfig.GetAPISpec(server)
+		}
 
 		c, err := kubecfg.NewEnvAddCmd(name, server, namespace, specFlag, manager)
 		if err != nil {
