@@ -191,16 +191,13 @@ func TestLibPaths(t *testing.T) {
 	}
 }
 
-func TestEnvPaths(t *testing.T) {
+func TestMakeEnvPaths(t *testing.T) {
 	appName := "test-env-paths"
 	expectedMainPath := path.Join(appName, environmentsDir, mockEnvName, envFileName)
 	expectedParamsPath := path.Join(appName, environmentsDir, mockEnvName, paramsFileName)
 	m := mockEnvironments(t, appName)
 
-	_, mainPath, paramsPath, err := m.EnvPaths(mockEnvName)
-	if err != nil {
-		t.Fatalf("Failure retrieving EnvPaths")
-	}
+	mainPath, paramsPath := m.makeEnvPaths(mockEnvName)
 
 	if mainPath != expectedMainPath {
 		t.Fatalf("Expected environment main path to be:\n  '%s'\n, got:\n  '%s'", expectedMainPath, mainPath)

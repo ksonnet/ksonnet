@@ -48,13 +48,8 @@ type Manager struct {
 	fs      afero.Fs
 }
 
-// NewManager creates a crew instance of lib.Manager
-func NewManager(k8sVersion string, fs afero.Fs, libPath string) *Manager {
-	return &Manager{K8sVersion: k8sVersion, fs: fs, libPath: libPath}
-}
-
-// NewManagerWithSpec creates a new instance of lib.Manager with the cluster spec initialized.
-func NewManagerWithSpec(k8sSpecFlag string, fs afero.Fs, libPath string) (*Manager, error) {
+// NewManager creates a new instance of lib.Manager
+func NewManager(k8sSpecFlag string, fs afero.Fs, libPath string) (*Manager, error) {
 	//
 	// Generate the program text for ksonnet-lib.
 	//
@@ -148,7 +143,14 @@ func (m *Manager) GetLibPath() (string, error) {
 		return "", err
 	}
 	if !ok {
-		return "", fmt.Errorf("Expected lib directory '%s' but was not found", m.K8sVersion)
+		log.Debugf("Expected lib directory '%s' but was not found", m.K8sVersion)
+
+		// create the directory
+		if err := m.GenerateLibData(); err != nil {
+			return "", err
+		}
+
+		return path, nil
 	}
 	return path, err
 }
