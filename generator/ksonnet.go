@@ -1,16 +1,22 @@
 package generator
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
+	"strings"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/blang/semver"
+	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/kubespec"
+
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/ksonnet"
 )
 
 var (
 	// ksonnetEmitter is the function which emits the ksonnet standard library.
 	ksonnetEmitter = ksonnet.GenerateLib
+	// revision is the current revision of ksonnet based on the git ref.
+	revision string
 )
 
 // KsonnetLib is the ksonnet standard library for a version of swagger.
@@ -35,6 +41,16 @@ func Ksonnet(swaggerData []byte) (*KsonnetLib, error) {
 
 	defer os.Remove(f.Name())
 
+	var apiSpec kubespec.APISpec
+	if err = json.Unmarshal(swaggerData, &apiSpec); err != nil {
+		return nil, err
+	}
+
+	ver, err := semver.Make(strings.TrimPrefix(apiSpec.Info.Version, "v"))
+	if err != nil {
+		return nil, err
+	}
+
 	_, err = f.Write(swaggerData)
 	if err != nil {
 		return nil, err
@@ -44,9 +60,16 @@ func Ksonnet(swaggerData []byte) (*KsonnetLib, error) {
 		return nil, err
 	}
 
-	spew.Dump("---", f.Name(), ksonnetEmitter)
+	astMin := semver.MustParse("1.8.0")
+	if ver.LT(astMin) {
+		return textBuilder(&apiSpec, swaggerData)
+	}
 
-	lib, err := ksonnetEmitter(f.Name())
+	return astBuilder(f.Name(), swaggerData)
+}
+
+func astBuilder(input string, swaggerData []byte) (*KsonnetLib, error) {
+	lib, err := ksonnetEmitter(input)
 	if err != nil {
 		return nil, err
 	}
@@ -56,6 +79,22 @@ func Ksonnet(swaggerData []byte) (*KsonnetLib, error) {
 		K8s:     lib.K8s,
 		Swagger: swaggerData,
 		Version: lib.Version,
+	}
+
+	return kl, nil
+}
+
+func textBuilder(apiSpec *kubespec.APISpec, swaggerData []byte) (*KsonnetLib, error) {
+	bK, bK8s, err := ksonnet.Emit(apiSpec, &revision, &revision)
+	if err != nil {
+		return nil, err
+	}
+
+	kl := &KsonnetLib{
+		K:       bK,
+		K8s:     bK8s,
+		Swagger: swaggerData,
+		Version: apiSpec.Info.Version,
 	}
 
 	return kl, nil

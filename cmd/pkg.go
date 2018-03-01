@@ -242,7 +242,7 @@ var pkgListCmd = &cobra.Command{
 			return err
 		}
 
-		app, err := manager.AppSpec()
+		app, err := manager.App()
 		if err != nil {
 			return err
 		}
@@ -254,14 +254,14 @@ var pkgListCmd = &cobra.Command{
 				strings.Repeat("=", len(nameHeader)),
 				strings.Repeat("=", len(installedHeader))},
 		}
-		for name := range app.Registries {
+		for name := range app.Registries() {
 			reg, _, err := manager.GetRegistry(name)
 			if err != nil {
 				return err
 			}
 
 			for libName := range reg.Libraries {
-				_, isInstalled := app.Libraries[libName]
+				_, isInstalled := app.Libraries()[libName]
 				if isInstalled {
 					rows = append(rows, []string{name, libName, installed})
 				} else {

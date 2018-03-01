@@ -24,11 +24,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ksonnet/ksonnet/component"
 	param "github.com/ksonnet/ksonnet/metadata/params"
 	str "github.com/ksonnet/ksonnet/strings"
+	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 
-	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -113,13 +115,20 @@ const (
 // ParamListCmd stores the information necessary display component or
 // environment parameters
 type ParamListCmd struct {
+	fs        afero.Fs
+	root      string
 	component string
 	env       string
+	nsName    string
 }
 
 // NewParamListCmd acts as a constructor for ParamListCmd.
-func NewParamListCmd(component, env string) *ParamListCmd {
-	return &ParamListCmd{component: component, env: env}
+func NewParamListCmd(component, env, nsName string) *ParamListCmd {
+	return &ParamListCmd{
+		component: component,
+		env:       env,
+		nsName:    nsName,
+	}
 }
 
 // Run executes the displaying of params.
@@ -136,7 +145,7 @@ func (c *ParamListCmd) Run(out io.Writer) error {
 
 	var params map[string]param.Params
 	if len(c.env) != 0 {
-		params, err = manager.GetEnvironmentParams(c.env)
+		params, err = manager.GetEnvironmentParams(c.env, c.nsName)
 		if err != nil {
 			return err
 		}
@@ -210,6 +219,8 @@ func outputParams(params map[string]param.Params, out io.Writer) error {
 // ParamDiffCmd stores the information necessary to diff between environment
 // parameters.
 type ParamDiffCmd struct {
+	fs   afero.Fs
+	root string
 	env1 string
 	env2 string
 
@@ -217,8 +228,14 @@ type ParamDiffCmd struct {
 }
 
 // NewParamDiffCmd acts as a constructor for ParamDiffCmd.
-func NewParamDiffCmd(env1, env2, component string) *ParamDiffCmd {
-	return &ParamDiffCmd{env1: env1, env2: env2, component: component}
+func NewParamDiffCmd(fs afero.Fs, root, env1, env2, componentName string) *ParamDiffCmd {
+	return &ParamDiffCmd{
+		fs:        fs,
+		root:      root,
+		env1:      env1,
+		env2:      env2,
+		component: componentName,
+	}
 }
 
 type paramDiffRecord struct {
@@ -235,19 +252,21 @@ func (c *ParamDiffCmd) Run(out io.Writer) error {
 		return err
 	}
 
-	params1, err := manager.GetEnvironmentParams(c.env1)
+	ns, componentName := component.ExtractNamespacedComponent(c.fs, c.root, c.component)
+
+	params1, err := manager.GetEnvironmentParams(c.env1, ns.Path)
 	if err != nil {
 		return err
 	}
 
-	params2, err := manager.GetEnvironmentParams(c.env2)
+	params2, err := manager.GetEnvironmentParams(c.env2, ns.Path)
 	if err != nil {
 		return err
 	}
 
 	if len(c.component) != 0 {
-		params1 = map[string]param.Params{c.component: params1[c.component]}
-		params2 = map[string]param.Params{c.component: params2[c.component]}
+		params1 = map[string]param.Params{componentName: params1[componentName]}
+		params2 = map[string]param.Params{componentName: params2[componentName]}
 	}
 
 	if reflect.DeepEqual(params1, params2) {
@@ -255,127 +274,97 @@ func (c *ParamDiffCmd) Run(out io.Writer) error {
 		return nil
 	}
 
-	records := diffParams(params1, params2)
+	componentNames := collectComponents(params1, params2)
 
-	//
-	// Format each component parameter information for pretty printing.
-	// Each component will be outputted alphabetically like the following:
-	//
-	//   COMPONENT PARAM     dev       prod
-	//   bar       name      "bar-dev" "bar"
-	//   foo       replicas  1
-	//
+	var rows [][]string
+	for _, componentName := range componentNames {
+		paramNames := collectParams(params1[componentName], params2[componentName])
 
-	maxComponentLen := len(paramComponentHeader)
-	for _, k := range records {
-		if l := len(k.component); l > maxComponentLen {
-			maxComponentLen = l
+		for _, paramName := range paramNames {
+			var v1, v2 string
+			var ok bool
+			var p param.Params
+
+			if p, ok = params1[componentName]; ok {
+				v1 = p[paramName]
+			}
+
+			if p, ok = params2[componentName]; ok {
+				v2 = p[paramName]
+			}
+
+			row := []string{
+				componentName,
+				paramName,
+				v1,
+				v2,
+			}
+
+			rows = append(rows, row)
 		}
 	}
 
-	maxParamLen := len(paramNameHeader) + maxComponentLen + 1
-	for _, k := range records {
-		if l := len(k.param) + maxComponentLen + 1; l > maxParamLen {
-			maxParamLen = l
-		}
-	}
-
-	maxEnvLen := len(c.env1) + maxParamLen + 1
-	for _, k := range records {
-		if l := len(k.value1) + maxParamLen + 1; l > maxEnvLen {
-			maxEnvLen = l
-		}
-	}
-
-	componentSpacing := strings.Repeat(" ", maxComponentLen-len(paramComponentHeader)+1)
-	nameSpacing := strings.Repeat(" ", maxParamLen-maxComponentLen-len(paramNameHeader))
-	envSpacing := strings.Repeat(" ", maxEnvLen-maxParamLen-len(c.env1))
-
-	// print headers
-	fmt.Fprintln(out, paramComponentHeader+componentSpacing+
-		paramNameHeader+nameSpacing+c.env1+envSpacing+c.env2)
-	fmt.Fprintln(out, strings.Repeat("=", len(paramComponentHeader))+componentSpacing+
-		strings.Repeat("=", len(paramNameHeader))+nameSpacing+
-		strings.Repeat("=", len(c.env1))+envSpacing+
-		strings.Repeat("=", len(c.env2)))
-
-	// print body
-	for _, k := range records {
-		componentSpacing = strings.Repeat(" ", maxComponentLen-len(k.component)+1)
-		nameSpacing = strings.Repeat(" ", maxParamLen-maxComponentLen-len(k.param))
-		envSpacing = strings.Repeat(" ", maxEnvLen-maxParamLen-len(k.value1))
-		line := fmt.Sprint(k.component + componentSpacing + k.param + nameSpacing + k.value1 + envSpacing + k.value2)
-		if len(k.value1) == 0 {
-			color.New(color.BgGreen).Fprint(out, line)
-			fmt.Fprintln(out)
-		} else if len(k.value2) == 0 {
-			color.New(color.BgRed).Fprint(out, line)
-			fmt.Fprintln(out)
-		} else if k.value1 != k.value2 {
-			color.New(color.BgYellow).Fprint(out, line)
-			fmt.Fprintln(out)
-		} else {
-			fmt.Fprintln(out, line)
-		}
-	}
-
+	printTable([]string{"COMPONENT", "PARAM", c.env1, c.env2}, rows)
 	return nil
 }
 
-func diffParams(params1, params2 map[string]param.Params) []*paramDiffRecord {
-	var records []*paramDiffRecord
-
-	for c := range params1 {
-		if _, contains := params2[c]; !contains {
-			// env2 doesn't have this component, add all params from env1 for this component
-			for p := range params2[c] {
-				records = addRecord(records, c, p, params1[c][p], "")
-			}
-		} else {
-			// has same component -- need to compare params
-			for p := range params1[c] {
-				if _, hasParam := params2[c][p]; !hasParam {
-					// env2 doesn't have this param, add a record with the param value from env1
-					records = addRecord(records, c, p, params1[c][p], "")
-				} else {
-					// env2 has this param too, add a record with both param values
-					records = addRecord(records, c, p, params1[c][p], params2[c][p])
-				}
-			}
-			// add remaining records for params that env2 has that env1 does not for this component
-			for p := range params2[c] {
-				if _, hasParam := params1[c][p]; !hasParam {
-					records = addRecord(records, c, p, "", params2[c][p])
-				}
-			}
-		}
+func collectComponents(param1, param2 map[string]param.Params) []string {
+	m := make(map[string]bool)
+	for k := range param1 {
+		m[k] = true
+	}
+	for k := range param2 {
+		m[k] = true
 	}
 
-	// add remaining records where env2 contains a component that env1 does not
-	for c := range params2 {
-		if _, contains := params1[c]; !contains {
-			for p := range params2[c] {
-				records = addRecord(records, c, p, "", params2[c][p])
-			}
-		}
+	var names []string
+
+	for k := range m {
+		names = append(names, k)
 	}
 
-	sort.Slice(records, func(i, j int) bool {
-		if records[i].component == records[j].component {
-			return records[i].param < records[j].param
-		}
-		return records[i].component < records[j].component
-	})
+	sort.Strings(names)
 
-	return records
+	return names
 }
 
-func addRecord(records []*paramDiffRecord, component, param, value1, value2 string) []*paramDiffRecord {
-	records = append(records, &paramDiffRecord{
-		component: component,
-		param:     param,
-		value1:    value1,
-		value2:    value2,
-	})
-	return records
+func collectParams(param1, param2 param.Params) []string {
+	m := make(map[string]bool)
+	for k := range param1 {
+		m[k] = true
+	}
+	for k := range param2 {
+		m[k] = true
+	}
+
+	var names []string
+
+	for k := range m {
+		names = append(names, k)
+	}
+
+	sort.Strings(names)
+
+	return names
+}
+
+func printTable(headers []string, data [][]string) {
+	headerLens := make([]int, len(headers))
+	for i := range headers {
+		headerLens[i] = len(headers[i])
+	}
+
+	for i := range headerLens {
+		headers[i] = fmt.Sprintf("%s\n%s", headers[i], strings.Repeat("=", headerLens[i]))
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader(headers)
+	table.SetCenterSeparator("")
+	table.SetColumnSeparator("")
+	table.SetRowSeparator("")
+	table.SetRowLine(false)
+	table.SetBorder(false)
+	table.AppendBulk(data)
+	table.Render()
 }

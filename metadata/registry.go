@@ -17,7 +17,7 @@ import (
 // AddRegistry adds a registry with `name`, `protocol`, and `uri` to
 // the current ksonnet application.
 func (m *manager) AddRegistry(name, protocol, uri, version string) (*registry.Spec, error) {
-	appSpec, err := m.AppSpec()
+	appSpec, err := app.Read(m.appFS, m.rootPath)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func (m *manager) GetRegistry(name string) (*registry.Spec, string, error) {
 
 func (m *manager) GetPackage(registryName, libID string) (*parts.Spec, error) {
 	// Retrieve application specification.
-	appSpec, err := m.AppSpec()
+	appSpec, err := app.Read(m.appFS, m.rootPath)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (m *manager) GetPackage(registryName, libID string) (*parts.Spec, error) {
 
 func (m *manager) GetDependency(libName string) (*parts.Spec, error) {
 	// Retrieve application specification.
-	appSpec, err := m.AppSpec()
+	appSpec, err := app.Read(m.appFS, m.rootPath)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func (m *manager) GetDependency(libName string) (*parts.Spec, error) {
 
 func (m *manager) CacheDependency(registryName, libID, libName, libVersion string) (*parts.Spec, error) {
 	// Retrieve application specification.
-	appSpec, err := m.AppSpec()
+	appSpec, err := app.Read(m.appFS, m.rootPath)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +254,7 @@ func (m *manager) GetPrototypesForDependency(registryName, libID string) (protot
 }
 
 func (m *manager) GetAllPrototypes() (prototype.SpecificationSchemas, error) {
-	appSpec, err := m.AppSpec()
+	appSpec, err := app.Read(m.appFS, m.rootPath)
 	if err != nil {
 		return nil, err
 	}
@@ -280,7 +280,7 @@ func (m *manager) registryPath(regManager registry.Manager) string {
 }
 
 func (m *manager) getRegistryManager(registryName string) (registry.Manager, string, error) {
-	appSpec, err := m.AppSpec()
+	appSpec, err := app.Read(m.appFS, m.rootPath)
 	if err != nil {
 		return nil, "", err
 	}

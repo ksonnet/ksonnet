@@ -16,8 +16,11 @@
 package lib
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/spf13/afero"
 )
 
 type parseSuccess struct {
@@ -25,13 +28,16 @@ type parseSuccess struct {
 	target ClusterSpec
 }
 
-var successTests = []parseSuccess{
-	{"version:v1.7.1", &clusterSpecVersion{"v1.7.1"}},
-	{"file:swagger.json", &clusterSpecFile{"swagger.json", testFS}},
-	{"url:file:///some_file", &clusterSpecLive{"file:///some_file"}},
-}
-
 func TestClusterSpecParsingSuccess(t *testing.T) {
+	testFS := afero.NewMemMapFs()
+	afero.WriteFile(testFS, blankSwagger, []byte(blankSwaggerData), os.ModePerm)
+
+	var successTests = []parseSuccess{
+		{"version:v1.7.1", &clusterSpecVersion{"v1.7.1"}},
+		{"file:swagger.json", &clusterSpecFile{"swagger.json", testFS}},
+		{"url:file:///some_file", &clusterSpecLive{"file:///some_file"}},
+	}
+
 	for _, test := range successTests {
 		parsed, err := ParseClusterSpec(test.input, testFS)
 		if err != nil {
@@ -80,7 +86,10 @@ var failureTests = []parseFailure{
 }
 
 func TestClusterSpecParsingFailure(t *testing.T) {
+
 	for _, test := range failureTests {
+		testFS := afero.NewMemMapFs()
+		afero.WriteFile(testFS, blankSwagger, []byte(blankSwaggerData), os.ModePerm)
 		_, err := ParseClusterSpec(test.input, testFS)
 		if err == nil {
 			t.Errorf("Cluster spec parse for '%s' should have failed, but succeeded", test.input)

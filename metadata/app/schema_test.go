@@ -53,23 +53,13 @@ func TestApiVersionValidate(t *testing.T) {
 		// Versions that we accept.
 		{spec: "0.0.1", err: false},
 		{spec: "0.0.1+build.1", err: false},
+		{spec: "0.1.0-alpha", err: false},
+		{spec: "0.1.0+build.1"},
 
 		// Other versions.
 		{spec: "0.0.0", err: true},
-		{spec: "0.1.0", err: true},
+		{spec: "0.1.0"},
 		{spec: "1.0.0", err: true},
-
-		// Builds and pre-releases of current version.
-		{spec: "0.0.1-alpha", err: true},
-		{spec: "0.0.1-beta+build.2", err: true},
-
-		// Other versions.
-		{spec: "0.1.0-alpha", err: true},
-		{spec: "0.1.0+build.1", err: true},
-		{spec: "0.1.0-beta+build.2", err: true},
-		{spec: "1.0.0-alpha", err: true},
-		{spec: "1.0.0+build.1", err: true},
-		{spec: "1.0.0-beta+build.2", err: true},
 	}
 
 	for _, test := range tests {

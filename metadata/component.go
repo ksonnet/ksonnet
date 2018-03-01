@@ -157,7 +157,6 @@ func (m *manager) DeleteComponent(name string) error {
 }
 
 func (m *manager) GetComponentParams(component string) (param.Params, error) {
-	log.Infof("get component params for %s", component)
 	text, err := afero.ReadFile(m.appFS, m.componentParamsPath)
 	if err != nil {
 		return nil, err

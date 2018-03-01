@@ -21,8 +21,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ksonnet/ksonnet/metadata/app"
-
+	"github.com/ksonnet/ksonnet/env"
 	"github.com/ksonnet/ksonnet/metadata"
 	str "github.com/ksonnet/ksonnet/strings"
 )
@@ -83,9 +82,9 @@ func (c *EnvListCmd) Run(out io.Writer) error {
 		return err
 	}
 
-	var envs []app.EnvironmentSpec
+	var envs []env.Env
 	for _, e := range envMap {
-		envs = append(envs, *e)
+		envs = append(envs, e)
 	}
 
 	// Sort environments by ascending alphabetical name
@@ -101,7 +100,11 @@ func (c *EnvListCmd) Run(out io.Writer) error {
 	}
 
 	for _, env := range envs {
-		rows = append(rows, []string{env.Name, env.KubernetesVersion, env.Destination.Namespace, env.Destination.Server})
+		rows = append(rows, []string{
+			env.Name,
+			env.KubernetesVersion,
+			env.Destination.Namespace(),
+			env.Destination.Server()})
 	}
 
 	formattedEnvsList, err := str.PadRows(rows)

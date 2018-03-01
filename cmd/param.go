@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -27,6 +28,7 @@ import (
 const (
 	flagParamEnv       = "env"
 	flagParamComponent = "component"
+	flagParamNamespace = "namespace"
 )
 
 var paramShortDesc = map[string]string{
@@ -44,6 +46,7 @@ func init() {
 
 	paramSetCmd.PersistentFlags().String(flagParamEnv, "", "Specify environment to set parameters for")
 	paramListCmd.PersistentFlags().String(flagParamEnv, "", "Specify environment to list parameters for")
+	paramListCmd.Flags().String(flagParamNamespace, "", "Specify namespace to list parameters for")
 	paramDiffCmd.PersistentFlags().String(flagParamComponent, "", "Specify the component to diff against")
 }
 
@@ -156,7 +159,12 @@ var paramListCmd = &cobra.Command{
 			return err
 		}
 
-		c := kubecfg.NewParamListCmd(component, env)
+		nsName, err := flags.GetString(flagParamNamespace)
+		if err != nil {
+			return err
+		}
+
+		c := kubecfg.NewParamListCmd(component, env, nsName)
 
 		return c.Run(cmd.OutOrStdout())
 	},
@@ -196,6 +204,11 @@ var paramDiffCmd = &cobra.Command{
 			return fmt.Errorf("'param diff' takes exactly two arguments: the respective names of the environments being diffed")
 		}
 
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
 		env1 := args[0]
 		env2 := args[1]
 
@@ -204,7 +217,7 @@ var paramDiffCmd = &cobra.Command{
 			return err
 		}
 
-		c := kubecfg.NewParamDiffCmd(env1, env2, component)
+		c := kubecfg.NewParamDiffCmd(appFs, cwd, env1, env2, component)
 
 		return c.Run(cmd.OutOrStdout())
 	},

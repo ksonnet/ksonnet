@@ -16,13 +16,12 @@ package lib
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/spf13/afero"
-
-	str "github.com/ksonnet/ksonnet/strings"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -40,51 +39,56 @@ const (
 }`
 )
 
-var testFS = afero.NewMemMapFs()
+func TestGenerateLibData(t *testing.T) {
+	cases := []struct {
+		name           string
+		useVersionPath bool
+		basePath       string
+	}{
+		{
+			name:           "use version path",
+			useVersionPath: true,
+			basePath:       "v1.7.0",
+		},
+		{
+			name: "don't use version path",
+		},
+	}
 
-func init() {
-	afero.WriteFile(testFS, blankSwagger, []byte(blankSwaggerData), os.ModePerm)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			testFS := afero.NewMemMapFs()
+			afero.WriteFile(testFS, blankSwagger, []byte(blankSwaggerData), os.ModePerm)
+
+			specFlag := fmt.Sprintf("file:%s", blankSwagger)
+			libPath := "lib"
+
+			libManager, err := NewManager(specFlag, testFS, libPath)
+			if err != nil {
+				t.Fatal("Failed to initialize lib.Manager")
+			}
+
+			err = libManager.GenerateLibData(tc.useVersionPath)
+			if err != nil {
+				t.Fatal("Failed to generate lib data")
+			}
+
+			// Verify contents of lib.
+			genPath := filepath.Join(libPath, tc.basePath)
+			schemaPath := filepath.Join(genPath, "swagger.json")
+			extPath := filepath.Join(genPath, "k.libsonnet")
+			k8sPath := filepath.Join(genPath, "k8s.libsonnet")
+
+			checkExists(t, testFS, schemaPath)
+			checkExists(t, testFS, extPath)
+			checkExists(t, testFS, k8sPath)
+		})
+	}
+
 }
 
-func TestGenerateLibData(t *testing.T) {
-	specFlag := fmt.Sprintf("file:%s", blankSwagger)
-	libPath := "lib"
-
-	libManager, err := NewManager(specFlag, testFS, libPath)
-	if err != nil {
-		t.Fatal("Failed to initialize lib.Manager")
-	}
-
-	err = libManager.GenerateLibData()
-	if err != nil {
-		t.Fatal("Failed to generate lib data")
-	}
-
-	// Verify contents of lib.
-	versionPath := str.AppendToPath(libPath, "v1.7.0")
-
-	schemaPath := str.AppendToPath(versionPath, schemaFilename)
-	bytes, err := afero.ReadFile(testFS, string(schemaPath))
-	if err != nil {
-		t.Fatalf("Failed to read swagger file at '%s':\n%v", schemaPath, err)
-	}
-
-	if actualSwagger := string(bytes); actualSwagger != blankSwaggerData {
-		t.Fatalf("Expected swagger file at '%s' to have value: '%s', got: '%s'", schemaPath, blankSwaggerData, actualSwagger)
-	}
-
-	k8sLibPath := str.AppendToPath(versionPath, k8sLibFilename)
-	k8sLibBytes, err := afero.ReadFile(testFS, string(k8sLibPath))
-	if err != nil {
-		t.Fatalf("Failed to read ksonnet-lib file at '%s':\n%v", k8sLibPath, err)
-	}
-
-	blankK8sLib, err := ioutil.ReadFile("testdata/k8s.libsonnet")
-	if err != nil {
-		t.Fatalf("Failed to read testdata/k8s.libsonnet: %#v", err)
-	}
-
-	if actualK8sLib := string(k8sLibBytes); actualK8sLib != string(blankK8sLib) {
-		t.Fatalf("Expected swagger file at '%s' to have value: '%s', got: '%s'", k8sLibPath, blankK8sLib, actualK8sLib)
-	}
+func checkExists(t *testing.T, fs afero.Fs, path string) {
+	exists, err := afero.Exists(fs, path)
+	require.NoError(t, err)
+	require.True(t, exists, "%q did not exist", path)
 }

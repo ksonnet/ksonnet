@@ -238,12 +238,12 @@ func (c *Config) overrideCluster(envName string) error {
 	//
 
 	log.Debugf("Validating deployment at '%s' with server '%v'", envName, reflect.ValueOf(servers).MapKeys())
-	env, err := metadataManager.GetEnvironment(envName)
+	destination, err := metadataManager.GetDestination(envName)
 	if err != nil {
 		return err
 	}
 
-	server, err := str.NormalizeURL(env.Destination.Server)
+	server, err := str.NormalizeURL(destination.Server())
 	if err != nil {
 		return err
 	}
@@ -255,11 +255,12 @@ func (c *Config) overrideCluster(envName string) error {
 			c.Overrides.Context.Cluster = clusterName
 		}
 		if c.Overrides.Context.Namespace == "" {
-			log.Debugf("Overwriting --namespace flag with '%s'", env.Destination.Namespace)
-			c.Overrides.Context.Namespace = env.Destination.Namespace
+			log.Debugf("Overwriting --namespace flag with '%s'", destination.Namespace())
+			c.Overrides.Context.Namespace = destination.Namespace()
 		}
 		return nil
 	}
 
-	return fmt.Errorf("Attempting to deploy to environment '%s' at '%s', but cannot locate a server at that address", envName, env.Destination.Server)
+	return fmt.Errorf("Attempting to deploy to environment '%s' at '%s', but cannot locate a server at that address",
+		envName, destination.Server())
 }

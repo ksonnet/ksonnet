@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	str "github.com/ksonnet/ksonnet/strings"
+	"github.com/spf13/afero"
 )
 
 const (
@@ -31,12 +32,12 @@ const (
 	componentFile2  = "component2.jsonnet"
 )
 
-func populateComponentPaths(t *testing.T) *manager {
+func populateComponentPaths(t *testing.T, fs afero.Fs) *manager {
 	specFlag := fmt.Sprintf("file:%s", blankSwagger)
 
 	appPath := componentsPath
 	reg := newMockRegistryManager("incubator")
-	m, err := initManager("componentPaths", appPath, &specFlag, &mockAPIServer, &mockNamespace, reg, testFS)
+	m, err := initManager("componentPaths", appPath, &specFlag, &mockAPIServer, &mockNamespace, reg, fs)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
@@ -44,7 +45,7 @@ func populateComponentPaths(t *testing.T) *manager {
 	// Create empty app file.
 	components := str.AppendToPath(appPath, componentsDir)
 	appFile1 := str.AppendToPath(components, componentFile1)
-	f1, err := testFS.OpenFile(appFile1, os.O_RDONLY|os.O_CREATE, 0777)
+	f1, err := fs.OpenFile(appFile1, os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {
 		t.Fatalf("Failed to touch app file '%s'\n%v", appFile1, err)
 	}
@@ -52,12 +53,12 @@ func populateComponentPaths(t *testing.T) *manager {
 
 	// Create empty file in a nested directory.
 	appSubdir := str.AppendToPath(components, componentSubdir)
-	err = testFS.MkdirAll(appSubdir, os.ModePerm)
+	err = fs.MkdirAll(appSubdir, os.ModePerm)
 	if err != nil {
 		t.Fatalf("Failed to create directory '%s'\n%v", appSubdir, err)
 	}
 	appFile2 := str.AppendToPath(appSubdir, componentFile2)
-	f2, err := testFS.OpenFile(appFile2, os.O_RDONLY|os.O_CREATE, 0777)
+	f2, err := fs.OpenFile(appFile2, os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {
 		t.Fatalf("Failed to touch app file '%s'\n%v", appFile1, err)
 	}
@@ -65,7 +66,7 @@ func populateComponentPaths(t *testing.T) *manager {
 
 	// Create a directory that won't be listed in the call to `ComponentPaths`.
 	unlistedDir := str.AppendToPath(components, "doNotListMe")
-	err = testFS.MkdirAll(unlistedDir, os.ModePerm)
+	err = fs.MkdirAll(unlistedDir, os.ModePerm)
 	if err != nil {
 		t.Fatalf("Failed to create directory '%s'\n%v", unlistedDir, err)
 	}
@@ -73,47 +74,44 @@ func populateComponentPaths(t *testing.T) *manager {
 	return m
 }
 
-func cleanComponentPaths(t *testing.T) {
-	testFS.RemoveAll(componentsPath)
-}
-
 func TestComponentPaths(t *testing.T) {
-	m := populateComponentPaths(t)
-	defer cleanComponentPaths(t)
+	withFs(func(fs afero.Fs) {
+		m := populateComponentPaths(t, fs)
 
-	paths, err := m.ComponentPaths()
-	if err != nil {
-		t.Fatalf("Failed to find component paths: %v", err)
-	}
+		paths, err := m.ComponentPaths()
+		if err != nil {
+			t.Fatalf("Failed to find component paths: %v", err)
+		}
 
-	sort.Slice(paths, func(i, j int) bool { return paths[i] < paths[j] })
+		sort.Slice(paths, func(i, j int) bool { return paths[i] < paths[j] })
 
-	expectedPath1 := fmt.Sprintf("%s/components/%s", componentsPath, componentFile1)
-	expectedPath2 := fmt.Sprintf("%s/components/%s/%s", componentsPath, componentSubdir, componentFile2)
+		expectedPath1 := fmt.Sprintf("%s/components/%s", componentsPath, componentFile1)
+		expectedPath2 := fmt.Sprintf("%s/components/%s/%s", componentsPath, componentSubdir, componentFile2)
 
-	if len(paths) != 2 || paths[0] != expectedPath1 || paths[1] != expectedPath2 {
-		t.Fatalf("m.ComponentPaths failed; expected '%s', got '%s'", []string{expectedPath1, expectedPath2}, paths)
-	}
+		if len(paths) != 2 || paths[0] != expectedPath1 || paths[1] != expectedPath2 {
+			t.Fatalf("m.ComponentPaths failed; expected '%s', got '%s'", []string{expectedPath1, expectedPath2}, paths)
+		}
+	})
 }
 
 // TODO: this logic and tests should be moved to the components namespace.
 func TestGetAllComponents(t *testing.T) {
-	m := populateComponentPaths(t)
-	defer cleanComponentPaths(t)
+	withFs(func(fs afero.Fs) {
+		m := populateComponentPaths(t, fs)
 
-	components, err := m.GetAllComponents()
-	if err != nil {
-		t.Fatalf("Failed to get all components, %v", err)
-	}
+		components, err := m.GetAllComponents()
+		if err != nil {
+			t.Fatalf("Failed to get all components, %v", err)
+		}
 
-	expected1 := strings.TrimSuffix(componentFile1, ".jsonnet")
+		expected1 := strings.TrimSuffix(componentFile1, ".jsonnet")
 
-	if len(components) != 1 {
-		t.Fatalf("Expected exactly 1 components, got %d", len(components))
-	}
+		if len(components) != 1 {
+			t.Fatalf("Expected exactly 1 components, got %d", len(components))
+		}
 
-	if components[0] != expected1 {
-		t.Fatalf("Expected component %s, got %s", expected1, components)
-	}
-
+		if components[0] != expected1 {
+			t.Fatalf("Expected component %s, got %s", expected1, components)
+		}
+	})
 }

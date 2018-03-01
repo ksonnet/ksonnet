@@ -18,70 +18,8 @@ package kubecfg
 import (
 	"testing"
 
-	param "github.com/ksonnet/ksonnet/metadata/params"
-
 	"github.com/stretchr/testify/require"
 )
-
-func TestDiffParams(t *testing.T) {
-	tests := []struct {
-		params1  map[string]param.Params
-		params2  map[string]param.Params
-		expected []*paramDiffRecord
-	}{
-		{
-			map[string]param.Params{
-				"bar": param.Params{"replicas": "4"},
-				"foo": param.Params{"replicas": "1", "name": `"foo"`},
-			},
-			map[string]param.Params{
-				"bar": param.Params{"replicas": "3"},
-				"foo": param.Params{"name": `"foo-dev"`, "replicas": "1"},
-				"baz": param.Params{"name": `"baz"`, "replicas": "4"},
-			},
-			[]*paramDiffRecord{
-				&paramDiffRecord{
-					component: "bar",
-					param:     "replicas",
-					value1:    "4",
-					value2:    "3",
-				},
-				&paramDiffRecord{
-					component: "baz",
-					param:     "name",
-					value1:    "",
-					value2:    `"baz"`,
-				},
-				&paramDiffRecord{
-					component: "baz",
-					param:     "replicas",
-					value1:    "",
-					value2:    "4",
-				},
-				&paramDiffRecord{
-					component: "foo",
-					param:     "name",
-					value1:    `"foo"`,
-					value2:    `"foo-dev"`,
-				},
-				&paramDiffRecord{
-					component: "foo",
-					param:     "replicas",
-					value1:    "1",
-					value2:    "1",
-				},
-			},
-		},
-	}
-
-	for _, s := range tests {
-		records := diffParams(s.params1, s.params2)
-		require.Equal(t, len(records), len(s.expected), "Record lengths not equivalent")
-		for i, record := range records {
-			require.EqualValues(t, *s.expected[i], *record)
-		}
-	}
-}
 
 func TestSanitizeParamValue(t *testing.T) {
 	tests := []struct {

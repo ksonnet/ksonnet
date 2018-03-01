@@ -3,7 +3,6 @@
 package integration
 
 import (
-	"github.com/ksonnet/ksonnet/metadata/app"
 	"flag"
 	"fmt"
 	"io"
@@ -12,11 +11,13 @@ import (
 	"path"
 	"testing"
 
+	"github.com/ksonnet/ksonnet/metadata/app"
+
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apimachinery/registered"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apimachinery/registered"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -90,8 +91,8 @@ func containsString(haystack []string, needle string) bool {
 
 func runKsonnetWith(flags []string, host, ns string) error {
 	spec := app.Spec{
-		Version: "0.0.1",
-		APIVersion: "0.0.1",
+		Version:    "0.0.1",
+		APIVersion: "0.1.0",
 		Environments: app.EnvironmentSpecs{
 			"default": &app.EnvironmentSpec{
 				Destination: &app.EnvironmentDestinationSpec{

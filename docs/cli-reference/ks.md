@@ -36,6 +36,7 @@ ks [flags]
 * [ks prototype](ks_prototype.md)	 - Instantiate, inspect, and get examples for ksonnet prototypes
 * [ks registry](ks_registry.md)	 - Manage registries for current project
 * [ks show](ks_show.md)	 - Show expanded manifests for a specific environment.
+* [ks upgrade](ks_upgrade.md)	 - Upgrade ks configuration
 * [ks validate](ks_validate.md)	 - Check generated component manifests against the server's API
 * [ks version](ks_version.md)	 - Print version information for this ksonnet binary
 

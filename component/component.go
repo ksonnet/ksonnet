@@ -77,6 +77,15 @@ type Namespace struct {
 	fs   afero.Fs
 }
 
+// NewNamespace creates an an instance of Namespace.
+func NewNamespace(fs afero.Fs, root, name string) Namespace {
+	return Namespace{
+		Path: name,
+		root: root,
+		fs:   fs,
+	}
+}
+
 // ExtractNamespacedComponent extracts a namespace and a component from a path.
 func ExtractNamespacedComponent(fs afero.Fs, root, path string) (Namespace, string) {
 	path, component := filepath.Split(path)
@@ -197,15 +206,9 @@ func isComponentDir(fs afero.Fs, path string) (bool, error) {
 	return false, nil
 }
 
-// AppSpecer is implemented by any value that has a AppSpec method. The AppSpec method is
-// used to retrieve a ksonnet AppSpec.
-type AppSpecer interface {
-	AppSpec() (*app.Spec, error)
-}
-
 // MakePathsByNamespace creates a map of component paths categorized by namespace.
-func MakePathsByNamespace(fs afero.Fs, appSpecer AppSpecer, root, env string) (map[Namespace][]string, error) {
-	paths, err := MakePaths(fs, appSpecer, root, env)
+func MakePathsByNamespace(fs afero.Fs, ksApp app.App, root, env string) (map[Namespace][]string, error) {
+	paths, err := MakePaths(fs, ksApp, root, env)
 	if err != nil {
 		return nil, err
 	}
@@ -230,8 +233,8 @@ func MakePathsByNamespace(fs afero.Fs, appSpecer AppSpecer, root, env string) (m
 }
 
 // MakePaths creates a slice of component paths
-func MakePaths(fs afero.Fs, appSpecer AppSpecer, root, env string) ([]string, error) {
-	cpl, err := newComponentPathLocator(fs, appSpecer, env)
+func MakePaths(fs afero.Fs, ksApp app.App, root, env string) ([]string, error) {
+	cpl, err := newComponentPathLocator(fs, ksApp, env)
 	if err != nil {
 		return nil, errors.Wrap(err, "create component path locator")
 	}
@@ -244,22 +247,17 @@ type componentPathLocator struct {
 	envSpec *app.EnvironmentSpec
 }
 
-func newComponentPathLocator(fs afero.Fs, appSpecer AppSpecer, env string) (*componentPathLocator, error) {
-	if appSpecer == nil {
-		return nil, errors.New("appSpecer is nil")
+func newComponentPathLocator(fs afero.Fs, ksApp app.App, env string) (*componentPathLocator, error) {
+	if ksApp == nil {
+		return nil, errors.New("app is nil")
 	}
 
 	if fs == nil {
 		return nil, errors.New("fs is nil")
 	}
 
-	appSpec, err := appSpecer.AppSpec()
+	envSpec, err := ksApp.Environment(env)
 	if err != nil {
-		return nil, errors.Wrap(err, "lookup application spec")
-	}
-
-	envSpec, ok := appSpec.GetEnvironmentSpec(env)
-	if !ok {
 		return nil, errors.Errorf("can't find %s environment", env)
 	}
 
