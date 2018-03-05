@@ -18,7 +18,7 @@ func TestKsonnet(t *testing.T) {
 		lib            = []byte("k8s")
 		successfulEmit = func(string) (*ksonnet.Lib, error) {
 			return &ksonnet.Lib{
-				Version:    "v1.7.0",
+				Version:    "v1.8.0",
 				K8s:        lib,
 				Extensions: ext,
 			}, nil
@@ -26,7 +26,7 @@ func TestKsonnet(t *testing.T) {
 		failureEmit = func(string) (*ksonnet.Lib, error) {
 			return nil, errors.New("failure")
 		}
-		v170swagger = []byte(`{"info":{"version":"v1.7.0"}}`)
+		v180swagger = []byte(`{"info":{"version":"v1.8.0"}}`)
 	)
 
 	cases := []struct {
@@ -39,8 +39,8 @@ func TestKsonnet(t *testing.T) {
 		{
 			name:        "valid swagger",
 			emitter:     successfulEmit,
-			swaggerData: v170swagger,
-			version:     "v1.7.0",
+			swaggerData: v180swagger,
+			version:     "v1.8.0",
 		},
 		{
 			name:        "invalid swagger",
@@ -51,7 +51,7 @@ func TestKsonnet(t *testing.T) {
 		{
 			name:        "emitter error",
 			emitter:     failureEmit,
-			swaggerData: v170swagger,
+			swaggerData: v180swagger,
 			isErr:       true,
 		},
 	}

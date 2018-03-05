@@ -22,9 +22,11 @@ import (
 	"path/filepath"
 
 	"github.com/ksonnet/ksonnet/component"
+	"github.com/ksonnet/ksonnet/env"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/metadata/registry"
 	str "github.com/ksonnet/ksonnet/strings"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
@@ -88,7 +90,21 @@ func findManager(p string, appFS afero.Fs) (*manager, error) {
 			return nil, err
 		}
 		if exists {
-			return newManager(currBase, appFS)
+			m, err := newManager(currBase, appFS)
+			if err != nil {
+				return nil, err
+			}
+
+			app, err := m.App()
+			if err != nil {
+				return nil, err
+			}
+
+			if err = app.Init(); err != nil {
+				return nil, errors.Wrap(err, "initialize app schema")
+			}
+
+			return m, nil
 		}
 
 		lastBase = currBase
@@ -100,9 +116,10 @@ func findManager(p string, appFS afero.Fs) (*manager, error) {
 }
 
 func initManager(name, rootPath string, k8sSpecFlag, serverURI, namespace *string, incubatorReg registry.Manager, appFS afero.Fs) (*manager, error) {
+	log.Info("init manager")
 	m, err := newManager(rootPath, appFS)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "create manager")
 	}
 
 	// Retrieve `registry.yaml`.
@@ -139,7 +156,7 @@ func initManager(name, rootPath string, k8sSpecFlag, serverURI, namespace *strin
 	}
 
 	// Write out `incubator` registry spec.
-	registryPath := string(m.registryPath(incubatorReg))
+	registryPath := m.registryPath(incubatorReg)
 	err = afero.WriteFile(m.appFS, registryPath, registryYAMLData, defaultFilePermissions)
 	if err != nil {
 		return nil, errorOnCreateFailure(name, err)
@@ -155,7 +172,7 @@ func newManager(rootPath string, appFS afero.Fs) (*manager, error) {
 	}
 	userRootPath := str.AppendToPath(usr.HomeDir, userKsonnetRootDir)
 
-	return &manager{
+	m := &manager{
 		appFS: appFS,
 
 		// Application paths.
@@ -174,15 +191,30 @@ func newManager(rootPath string, appFS afero.Fs) (*manager, error) {
 		// User-level paths.
 		userKsonnetRootPath: userRootPath,
 		pkgSrcCachePath:     str.AppendToPath(userRootPath, pkgSrcCacheDir),
-	}, nil
+	}
+
+	return m, nil
 }
 
 func (m *manager) Root() string {
 	return m.rootPath
 }
 
+func (m *manager) App() (app.App, error) {
+	return app.Load(m.appFS, m.rootPath)
+}
+
 func (m *manager) LibPaths() (envPath, vendorPath string) {
 	return m.environmentsPath, m.vendorPath
+}
+
+func (m *manager) GetDestination(envName string) (env.Destination, error) {
+	appEnv, err := m.GetEnvironment(envName)
+	if err != nil {
+		return env.Destination{}, err
+	}
+
+	return appEnv.Destination, nil
 }
 
 func (m *manager) createUserDirTree() error {
@@ -203,7 +235,7 @@ func (m *manager) createUserDirTree() error {
 func (m *manager) createAppDirTree(name string, appYAMLData, baseLibData []byte, gh registry.Manager) error {
 	exists, err := afero.DirExists(m.appFS, m.rootPath)
 	if err != nil {
-		return fmt.Errorf("Could not check existance of directory '%s':\n%v", m.rootPath, err)
+		return fmt.Errorf("Could not check existence of directory '%s':\n%v", m.rootPath, err)
 	} else if exists {
 		return fmt.Errorf("Could not create app; directory '%s' already exists", m.rootPath)
 	}
@@ -221,7 +253,7 @@ func (m *manager) createAppDirTree(name string, appYAMLData, baseLibData []byte,
 
 	for _, p := range dirPaths {
 		log.Debugf("Creating directory '%s'", p)
-		if err := m.appFS.MkdirAll(string(p), defaultFolderPermissions); err != nil {
+		if err := m.appFS.MkdirAll(p, defaultFolderPermissions); err != nil {
 			return errorOnCreateFailure(name, err)
 		}
 	}

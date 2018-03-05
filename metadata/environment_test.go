@@ -17,14 +17,15 @@ package metadata
 
 import (
 	"fmt"
-	"reflect"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/metadata/app/mocks"
 	str "github.com/ksonnet/ksonnet/strings"
+	"github.com/stretchr/testify/require"
 
-	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/spf13/afero"
 )
 
@@ -40,216 +41,228 @@ var (
 	mockEnvs      = []string{defaultEnvName, mockEnvName, mockEnvName2, mockEnvName3}
 )
 
-func mockEnvironments(t *testing.T, appName string) *manager {
-	return mockEnvironmentsWith(t, appName, mockEnvs)
+func mockEnvironments(t *testing.T, fs afero.Fs, appName string) *manager {
+	return mockEnvironmentsWith(t, fs, appName, mockEnvs)
 }
 
-func mockEnvironmentsWith(t *testing.T, appName string, envNames []string) *manager {
+func mockEnvironmentsWith(t *testing.T, fs afero.Fs, appName string, envNames []string) *manager {
 	specFlag := fmt.Sprintf("file:%s", blankSwagger)
 
 	reg := newMockRegistryManager("incubator")
-	m, err := initManager(appName, appName, &specFlag, &mockAPIServer, &mockNamespace, reg, testFS)
+	root := filepath.Join("/", appName)
+	m, err := initManager(appName, root, &specFlag, &mockAPIServer, &mockNamespace, reg, fs)
 	if err != nil {
 		t.Fatalf("Failed to init cluster spec: %v", err)
 	}
 
 	for _, env := range envNames {
 		envPath := str.AppendToPath(m.environmentsPath, env)
-		testFS.Mkdir(envPath, defaultFolderPermissions)
-		testDirExists(t, envPath)
+		fs.Mkdir(envPath, defaultFolderPermissions)
+		testDirExists(t, fs, envPath)
 
 		envFilePath := str.AppendToPath(envPath, envFileName)
 		envFileData := m.generateOverrideData()
-		err = afero.WriteFile(testFS, envFilePath, envFileData, defaultFilePermissions)
+		err = afero.WriteFile(fs, envFilePath, envFileData, defaultFilePermissions)
 		if err != nil {
 			t.Fatalf("Could not write file at path: %s", envFilePath)
 		}
-		testFileExists(t, envFilePath)
+		testFileExists(t, fs, envFilePath)
 
 		paramsPath := str.AppendToPath(envPath, paramsFileName)
 		paramsData := m.generateParamsData()
-		err = afero.WriteFile(testFS, paramsPath, paramsData, defaultFilePermissions)
+		err = afero.WriteFile(fs, paramsPath, paramsData, defaultFilePermissions)
 		if err != nil {
 			t.Fatalf("Could not write file at path: %s", paramsPath)
 		}
-		testFileExists(t, paramsPath)
+		testFileExists(t, fs, paramsPath)
 
-		appSpec, err := m.AppSpec()
+		appSpec, err := app.Read(m.appFS, m.rootPath)
 		if err != nil {
 			t.Fatal("Could not retrieve app spec")
 		}
 		appSpec.AddEnvironmentSpec(&app.EnvironmentSpec{
-			Name: env,
-			Path: env,
+			Name:              env,
+			Path:              env,
+			KubernetesVersion: "v1.8.7",
 			Destination: &app.EnvironmentDestinationSpec{
 				Server:    mockAPIServer,
 				Namespace: mockNamespace,
 			},
 		})
-		m.WriteAppSpec(appSpec)
+		err = app.Write(m.appFS, m.rootPath, appSpec)
+		require.NoError(t, err)
 	}
 
 	return m
 }
 
-func testDirExists(t *testing.T, path string) {
-	exists, err := afero.DirExists(testFS, path)
-	if err != nil {
-		t.Fatalf("Expected directory at '%s' to exist, but failed:\n%v", path, err)
-	} else if !exists {
-		t.Fatalf("Expected directory at '%s' to exist, but it does not", path)
-	}
+func testDirExists(t *testing.T, fs afero.Fs, path string) {
+	exists, err := afero.DirExists(fs, path)
+	require.NoError(t, err, "Checking %q failed", path)
+	require.True(t, exists, "Expected directory %q to exist", path)
 }
 
-func testDirNotExists(t *testing.T, path string) {
-	exists, err := afero.DirExists(testFS, path)
-	if err != nil {
-		t.Fatalf("Expected directory at '%s' to be removed, but failed:\n%v", path, err)
-	} else if exists {
-		t.Fatalf("Expected directory at '%s' to be removed, but it exists", path)
-	}
+func testDirNotExists(t *testing.T, fs afero.Fs, path string) {
+	exists, err := afero.DirExists(fs, path)
+	require.NoError(t, err, "Checking %q failed", path)
+	require.False(t, exists, "Expected directory %q to not exist", path)
 }
 
-func testFileExists(t *testing.T, path string) {
-	exists, err := afero.Exists(testFS, path)
-	if err != nil {
-		t.Fatalf("Expected file at '%s' to exist, but failed:\n%v", path, err)
-	} else if !exists {
-		t.Fatalf("Expected file at '%s' to exist, but it does not", path)
-	}
+func testFileExists(t *testing.T, fs afero.Fs, path string) {
+	exists, err := afero.Exists(fs, path)
+	require.NoError(t, err, "Checking %q failed", path)
+	require.True(t, exists, "Expected file %q to exist", path)
 }
 
 func TestDeleteEnvironment(t *testing.T) {
-	appName := "test-delete-envs"
-	m := mockEnvironments(t, appName)
+	withFs(func(fs afero.Fs) {
+		appName := "test-delete-envs"
+		appMock := &mocks.App{}
+		appMock.On("RemoveEnvironment", "us-east/test").Return(nil)
+		appMock.On("RemoveEnvironment", "us-west/prod").Return(nil)
 
-	// Test that both directory and empty parent directory is deleted.
-	expectedPath := str.AppendToPath(m.environmentsPath, mockEnvName3)
-	parentDir := strings.Split(mockEnvName3, "/")[0]
-	expectedParentPath := str.AppendToPath(m.environmentsPath, parentDir)
-	err := m.DeleteEnvironment(mockEnvName3)
-	if err != nil {
-		t.Fatalf("Expected %s to be deleted but got err:\n  %s", mockEnvName3, err)
-	}
-	testDirNotExists(t, expectedPath)
-	testDirNotExists(t, expectedParentPath)
+		m := mockEnvironments(t, fs, appName)
 
-	// Test that only leaf directory is deleted if parent directory is shared
-	expectedPath = str.AppendToPath(m.environmentsPath, mockEnvName2)
-	parentDir = strings.Split(mockEnvName2, "/")[0]
-	expectedParentPath = str.AppendToPath(m.environmentsPath, parentDir)
-	err = m.DeleteEnvironment(mockEnvName2)
-	if err != nil {
-		t.Fatalf("Expected %s to be deleted but got err:\n  %s", mockEnvName3, err)
-	}
-	testDirNotExists(t, expectedPath)
-	testDirExists(t, expectedParentPath)
+		// Test that both directory and empty parent directory is deleted.
+		expectedPath, err := filepath.Abs(filepath.Join("/", m.rootPath, "environments", mockEnvName3))
+		require.NoError(t, err)
+		parentDir := strings.Split(mockEnvName3, "/")[0]
+		expectedParentPath, err := filepath.Abs(filepath.Join("/", m.rootPath, "environments", parentDir))
+		require.NoError(t, err)
+		err = m.DeleteEnvironment(mockEnvName3)
+		if err != nil {
+			t.Fatalf("Expected %s to be deleted but got err:\n  %s", mockEnvName3, err)
+		}
+		testDirNotExists(t, fs, expectedPath)
+		testDirNotExists(t, fs, expectedParentPath)
+
+		// Test that only leaf directory is deleted if parent directory is shared
+		expectedPath = str.AppendToPath("/", m.environmentsPath, mockEnvName2)
+		parentDir = strings.Split(mockEnvName2, "/")[0]
+		expectedParentPath = str.AppendToPath("/", m.environmentsPath, parentDir)
+		err = m.DeleteEnvironment(mockEnvName2)
+		if err != nil {
+			t.Fatalf("Expected %s to be deleted but got err:\n  %s", mockEnvName3, err)
+		}
+
+		testDirNotExists(t, fs, expectedPath)
+		testDirExists(t, fs, expectedParentPath)
+	})
 }
 
 func TestGetEnvironments(t *testing.T) {
-	m := mockEnvironments(t, "test-get-envs")
+	withFs(func(fs afero.Fs) {
+		appMock := &mocks.App{}
+		appMock.On("Environments").Return(nil, nil)
 
-	envs, err := m.GetEnvironments()
-	if err != nil {
-		t.Fatalf("Expected to successfully get environments but failed:\n  %s", err)
-	}
+		m := mockEnvironments(t, fs, "test-get-envs")
 
-	if len(envs) != 4 {
-		t.Fatalf("Expected to get %d environments, got %d", 4, len(envs))
-	}
+		envs, err := m.GetEnvironments()
+		if err != nil {
+			t.Fatalf("Expected to successfully get environments but failed:\n  %s", err)
+		}
 
-	name := envs[mockEnvName].Name
-	if name != mockEnvName {
-		t.Fatalf("Expected env name to be '%s', got '%s'", mockEnvName, name)
-	}
+		if len(envs) != 4 {
+			t.Fatalf("Expected to get %d environments, got %d", 4, len(envs))
+		}
 
-	server := envs[mockEnvName].Destination.Server
-	if server != mockAPIServer {
-		t.Fatalf("Expected env server to be %s, got %s", mockAPIServer, server)
-	}
+		cur := envs[mockEnvName]
+		name := cur.Name
+		if name != mockEnvName {
+			t.Fatalf("Expected env name to be %q, got %q", mockEnvName, name)
+		}
+
+		server := cur.Destination.Server()
+		if server != mockAPIServer {
+			t.Fatalf("Expected env server to be %q, got %q", mockAPIServer, server)
+		}
+	})
 }
 
 func TestSetEnvironment(t *testing.T) {
-	appName := "test-set-envs"
-	m := mockEnvironments(t, appName)
+	withFs(func(fs afero.Fs) {
+		appName := "test-set-envs"
+		m := mockEnvironments(t, fs, appName)
 
-	setName := "new-env"
+		setName := "new-env"
 
-	// Test updating an environment that doesn't exist
-	err := m.SetEnvironment("notexists", setName)
-	if err == nil {
-		t.Fatal("Expected error when setting an environment that does not exist")
-	}
-
-	// Test updating an environment to an environment that already exists
-	err = m.SetEnvironment(mockEnvName, mockEnvName2)
-	if err == nil {
-		t.Fatalf("Expected error when setting \"%s\" to \"%s\", because env already exists", mockEnvName, mockEnvName2)
-	}
-
-	// Test changing the name an existing environment.
-	err = m.SetEnvironment(mockEnvName, setName)
-	if err != nil {
-		t.Fatalf("Could not set \"%s\", got:\n  %s", mockEnvName, err)
-	}
-
-	// Ensure new env directory is created, and old directory no longer exists.
-	envPath := str.AppendToPath(appName, environmentsDir)
-	expectedPathExists := str.AppendToPath(envPath, setName)
-	expectedPathNotExists := str.AppendToPath(envPath, mockEnvName)
-	testDirExists(t, expectedPathExists)
-	testDirNotExists(t, expectedPathNotExists)
-
-	// BUG: https://github.com/spf13/afero/issues/141
-	// we aren't able to test this until the above is fixed.
-	//
-	// ensure all files are moved
-	//
-	// expectedFiles := []string{
-	// 	envFileName,
-	// 	specFilename,
-	// 	paramsFileName,
-	// }
-	// for _, f := range expectedFiles {
-	// 	expectedFilePath := appendToAbsPath(expectedPathExists, f)
-	// 	testFileExists(t, string(expectedFilePath))
-	// }
-
-	tests := []struct {
-		appName string
-		nameOld string
-		nameNew string
-	}{
-		// Test changing the name of an env 'us-west' to 'us-west/dev'
-		{
-			"test-set-to-child",
-			"us-west",
-			"us-west/dev",
-		},
-		// Test changing the name of an env 'us-west/dev' to 'us-west'
-		{
-			"test-set-to-parent",
-			"us-west/dev",
-			"us-west",
-		},
-	}
-
-	for _, v := range tests {
-		m = mockEnvironmentsWith(t, v.appName, []string{v.nameOld})
-		err = m.SetEnvironment(v.nameOld, v.nameNew)
-		if err != nil {
-			t.Fatalf("Could not set '%s', got:\n  %s", v.nameOld, err)
+		// Test updating an environment that doesn't exist
+		err := m.SetEnvironment("notexists", setName)
+		if err == nil {
+			t.Fatal("Expected error when setting an environment that does not exist")
 		}
-		// Ensure new env directory is created
-		expectedPath := str.AppendToPath(v.appName, environmentsDir, v.nameNew)
-		testDirExists(t, expectedPath)
-	}
+
+		// Test updating an environment to an environment that already exists
+		err = m.SetEnvironment(mockEnvName, mockEnvName2)
+		if err == nil {
+			t.Fatalf("Expected error when setting \"%s\" to \"%s\", because env already exists", mockEnvName, mockEnvName2)
+		}
+
+		// Test changing the name an existing environment.
+		err = m.SetEnvironment(mockEnvName, setName)
+		if err != nil {
+			t.Fatalf("Could not set \"%s\", got:\n  %s", mockEnvName, err)
+		}
+
+		// Ensure new env directory is created, and old directory no longer exists.
+		envPath := str.AppendToPath(appName, environmentsDir)
+		expectedPathExists := filepath.Join("/", envPath, setName)
+		expectedPathNotExists := filepath.Join("/", envPath, mockEnvName)
+		testDirExists(t, fs, expectedPathExists)
+		testDirNotExists(t, fs, expectedPathNotExists)
+
+		// BUG: https://github.com/spf13/afero/issues/141
+		// we aren't able to test this until the above is fixed.
+		//
+		// ensure all files are moved
+		//
+		// expectedFiles := []string{
+		// 	envFileName,
+		// 	specFilename,
+		// 	paramsFileName,
+		// }
+		// for _, f := range expectedFiles {
+		// 	expectedFilePath := appendToAbsPath(expectedPathExists, f)
+		// 	testFileExists(t, string(expectedFilePath))
+		// }
+
+		tests := []struct {
+			appName string
+			nameOld string
+			nameNew string
+		}{
+			// Test changing the name of an env 'us-west' to 'us-west/dev'
+			{
+				"test-set-to-child",
+				"us-west",
+				"us-west/dev",
+			},
+			// Test changing the name of an env 'us-west/dev' to 'us-west'
+			{
+				"test-set-to-parent",
+				"us-west/dev",
+				"us-west",
+			},
+		}
+
+		for _, v := range tests {
+			m = mockEnvironmentsWith(t, fs, v.appName, []string{v.nameOld})
+			err = m.SetEnvironment(v.nameOld, v.nameNew)
+			if err != nil {
+				t.Fatalf("Could not set '%s', got:\n  %s", v.nameOld, err)
+			}
+			// Ensure new env directory is created
+			expectedPath := filepath.Join("/", v.appName, environmentsDir, v.nameNew)
+			testDirExists(t, fs, expectedPath)
+		}
+	})
 }
 
 func TestGenerateOverrideData(t *testing.T) {
-	m := mockEnvironments(t, "test-gen-override-data")
+	withFs(func(fs afero.Fs) {
+		m := mockEnvironments(t, fs, "test-gen-override-data")
 
-	expected := `local base = import "base.libsonnet";
+		expected := `local base = import "base.libsonnet";
 local k = import "k.libsonnet";
 
 base + {
@@ -257,17 +270,19 @@ base + {
   //   "nginx-deployment"+: k.deployment.mixin.metadata.labels({foo: "bar"})
 }
 `
-	result := m.generateOverrideData()
+		result := m.generateOverrideData()
 
-	if string(result) != expected {
-		t.Fatalf("Expected to generate override file with data:\n%s\n,got:\n%s", expected, result)
-	}
+		if string(result) != expected {
+			t.Fatalf("Expected to generate override file with data:\n%s\n,got:\n%s", expected, result)
+		}
+	})
 }
 
 func TestGenerateParamsData(t *testing.T) {
-	m := mockEnvironments(t, "test-gen-params-data")
+	withFs(func(fs afero.Fs) {
+		m := mockEnvironments(t, fs, "test-gen-params-data")
 
-	expected := `local params = import "../../components/params.libsonnet";
+		expected := `local params = import "../../components/params.libsonnet";
 params + {
   components +: {
     // Insert component parameter overrides here. Ex:
@@ -278,64 +293,10 @@ params + {
   },
 }
 `
-	result := string(m.generateParamsData())
+		result := string(m.generateParamsData())
 
-	if result != expected {
-		t.Fatalf("Expected to generate params file with data:\n%s\n, got:\n%s", expected, result)
-	}
-}
-
-func TestMergeParamMaps(t *testing.T) {
-	tests := []struct {
-		base      map[string]param.Params
-		overrides map[string]param.Params
-		expected  map[string]param.Params
-	}{
-		{
-			map[string]param.Params{
-				"bar": param.Params{"replicas": "5"},
-			},
-			map[string]param.Params{
-				"foo": param.Params{"name": `"foo"`, "replicas": "1"},
-			},
-			map[string]param.Params{
-				"bar": param.Params{"replicas": "5"},
-				"foo": param.Params{"name": `"foo"`, "replicas": "1"},
-			},
-		},
-		{
-			map[string]param.Params{
-				"bar": param.Params{"replicas": "5"},
-			},
-			map[string]param.Params{
-				"bar": param.Params{"name": `"foo"`},
-			},
-			map[string]param.Params{
-				"bar": param.Params{"name": `"foo"`, "replicas": "5"},
-			},
-		},
-		{
-			map[string]param.Params{
-				"bar": param.Params{"name": `"bar"`, "replicas": "5"},
-				"foo": param.Params{"name": `"foo"`, "replicas": "4"},
-				"baz": param.Params{"name": `"baz"`, "replicas": "3"},
-			},
-			map[string]param.Params{
-				"foo": param.Params{"replicas": "1"},
-				"baz": param.Params{"name": `"foobaz"`},
-			},
-			map[string]param.Params{
-				"bar": param.Params{"name": `"bar"`, "replicas": "5"},
-				"foo": param.Params{"name": `"foo"`, "replicas": "1"},
-				"baz": param.Params{"name": `"foobaz"`, "replicas": "3"},
-			},
-		},
-	}
-
-	for _, s := range tests {
-		result := mergeParamMaps(s.base, s.overrides)
-		if !reflect.DeepEqual(s.expected, result) {
-			t.Errorf("Wrong merge\n  expected:\n%v\n  got:\n%v", s.expected, result)
+		if result != expected {
+			t.Fatalf("Expected to generate params file with data:\n%s\n, got:\n%s", expected, result)
 		}
-	}
+	})
 }

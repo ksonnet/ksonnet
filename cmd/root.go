@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/ksonnet/ksonnet/component"
+	"github.com/ksonnet/ksonnet/env"
 	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/plugin"
 	str "github.com/ksonnet/ksonnet/strings"
@@ -326,9 +327,14 @@ func (te *cmdObjExpander) Expand() ([]*unstructured.Unstructured, error) {
 		return nil, err
 	}
 
+	app, err := manager.App()
+	if err != nil {
+		return nil, err
+	}
+
 	expander.FlagJpath = append([]string{string(vendorPath), string(libPath), string(envPath)}, expander.FlagJpath...)
 
-	namespacedComponentPaths, err := component.MakePathsByNamespace(te.config.fs, manager, te.config.cwd, te.config.env)
+	namespacedComponentPaths, err := component.MakePathsByNamespace(te.config.fs, app, te.config.cwd, te.config.env)
 	if err != nil {
 		return nil, errors.Wrap(err, "component paths")
 	}
@@ -453,28 +459,20 @@ func importParams(path string) string {
 	return fmt.Sprintf(`%s=import "%s"`, metadata.ParamsExtCodeKey, path)
 }
 
-func importEnv(manager metadata.Manager, env string) (string, error) {
-	app, err := manager.AppSpec()
+func importEnv(manager metadata.Manager, envName string) (string, error) {
+	app, err := manager.App()
 	if err != nil {
 		return "", err
 	}
 
-	spec, exists := app.GetEnvironmentSpec(env)
-	if !exists {
-		return "", fmt.Errorf("Environment '%s' does not exist in app.yaml", env)
+	spec, err := app.Environment(envName)
+	if err != nil {
+		return "", fmt.Errorf("Environment '%s' does not exist in app.yaml", envName)
 	}
 
-	type EnvironmentSpec struct {
-		Server    string `json:"server"`
-		Namespace string `json:"namespace"`
-	}
+	destination := env.NewDestination(spec.Destination.Server, spec.Destination.Namespace)
 
-	toMarshal := &EnvironmentSpec{
-		Server:    spec.Destination.Server,
-		Namespace: spec.Destination.Namespace,
-	}
-
-	marshalled, err := json.Marshal(toMarshal)
+	marshalled, err := json.Marshal(&destination)
 	if err != nil {
 		return "", err
 	}

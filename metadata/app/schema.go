@@ -17,15 +17,17 @@ package app
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/blang/semver"
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 )
 
 const (
 	// DefaultAPIVersion is the default ks API version to use if not specified.
-	DefaultAPIVersion = "0.0.1"
+	DefaultAPIVersion = "0.1.0"
 	// Kind is the schema resource type.
 	Kind = "ksonnet.io/app"
 	// DefaultVersion is the default version of the app schema.
@@ -62,6 +64,51 @@ type Spec struct {
 	Environments EnvironmentSpecs `json:"environments,omitempty"`
 	Libraries    LibraryRefSpecs  `json:"libraries,omitempty"`
 	License      string           `json:"license,omitempty"`
+}
+
+// Read will return the specification for a ksonnet application.
+func Read(fs afero.Fs, appRoot string) (*Spec, error) {
+	bytes, err := afero.ReadFile(fs, specPath(appRoot))
+	if err != nil {
+		return nil, err
+	}
+
+	schema, err := Unmarshal(bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	if schema.Contributors == nil {
+		schema.Contributors = ContributorSpecs{}
+	}
+
+	if schema.Registries == nil {
+		schema.Registries = RegistryRefSpecs{}
+	}
+
+	if schema.Libraries == nil {
+		schema.Libraries = LibraryRefSpecs{}
+	}
+
+	if schema.Environments == nil {
+		schema.Environments = EnvironmentSpecs{}
+	}
+
+	return schema, nil
+}
+
+// Write writes the provided spec to file system.
+func Write(fs afero.Fs, appRoot string, spec *Spec) error {
+	data, err := spec.Marshal()
+	if err != nil {
+		return err
+	}
+
+	return afero.WriteFile(fs, specPath(appRoot), data, DefaultFilePermissions)
+}
+
+func specPath(appRoot string) string {
+	return filepath.Join(appRoot, appYamlName)
 }
 
 // RepositorySpec defines the spec for the upstream repository of this project.
@@ -185,11 +232,17 @@ func (s *Spec) AddRegistryRef(registryRefSpec *RegistryRefSpec) error {
 }
 
 func (s *Spec) validate() error {
+	if s.APIVersion == "0.0.0" {
+		return errors.New("invalid version")
+	}
+
 	compatVer, _ := semver.Make(DefaultAPIVersion)
 	ver, err := semver.Make(s.APIVersion)
 	if err != nil {
 		return errors.Wrap(err, "Failed to parse version in app spec")
-	} else if compatVer.Compare(ver) != 0 {
+	}
+
+	if compatVer.Compare(ver) < 0 {
 		return fmt.Errorf(
 			"Current app uses unsupported spec version '%s' (this client only supports %s)",
 			s.APIVersion,
@@ -249,7 +302,7 @@ func (s *Spec) UpdateEnvironmentSpec(name string, spec *EnvironmentSpec) error {
 
 	_, environmentSpecExists := s.Environments[name]
 	if !environmentSpecExists {
-		return ErrEnvironmentNotExists
+		return errors.Errorf("Environment with name %q does not exist", name)
 	}
 
 	if name != spec.Name {

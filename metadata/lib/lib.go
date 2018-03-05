@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 
 	str "github.com/ksonnet/ksonnet/strings"
 	log "github.com/sirupsen/logrus"
@@ -70,7 +71,7 @@ func NewManager(k8sSpecFlag string, fs afero.Fs, libPath string) (*Manager, erro
 // directory of a ksonnet project. The swagger and ksonnet-lib files are
 // unique to each Kubernetes API version. If the files already exist for a
 // specific Kubernetes API version, they won't be re-generated here.
-func (m *Manager) GenerateLibData() error {
+func (m *Manager) GenerateLibData(useVersionPath bool) error {
 	if m.spec == nil {
 		return fmt.Errorf("Uninitialized ClusterSpec")
 	}
@@ -85,8 +86,13 @@ func (m *Manager) GenerateLibData() error {
 		return err
 	}
 
-	versionPath := str.AppendToPath(m.libPath, m.K8sVersion)
-	ok, err := afero.DirExists(m.fs, string(versionPath))
+	genPath := m.libPath
+
+	if useVersionPath {
+		genPath = filepath.Join(m.libPath, m.K8sVersion)
+	}
+
+	ok, err := afero.DirExists(m.fs, genPath)
 	if err != nil {
 		return err
 	}
@@ -95,7 +101,7 @@ func (m *Manager) GenerateLibData() error {
 		return nil
 	}
 
-	err = m.fs.MkdirAll(string(versionPath), os.FileMode(0755))
+	err = m.fs.MkdirAll(genPath, os.FileMode(0755))
 	if err != nil {
 		return err
 	}
@@ -106,22 +112,22 @@ func (m *Manager) GenerateLibData() error {
 	}{
 		{
 			// schema file
-			str.AppendToPath(versionPath, schemaFilename),
+			filepath.Join(genPath, schemaFilename),
 			kl.Swagger,
 		},
 		{
 			// k8s file
-			str.AppendToPath(versionPath, k8sLibFilename),
+			filepath.Join(genPath, k8sLibFilename),
 			kl.K8s,
 		},
 		{
 			// extensions file
-			str.AppendToPath(versionPath, ExtensionsLibFilename),
+			filepath.Join(genPath, ExtensionsLibFilename),
 			kl.K,
 		},
 	}
 
-	log.Infof("Generating ksonnet-lib data at path '%s'", versionPath)
+	log.Infof("Generating ksonnet-lib data at path '%s'", genPath)
 
 	for _, a := range files {
 		fileName := path.Base(string(a.path))
@@ -136,7 +142,7 @@ func (m *Manager) GenerateLibData() error {
 
 // GetLibPath returns the absolute path pointing to the directory with the
 // metadata files for the provided k8sVersion.
-func (m *Manager) GetLibPath() (string, error) {
+func (m *Manager) GetLibPath(useVersionPath bool) (string, error) {
 	path := str.AppendToPath(m.libPath, m.K8sVersion)
 	ok, err := afero.DirExists(m.fs, string(path))
 	if err != nil {
@@ -146,7 +152,7 @@ func (m *Manager) GetLibPath() (string, error) {
 		log.Debugf("Expected lib directory '%s' but was not found", m.K8sVersion)
 
 		// create the directory
-		if err := m.GenerateLibData(); err != nil {
+		if err = m.GenerateLibData(useVersionPath); err != nil {
 			return "", err
 		}
 

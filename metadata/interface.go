@@ -17,9 +17,8 @@ package metadata
 
 import (
 	"os"
-	"regexp"
-	"strings"
 
+	"github.com/ksonnet/ksonnet/env"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/metadata/parts"
@@ -36,6 +35,8 @@ var defaultFilePermissions = os.FileMode(0644)
 // things like: create and delete environments; search for prototypes; vendor
 // libraries; and other non-core-application tasks.
 type Manager interface {
+	// App returns the object for the application.
+	App() (app.App, error)
 	Root() string
 	LibPaths() (envPath, vendorPath string)
 	EnvPaths(env string) (libPath, mainPath, paramsPath string, err error)
@@ -54,19 +55,16 @@ type Manager interface {
 	// mapping of parameters of the form:
 	// componentName => {param key => param val}
 	// i.e.: "nginx" => {"replicas" => 1, "name": "nginx"}
-	GetEnvironmentParams(name string) (map[string]param.Params, error)
+	GetEnvironmentParams(name, nsName string) (map[string]param.Params, error)
 	SetEnvironmentParams(env, component string, params param.Params) error
 
 	// Environment API.
 	CreateEnvironment(name, uri, namespace, spec string) error
 	DeleteEnvironment(name string) error
-	GetEnvironments() (app.EnvironmentSpecs, error)
-	GetEnvironment(name string) (*app.EnvironmentSpec, error)
+	GetEnvironments() (map[string]env.Env, error)
+	GetEnvironment(name string) (*env.Env, error)
 	SetEnvironment(name, desiredName string) error
-
-	// Spec API.
-	AppSpec() (*app.Spec, error)
-	WriteAppSpec(*app.Spec) error
+	GetDestination(envName string) (env.Destination, error)
 
 	// Dependency/registry API.
 	AddRegistry(name, protocol, uri, version string) (*registry.Spec, error)
@@ -103,23 +101,6 @@ func Init(name, rootPath string, k8sSpecFlag, serverURI, namespace *string) (Man
 	}
 
 	return initManager(name, rootPath, k8sSpecFlag, serverURI, namespace, gh, appFS)
-}
-
-// isValidName returns true if a name (e.g., for an environment) is valid.
-// Broadly, this means it does not contain punctuation, whitespace, leading or
-// trailing slashes.
-func isValidName(name string) bool {
-	// No unicode whitespace is allowed. `Fields` doesn't handle trailing or
-	// leading whitespace.
-	fields := strings.Fields(name)
-	if len(fields) > 1 || len(strings.TrimSpace(name)) != len(name) {
-		return false
-	}
-
-	hasPunctuation := regexp.MustCompile(`[\\,;':!()?"{}\[\]*&%@$]+`).MatchString
-	hasTrailingSlashes := regexp.MustCompile(`/+$`).MatchString
-	hasLeadingSlashes := regexp.MustCompile(`^/+`).MatchString
-	return len(name) != 0 && !hasPunctuation(name) && !hasTrailingSlashes(name) && !hasLeadingSlashes(name)
 }
 
 func init() {

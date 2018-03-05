@@ -256,6 +256,18 @@
   revision = "fc9e8d8ef48496124e79ae0df75490096eccf6fe"
 
 [[projects]]
+  name = "github.com/mattn/go-runewidth"
+  packages = ["."]
+  revision = "9e777a8366cce605130a531d2cd6363d07ad7317"
+  version = "v0.0.2"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/olekukonko/tablewriter"
+  packages = ["."]
+  revision = "b8a9be070da40449e501c3c4730a889e42d87a9e"
+
+[[projects]]
   name = "github.com/onsi/ginkgo"
   packages = [
     ".",
@@ -360,9 +372,16 @@
   revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
 
 [[projects]]
+  name = "github.com/stretchr/objx"
+  packages = ["."]
+  revision = "facf9a85c22f48d2f52f2380e4efce1768749a89"
+  version = "v0.1"
+
+[[projects]]
   name = "github.com/stretchr/testify"
   packages = [
     "assert",
+    "mock",
     "require"
   ]
   revision = "f6abca593680b2315d2075e0f5e2a9751e3f431a"
@@ -603,6 +622,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8b786abd404b80a5933fdf9b29cae67837bf6630041f144bffd7092fdb0e331c"
+  inputs-digest = "cb1ea2fcb93a4e383a77524868cca62997ccf5e8b862f2d8250c388870c4da49"
   solver-name = "gps-cdcl"
   solver-version = 1

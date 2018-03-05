@@ -82,7 +82,7 @@ var registryListCmd = &cobra.Command{
 			return err
 		}
 
-		app, err := manager.AppSpec()
+		app, err := manager.App()
 		if err != nil {
 			return err
 		}
@@ -95,7 +95,7 @@ var registryListCmd = &cobra.Command{
 				strings.Repeat("=", len(uriHeader)),
 			},
 		}
-		for name, regRef := range app.Registries {
+		for name, regRef := range app.Registries() {
 			rows = append(rows, []string{name, regRef.Protocol, regRef.URI})
 		}
 
@@ -141,12 +141,12 @@ var registryDescribeCmd = &cobra.Command{
 			return err
 		}
 
-		app, err := manager.AppSpec()
+		app, err := manager.App()
 		if err != nil {
 			return err
 		}
 
-		regRef, exists := app.GetRegistryRef(name)
+		regRef, exists := app.Registries()[name]
 		if !exists {
 			return fmt.Errorf("Registry '%s' doesn't exist", name)
 		}

@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/metadata/app/mocks"
 )
 
 var (
@@ -47,21 +48,6 @@ var (
 		"/components/a.txt",
 	}
 )
-
-type stubAppSpecer struct {
-	appSpec *app.Spec
-	err     error
-}
-
-var _ AppSpecer = (*stubAppSpecer)(nil)
-
-func newStubAppSpecer(appSpec *app.Spec) *stubAppSpecer {
-	return &stubAppSpecer{appSpec: appSpec}
-}
-
-func (s *stubAppSpecer) AppSpec() (*app.Spec, error) {
-	return s.appSpec, s.err
-}
 
 func makePaths(t *testing.T, fs afero.Fs, paths []string) {
 	for _, path := range paths {
@@ -311,15 +297,13 @@ func TestMakePathsByNameSpace(t *testing.T) {
 				Targets: tc.targets,
 			}
 
-			appSpec := &app.Spec{
-				Environments: app.EnvironmentSpecs{"default": envSpec},
-			}
-			appSpecer := newStubAppSpecer(appSpec)
+			appMock := &mocks.App{}
+			appMock.On("Environment", "default").Return(envSpec, nil)
 
 			root := "/"
 			env := "default"
 
-			paths, err := MakePathsByNamespace(fs, appSpecer, root, env)
+			paths, err := MakePathsByNamespace(fs, appMock, root, env)
 			if tc.isErr {
 				require.Error(t, err)
 			} else {
@@ -394,15 +378,13 @@ func TestMakePaths(t *testing.T) {
 				Targets: tc.targets,
 			}
 
-			appSpec := &app.Spec{
-				Environments: app.EnvironmentSpecs{"default": envSpec},
-			}
-			appSpecer := newStubAppSpecer(appSpec)
+			appMock := &mocks.App{}
+			appMock.On("Environment", "default").Return(envSpec, nil)
 
 			root := "/"
 			env := "default"
 
-			paths, err := MakePaths(fs, appSpecer, root, env)
+			paths, err := MakePaths(fs, appMock, root, env)
 			if tc.isErr {
 				require.Error(t, err)
 			} else {
@@ -413,14 +395,14 @@ func TestMakePaths(t *testing.T) {
 	}
 }
 
-func TestMakePaths_invalid_appSpecer(t *testing.T) {
+func TestMakePaths_invalid_app(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	_, err := MakePaths(fs, nil, "/", "default")
 	require.Error(t, err)
 }
 
 func TestMakePaths_invalid_fs(t *testing.T) {
-	appSpecer := newStubAppSpecer(nil)
-	_, err := MakePaths(nil, appSpecer, "/", "default")
+	appMock := &mocks.App{}
+	_, err := MakePaths(nil, appMock, "/", "default")
 	require.Error(t, err)
 }
