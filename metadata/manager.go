@@ -116,7 +116,6 @@ func findManager(p string, appFS afero.Fs) (*manager, error) {
 }
 
 func initManager(name, rootPath string, k8sSpecFlag, serverURI, namespace *string, incubatorReg registry.Manager, appFS afero.Fs) (*manager, error) {
-	log.Info("init manager")
 	m, err := newManager(rootPath, appFS)
 	if err != nil {
 		return nil, errors.Wrap(err, "create manager")

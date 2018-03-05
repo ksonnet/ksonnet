@@ -5,6 +5,8 @@
 
 [Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.8.0...v0.9.0)
 
+To update older ksonnet applications, run `ks upgrade --help`.
+
 ### Overview
 
 This release focuses on two major areas:
@@ -174,6 +176,7 @@ and individual component files can also be referenced by _targets_.
 
 **Merged pull requests:**
 
+- ksonnet app.yaml format changes in next minor release. Handle both versions [\#338](https://github.com/ksonnet/ksonnet/pull/338) ([bryanl](https://github.com/bryanl))
 - Attempt to generate lib directory when not found [\#337](https://github.com/ksonnet/ksonnet/pull/337) ([jessicayuen](https://github.com/jessicayuen))
 - Fix the execution paths for the 0.8 > 0.9 migration warning [\#335](https://github.com/ksonnet/ksonnet/pull/337) ([jessicayuen](https://github.com/jessicayuen))
 - Resolve api spec based on swagger version [\#334](https://github.com/ksonnet/ksonnet/pull/334) ([jessicayuen](https://github.com/jessicayuen))
