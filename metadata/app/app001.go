@@ -72,7 +72,8 @@ func (a *App001) AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec)
 		return err
 	}
 
-	return LibUpdater(a.fs, k8sSpecFlag, a.appLibPath(name), false)
+	_, err = LibUpdater(a.fs, k8sSpecFlag, a.appLibPath(name), false)
+	return err
 }
 
 // Registries returns application registries.
@@ -234,7 +235,8 @@ func (a *App001) convertEnvironment(envName string, dryRun bool) error {
 	}
 
 	k8sSpecFlag := fmt.Sprintf("version:%s", env.KubernetesVersion)
-	return LibUpdater(a.fs, k8sSpecFlag, app010LibPath(a.root), true)
+	_, err = LibUpdater(a.fs, k8sSpecFlag, app010LibPath(a.root), true)
+	return err
 }
 
 func (a *App001) appLibPath(envName string) string {

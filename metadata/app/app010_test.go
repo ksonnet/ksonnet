@@ -113,8 +113,9 @@ func TestApp010_AddEnvironment(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, envs, envLen+1)
 
-		_, err = app.Environment("us-west/qa")
+		env, err := app.Environment("us-west/qa")
 		require.NoError(t, err)
+		require.Equal(t, "v1.8.7", env.KubernetesVersion)
 	})
 }
 
@@ -139,8 +140,8 @@ func TestApp010_RemoveEnvironment(t *testing.T) {
 
 func withApp010Fs(t *testing.T, appName string, fn func(fs afero.Fs)) {
 	ogLibUpdater := LibUpdater
-	LibUpdater = func(fs afero.Fs, k8sSpecFlag string, libPath string, useVersionPath bool) error {
-		return nil
+	LibUpdater = func(fs afero.Fs, k8sSpecFlag string, libPath string, useVersionPath bool) (string, error) {
+		return "v1.8.7", nil
 	}
 
 	defer func() {
