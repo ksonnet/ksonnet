@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/blang/semver"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -21,6 +22,38 @@ type ServerVersion struct {
 
 // ParseVersion parses version.Info into a ServerVersion struct
 func ParseVersion(v *version.Info) (ret ServerVersion, err error) {
+	//
+	// Note: It is not advisable to use the Major / Minor version pair returned
+	// by The ServerVersion as it may be empty. We will use the GitVersion as
+	// it appears to always be populated, and is the return value provided by
+	// client-go's v.String().
+	//
+	// As a safety precaution, we will still default to the Major / Minor version,
+	// if the GitVersion fails.
+	//
+
+	versionString := v.String()
+	if len(versionString) >= 1 {
+		// trim off "v" infront of version since it is invalid semver syntax.
+		versionString = versionString[1:]
+	}
+
+	version, err := semver.Make(versionString)
+	if err != nil {
+		ret, err = parseFromMajorMinor(v)
+		if err != nil {
+			err = fmt.Errorf("Server version '%s' does not conform to semver format", versionString)
+		}
+		return
+	}
+
+	ret.Major = int(version.Major)
+	ret.Minor = int(version.Minor)
+
+	return
+}
+
+func parseFromMajorMinor(v *version.Info) (ret ServerVersion, err error) {
 	re := regexp.MustCompile("[0-9]+")
 
 	major := re.FindAllString(v.Major, 1)
@@ -44,6 +77,7 @@ func ParseVersion(v *version.Info) (ret ServerVersion, err error) {
 	if err != nil {
 		return
 	}
+
 	return
 }
 

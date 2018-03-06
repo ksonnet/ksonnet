@@ -18,6 +18,20 @@ func TestParseVersion(t *testing.T) {
 		error    bool
 	}{
 		{
+			input:    version.Info{GitVersion: "v1.7.0"},
+			expected: ServerVersion{Major: 1, Minor: 7},
+		},
+		{
+			input:    version.Info{GitVersion: "v1.7.11-gke.1"},
+			expected: ServerVersion{Major: 1, Minor: 7},
+		},
+		// Bad GitVersion case
+		{
+			input:    version.Info{Major: "1", Minor: "6", GitVersion: "invalid"},
+			expected: ServerVersion{Major: 1, Minor: 6},
+		},
+		// GitVersion does not exist cases
+		{
 			input:    version.Info{Major: "1", Minor: "6"},
 			expected: ServerVersion{Major: 1, Minor: 6},
 		},
