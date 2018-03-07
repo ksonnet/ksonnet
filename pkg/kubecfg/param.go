@@ -247,6 +247,11 @@ type paramDiffRecord struct {
 
 // Run executes the diffing of environment params.
 func (c *ParamDiffCmd) Run(out io.Writer) error {
+	const (
+		componentHeader = "COMPONENT"
+		paramHeader     = "PARAM"
+	)
+
 	manager, err := manager()
 	if err != nil {
 		return err
@@ -276,36 +281,45 @@ func (c *ParamDiffCmd) Run(out io.Writer) error {
 
 	componentNames := collectComponents(params1, params2)
 
-	var rows [][]string
+	rows := [][]string{
+		[]string{componentHeader, paramHeader, c.env1, c.env2},
+		[]string{
+			strings.Repeat("=", len(componentHeader)),
+			strings.Repeat("=", len(paramHeader)),
+			strings.Repeat("=", len(c.env1)),
+			strings.Repeat("=", len(c.env2))},
+	}
+
 	for _, componentName := range componentNames {
 		paramNames := collectParams(params1[componentName], params2[componentName])
 
 		for _, paramName := range paramNames {
 			var v1, v2 string
-			var ok bool
-			var p param.Params
 
-			if p, ok = params1[componentName]; ok {
+			if p, ok := params1[componentName]; ok {
 				v1 = p[paramName]
 			}
 
-			if p, ok = params2[componentName]; ok {
+			if p, ok := params2[componentName]; ok {
 				v2 = p[paramName]
 			}
 
-			row := []string{
+			rows = append(rows, []string{
 				componentName,
 				paramName,
 				v1,
 				v2,
-			}
-
-			rows = append(rows, row)
+			})
 		}
 	}
 
-	printTable([]string{"COMPONENT", "PARAM", c.env1, c.env2}, rows)
-	return nil
+	formatted, err := str.PadRows(rows)
+	if err != nil {
+		return err
+	}
+
+	_, err = fmt.Fprint(out, formatted)
+	return err
 }
 
 func collectComponents(param1, param2 map[string]param.Params) []string {
