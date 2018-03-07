@@ -16,7 +16,6 @@
 package strings
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -112,6 +111,58 @@ func TestNormalizeURL(t *testing.T) {
 	}
 }
 
+func TestTable(t *testing.T) {
+	tests := []struct {
+		header   Row
+		body     []Row
+		expected []FormattedRow
+	}{
+		{
+			header: Row{
+				Content: []string{
+					"FOO-HEADER",
+					"BAR-HEADER",
+				},
+			},
+			body: []Row{
+				Row{
+					Content: []string{
+						"foo",
+						"bar",
+					},
+				},
+				Row{
+					Content: []string{
+						"another-foo",
+						"another-bar",
+					},
+				},
+			},
+			expected: []FormattedRow{
+				FormattedRow{
+					Content: "FOO-HEADER  BAR-HEADER",
+				},
+				FormattedRow{
+					Content: "==========  ==========",
+				},
+				FormattedRow{
+					Content: "foo         bar",
+				},
+				FormattedRow{
+					Content: "another-foo another-bar",
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		formatted, err := Table(test.header, test.body)
+		if err != nil {
+			t.Error(err)
+		}
+		require.EqualValues(t, test.expected, formatted)
+	}
+}
+
 func TestPadRows(t *testing.T) {
 	tests := []struct {
 		input    [][]string
@@ -174,7 +225,6 @@ Hi World
 		},
 	}
 	for _, test := range tests {
-		fmt.Println(test.expected)
 		padded, err := PadRows(test.input)
 		if err != nil {
 			t.Error(err)

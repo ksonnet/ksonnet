@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/purell"
+	"github.com/fatih/color"
 )
 
 // IsASCIIIdentifier takes a string and returns true if the string does not
@@ -53,10 +54,70 @@ func NormalizeURL(s string) (string, error) {
 	return purell.NormalizeURLString(s, purell.FlagsUsuallySafeGreedy)
 }
 
+// Row represents a table row.
+type Row struct {
+	Content []string
+	Color   *color.Color
+}
+
+// FormattedRow represents a formatted table row.
+type FormattedRow struct {
+	Content string
+	Color   *color.Color
+}
+
+// Table outputs a properly-aligned table.
+func Table(headers Row, body []Row) ([]FormattedRow, error) {
+	var dividers []string
+	for _, header := range headers.Content {
+		dividers = append(dividers, strings.Repeat("=", len(header)))
+	}
+
+	var rows []Row
+	rows = append(rows, headers)
+	rows = append(rows, Row{Content: dividers})
+	for _, row := range body {
+		rows = append(rows, row)
+	}
+
+	return padRows(rows)
+}
+
+// PadRows takes a string matrix and returns a string representation of a
+// properly-aligned table.
 func PadRows(rows [][]string) (string, error) {
+	var tableRows []Row
+
+	for _, row := range rows {
+		var tableRow Row
+		for _, col := range row {
+			tableRow.Content = append(tableRow.Content, col)
+		}
+		tableRows = append(tableRows, tableRow)
+	}
+
+	formattedRows, err := padRows(tableRows)
+	if err != nil {
+		return "", err
+	}
+
+	var buf bytes.Buffer
+	for _, row := range formattedRows {
+		_, err := buf.WriteString(fmt.Sprintln(row.Content))
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return buf.String(), nil
+}
+
+func padRows(rows []Row) ([]FormattedRow, error) {
+	var result []FormattedRow
+
 	maxRowLen := 0
 	for _, row := range rows {
-		if rowLen := len(row); rowLen > maxRowLen {
+		if rowLen := len(row.Content); rowLen > maxRowLen {
 			maxRowLen = rowLen
 		}
 	}
@@ -64,12 +125,12 @@ func PadRows(rows [][]string) (string, error) {
 	colMaxes := make([]int, maxRowLen)
 	for currCol := 0; currCol < maxRowLen; currCol++ {
 		for _, row := range rows {
-			rowLen := len(row)
+			rowLen := len(row.Content)
 			if currCol >= rowLen {
 				continue
 			}
 
-			cellLen := len(row[currCol])
+			cellLen := len(row.Content[currCol])
 			if currCol < rowLen && colMaxes[currCol] < cellLen {
 				colMaxes[currCol] = cellLen
 			}
@@ -77,36 +138,30 @@ func PadRows(rows [][]string) (string, error) {
 	}
 
 	var err error
-	var buf bytes.Buffer
 	for _, row := range rows {
-		rowLen := len(row)
-		for j, col := range row {
+		var buf bytes.Buffer
+		for j, col := range row.Content {
 			_, err = buf.WriteString(col)
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 
 			// Don't add space to the end of the last column.
-			if j >= rowLen-1 {
+			if j >= len(row.Content)-1 {
 				continue
 			}
 
 			padSize := colMaxes[j] + 1 - len(col)
 			_, err = buf.WriteString(strings.Repeat(" ", padSize))
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 		}
 
-		// Add a newline to the end of the row (but only if there is more
-		// than 0 rows).
-		_, err = buf.WriteString("\n")
-		if err != nil {
-			return "", err
-		}
+		result = append(result, FormattedRow{Content: buf.String(), Color: row.Color})
 	}
 
-	return buf.String(), nil
+	return result, nil
 }
 
 // AppendToPath appends one or more paths to the specified original path.
