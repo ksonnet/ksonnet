@@ -47,46 +47,13 @@ func (r *renamer) Rename(from, to string) error {
 		return err
 	}
 
-	pathFrom := envPath(r.AppRoot, from)
-	pathTo := envPath(r.AppRoot, to)
-
-	exists, err := afero.DirExists(r.Fs, pathFrom)
-	if err != nil {
-		return err
-	}
-
-	if !exists {
-		return errors.Errorf("environment directory for %q does not exist", from)
-	}
-
 	log.Infof("Setting environment name from %q to %q", from, to)
 
-	current, err := Retrieve(r.App, from)
-	if err != nil {
+	if err := r.App.RenameEnvironment(from, to); err != nil {
 		return err
 	}
 
-	update := &app.EnvironmentSpec{
-		Destination: &app.EnvironmentDestinationSpec{
-			Namespace: current.Destination.Namespace(),
-			Server:    current.Destination.Server(),
-		},
-		KubernetesVersion: current.KubernetesVersion,
-		Targets:           current.Targets,
-		Path:              to,
-	}
-
-	k8sSpecFlag := fmt.Sprintf("version:%s", current.KubernetesVersion)
-
-	if err = r.App.AddEnvironment(from, k8sSpecFlag, update); err != nil {
-		return err
-	}
-
-	if err = moveDir(r.Fs, pathFrom, pathTo); err != nil {
-		return err
-	}
-
-	if err = cleanEmptyDirs(r.Fs, r.AppRoot); err != nil {
+	if err := cleanEmptyDirs(r.Fs, r.AppRoot); err != nil {
 		return errors.Wrap(err, "clean empty directories")
 	}
 

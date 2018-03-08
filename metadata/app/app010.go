@@ -102,6 +102,24 @@ func (a *App010) AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec)
 	return a.save()
 }
 
+// RenameEnvironment renames environments.
+func (a *App010) RenameEnvironment(from, to string) error {
+	if err := moveEnvironment(a.fs, a.root, from, to); err != nil {
+		return err
+	}
+
+	if err := a.load(); err != nil {
+		return err
+	}
+
+	a.spec.Environments[to] = a.spec.Environments[from]
+	delete(a.spec.Environments, from)
+
+	a.spec.Environments[to].Path = to
+
+	return a.save()
+}
+
 // Registries returns application registries.
 func (a *App010) Registries() RegistryRefSpecs {
 	return a.spec.Registries
