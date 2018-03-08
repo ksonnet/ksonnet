@@ -10,19 +10,19 @@ environments:
     destination:
       namespace: some-namespace
       server: http://example.com
-    k8sVersion: ""
+    k8sVersion: v1.7.0
     path: us-east/test
   us-west/prod:
     destination:
       namespace: some-namespace
       server: http://example.com
-    k8sVersion: ""
+    k8sVersion: v1.7.0
     path: us-west/prod
   us-west/test:
     destination:
       namespace: some-namespace
       server: http://example.com
-    k8sVersion: ""
+    k8sVersion: v1.7.0
     path: us-west/test
 kind: ksonnet.io/app
 name: test-get-envs

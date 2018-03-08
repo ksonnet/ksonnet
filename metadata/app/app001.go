@@ -76,6 +76,11 @@ func (a *App001) AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec)
 	return err
 }
 
+// RenameEnvironment renames environments.
+func (a *App001) RenameEnvironment(from, to string) error {
+	return moveEnvironment(a.fs, a.root, from, to)
+}
+
 // Registries returns application registries.
 func (a *App001) Registries() RegistryRefSpecs {
 	return a.spec.Registries

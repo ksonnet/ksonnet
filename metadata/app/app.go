@@ -3,6 +3,7 @@ package app
 import (
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/ksonnet/ksonnet/metadata/lib"
 	"github.com/pkg/errors"
@@ -40,6 +41,7 @@ type App interface {
 	LibPath(envName string) (string, error)
 	Init() error
 	Registries() RegistryRefSpecs
+	RenameEnvironment(from, to string) error
 	RemoveEnvironment(name string) error
 	Upgrade(dryRun bool) error
 }
@@ -61,7 +63,7 @@ func Load(fs afero.Fs, appRoot string) (App, error) {
 	}
 }
 
-func updateLibData(fs afero.Fs, k8sSpecFlag string, libPath string, useVersionPath bool) (string, error) {
+func updateLibData(fs afero.Fs, k8sSpecFlag, libPath string, useVersionPath bool) (string, error) {
 	lm, err := lib.NewManager(k8sSpecFlag, fs, libPath)
 	if err != nil {
 		return "", err
@@ -79,6 +81,88 @@ func app010LibPath(root string) string {
 }
 
 // StubUpdateLibData always returns no error.
-func StubUpdateLibData(fs afero.Fs, k8sSpecFlag string, libPath string, useVersionPath bool) (string, error) {
+func StubUpdateLibData(fs afero.Fs, k8sSpecFlag, libPath string, useVersionPath bool) (string, error) {
 	return "v1.8.7", nil
+}
+
+func moveEnvironment(fs afero.Fs, root, from, to string) error {
+	toPath := filepath.Join(root, EnvironmentDirName, to)
+
+	exists, err := afero.Exists(fs, filepath.Join(toPath, "main.jsonnet"))
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		return errors.Errorf("unable to rename %q because %q exists", from, to)
+	}
+
+	fromPath := filepath.Join(root, EnvironmentDirName, from)
+	exists, err = afero.Exists(fs, fromPath)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return errors.Errorf("environment %q does not exist", from)
+	}
+
+	// create to directory
+	if err = fs.MkdirAll(toPath, DefaultFolderPermissions); err != nil {
+		return err
+	}
+
+	fis, err := afero.ReadDir(fs, fromPath)
+	if err != nil {
+		return err
+	}
+
+	for _, fi := range fis {
+		if fi.IsDir() && fi.Name() != ".metadata" {
+			continue
+		}
+
+		oldPath := filepath.Join(fromPath, fi.Name())
+		newPath := filepath.Join(toPath, fi.Name())
+		if err := fs.Rename(oldPath, newPath); err != nil {
+			return err
+		}
+	}
+
+	return cleanEnv(fs, root)
+}
+
+func cleanEnv(fs afero.Fs, root string) error {
+	var dirs []string
+
+	envDir := filepath.Join(root, EnvironmentDirName)
+	err := afero.Walk(fs, envDir, func(path string, fi os.FileInfo, err error) error {
+		if !fi.IsDir() {
+			return nil
+		}
+
+		dirs = append(dirs, path)
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	sort.Sort(sort.Reverse(sort.StringSlice(dirs)))
+
+	for _, dir := range dirs {
+		fis, err := afero.ReadDir(fs, dir)
+		if err != nil {
+			return err
+		}
+
+		if len(fis) == 0 {
+			if err := fs.RemoveAll(dir); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }

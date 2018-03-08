@@ -2,13 +2,79 @@ package app
 
 import (
 	"bytes"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestApp001_RenameEnvironment(t *testing.T) {
+	cases := []struct {
+		name           string
+		from           string
+		to             string
+		shouldExist    []string
+		shouldNotExist []string
+	}{
+		{
+			name: "rename",
+			from: "default",
+			to:   "renamed",
+			shouldExist: []string{
+				"/environments/renamed/.metadata",
+				"/environments/renamed/spec.json",
+			},
+			shouldNotExist: []string{
+				"/environments/default",
+			},
+		},
+		{
+			name: "rename to nested",
+			from: "default",
+			to:   "default/nested",
+			shouldExist: []string{
+				"/environments/default/nested/.metadata",
+				"/environments/default/nested/spec.json",
+			},
+			shouldNotExist: []string{
+				"/environments/default/.metadata",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		withApp001Fs(t, "app001_app.yaml", func(fs afero.Fs) {
+			t.Run(tc.name, func(t *testing.T) {
+				app, err := NewApp001(fs, "/")
+				require.NoError(t, err)
+
+				err = app.RenameEnvironment(tc.from, tc.to)
+				require.NoError(t, err)
+
+				for _, p := range tc.shouldExist {
+					checkExist(t, fs, p)
+				}
+
+				for _, p := range tc.shouldNotExist {
+					checkNotExist(t, fs, p)
+				}
+
+				app.load()
+				require.NoError(t, err)
+
+				_, err = app.Environment(tc.from)
+				assert.Error(t, err)
+
+				_, err = app.Environment(tc.to)
+				assert.NoError(t, err)
+			})
+		})
+	}
+}
 
 func TestApp001_Environments(t *testing.T) {
 	withApp001Fs(t, "app001_app.yaml", func(fs afero.Fs) {
@@ -171,7 +237,12 @@ func withApp001Fs(t *testing.T, appName string, fn func(fs afero.Fs)) {
 		LibUpdater = ogLibUpdater
 	}()
 
-	fs := afero.NewMemMapFs()
+	dir, err := ioutil.TempDir("", "")
+	require.NoError(t, err)
+
+	defer os.RemoveAll(dir)
+
+	fs := afero.NewBasePathFs(afero.NewOsFs(), dir)
 
 	envDirs := []string{
 		"default",
