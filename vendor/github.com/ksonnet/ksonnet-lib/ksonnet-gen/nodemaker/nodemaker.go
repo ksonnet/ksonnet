@@ -88,6 +88,13 @@ func KVFromMap(m map[string]interface{}) (*Object, error) {
 			}
 
 			o.Set(InheritedKey(name), child)
+		case map[string]interface{}:
+			child, err := KVFromMap(t)
+			if err != nil {
+				return nil, err
+			}
+
+			o.Set(InheritedKey(name), child)
 		default:
 			return nil, errors.Errorf("unsupported type %T", t)
 		}
@@ -179,6 +186,10 @@ func (o *Object) Keys() []Key {
 	return keys
 }
 
+var (
+	reField = regexp.MustCompile(`^[A-Za-z]+[A-Za-z0-9]*$`)
+)
+
 // Node converts the object to a jsonnet node.
 func (o *Object) Node() ast.Node {
 	ao := &astext.Object{
@@ -193,12 +204,21 @@ func (o *Object) Node() ast.Node {
 			Comment: o.generateComment(k.comment),
 		}
 
-		if k.category == ast.ObjectFieldStr {
-			of.Expr1 = NewStringDouble(k.name).Node()
+		if k.category == ast.ObjectLocal {
+			of.Id = newIdentifier(name)
+			of.Kind = k.category
+		} else if stringInSlice(name, jsonnetReservedWords) {
+			of.Expr1 = NewStringDouble(name).Node()
+			of.Kind = ast.ObjectFieldStr
+		} else if reField.MatchString(name) {
+			id := ast.Identifier(name)
+			of.Kind = ast.ObjectFieldID
+			of.Id = &id
 		} else {
-			of.Id = newIdentifier(k.name)
+			of.Expr1 = NewStringDouble(name).Node()
+			of.Kind = ast.ObjectFieldStr
 		}
-		of.Kind = k.category
+
 		of.Hide = k.visibility
 		of.Expr2 = v.Node()
 		of.Method = k.Method()
@@ -938,4 +958,14 @@ func Combine(nodes ...Noder) Noder {
 func newIdentifier(value string) *ast.Identifier {
 	id := ast.Identifier(value)
 	return &id
+}
+
+func stringInSlice(s string, sl []string) bool {
+	for i := range sl {
+		if sl[i] == s {
+			return true
+		}
+	}
+
+	return false
 }

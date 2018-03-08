@@ -74,7 +74,7 @@ func isSkippedProperty(name string, schema spec.Schema) bool {
 		return true
 	}
 
-	if strings.Contains(strings.ToLower(schema.Description), "read-only") {
+	if strings.Contains(strings.ToLower(schema.Description), "read-only") && name != "readOnly" {
 		return true
 	}
 

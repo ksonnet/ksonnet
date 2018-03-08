@@ -152,7 +152,7 @@ func (c *Catalog) Fields() ([]Field, error) {
 			return nil, errors.Wrapf(err, "parse description for %s", name)
 		}
 
-		// If there is a path, this should ot be a hidden object. This
+		// If there is a path, this should not be a hidden object. This
 		// makes this schema a field.
 		if _, ok := c.paths[name]; ok {
 			continue
