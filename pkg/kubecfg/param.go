@@ -24,10 +24,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/ksonnet/ksonnet/component"
 	param "github.com/ksonnet/ksonnet/metadata/params"
 	str "github.com/ksonnet/ksonnet/strings"
-	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 
@@ -247,6 +247,11 @@ type paramDiffRecord struct {
 
 // Run executes the diffing of environment params.
 func (c *ParamDiffCmd) Run(out io.Writer) error {
+	const (
+		componentHeader = "COMPONENT"
+		paramHeader     = "PARAM"
+	)
+
 	manager, err := manager()
 	if err != nil {
 		return err
@@ -276,35 +281,68 @@ func (c *ParamDiffCmd) Run(out io.Writer) error {
 
 	componentNames := collectComponents(params1, params2)
 
-	var rows [][]string
+	headers := str.Row{
+		Content: []string{componentHeader, paramHeader, c.env1, c.env2},
+	}
+
+	var body []str.Row
 	for _, componentName := range componentNames {
 		paramNames := collectParams(params1[componentName], params2[componentName])
 
 		for _, paramName := range paramNames {
 			var v1, v2 string
-			var ok bool
-			var p param.Params
 
-			if p, ok = params1[componentName]; ok {
+			if p, ok := params1[componentName]; ok {
 				v1 = p[paramName]
 			}
 
-			if p, ok = params2[componentName]; ok {
+			if p, ok := params2[componentName]; ok {
 				v2 = p[paramName]
 			}
 
-			row := []string{
-				componentName,
-				paramName,
-				v1,
-				v2,
+			var bgColor *color.Color
+			if v1 == "" {
+				bgColor = color.New(color.BgGreen)
+			} else if v2 == "" {
+				bgColor = color.New(color.BgRed)
+			} else if v1 != v2 {
+				bgColor = color.New(color.BgYellow)
 			}
 
-			rows = append(rows, row)
+			body = append(body, str.Row{
+				Content: []string{
+					componentName,
+					paramName,
+					v1,
+					v2,
+				},
+				Color: bgColor,
+			})
 		}
 	}
 
-	printTable([]string{"COMPONENT", "PARAM", c.env1, c.env2}, rows)
+	formatted, err := str.Table(headers, body)
+	if err != nil {
+		return err
+	}
+
+	for _, row := range formatted {
+		if row.Color != nil {
+			_, err = row.Color.Fprint(out, row.Content)
+			if err != nil {
+				return err
+			}
+			// Must print new line separately otherwise color alignment will be
+			// incorrect.
+			fmt.Println()
+		} else {
+			_, err = fmt.Fprintln(out, row.Content)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -346,25 +384,4 @@ func collectParams(param1, param2 param.Params) []string {
 	sort.Strings(names)
 
 	return names
-}
-
-func printTable(headers []string, data [][]string) {
-	headerLens := make([]int, len(headers))
-	for i := range headers {
-		headerLens[i] = len(headers[i])
-	}
-
-	for i := range headerLens {
-		headers[i] = fmt.Sprintf("%s\n%s", headers[i], strings.Repeat("=", headerLens[i]))
-	}
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader(headers)
-	table.SetCenterSeparator("")
-	table.SetColumnSeparator("")
-	table.SetRowSeparator("")
-	table.SetRowLine(false)
-	table.SetBorder(false)
-	table.AppendBulk(data)
-	table.Render()
 }
