@@ -275,7 +275,7 @@ func setArray(varName string) *nm.Conditional {
 }
 
 func genIsIntersection(a, b nm.Noder) *nm.Binary {
-	intersection := nm.ApplyCall("std.Inter", a, b)
+	intersection := nm.ApplyCall("std.setInter", a, b)
 	checkLen := nm.ApplyCall("std.length", intersection)
 
 	return nm.NewBinary(
