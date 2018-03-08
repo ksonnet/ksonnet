@@ -1,5 +1,22 @@
 # Change Log
 
+## [v0.9.1](https://github.com/ksonnet/ksonnet/tree/v0.9.1) (2017-03-08)
+
+This patch focuses on fixes around usability bugs.
+
+**Closed issues:**
+
+- version 0.9 - ks show <env> not picking up env param overrides [\#346](https://github.com/ksonnet/ksonnet/issues/346)
+- ks delete default fails [\#342](https://github.com/ksonnet/ksonnet/issues/342)
+
+**Merged pull requests:**
+
+- bug: mapContainer extension typo [\#350](https://github.com/ksonnet/ksonnet/pull/350) ([bryanl](https://github.com/bryanl))
+- bug: env used incorrent params for rendering [\#349](https://github.com/ksonnet/ksonnet/pull/349) ([bryanl](https://github.com/bryanl))
+- bug: 0.1.0 apps don't rename envs in config [\#347](https://github.com/ksonnet/ksonnet/pull/347) ([bryanl](https://github.com/bryanl))
+- Fix formatting for param diff [\#344](https://github.com/ksonnet/ksonnet/pull/344) ([jessicayuen](https://github.com/jessicayuen))
+- Parse server version from GitVersion [\#343](https://github.com/ksonnet/ksonnet/pull/343) ([jessicayuen](https://github.com/jessicayuen))
+
 ## [v0.9.0](https://github.com/ksonnet/ksonnet/tree/v0.9.0) (2017-03-05)
 [Iteration Plan](https://github.com/ksonnet/ksonnet/issues/306)
 
