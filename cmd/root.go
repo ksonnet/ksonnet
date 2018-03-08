@@ -322,7 +322,7 @@ func (te *cmdObjExpander) Expand() ([]*unstructured.Unstructured, error) {
 	}
 
 	envPath, vendorPath := manager.LibPaths()
-	libPath, mainPath, _, err := manager.EnvPaths(te.config.env)
+	libPath, mainPath, paramsPath, err := manager.EnvPaths(te.config.env)
 	if err != nil {
 		return nil, err
 	}
@@ -350,11 +350,10 @@ func (te *cmdObjExpander) Expand() ([]*unstructured.Unstructured, error) {
 
 	baseCodes := expander.ExtCodes
 
+	params := importParams(paramsPath)
+
 	slUnstructured := make([]*unstructured.Unstructured, 0)
 	for ns, componentPaths := range namespacedComponentPaths {
-
-		paramsPath := ns.ParamsPath()
-		params := importParams(string(paramsPath))
 
 		baseObj, err := constructBaseObj(componentPaths, te.config.components)
 		if err != nil {
