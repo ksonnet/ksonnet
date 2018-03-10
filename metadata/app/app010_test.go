@@ -194,6 +194,35 @@ func TestApp010_AddEnvironment(t *testing.T) {
 	})
 }
 
+func TestApp010_AddEnvironment_empty_spec_flag(t *testing.T) {
+	withApp010Fs(t, "app010_app.yaml", func(fs afero.Fs) {
+		app, err := NewApp010(fs, "/")
+		require.NoError(t, err)
+
+		envs, err := app.Environments()
+		require.NoError(t, err)
+
+		envLen := len(envs)
+
+		env, err := app.Environment("default")
+		require.NoError(t, err)
+
+		env.Destination.Namespace = "updated"
+
+		err = app.AddEnvironment("default", "", env)
+		require.NoError(t, err)
+
+		envs, err = app.Environments()
+		require.NoError(t, err)
+		require.Len(t, envs, envLen)
+
+		env, err = app.Environment("default")
+		require.NoError(t, err)
+		require.Equal(t, "v1.7.0", env.KubernetesVersion)
+		require.Equal(t, "updated", env.Destination.Namespace)
+	})
+}
+
 func TestApp010_RemoveEnvironment(t *testing.T) {
 	withApp010Fs(t, "app010_app.yaml", func(fs afero.Fs) {
 		app, err := NewApp010(fs, "/")

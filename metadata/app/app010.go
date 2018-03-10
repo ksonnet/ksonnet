@@ -92,12 +92,14 @@ func (a *App010) AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec)
 
 	a.spec.Environments[name] = spec
 
-	ver, err := LibUpdater(a.fs, k8sSpecFlag, app010LibPath(a.root), true)
-	if err != nil {
-		return err
-	}
+	if k8sSpecFlag != "" {
+		ver, err := LibUpdater(a.fs, k8sSpecFlag, app010LibPath(a.root), true)
+		if err != nil {
+			return err
+		}
 
-	a.spec.Environments[name].KubernetesVersion = ver
+		a.spec.Environments[name].KubernetesVersion = ver
+	}
 
 	return a.save()
 }
