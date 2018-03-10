@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package parser reads Jsonnet files and parses them into AST nodes.
 package parser
 
 import (
@@ -71,11 +72,11 @@ func locFromTokenAST(begin *token, end ast.Node) ast.LocationRange {
 // ---------------------------------------------------------------------------
 
 type parser struct {
-	t     tokens
+	t     Tokens
 	currT int
 }
 
-func makeParser(t tokens) *parser {
+func makeParser(t Tokens) *parser {
 	return &parser{
 		t: t,
 	}
@@ -208,6 +209,7 @@ func (p *parser) parseParameters(elementKind string) (*ast.Parameters, bool, err
 	return &params, trailingComma, nil
 }
 
+// TODO(sbarzowski) add location to all individual binds
 func (p *parser) parseBind(binds *ast.LocalBinds) error {
 	varID, err := p.popExpect(tokenIdentifier)
 	if err != nil {
@@ -242,6 +244,7 @@ func (p *parser) parseBind(binds *ast.LocalBinds) error {
 	}
 
 	if fun != nil {
+		fun.NodeBase = ast.NewNodeBaseLoc(locFromTokenAST(varID, body))
 		fun.Body = body
 		*binds = append(*binds, ast.LocalBind{
 			Variable: ast.Identifier(varID.data),
@@ -296,13 +299,14 @@ func (p *parser) parseObjectAssignmentOp() (plusSugar bool, hide ast.ObjectField
 	return
 }
 
+// A LiteralField is a field of an object or object comprehension.
 // +gen set
 type LiteralField string
 
 // Parse object or object comprehension without leading brace
 func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 	var fields ast.ObjectFields
-	literalFields := make(literalFieldSet)
+	literalFields := make(LiteralFieldSet)
 	binds := make(ast.IdentifierSet)
 
 	gotComma := false
@@ -722,11 +726,14 @@ func (p *parser) parseTerminal() (ast.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		_, err = p.popExpect(tokenParenR)
+		tokRight, err := p.popExpect(tokenParenR)
 		if err != nil {
 			return nil, err
 		}
-		return inner, nil
+		return &ast.Parens{
+			NodeBase: ast.NewNodeBaseLoc(locFromTokens(tok, tokRight)),
+			Inner:    inner,
+		}, nil
 
 	// Literals
 	case tokenNumber:
@@ -1168,7 +1175,8 @@ func (p *parser) parse(prec precedence) (ast.Node, error) {
 
 // ---------------------------------------------------------------------------
 
-func Parse(t tokens) (ast.Node, error) {
+// Parse parses a slice of tokens into a parse tree.
+func Parse(t Tokens) (ast.Node, error) {
 	p := makeParser(t)
 	expr, err := p.parse(maxPrecedence)
 	if err != nil {

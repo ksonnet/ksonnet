@@ -16,13 +16,13 @@
 package jsonnet
 
 import (
-	"errors"
 	"fmt"
-	"sort"
+	"regexp"
 	"strings"
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/parser"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -204,6 +204,8 @@ func visit(node ast.Node, imports *[]ast.Import) error {
 				return err
 			}
 		}
+	case *ast.Parens:
+		return visit(n.Inner, imports)
 	case *ast.ObjectComp:
 		for _, field := range n.Fields {
 			err := visitObjectField(field, imports)
@@ -235,7 +237,7 @@ func visit(node ast.Node, imports *[]ast.Import) error {
 	case nil:
 		return nil
 	default:
-		return errors.New("Unsupported ast.Node type found")
+		return errors.Errorf("Unsupported ast.Node type found: %T", n)
 	}
 
 	return nil
@@ -304,54 +306,17 @@ func visitLocalBind(node ast.LocalBind, imports *[]ast.Import) error {
 	return visit(node.Body, imports)
 }
 
-// ---------------------------------------------------------------------------
+var (
+	reParam = regexp.MustCompile(`(?s)import\s+(\/\/.*?)?'param:\/\/(\w+)'`)
+	reEnv   = regexp.MustCompile(`(?s)import\s+(\/\/.*?)?'env:\/\/(\w+)'`)
+)
 
 // replace converts all parameters in the passed Jsonnet of form
 //
 //   1. `import 'param://port'` into `params.port`.
 //   2. `import 'env://namespace'` into `env.namespace`.
 func replace(jsonnet string, imports []ast.Import) (string, error) {
-	lines := strings.Split(jsonnet, "\n")
-
-	// Imports must be sorted by reverse location to avoid indexing problems
-	// during string replacement.
-	sort.Slice(imports, func(i, j int) bool {
-		if imports[i].Loc().End.Line == imports[j].Loc().End.Line {
-			return imports[i].Loc().End.Column > imports[j].Loc().End.Column
-		}
-		return imports[i].Loc().End.Line > imports[j].Loc().End.Line
-	})
-
-	for _, im := range imports {
-		var replacement string
-		if strings.HasPrefix(im.File.Value, paramPrefix) {
-			replacement = paramReplacementPrefix + strings.TrimPrefix(im.File.Value, paramPrefix)
-		} else if strings.HasPrefix(im.File.Value, envPrefix) {
-			replacement = envReplacementPrefix + strings.TrimPrefix(im.File.Value, envPrefix)
-		} else {
-			return "", fmt.Errorf("Found unsupported import prefix in %s", im.File.Value)
-		}
-
-		lineStart := im.Loc().Begin.Line
-		lineEnd := im.Loc().End.Line
-		colStart := im.Loc().Begin.Column
-		colEnd := im.Loc().End.Column
-
-		// Case where import is split over multiple strings.
-		if lineEnd != lineStart {
-			// Replace all intermediate lines with the empty string.
-			for i := lineStart; i < lineEnd-1; i++ {
-				lines[i] = ""
-			}
-			// Remove import related logic from the last line.
-			lines[lineEnd-1] = lines[lineEnd-1][colEnd:len(lines[lineEnd-1])]
-			// Perform replacement in the first line of import occurance.
-			lines[lineStart-1] = lines[lineStart-1][:colStart-1] + replacement
-		} else {
-			line := lines[lineStart-1]
-			lines[lineStart-1] = line[:colStart-1] + replacement + line[colEnd:len(line)]
-		}
-	}
-
-	return strings.Join(lines, "\n"), nil
+	out := reParam.ReplaceAllString(jsonnet, "params.$2")
+	out = reEnv.ReplaceAllString(out, "env.$2")
+	return out, nil
 }

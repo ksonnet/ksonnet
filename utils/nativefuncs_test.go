@@ -25,7 +25,7 @@ import (
 func check(t *testing.T, err error, actual, expected string) {
 	if err != nil {
 		t.Errorf("Expected %q, got error: %q", expected, err.Error())
-	} else if actual != expected {
+	} else if actual != expected+"\n" {
 		t.Errorf("Expected %q, got %q", expected, actual)
 	}
 }
