@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package jsonnet
 
 import (
@@ -72,6 +73,8 @@ func (v *valueBase) aValue() {}
 // Primitive values
 // -------------------------------------
 
+// valueString represents a string value, internally using a []rune for quick
+// indexing.
 type valueString struct {
 	valueBase
 	// We use rune slices instead of strings for quick indexing
@@ -199,6 +202,13 @@ type valueArray struct {
 	elements []potentialValue
 }
 
+func (arr *valueArray) index(e *evaluator, index int, tc tailCallStatus) (value, error) {
+	if 0 <= index && index < arr.length() {
+		return e.evaluateTailCall(arr.elements[index], tc)
+	}
+	return nil, e.Error(fmt.Sprintf("Index %d out of bounds, not within [0, %v)", index, arr.length()))
+}
+
 func (arr *valueArray) length() int {
 	return len(arr.elements)
 }
@@ -269,7 +279,7 @@ func checkArguments(e *evaluator, args callArguments, params Parameters) error {
 	numExpected := len(params.required) + len(params.optional)
 
 	if numPassed > numExpected {
-		return e.Error(fmt.Sprintf("Function expected %v positional argument(s), but got %v", numExpected, numPassed))
+		return e.Error(fmt.Sprintf("function expected %v positional argument(s), but got %v", numExpected, numPassed))
 	}
 
 	for _, param := range params.required {
@@ -293,7 +303,7 @@ func checkArguments(e *evaluator, args callArguments, params Parameters) error {
 			return e.Error(fmt.Sprintf("Argument %v already provided", arg.name))
 		}
 		if _, present := accepted[arg.name]; !present {
-			return e.Error(fmt.Sprintf("Function has no parameter %v", arg.name))
+			return e.Error(fmt.Sprintf("function has no parameter %v", arg.name))
 		}
 		received[arg.name] = true
 	}
@@ -311,6 +321,8 @@ func (f *valueFunction) getType() *valueType {
 	return functionType
 }
 
+// Parameters represents required position and optional named parameters for a
+// function definition.
 type Parameters struct {
 	required ast.Identifiers
 	optional []namedParameter
@@ -391,8 +403,10 @@ func (sb selfBinding) super() selfBinding {
 	return selfBinding{self: sb.self, superDepth: sb.superDepth + 1}
 }
 
+// Hidden represents wether to include hidden fields in a lookup.
 type Hidden int
 
+// With/without hidden fields
 const (
 	withHidden Hidden = iota
 	withoutHidden
@@ -401,14 +415,13 @@ const (
 func withHiddenFromBool(with bool) Hidden {
 	if with {
 		return withHidden
-	} else {
-		return withoutHidden
 	}
+	return withoutHidden
 }
 
 // Hack - we need to distinguish not-checked-yet and no error situations
 // so we have a special value for no error and nil means that we don't know yet.
-var errNoErrorInObjectInvariants = errors.New("No error - assertions passed")
+var errNoErrorInObjectInvariants = errors.New("no error - assertions passed")
 
 type valueObjectBase struct {
 	valueBase
