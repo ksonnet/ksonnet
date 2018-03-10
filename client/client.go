@@ -36,6 +36,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+const (
+	defaultVersion = "version:v1.7.0"
+)
+
 // Config is a wrapper around client-go's ClientConfig
 type Config struct {
 	Overrides    *clientcmd.ConfigOverrides
@@ -72,10 +76,6 @@ func InitClient(env string) (dynamic.ClientPool, discovery.DiscoveryInterface, s
 // If no swagger is found, or we are unable to authenticate to the server, we
 // will default to version:v1.7.0.
 func (c *Config) GetAPISpec(server string) string {
-	const (
-		defaultVersion = "version:v1.7.0"
-	)
-
 	type Info struct {
 		Version string `json:"version"`
 	}
@@ -111,8 +111,8 @@ func (c *Config) GetAPISpec(server string) string {
 	}
 
 	spec := Spec{}
-	jsonErr := json.Unmarshal(body, &spec)
-	if jsonErr != nil {
+	err = json.Unmarshal(body, &spec)
+	if err != nil {
 		log.Debugf("Failed to parse swagger at %s\n%s", url, err.Error())
 		return defaultVersion
 	}
