@@ -142,6 +142,7 @@ func runPlugin(p plugin.Plugin, args []string) error {
 	env := []string{
 		fmt.Sprintf("KS_PLUGIN_DIR=%s", p.RootDir),
 		fmt.Sprintf("KS_PLUGIN_NAME=%s", p.Config.Name),
+		fmt.Sprintf("HOME=%s", os.Getenv("HOME")),
 	}
 
 	root, err := appRoot()
