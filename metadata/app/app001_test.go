@@ -1,7 +1,6 @@
 package app
 
 import (
-	"bytes"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -47,20 +46,17 @@ func TestApp001_RenameEnvironment(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		withApp001Fs(t, "app001_app.yaml", func(fs afero.Fs) {
-			t.Run(tc.name, func(t *testing.T) {
-				app, err := NewApp001(fs, "/")
-				require.NoError(t, err)
-
-				err = app.RenameEnvironment(tc.from, tc.to)
+		t.Run(tc.name, func(t *testing.T) {
+			withApp001Fs(t, "app001_app.yaml", func(app *App001) {
+				err := app.RenameEnvironment(tc.from, tc.to)
 				require.NoError(t, err)
 
 				for _, p := range tc.shouldExist {
-					checkExist(t, fs, p)
+					checkExist(t, app.Fs(), p)
 				}
 
 				for _, p := range tc.shouldNotExist {
-					checkNotExist(t, fs, p)
+					checkNotExist(t, app.Fs(), p)
 				}
 
 				app.load()
@@ -77,10 +73,7 @@ func TestApp001_RenameEnvironment(t *testing.T) {
 }
 
 func TestApp001_Environments(t *testing.T) {
-	withApp001Fs(t, "app001_app.yaml", func(fs afero.Fs) {
-		app, err := NewApp001(fs, "/")
-		require.NoError(t, err)
-
+	withApp001Fs(t, "app001_app.yaml", func(app *App001) {
 		expected := EnvironmentSpecs{
 			"default": &EnvironmentSpec{
 				Destination: &EnvironmentDestinationSpec{
@@ -141,10 +134,7 @@ func TestApp001_Environment(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			withApp001Fs(t, "app001_app.yaml", func(fs afero.Fs) {
-				app, err := NewApp001(fs, "/")
-				require.NoError(t, err)
-
+			withApp001Fs(t, "app001_app.yaml", func(app *App001) {
 				spec, err := app.Environment(tc.envName)
 				if tc.isErr {
 					require.Error(t, err)
@@ -158,10 +148,7 @@ func TestApp001_Environment(t *testing.T) {
 }
 
 func TestApp001_AddEnvironment(t *testing.T) {
-	withApp001Fs(t, "app001_app.yaml", func(fs afero.Fs) {
-		app, err := NewApp001(fs, "/")
-		require.NoError(t, err)
-
+	withApp001Fs(t, "app001_app.yaml", func(app *App001) {
 		newEnv := &EnvironmentSpec{
 			Destination: &EnvironmentDestinationSpec{
 				Namespace: "some-namespace",
@@ -171,7 +158,7 @@ func TestApp001_AddEnvironment(t *testing.T) {
 		}
 
 		k8sSpecFlag := "version:v1.8.7"
-		err = app.AddEnvironment("us-west/qa", k8sSpecFlag, newEnv)
+		err := app.AddEnvironment("us-west/qa", k8sSpecFlag, newEnv)
 		require.NoError(t, err)
 
 		_, err = app.Environment("us-west/qa")
@@ -180,32 +167,24 @@ func TestApp001_AddEnvironment(t *testing.T) {
 }
 
 func TestApp001_Upgrade_dryrun(t *testing.T) {
-	withApp001Fs(t, "app001_app.yaml", func(fs afero.Fs) {
-		app, err := NewApp001(fs, "/")
-		require.NoError(t, err)
+	withApp001Fs(t, "app001_app.yaml", func(app *App001) {
+		app.out = ioutil.Discard
 
-		var buf bytes.Buffer
-		app.out = &buf
-
-		err = app.Upgrade(true)
+		err := app.Upgrade(true)
 		require.NoError(t, err)
 	})
 }
 
 func TestApp001_Upgrade(t *testing.T) {
-	withApp001Fs(t, "app001_app.yaml", func(fs afero.Fs) {
-		app, err := NewApp001(fs, "/")
+	withApp001Fs(t, "app001_app.yaml", func(app *App001) {
+		app.out = ioutil.Discard
+
+		err := app.Upgrade(false)
 		require.NoError(t, err)
 
-		var buf bytes.Buffer
-		app.out = &buf
-
-		err = app.Upgrade(false)
-		require.NoError(t, err)
-
-		root := filepath.Join(app.root, EnvironmentDirName)
+		root := filepath.Join(app.Root(), EnvironmentDirName)
 		var foundSpec bool
-		err = afero.Walk(fs, root, func(path string, fi os.FileInfo, err error) error {
+		err = afero.Walk(app.Fs(), root, func(path string, fi os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
@@ -225,7 +204,39 @@ func TestApp001_Upgrade(t *testing.T) {
 	})
 }
 
-func withApp001Fs(t *testing.T, appName string, fn func(fs afero.Fs)) {
+func TestApp001_LibPath(t *testing.T) {
+	withApp001Fs(t, "app001_app.yaml", func(app *App001) {
+		path, err := app.LibPath("default")
+		require.NoError(t, err)
+
+		expected := filepath.Join("/", "environments", "default", ".metadata")
+		require.Equal(t, expected, path)
+	})
+}
+
+func TestApp001_RemoveEnvironment(t *testing.T) {
+	withApp001Fs(t, "app001_app.yaml", func(app *App001) {
+		err := app.RemoveEnvironment("default")
+		require.NoError(t, err)
+		checkNotExist(t, app.Fs(), "/environments/default")
+	})
+}
+
+func TestApp001_Init(t *testing.T) {
+	withApp001Fs(t, "app001_app.yaml", func(app *App001) {
+		err := app.Init()
+		require.NoError(t, err)
+	})
+}
+
+func TestApp001_UpdateTargets(t *testing.T) {
+	withApp001Fs(t, "app001_app.yaml", func(app *App001) {
+		err := app.UpdateTargets("", nil)
+		require.Error(t, err)
+	})
+}
+
+func withApp001Fs(t *testing.T, appName string, fn func(app *App001)) {
 	ogLibUpdater := LibUpdater
 	LibUpdater = func(fs afero.Fs, k8sSpecFlag string, libPath string, useVersionPath bool) (string, error) {
 		path := filepath.Join(libPath, "swagger.json")
@@ -253,7 +264,7 @@ func withApp001Fs(t *testing.T, appName string, fn func(fs afero.Fs)) {
 
 	for _, dir := range envDirs {
 		path := filepath.Join("/environments", dir)
-		err := fs.MkdirAll(path, DefaultFolderPermissions)
+		err = fs.MkdirAll(path, DefaultFolderPermissions)
 		require.NoError(t, err)
 
 		specPath := filepath.Join(path, "spec.json")
@@ -265,5 +276,7 @@ func withApp001Fs(t *testing.T, appName string, fn func(fs afero.Fs)) {
 
 	stageFile(t, fs, appName, "/app.yaml")
 
-	fn(fs)
+	app, err := NewApp001(fs, "/")
+	require.NoError(t, err)
+	fn(app)
 }

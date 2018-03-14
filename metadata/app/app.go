@@ -37,13 +37,36 @@ type App interface {
 	AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec) error
 	Environment(name string) (*EnvironmentSpec, error)
 	Environments() (EnvironmentSpecs, error)
-	Libraries() LibraryRefSpecs
-	LibPath(envName string) (string, error)
+	Fs() afero.Fs
 	Init() error
+	LibPath(envName string) (string, error)
+	Libraries() LibraryRefSpecs
 	Registries() RegistryRefSpecs
-	RenameEnvironment(from, to string) error
 	RemoveEnvironment(name string) error
+	RenameEnvironment(from, to string) error
+	Root() string
+	UpdateTargets(envName string, targets []string) error
 	Upgrade(dryRun bool) error
+}
+
+type baseApp struct {
+	root string
+	fs   afero.Fs
+}
+
+func (ba *baseApp) Fs() afero.Fs {
+	return ba.fs
+}
+
+func (ba *baseApp) Root() string {
+	return ba.root
+}
+
+func newBaseApp(fs afero.Fs, root string) *baseApp {
+	return &baseApp{
+		fs:   fs,
+		root: root,
+	}
 }
 
 // Load loads the application configuration.

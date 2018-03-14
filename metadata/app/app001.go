@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ksonnet/ksonnet/metadata/lib"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -22,9 +21,8 @@ const (
 // App001 is a ksonnet 0.0.1 application.
 type App001 struct {
 	spec *Spec
-	root string
-	fs   afero.Fs
 	out  io.Writer
+	*baseApp
 }
 
 var _ App = (*App001)(nil)
@@ -36,21 +34,13 @@ func NewApp001(fs afero.Fs, root string) (*App001, error) {
 		return nil, err
 	}
 
+	ba := newBaseApp(fs, root)
+
 	return &App001{
-		spec: spec,
-		fs:   fs,
-		root: root,
-		out:  os.Stdout,
+		spec:    spec,
+		out:     os.Stdout,
+		baseApp: ba,
 	}, nil
-}
-
-// Init initializes the App.
-func (a *App001) Init() error {
-	msg := "Your application's apiVersion is below 0.1.0. In order to use all ks features, you " +
-		"can upgrade your application using `ks upgrade`."
-	log.Warn(msg)
-
-	return nil
 }
 
 // AddEnvironment adds an environment spec to the app spec. If the spec already exists,
@@ -74,21 +64,6 @@ func (a *App001) AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec)
 
 	_, err = LibUpdater(a.fs, k8sSpecFlag, a.appLibPath(name), false)
 	return err
-}
-
-// RenameEnvironment renames environments.
-func (a *App001) RenameEnvironment(from, to string) error {
-	return moveEnvironment(a.fs, a.root, from, to)
-}
-
-// Registries returns application registries.
-func (a *App001) Registries() RegistryRefSpecs {
-	return a.spec.Registries
-}
-
-// Libraries returns application libraries.
-func (a *App001) Libraries() LibraryRefSpecs {
-	return a.spec.Libraries
 }
 
 // Environment returns the spec for an environment. In 0.1.0, the file lives in
@@ -128,6 +103,85 @@ func (a *App001) Environments() (EnvironmentSpecs, error) {
 	}
 
 	return specs, nil
+}
+
+// Init initializes the App.
+func (a *App001) Init() error {
+	msg := "Your application's apiVersion is below 0.1.0. In order to use all ks features, you " +
+		"can upgrade your application using `ks upgrade`."
+	log.Warn(msg)
+
+	return nil
+}
+
+// LibPath returns the lib path for an env environment.
+func (a *App001) LibPath(envName string) (string, error) {
+	return filepath.Join(a.envDir(envName), ".metadata"), nil
+}
+
+// Libraries returns application libraries.
+func (a *App001) Libraries() LibraryRefSpecs {
+	return a.spec.Libraries
+}
+
+// Registries returns application registries.
+func (a *App001) Registries() RegistryRefSpecs {
+	return a.spec.Registries
+}
+
+// RemoveEnvironment removes an environment.
+func (a *App001) RemoveEnvironment(envName string) error {
+	a.Fs().RemoveAll(a.envDir(envName))
+	return nil
+}
+
+// RenameEnvironment renames environments.
+func (a *App001) RenameEnvironment(from, to string) error {
+	return moveEnvironment(a.fs, a.root, from, to)
+}
+
+// UpdateTargets returns an error since 0.0.1 based applications don't have support
+// for targets.
+func (a *App001) UpdateTargets(envName string, targets []string) error {
+	return errors.New("ks apps with version 0.0.1 do not have support for targets")
+}
+
+// Upgrade upgrades the app to the latest apiVersion.
+func (a *App001) Upgrade(dryRun bool) error {
+	if err := a.load(); err != nil {
+		return err
+	}
+
+	if dryRun {
+		fmt.Fprintf(a.out, "\n[dry run] Upgrading application settings from version 0.0.1 to to 0.1.0.\n")
+	}
+
+	envs, err := a.Environments()
+	if err != nil {
+		return err
+	}
+
+	if dryRun {
+		fmt.Fprintf(a.out, "[dry run] Converting 0.0.1 environments to 0.1.0a:\n")
+	}
+	for _, env := range envs {
+		a.convertEnvironment(env.Path, dryRun)
+	}
+
+	a.spec.APIVersion = "0.1.0"
+
+	if dryRun {
+		data, err := a.spec.Marshal()
+		if err != nil {
+			return err
+		}
+
+		fmt.Fprintf(a.out, "\n[dry run] Upgraded app.yaml:\n%s\n", string(data))
+		fmt.Fprintf(a.out, "[dry run] You can preform the migration by running `ks upgrade`.\n")
+		return nil
+	}
+
+	return a.save()
 }
 
 type k8sSchema struct {
@@ -177,49 +231,6 @@ func read001EnvSpec(fs afero.Fs, name, path string) (*EnvironmentSpec, error) {
 	return &spec, nil
 }
 
-// RemoveEnvironment removes an environment.
-func (a *App001) RemoveEnvironment(envName string) error {
-	return nil
-}
-
-// Upgrade upgrades the app to the latest apiVersion.
-func (a *App001) Upgrade(dryRun bool) error {
-	if err := a.load(); err != nil {
-		return err
-	}
-
-	if dryRun {
-		fmt.Fprintf(a.out, "\n[dry run] Upgrading application settings from version 0.0.1 to to 0.1.0.\n")
-	}
-
-	envs, err := a.Environments()
-	if err != nil {
-		return err
-	}
-
-	if dryRun {
-		fmt.Fprintf(a.out, "[dry run] Converting 0.0.1 environments to 0.1.0a:\n")
-	}
-	for _, env := range envs {
-		a.convertEnvironment(env.Path, dryRun)
-	}
-
-	a.spec.APIVersion = "0.1.0"
-
-	if dryRun {
-		data, err := a.spec.Marshal()
-		if err != nil {
-			return err
-		}
-
-		fmt.Fprintf(a.out, "\n[dry run] Upgraded app.yaml:\n%s\n", string(data))
-		fmt.Fprintf(a.out, "[dry run] You can preform the migration by running `ks upgrade`.\n")
-		return nil
-	}
-
-	return a.save()
-}
-
 func (a *App001) convertEnvironment(envName string, dryRun bool) error {
 	path := filepath.Join(a.root, EnvironmentDirName, envName, "spec.json")
 	env, err := read001EnvSpec(a.fs, envName, path)
@@ -262,18 +273,8 @@ func (a *App001) load() error {
 	return nil
 }
 
-// LibPath returns the lib path for an env environment.
-func (a *App001) LibPath(envName string) (string, error) {
-	env, err := a.Environment(envName)
-	if err != nil {
-		return "", err
-	}
-
-	ver := fmt.Sprintf("version:%s", env.KubernetesVersion)
-	lm, err := lib.NewManager(ver, a.fs, a.appLibPath(envName))
-	if err != nil {
-		return "", err
-	}
-
-	return lm.GetLibPath(false)
+func (a *App001) envDir(envName string) string {
+	envParts := strings.Split(envName, "/")
+	envRoot := filepath.Join(a.Root(), EnvironmentDirName)
+	return filepath.Join(append([]string{envRoot}, envParts...)...)
 }
