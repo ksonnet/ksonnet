@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/ksonnet/ksonnet/metadata"
@@ -247,13 +248,14 @@ var pkgListCmd = &cobra.Command{
 			return err
 		}
 
-		rows := [][]string{
+		headerRows := [][]string{
 			[]string{registryHeader, nameHeader, installedHeader},
 			[]string{
 				strings.Repeat("=", len(registryHeader)),
 				strings.Repeat("=", len(nameHeader)),
 				strings.Repeat("=", len(installedHeader))},
 		}
+		rows := make([][]string, 0)
 		for name := range app.Registries() {
 			reg, _, err := manager.GetRegistry(name)
 			if err != nil {
@@ -269,6 +271,15 @@ var pkgListCmd = &cobra.Command{
 				}
 			}
 		}
+
+		sort.Slice(rows, func(i, j int) bool {
+			nameI := strings.Join([]string{rows[i][0], rows[i][1]}, "-")
+			nameJ := strings.Join([]string{rows[j][0], rows[j][1]}, "-")
+
+			return nameI < nameJ
+		})
+
+		rows = append(headerRows, rows...)
 
 		formatted, err := str.PadRows(rows)
 		if err != nil {

@@ -1,0 +1,65 @@
+package e2e
+
+import "path/filepath"
+
+type app struct {
+	dir string
+	e2e *e2e
+}
+
+func (a *app) runKs(args ...string) *output {
+	return a.e2e.ksInApp(a.dir, args...)
+}
+
+func (a *app) componentList() *output {
+	o := a.runKs("component", "list")
+	assertExitStatus(o, 0)
+
+	return o
+}
+
+func (a *app) envAdd(nsName string) *output {
+	o := a.runKs("env", "add", nsName,
+		"--server", "http://example.com",
+		"--namespace", nsName)
+	assertExitStatus(o, 0)
+
+	return o
+}
+
+func (a *app) envList() *output {
+	o := a.runKs("env", "list")
+	assertExitStatus(o, 0)
+
+	return o
+}
+
+func (a *app) paramList(args ...string) *output {
+	o := a.runKs(append([]string{"param", "list"}, args...)...)
+	assertExitStatus(o, 0)
+
+	return o
+}
+
+func (a *app) paramSet(key, value string, args ...string) *output {
+	o := a.runKs(append([]string{"param", "set", key, value}, args...)...)
+	assertExitStatus(o, 0)
+
+	return o
+}
+
+func (a *app) generateDeployedService() {
+	appDir := a.dir
+
+	o := a.runKs(
+		"generate", "deployed-service", "guestbook-ui",
+		"--image", "gcr.io/heptio-images/ks-guestbook-demo:0.1",
+		"--type", "ClusterIP")
+	assertExitStatus(o, 0)
+
+	component := filepath.Join(appDir, "components", "guestbook-ui.jsonnet")
+	assertContents("generate/guestbook-ui.jsonnet", component)
+
+	params := filepath.Join(appDir, "components", "params.libsonnet")
+	assertContents("generate/params.libsonnet", params)
+}

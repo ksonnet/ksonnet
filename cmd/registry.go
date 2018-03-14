@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/ksonnet/ksonnet/metadata"
@@ -167,8 +168,13 @@ var registryDescribeCmd = &cobra.Command{
 		fmt.Println()
 		fmt.Println(`PACKAGES:`)
 
+		libs := make([]string, 0, len(reg.Libraries))
 		for _, lib := range reg.Libraries {
-			fmt.Printf("  %s\n", lib.Path)
+			libs = append(libs, lib.Path)
+		}
+		sort.Strings(libs)
+		for _, libPath := range libs {
+			fmt.Printf("  %s\n", libPath)
 		}
 
 		return nil
