@@ -24,7 +24,7 @@ import (
 	"testing"
 )
 
-const sentinel = `// Copyright 2018 The kubecfg authors
+const sentinel = `// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -71,7 +71,18 @@ func TestLicenseHeader(t *testing.T) {
 
 		// Also check it is at the top of the file.
 		if !bytes.HasPrefix(src, []byte(prefix)) {
-			t.Errorf("%v: license header not at the top", path)
+			var buf bytes.Buffer
+
+			_, err := buf.WriteString(sentinel)
+			if err != nil {
+				return err
+			}
+			_, err = buf.Write(src)
+			if err != nil {
+				return err
+			}
+
+			return ioutil.WriteFile(path, buf.Bytes(), 0644)
 		}
 
 		return nil

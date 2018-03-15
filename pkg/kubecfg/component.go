@@ -19,6 +19,7 @@ import (
 	"io"
 	"sort"
 
+	"github.com/ksonnet/ksonnet/component"
 	"github.com/ksonnet/ksonnet/pkg/util/table"
 )
 
@@ -71,13 +72,16 @@ func (c *ComponentRmCmd) Run() error {
 	return manager.DeleteComponent(c.component)
 }
 
-func printComponents(out io.Writer, components []string) error {
+func printComponents(out io.Writer, components []component.Component) error {
 	t := table.New(out)
 	t.SetHeader([]string{componentNameHeader})
 
-	sort.Strings(components)
+	sort.SliceStable(components, func(i, j int) bool {
+		return components[i].Name(true) < components[j].Name(true)
+	})
+
 	for _, component := range components {
-		t.Append([]string{component})
+		t.Append([]string{component.Name(false)})
 	}
 
 	return t.Render()

@@ -26,13 +26,12 @@ import (
 
 // SetParamsConfig is config items for setting environment params.
 type SetParamsConfig struct {
-	AppRoot string
-	Fs      afero.Fs
+	App app.App
 }
 
 // SetParams sets params for an environment.
 func SetParams(envName, component string, params param.Params, config SetParamsConfig) error {
-	exists, err := envExists(config.Fs, config.AppRoot, envName)
+	exists, err := envExists(config.App, envName)
 	if err != nil {
 		return err
 	}
@@ -40,9 +39,9 @@ func SetParams(envName, component string, params param.Params, config SetParamsC
 		return errors.Errorf("Environment %q does not exist", envName)
 	}
 
-	path := envPath(config.AppRoot, envName, paramsFileName)
+	path := envPath(config.App, envName, paramsFileName)
 
-	text, err := afero.ReadFile(config.Fs, path)
+	text, err := afero.ReadFile(config.App.Fs(), path)
 	if err != nil {
 		return err
 	}
@@ -52,7 +51,7 @@ func SetParams(envName, component string, params param.Params, config SetParamsC
 		return err
 	}
 
-	err = afero.WriteFile(config.Fs, path, []byte(appended), app.DefaultFilePermissions)
+	err = afero.WriteFile(config.App.Fs(), path, []byte(appended), app.DefaultFilePermissions)
 	if err != nil {
 		return err
 	}
@@ -63,13 +62,12 @@ func SetParams(envName, component string, params param.Params, config SetParamsC
 
 // GetParamsConfig is config items for getting environment params.
 type GetParamsConfig struct {
-	AppRoot string
-	Fs      afero.Fs
+	App app.App
 }
 
 // GetParams gets all parameters for an environment.
 func GetParams(envName, nsName string, config GetParamsConfig) (map[string]param.Params, error) {
-	exists, err := envExists(config.Fs, config.AppRoot, envName)
+	exists, err := envExists(config.App, envName)
 	if err != nil {
 		return nil, err
 	}
@@ -78,8 +76,8 @@ func GetParams(envName, nsName string, config GetParamsConfig) (map[string]param
 	}
 
 	// Get the environment specific params
-	envParamsPath := envPath(config.AppRoot, envName, paramsFileName)
-	envParamsText, err := afero.ReadFile(config.Fs, envParamsPath)
+	envParamsPath := envPath(config.App, envName, paramsFileName)
+	envParamsText, err := afero.ReadFile(config.App.Fs(), envParamsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -89,8 +87,8 @@ func GetParams(envName, nsName string, config GetParamsConfig) (map[string]param
 	}
 
 	// figure out what component we need
-	ns := component.NewNamespace(config.Fs, config.AppRoot, nsName)
-	componentParamsFile, err := afero.ReadFile(config.Fs, ns.ParamsPath())
+	ns := component.NewNamespace(config.App, nsName)
+	componentParamsFile, err := afero.ReadFile(config.App.Fs(), ns.ParamsPath())
 	if err != nil {
 		return nil, err
 	}

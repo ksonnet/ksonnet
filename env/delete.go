@@ -20,15 +20,12 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata/app"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/afero"
 )
 
 // DeleteConfig is a configuration for deleting an environment.
 type DeleteConfig struct {
-	App     app.App
-	AppRoot string
-	Name    string
-	Fs      afero.Fs
+	App  app.App
+	Name string
 }
 
 // Delete deletes an environment.
@@ -51,7 +48,7 @@ func newDeleter(config DeleteConfig) (*deleter, error) {
 }
 
 func (d *deleter) Delete() error {
-	envPath, err := filepath.Abs(filepath.Join(d.AppRoot, envRoot, d.Name))
+	envPath, err := filepath.Abs(filepath.Join(d.App.Root(), envRoot, d.Name))
 	if err != nil {
 		return err
 	}
@@ -59,7 +56,7 @@ func (d *deleter) Delete() error {
 	log.Infof("Deleting environment %q with metadata at path %q", d.Name, envPath)
 
 	// Remove the directory and all files within the environment path.
-	if err = d.Fs.RemoveAll(envPath); err != nil {
+	if err = d.App.Fs().RemoveAll(envPath); err != nil {
 		// if err = d.cleanEmptyParentDirs(); err != nil {
 		log.Debugf("Failed to remove environment directory at path %q", envPath)
 		return err
@@ -69,7 +66,7 @@ func (d *deleter) Delete() error {
 		return err
 	}
 
-	if err = cleanEmptyDirs(d.Fs, d.AppRoot); err != nil {
+	if err = cleanEmptyDirs(d.App); err != nil {
 		return err
 	}
 

@@ -52,6 +52,7 @@ type App interface {
 	AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec) error
 	Environment(name string) (*EnvironmentSpec, error)
 	Environments() (EnvironmentSpecs, error)
+	EnvironmentParams(name string) (string, error)
 	Fs() afero.Fs
 	Init() error
 	LibPath(envName string) (string, error)
@@ -69,6 +70,13 @@ type baseApp struct {
 	fs   afero.Fs
 }
 
+func newBaseApp(fs afero.Fs, root string) *baseApp {
+	return &baseApp{
+		fs:   fs,
+		root: root,
+	}
+}
+
 func (ba *baseApp) Fs() afero.Fs {
 	return ba.fs
 }
@@ -77,11 +85,15 @@ func (ba *baseApp) Root() string {
 	return ba.root
 }
 
-func newBaseApp(fs afero.Fs, root string) *baseApp {
-	return &baseApp{
-		fs:   fs,
-		root: root,
+func (ba *baseApp) EnvironmentParams(envName string) (string, error) {
+	envParamsPath := filepath.Join(ba.Root(), EnvironmentDirName, envName, "params.libsonnet")
+	b, err := afero.ReadFile(ba.Fs(), envParamsPath)
+	if err != nil {
+		return "", err
 	}
+
+	return string(b), nil
+
 }
 
 // Load loads the application configuration.

@@ -25,9 +25,7 @@ import (
 )
 
 func TestList(t *testing.T) {
-	withEnv(t, func(fs afero.Fs) {
-		appMock := &mocks.App{}
-
+	withEnv(t, func(appMock *mocks.App, fs afero.Fs) {
 		specEnvs := app.EnvironmentSpecs{
 			"default": &app.EnvironmentSpec{
 				Path: "default",

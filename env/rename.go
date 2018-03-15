@@ -29,9 +29,7 @@ import (
 
 // RenameConfig are options for renaming an environment.
 type RenameConfig struct {
-	App     app.App
-	AppRoot string
-	Fs      afero.Fs
+	App app.App
 }
 
 // Rename renames an environment
@@ -68,7 +66,7 @@ func (r *renamer) Rename(from, to string) error {
 		return err
 	}
 
-	if err := cleanEmptyDirs(r.Fs, r.AppRoot); err != nil {
+	if err := cleanEmptyDirs(r.App); err != nil {
 		return errors.Wrap(err, "clean empty directories")
 	}
 
@@ -82,7 +80,7 @@ func (r *renamer) preflight(from, to string) error {
 			to)
 	}
 
-	exists, err := envExists(r.Fs, r.AppRoot, to)
+	exists, err := envExists(r.App, to)
 	if err != nil {
 		log.Debugf("Failed to check whether environment %q already exists", to)
 		return err
@@ -94,9 +92,9 @@ func (r *renamer) preflight(from, to string) error {
 	return nil
 }
 
-func envExists(fs afero.Fs, appRoot, name string) (bool, error) {
-	path := envPath(appRoot, name, envFileName)
-	return afero.Exists(fs, path)
+func envExists(ksApp app.App, name string) (bool, error) {
+	path := envPath(ksApp, name, envFileName)
+	return afero.Exists(ksApp.Fs(), path)
 }
 
 func moveDir(fs afero.Fs, src, dest string) error {
@@ -132,14 +130,14 @@ func moveDir(fs afero.Fs, src, dest string) error {
 	return nil
 }
 
-func envPath(root, name string, subPath ...string) string {
-	return filepath.Join(append([]string{root, envRoot, name}, subPath...)...)
+func envPath(ksApp app.App, name string, subPath ...string) string {
+	return filepath.Join(append([]string{ksApp.Root(), envRoot, name}, subPath...)...)
 }
 
-func cleanEmptyDirs(fs afero.Fs, root string) error {
+func cleanEmptyDirs(ksApp app.App) error {
 	log.Debug("Removing empty environment directories, if any")
-	envPath := filepath.Join(root, envRoot)
-	return afero.Walk(fs, envPath, func(path string, fi os.FileInfo, err error) error {
+	envPath := filepath.Join(ksApp.Root(), envRoot)
+	return afero.Walk(ksApp.Fs(), envPath, func(path string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}
@@ -148,13 +146,13 @@ func cleanEmptyDirs(fs afero.Fs, root string) error {
 			return nil
 		}
 
-		isEmpty, err := afero.IsEmpty(fs, path)
+		isEmpty, err := afero.IsEmpty(ksApp.Fs(), path)
 		if err != nil {
 			log.Debugf("Failed to check whether directory at path %q is empty", path)
 			return err
 		}
 		if isEmpty {
-			return fs.RemoveAll(path)
+			return ksApp.Fs().RemoveAll(path)
 		}
 		return nil
 	})

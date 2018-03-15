@@ -1,4 +1,4 @@
-// Copyright 2018 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,6 +50,27 @@ func (_m *App) Environment(name string) (*app.EnvironmentSpec, error) {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*app.EnvironmentSpec)
 		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(name)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// EnvironmentParams provides a mock function with given fields: name
+func (_m *App) EnvironmentParams(name string) (string, error) {
+	ret := _m.Called(name)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string) string); ok {
+		r0 = rf(name)
+	} else {
+		r0 = ret.Get(0).(string)
 	}
 
 	var r1 error

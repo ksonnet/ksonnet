@@ -25,15 +25,11 @@ import (
 )
 
 func TestRename(t *testing.T) {
-	withEnv(t, func(fs afero.Fs) {
-		appMock := &mocks.App{}
-
+	withEnv(t, func(appMock *mocks.App, fs afero.Fs) {
 		appMock.On("RenameEnvironment", "env1", "env1-updated").Return(nil)
 
 		config := RenameConfig{
-			App:     appMock,
-			AppRoot: "/",
-			Fs:      fs,
+			App: appMock,
 		}
 
 		err := Rename("env1", "env1-updated", config)

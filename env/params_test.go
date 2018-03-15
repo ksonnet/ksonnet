@@ -19,16 +19,16 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/ksonnet/ksonnet/metadata/app/mocks"
 	"github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSetParams(t *testing.T) {
-	withEnv(t, func(fs afero.Fs) {
+	withEnv(t, func(appMock *mocks.App, fs afero.Fs) {
 		config := SetParamsConfig{
-			AppRoot: "/",
-			Fs:      fs,
+			App: appMock,
 		}
 
 		p := params.Params{
@@ -43,10 +43,9 @@ func TestSetParams(t *testing.T) {
 }
 
 func TestGetParams(t *testing.T) {
-	withEnv(t, func(fs afero.Fs) {
+	withEnv(t, func(appMock *mocks.App, fs afero.Fs) {
 		config := GetParamsConfig{
-			AppRoot: "/",
-			Fs:      fs,
+			App: appMock,
 		}
 
 		p, err := GetParams("env1", "", config)

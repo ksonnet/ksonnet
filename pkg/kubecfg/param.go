@@ -243,14 +243,19 @@ func (c *ParamDiffCmd) Run(out io.Writer) error {
 		return err
 	}
 
-	ns, componentName := component.ExtractNamespacedComponent(c.fs, c.root, c.component)
-
-	params1, err := manager.GetEnvironmentParams(c.env1, ns.Path)
+	ksApp, err := manager.App()
 	if err != nil {
 		return err
 	}
 
-	params2, err := manager.GetEnvironmentParams(c.env2, ns.Path)
+	ns, componentName := component.ExtractNamespacedComponent(ksApp, c.component)
+
+	params1, err := manager.GetEnvironmentParams(c.env1, ns.Name())
+	if err != nil {
+		return err
+	}
+
+	params2, err := manager.GetEnvironmentParams(c.env2, ns.Name())
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-// Copyright 2017 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,15 +16,53 @@
 package component
 
 import (
-	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
+
+// ParamOptions is options for parameters.
+type ParamOptions struct {
+	Index int
+}
+
+// Summary summarizes items found in components.
+type Summary struct {
+	ComponentName string
+	IndexStr      string
+	Index         int
+	Type          string
+	APIVersion    string
+	Kind          string
+	Name          string
+}
+
+// GVK converts a summary to a group - version - kind.
+func (s *Summary) typeSpec() (*TypeSpec, error) {
+	return NewTypeSpec(s.APIVersion, s.Kind)
+}
+
+// Component is a ksonnet Component interface.
+type Component interface {
+	// Name is the component name.
+	Name(wantsNamedSpaced bool) string
+	// Objects converts the component to a set of objects.
+	Objects(paramsStr, envName string) ([]*unstructured.Unstructured, error)
+	// SetParams sets a component paramaters.
+	SetParam(path []string, value interface{}, options ParamOptions) error
+	// DeleteParam deletes a component parameter.
+	DeleteParam(path []string, options ParamOptions) error
+	// Params returns a list of all parameters for a component. If envName is a
+	// blank string, it will report the local parameters.
+	Params(envName string) ([]NamespaceParameter, error)
+	// Summarize returns a summary of the component.
+	Summarize() ([]Summary, error)
+}
 
 const (
 	// componentsDir is the name of the directory which houses components.
@@ -33,11 +71,22 @@ const (
 	paramsFile = "params.libsonnet"
 )
 
-// Path returns returns the file system path for a component.
-func Path(fs afero.Fs, root, name string) (string, error) {
-	ns, localName := ExtractNamespacedComponent(fs, root, name)
+// LocateComponent locates a component given a nsName and a name.
+func LocateComponent(ksApp app.App, nsName, name string) (Component, error) {
+	path := make([]string, 0)
+	if nsName != "" && nsName != "/" {
+		path = append(path, nsName)
+	}
 
-	fis, err := afero.ReadDir(fs, ns.Dir())
+	path = append(path, name)
+	return ExtractComponent(ksApp, strings.Join(path, "/"))
+}
+
+// Path returns returns the file system path for a component.
+func Path(a app.App, name string) (string, error) {
+	ns, localName := ExtractNamespacedComponent(a, name)
+
+	fis, err := afero.ReadDir(a.Fs(), ns.Dir())
 	if err != nil {
 		return "", err
 	}
@@ -68,127 +117,21 @@ func Path(fs afero.Fs, root, name string) (string, error) {
 	return filepath.Join(ns.Dir(), fileName), nil
 }
 
-// Namespace is a component namespace.
-type Namespace struct {
-	// Path is the path of the component namespace.
-	Path string
-
-	root string
-	fs   afero.Fs
-}
-
-// NewNamespace creates an an instance of Namespace.
-func NewNamespace(fs afero.Fs, root, name string) Namespace {
-	return Namespace{
-		Path: name,
-		root: root,
-		fs:   fs,
-	}
-}
-
-// ExtractNamespacedComponent extracts a namespace and a component from a path.
-func ExtractNamespacedComponent(fs afero.Fs, root, path string) (Namespace, string) {
-	path, component := filepath.Split(path)
-	path = strings.TrimSuffix(path, "/")
-	ns := Namespace{Path: path, root: root, fs: fs}
-	return ns, component
-}
-
-// ParamsPath generates the path to params.libsonnet for a namespace.
-func (n *Namespace) ParamsPath() string {
-	return filepath.Join(n.Dir(), paramsFile)
-}
-
-// ComponentPaths are the absolute paths to all the components in a namespace.
-func (n *Namespace) ComponentPaths() ([]string, error) {
-	dir := n.Dir()
-	fis, err := afero.ReadDir(n.fs, dir)
-	if err != nil {
-		return nil, errors.Wrap(err, "read component dir")
-	}
-
-	var paths []string
-	for _, fi := range fis {
-		if fi.IsDir() {
-			continue
-		}
-
-		if strings.HasSuffix(fi.Name(), ".jsonnet") {
-			paths = append(paths, filepath.Join(dir, fi.Name()))
-		}
-	}
-
-	sort.Strings(paths)
-
-	return paths, nil
-}
-
-// Components returns the components in a namespace.
-func (n *Namespace) Components() ([]string, error) {
-	paths, err := n.ComponentPaths()
+// ExtractComponent extracts a component from a path.
+func ExtractComponent(a app.App, path string) (Component, error) {
+	ns, componentName := ExtractNamespacedComponent(a, path)
+	members, err := ns.Components()
 	if err != nil {
 		return nil, err
 	}
 
-	dir := filepath.Join(n.root, componentsRoot) + "/"
-
-	var names []string
-	for _, path := range paths {
-		name := strings.TrimPrefix(path, dir)
-		name = strings.TrimSuffix(name, filepath.Ext(name))
-		names = append(names, name)
-	}
-
-	return names, nil
-}
-
-// Dir is the absolute directory for a namespace.
-func (n *Namespace) Dir() string {
-	path := []string{n.root, componentsRoot}
-	if n.Path != "" {
-		path = append(path, strings.Split(n.Path, "/")...)
-	}
-
-	return filepath.Join(path...)
-}
-
-// Namespaces returns all component namespaces
-func Namespaces(fs afero.Fs, root string) ([]Namespace, error) {
-	componentRoot := filepath.Join(root, componentsRoot)
-
-	var namespaces []Namespace
-
-	err := afero.Walk(fs, componentRoot, func(path string, fi os.FileInfo, err error) error {
-		if err != nil {
-			return err
+	for _, member := range members {
+		if componentName == member.Name(false) {
+			return member, nil
 		}
-
-		if fi.IsDir() {
-			ok, err := isComponentDir(fs, path)
-			if err != nil {
-				return err
-			}
-
-			if ok {
-				nsPath := strings.TrimPrefix(path, componentRoot)
-				nsPath = strings.TrimPrefix(nsPath, "/")
-				ns := Namespace{Path: nsPath, fs: fs, root: root}
-				namespaces = append(namespaces, ns)
-			}
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return nil, errors.Wrap(err, "walk component path")
 	}
 
-	sort.Slice(namespaces, func(i, j int) bool {
-		return namespaces[i].Path < namespaces[j].Path
-	})
-
-	return namespaces, nil
+	return nil, errors.Errorf("unable to find component %q", componentName)
 }
 
 func isComponentDir(fs afero.Fs, path string) (bool, error) {
@@ -207,8 +150,8 @@ func isComponentDir(fs afero.Fs, path string) (bool, error) {
 }
 
 // MakePathsByNamespace creates a map of component paths categorized by namespace.
-func MakePathsByNamespace(fs afero.Fs, ksApp app.App, root, env string) (map[Namespace][]string, error) {
-	paths, err := MakePaths(fs, ksApp, root, env)
+func MakePathsByNamespace(a app.App, env string) (map[Namespace][]string, error) {
+	paths, err := MakePaths(a, env)
 	if err != nil {
 		return nil, err
 	}
@@ -216,12 +159,12 @@ func MakePathsByNamespace(fs afero.Fs, ksApp app.App, root, env string) (map[Nam
 	m := make(map[Namespace][]string)
 
 	for i := range paths {
-		prefix := root + "/components/"
-		if strings.HasSuffix(root, "/") {
-			prefix = root + "components/"
+		prefix := a.Root() + "/components/"
+		if strings.HasSuffix(a.Root(), "/") {
+			prefix = a.Root() + "components/"
 		}
 		path := strings.TrimPrefix(paths[i], prefix)
-		ns, _ := ExtractNamespacedComponent(fs, root, path)
+		ns, _ := ExtractNamespacedComponent(a, path)
 		if _, ok := m[ns]; !ok {
 			m[ns] = make([]string, 0)
 		}
@@ -233,119 +176,11 @@ func MakePathsByNamespace(fs afero.Fs, ksApp app.App, root, env string) (map[Nam
 }
 
 // MakePaths creates a slice of component paths
-func MakePaths(fs afero.Fs, ksApp app.App, root, env string) ([]string, error) {
-	cpl, err := newComponentPathLocator(fs, ksApp, env)
+func MakePaths(a app.App, env string) ([]string, error) {
+	cpl, err := newComponentPathLocator(a, env)
 	if err != nil {
 		return nil, errors.Wrap(err, "create component path locator")
 	}
 
-	return cpl.Locate(root)
-}
-
-type componentPathLocator struct {
-	fs      afero.Fs
-	envSpec *app.EnvironmentSpec
-}
-
-func newComponentPathLocator(fs afero.Fs, ksApp app.App, env string) (*componentPathLocator, error) {
-	if ksApp == nil {
-		return nil, errors.New("app is nil")
-	}
-
-	if fs == nil {
-		return nil, errors.New("fs is nil")
-	}
-
-	envSpec, err := ksApp.Environment(env)
-	if err != nil {
-		return nil, errors.Errorf("can't find %s environment", env)
-	}
-
-	return &componentPathLocator{
-		fs:      fs,
-		envSpec: envSpec,
-	}, nil
-}
-
-func (cpl *componentPathLocator) Locate(root string) ([]string, error) {
-	if len(cpl.envSpec.Targets) == 0 {
-		return cpl.defaultPaths(root)
-	}
-
-	var paths []string
-
-	for _, target := range cpl.envSpec.Targets {
-		childPaths, err := cpl.expandPath(root, target)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to expand %s", target)
-		}
-		paths = append(paths, childPaths...)
-	}
-
-	sort.Strings(paths)
-
-	return paths, nil
-}
-
-// expandPath take a root and a target and returns all the jsonnet components in descendant paths.
-func (cpl *componentPathLocator) expandPath(root, target string) ([]string, error) {
-	path := filepath.Join(root, componentsRoot, target)
-	fi, err := cpl.fs.Stat(path)
-	if err != nil {
-		return nil, err
-	}
-
-	var paths []string
-
-	walkFn := func(path string, fi os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if !fi.IsDir() && isComponent(path) {
-			paths = append(paths, path)
-		}
-
-		return nil
-	}
-
-	if fi.IsDir() {
-		rootPath := filepath.Join(root, componentsRoot, fi.Name())
-		if err := afero.Walk(cpl.fs, rootPath, walkFn); err != nil {
-			return nil, errors.Wrapf(err, "search for components in %s", fi.Name())
-		}
-	} else if isComponent(fi.Name()) {
-		paths = append(paths, path)
-	}
-
-	return paths, nil
-}
-
-func (cpl *componentPathLocator) defaultPaths(root string) ([]string, error) {
-	var paths []string
-
-	walkFn := func(path string, fi os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if !fi.IsDir() && isComponent(path) {
-			paths = append(paths, path)
-		}
-
-		return nil
-	}
-
-	componentRoot := filepath.Join(root, componentsRoot)
-
-	if err := afero.Walk(cpl.fs, componentRoot, walkFn); err != nil {
-		return nil, errors.Wrap(err, "search for components")
-	}
-
-	return paths, nil
-}
-
-// isComponent reports if a file is a component. Components have a `jsonnet` extension.
-func isComponent(path string) bool {
-	return filepath.Ext(path) == ".jsonnet"
+	return cpl.Locate()
 }

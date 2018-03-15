@@ -24,15 +24,12 @@ import (
 )
 
 func TestDelete(t *testing.T) {
-	withEnv(t, func(fs afero.Fs) {
-		appMock := &mocks.App{}
+	withEnv(t, func(appMock *mocks.App, fs afero.Fs) {
 		appMock.On("RemoveEnvironment", "nested/env3").Return(nil)
 
 		config := DeleteConfig{
-			App:     appMock,
-			Fs:      fs,
-			Name:    "nested/env3",
-			AppRoot: "/",
+			App:  appMock,
+			Name: "nested/env3",
 		}
 
 		err := Delete(config)

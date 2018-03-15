@@ -28,9 +28,10 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/ksonnet/ksonnet/component"
 	"github.com/ksonnet/ksonnet/env"
 	"github.com/ksonnet/ksonnet/metadata"
+	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/pipeline"
 	"github.com/ksonnet/ksonnet/plugin"
 	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/ksonnet/ksonnet/template"
@@ -163,6 +164,15 @@ func runPlugin(p plugin.Plugin, args []string) error {
 
 	cmd := p.BuildRunCmd(env, args)
 	return cmd.Run()
+}
+
+func ksApp() (app.App, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	return app.Load(appFs, cwd)
 }
 
 func logLevel(verbosity int) log.Level {
@@ -308,72 +318,75 @@ func newCmdObjExpander(c cmdObjExpanderConfig) *cmdObjExpander {
 
 // Expands expands the templates.
 func (te *cmdObjExpander) Expand() ([]*unstructured.Unstructured, error) {
-	expander, err := te.templateExpanderFn(te.config.fs, te.config.cmd)
-	if err != nil {
-		return nil, errors.Wrap(err, "template expander")
-	}
-
-	//
-	// Set up the template expander to be able to expand the ksonnet application.
-	//
+	// expander, err := te.templateExpanderFn(te.config.fs, te.config.cmd)
+	// if err != nil {
+	// 	return nil, errors.Wrap(err, "template expander")
+	// }
 
 	manager, err := metadata.Find(te.config.cwd)
 	if err != nil {
 		return nil, errors.Wrap(err, "find metadata")
 	}
 
-	envPath, vendorPath := manager.LibPaths()
-	libPath, mainPath, paramsPath, err := manager.EnvPaths(te.config.env)
+	ksApp, err := manager.App()
 	if err != nil {
 		return nil, err
 	}
 
-	app, err := manager.App()
-	if err != nil {
-		return nil, err
-	}
+	p := pipeline.New(ksApp, te.config.env)
+	return p.Objects(te.config.components)
 
-	expander.FlagJpath = append([]string{string(vendorPath), string(libPath), string(envPath)}, expander.FlagJpath...)
+	// //
+	// // Set up the template expander to be able to expand the ksonnet application.
+	// //
 
-	namespacedComponentPaths, err := component.MakePathsByNamespace(te.config.fs, app, te.config.cwd, te.config.env)
-	if err != nil {
-		return nil, errors.Wrap(err, "component paths")
-	}
+	// envPath, vendorPath := manager.LibPaths()
+	// libPath, mainPath, paramsPath, err := manager.EnvPaths(te.config.env)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	//
-	// Set up ExtCodes to resolve runtime variables such as the environment namespace.
-	//
+	// expander.FlagJpath = append([]string{string(vendorPath), string(libPath), string(envPath)}, expander.FlagJpath...)
 
-	envSpec, err := importEnv(manager, te.config.env)
-	if err != nil {
-		return nil, err
-	}
+	// namespacedComponentPaths, err := component.MakePathsByNamespace(app, te.config.env)
+	// if err != nil {
+	// 	return nil, errors.Wrap(err, "component paths")
+	// }
 
-	baseCodes := expander.ExtCodes
+	// //
+	// // Set up ExtCodes to resolve runtime variables such as the environment namespace.
+	// //
 
-	params := importParams(paramsPath)
+	// envSpec, err := importEnv(manager, te.config.env)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	slUnstructured := make([]*unstructured.Unstructured, 0)
-	for ns, componentPaths := range namespacedComponentPaths {
+	// baseCodes := expander.ExtCodes
 
-		baseObj, err := constructBaseObj(componentPaths, te.config.components)
-		if err != nil {
-			return nil, errors.Wrap(err, "construct base object")
-		}
+	// params := importParams(paramsPath)
 
-		//
-		// Expand the ksonnet app as rendered for environment `env`.
-		//
-		expander.ExtCodes = append([]string{baseObj, params, envSpec}, baseCodes...)
-		u, err := expander.Expand([]string{string(mainPath)})
-		if err != nil {
-			return nil, errors.Wrapf(err, "generate objects for namespace %s", ns.Path)
-		}
+	// slUnstructured := make([]*unstructured.Unstructured, 0)
+	// for ns, componentPaths := range namespacedComponentPaths {
 
-		slUnstructured = append(slUnstructured, u...)
-	}
+	// 	baseObj, err := constructBaseObj(componentPaths, te.config.components)
+	// 	if err != nil {
+	// 		return nil, errors.Wrap(err, "construct base object")
+	// 	}
 
-	return slUnstructured, nil
+	// 	//
+	// 	// Expand the ksonnet app as rendered for environment `env`.
+	// 	//
+	// 	expander.ExtCodes = append([]string{baseObj, params, envSpec}, baseCodes...)
+	// 	u, err := expander.Expand([]string{string(mainPath)})
+	// 	if err != nil {
+	// 		return nil, errors.Wrapf(err, "generate objects for namespace %s", ns.Name())
+	// 	}
+
+	// 	slUnstructured = append(slUnstructured, u...)
+	// }
+
+	// return slUnstructured, nil
 
 }
 

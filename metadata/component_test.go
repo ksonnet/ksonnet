@@ -110,7 +110,7 @@ func TestGetAllComponents(t *testing.T) {
 			t.Fatalf("Expected exactly 1 components, got %d", len(components))
 		}
 
-		if components[0] != expected1 {
+		if components[0].Name(false) != expected1 {
 			t.Fatalf("Expected component %s, got %s", expected1, components)
 		}
 	})
