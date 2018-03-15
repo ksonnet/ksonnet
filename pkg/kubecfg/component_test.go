@@ -16,18 +16,20 @@
 package kubecfg
 
 import (
-	"os"
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestPrintComponents(t *testing.T) {
-	for _, tc := range []struct {
+	cases := []struct {
+		name       string
 		components []string
 		expected   string
 	}{
 		{
+			name:       "print",
 			components: []string{"a", "b"},
 			expected: `COMPONENT
 =========
@@ -35,8 +37,8 @@ a
 b
 `,
 		},
-		// Check that components are displayed in alphabetical order
 		{
+			name:       "Check that components are displayed in alphabetical order",
 			components: []string{"b", "a"},
 			expected: `COMPONENT
 =========
@@ -44,18 +46,21 @@ a
 b
 `,
 		},
-		// Check empty components scenario
 		{
+			name:       "Check empty components scenario",
 			components: []string{},
 			expected: `COMPONENT
 =========
 `,
 		},
-	} {
-		out, err := printComponents(os.Stdout, tc.components)
-		if err != nil {
-			t.Fatalf(err.Error())
-		}
-		require.EqualValues(t, tc.expected, out)
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			err := printComponents(&buf, tc.components)
+			require.NoError(t, err)
+			require.EqualValues(t, tc.expected, buf.String())
+		})
 	}
 }

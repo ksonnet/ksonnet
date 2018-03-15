@@ -23,9 +23,8 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	str "github.com/ksonnet/ksonnet/strings"
+	"github.com/ksonnet/ksonnet/pkg/util/table"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 //
@@ -180,20 +179,17 @@ func (ss SpecificationSchemas) String() string {
 
 	sort.Slice(ss, func(i, j int) bool { return ss[i].Name < ss[j].Name })
 
-	rows := [][]string{
-		[]string{nameHeader, descriptionHeader},
-		[]string{strings.Repeat("=", len(nameHeader)), strings.Repeat("=", len(descriptionHeader))},
-	}
+	var buf bytes.Buffer
+	t := table.New(&buf)
+	t.SetHeader([]string{nameHeader, descriptionHeader})
+
 	for _, proto := range ss {
-		rows = append(rows, []string{proto.Name, proto.Template.ShortDescription})
+		t.Append([]string{proto.Name, proto.Template.ShortDescription})
 	}
 
-	formatted, err := str.PadRows(rows)
-	if err != nil {
-		log.Errorf("Failed to print spec rows:\n%v", err)
-	}
+	t.Render()
 
-	return formatted
+	return buf.String()
 }
 
 // RequiredParams retrieves all parameters that are required by a prototype.

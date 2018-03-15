@@ -23,7 +23,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
-	str "github.com/ksonnet/ksonnet/strings"
+	"github.com/ksonnet/ksonnet/pkg/util/table"
 	"github.com/spf13/cobra"
 )
 
@@ -103,23 +103,15 @@ var registryListCmd = &cobra.Command{
 			return err
 		}
 
-		rows := [][]string{
-			[]string{nameHeader, protocolHeader, uriHeader},
-			[]string{
-				strings.Repeat("=", len(nameHeader)),
-				strings.Repeat("=", len(protocolHeader)),
-				strings.Repeat("=", len(uriHeader)),
-			},
-		}
+		t := table.New(os.Stdout)
+		t.SetHeader([]string{nameHeader, protocolHeader, uriHeader})
+
 		for name, regRef := range app.Registries() {
-			rows = append(rows, []string{name, regRef.Protocol, regRef.URI})
+			t.Append([]string{name, regRef.Protocol, regRef.URI})
 		}
 
-		formatted, err := str.PadRows(rows)
-		if err != nil {
-			return err
-		}
-		fmt.Print(formatted)
+		t.Render()
+
 		return nil
 	},
 	Long: `
