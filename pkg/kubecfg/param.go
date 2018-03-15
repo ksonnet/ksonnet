@@ -22,11 +22,11 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/fatih/color"
 	"github.com/ksonnet/ksonnet/component"
 	param "github.com/ksonnet/ksonnet/metadata/params"
+	"github.com/ksonnet/ksonnet/pkg/util/table"
 	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
@@ -162,56 +162,42 @@ func (c *ParamListCmd) Run(out io.Writer) error {
 		}
 
 		p := params[c.component]
-		return outputParamsFor(c.component, p, out)
+		outputParamsFor(c.component, p, out)
+		return nil
 	}
 
-	return outputParams(params, out)
+	outputParams(params, out)
+	return nil
 }
 
-func outputParamsFor(component string, params param.Params, out io.Writer) error {
+func outputParamsFor(component string, params param.Params, out io.Writer) {
 	keys := sortedParams(params)
 
-	rows := [][]string{
-		[]string{paramNameHeader, paramValueHeader},
-		[]string{strings.Repeat("=", len(paramNameHeader)), strings.Repeat("=", len(paramValueHeader))},
-	}
+	t := table.New(out)
+	t.SetHeader([]string{paramNameHeader, paramValueHeader})
 	for _, k := range keys {
-		rows = append(rows, []string{k, params[k]})
+		t.Append([]string{k, params[k]})
 	}
 
-	formatted, err := str.PadRows(rows)
-	if err != nil {
-		return err
-	}
-	_, err = fmt.Fprint(out, formatted)
-	return err
+	t.Render()
 }
 
-func outputParams(params map[string]param.Params, out io.Writer) error {
+func outputParams(params map[string]param.Params, out io.Writer) {
 	keys := sortedKeys(params)
 
-	rows := [][]string{
-		[]string{paramComponentHeader, paramNameHeader, paramValueHeader},
-		[]string{
-			strings.Repeat("=", len(paramComponentHeader)),
-			strings.Repeat("=", len(paramNameHeader)),
-			strings.Repeat("=", len(paramValueHeader))},
-	}
+	t := table.New(out)
+	t.SetHeader([]string{paramComponentHeader, paramNameHeader, paramValueHeader})
+
 	for _, k := range keys {
 		// sort params to display alphabetically
 		ps := sortedParams(params[k])
 
 		for _, p := range ps {
-			rows = append(rows, []string{k, p, params[k][p]})
+			t.Append([]string{k, p, params[k][p]})
 		}
 	}
 
-	formatted, err := str.PadRows(rows)
-	if err != nil {
-		return err
-	}
-	_, err = fmt.Fprint(out, formatted)
-	return err
+	t.Render()
 }
 
 // ----------------------------------------------------------------------------

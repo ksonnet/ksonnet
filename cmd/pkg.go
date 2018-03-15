@@ -23,7 +23,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/metadata/parts"
-	str "github.com/ksonnet/ksonnet/strings"
+	"github.com/ksonnet/ksonnet/pkg/util/table"
 	"github.com/spf13/cobra"
 )
 
@@ -248,13 +248,9 @@ var pkgListCmd = &cobra.Command{
 			return err
 		}
 
-		headerRows := [][]string{
-			[]string{registryHeader, nameHeader, installedHeader},
-			[]string{
-				strings.Repeat("=", len(registryHeader)),
-				strings.Repeat("=", len(nameHeader)),
-				strings.Repeat("=", len(installedHeader))},
-		}
+		t := table.New(os.Stdout)
+		t.SetHeader([]string{registryHeader, nameHeader, installedHeader})
+
 		rows := make([][]string, 0)
 		for name := range app.Registries() {
 			reg, _, err := manager.GetRegistry(name)
@@ -263,12 +259,15 @@ var pkgListCmd = &cobra.Command{
 			}
 
 			for libName := range reg.Libraries {
+				var row []string
 				_, isInstalled := app.Libraries()[libName]
 				if isInstalled {
-					rows = append(rows, []string{name, libName, installed})
+					row = []string{name, libName, installed}
 				} else {
-					rows = append(rows, []string{name, libName})
+					row = []string{name, libName}
 				}
+
+				rows = append(rows, row)
 			}
 		}
 
@@ -279,13 +278,9 @@ var pkgListCmd = &cobra.Command{
 			return nameI < nameJ
 		})
 
-		rows = append(headerRows, rows...)
+		t.AppendBulk(rows)
+		t.Render()
 
-		formatted, err := str.PadRows(rows)
-		if err != nil {
-			return err
-		}
-		fmt.Print(formatted)
 		return nil
 	},
 	Long: `

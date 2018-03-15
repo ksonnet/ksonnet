@@ -16,12 +16,10 @@
 package kubecfg
 
 import (
-	"fmt"
 	"io"
 	"sort"
-	"strings"
 
-	str "github.com/ksonnet/ksonnet/strings"
+	"github.com/ksonnet/ksonnet/pkg/util/table"
 )
 
 const (
@@ -49,8 +47,7 @@ func (c *ComponentListCmd) Run(out io.Writer) error {
 		return err
 	}
 
-	_, err = printComponents(out, components)
-	return err
+	return printComponents(out, components)
 }
 
 // ComponentRmCmd stores the information necessary to remove a component from
@@ -74,21 +71,14 @@ func (c *ComponentRmCmd) Run() error {
 	return manager.DeleteComponent(c.component)
 }
 
-func printComponents(out io.Writer, components []string) (string, error) {
-	rows := [][]string{
-		[]string{componentNameHeader},
-		[]string{strings.Repeat("=", len(componentNameHeader))},
-	}
+func printComponents(out io.Writer, components []string) error {
+	t := table.New(out)
+	t.SetHeader([]string{componentNameHeader})
 
 	sort.Strings(components)
 	for _, component := range components {
-		rows = append(rows, []string{component})
+		t.Append([]string{component})
 	}
 
-	formatted, err := str.PadRows(rows)
-	if err != nil {
-		return "", err
-	}
-	_, err = fmt.Fprint(out, formatted)
-	return formatted, err
+	return t.Render()
 }
