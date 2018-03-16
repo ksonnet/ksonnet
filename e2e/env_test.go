@@ -41,6 +41,14 @@ var _ = Describe("ks env", func() {
 		})
 	})
 
+	Describe("describe", func() {
+		It("describes an environment", func() {
+			o := a.runKs("env", "describe", "default")
+			assertExitStatus(o, 0)
+			assertOutput("env/describe/output.txt", o.stdout)
+		})
+	})
+
 	Describe("list", func() {
 		It("lists environments", func() {
 			o := a.runKs("env", "list")
@@ -71,6 +79,45 @@ var _ = Describe("ks env", func() {
 
 				o = a.envList()
 				assertOutput("env/set/rename.txt", o.stdout)
+			})
+		})
+	})
+
+	Describe("targets", func() {
+		Context("namespace exists", func() {
+			Context("updating the targets", func() {
+				It("updates the name of an environment", func() {
+					o := a.runKs("env", "targets", "default",
+						"--namespace", "/")
+					assertExitStatus(o, 0)
+
+					o = a.envDescribe("default")
+					assertOutput("env/targets/updated.txt", o.stdout)
+
+					o = a.runKs("env", "targets", "default")
+					assertExitStatus(o, 0)
+
+					o = a.envDescribe("default")
+					assertOutput("env/targets/removed.txt", o.stdout)
+				})
+			})
+
+			Context("target namespace does not exist", func() {
+				It("return an error", func() {
+					o := a.runKs("env", "targets", "default",
+						"--namespace", "bad")
+					assertExitStatus(o, 1)
+					assertOutput("env/targets/invalid-target.txt", o.stderr)
+				})
+			})
+		})
+
+		Context("namespace does not exist", func() {
+			It("returns an error", func() {
+				o := a.runKs("env", "targets", "invalid",
+					"--namespace", "/")
+				assertExitStatus(o, 1)
+				assertOutput("env/targets/invalid-env.txt", o.stderr)
 			})
 		})
 	})

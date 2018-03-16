@@ -35,6 +35,22 @@ var _ = Describe("ks component", func() {
 			assertExitStatus(o, 0)
 			assertOutput("component/list/output.txt", o.stdout)
 		})
+
+		Context("wide format", func() {
+			It("lists the components for a namespace in wide format", func() {
+				o := a.runKs("component", "list", "-o", "wide")
+				assertExitStatus(o, 0)
+				assertOutput("component/list/wide-output.txt", o.stdout)
+			})
+		})
+
+		Context("with a namespace", func() {
+			It("lists the components for a namespace in wide format", func() {
+				o := a.runKs("component", "list", "--namespace", "/")
+				assertExitStatus(o, 0)
+				assertOutput("component/list/output.txt", o.stdout)
+			})
+		})
 	})
 
 	Describe("rm", func() {

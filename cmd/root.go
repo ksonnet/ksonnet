@@ -64,6 +64,7 @@ const (
 
 var (
 	appFs afero.Fs
+	ka    app.App
 )
 
 func init() {
@@ -109,6 +110,25 @@ application configuration to remote clusters.
 			return err
 		}
 		log.SetLevel(logLevel(verbosity))
+
+		wd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
+		appConfig := filepath.Join(wd, "app.yaml")
+		exists, err := afero.Exists(appFs, appConfig)
+		if err != nil {
+			return err
+		}
+
+		if exists {
+			log.Debugf("loading configuration from %s", appConfig)
+			ka, err = app.Load(appFs, wd)
+			if err != nil {
+				return err
+			}
+		}
 
 		return nil
 	},

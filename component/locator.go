@@ -16,6 +16,7 @@
 package component
 
 import (
+	"os"
 	"path/filepath"
 	"sort"
 
@@ -26,7 +27,7 @@ import (
 
 type componentPathLocator struct {
 	app     app.App
-	envSpec *app.EnvironmentSpec
+	envName string
 }
 
 func newComponentPathLocator(a app.App, envName string) (*componentPathLocator, error) {
@@ -34,19 +35,23 @@ func newComponentPathLocator(a app.App, envName string) (*componentPathLocator, 
 		return nil, errors.New("app is nil")
 	}
 
-	env, err := a.Environment(envName)
-	if err != nil {
-		return nil, err
-	}
-
 	return &componentPathLocator{
 		app:     a,
-		envSpec: env,
+		envName: envName,
 	}, nil
 }
 
 func (cpl *componentPathLocator) Locate() ([]string, error) {
-	targets := cpl.envSpec.Targets
+	if cpl.envName == "" {
+		return cpl.allNamespaces()
+	}
+
+	env, err := cpl.app.Environment(cpl.envName)
+	if err != nil {
+		return nil, err
+	}
+
+	targets := env.Targets
 	rootPath := cpl.app.Root()
 
 	if len(targets) == 0 {
@@ -70,6 +75,35 @@ func (cpl *componentPathLocator) Locate() ([]string, error) {
 	}
 
 	sort.Strings(paths)
+
+	return paths, nil
+}
+
+func (cpl *componentPathLocator) allNamespaces() ([]string, error) {
+	var paths []string
+
+	root := filepath.Join(cpl.app.Root(), componentsRoot)
+	err := afero.Walk(cpl.app.Fs(), root, func(path string, fi os.FileInfo, err error) error {
+		if !fi.IsDir() {
+			return nil
+		}
+
+		paramsPath := filepath.Join(path, paramsFile)
+		exists, err := afero.Exists(cpl.app.Fs(), paramsPath)
+		if err != nil {
+			return err
+		}
+
+		if exists {
+			paths = append(paths, path)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	return paths, nil
 }

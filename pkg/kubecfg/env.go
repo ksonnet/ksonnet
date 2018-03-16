@@ -16,12 +16,7 @@
 package kubecfg
 
 import (
-	"io"
-	"sort"
-
-	"github.com/ksonnet/ksonnet/env"
 	"github.com/ksonnet/ksonnet/metadata"
-	"github.com/ksonnet/ksonnet/pkg/util/table"
 )
 
 type EnvAddCmd struct {
@@ -56,55 +51,6 @@ func NewEnvRmCmd(name string, manager metadata.Manager) (*EnvRmCmd, error) {
 func (c *EnvRmCmd) Run() error {
 	return c.manager.DeleteEnvironment(c.name)
 }
-
-// ==================================================================
-
-type EnvListCmd struct {
-	manager metadata.Manager
-}
-
-func NewEnvListCmd(manager metadata.Manager) (*EnvListCmd, error) {
-	return &EnvListCmd{manager: manager}, nil
-}
-
-// Run builds a list of environments.
-func (c *EnvListCmd) Run(out io.Writer) error {
-	const (
-		nameHeader       = "NAME"
-		k8sVersionHeader = "KUBERNETES-VERSION"
-		namespaceHeader  = "NAMESPACE"
-		serverHeader     = "SERVER"
-	)
-
-	envMap, err := c.manager.GetEnvironments()
-	if err != nil {
-		return err
-	}
-
-	var envs []env.Env
-	for _, e := range envMap {
-		envs = append(envs, e)
-	}
-
-	// Sort environments by ascending alphabetical name
-	sort.Slice(envs, func(i, j int) bool { return envs[i].Name < envs[j].Name })
-
-	t := table.New(out)
-	t.SetHeader([]string{nameHeader, k8sVersionHeader, namespaceHeader, serverHeader})
-
-	for _, env := range envs {
-		t.Append([]string{
-			env.Name,
-			env.KubernetesVersion,
-			env.Destination.Namespace(),
-			env.Destination.Server()})
-	}
-
-	t.Render()
-	return nil
-}
-
-// ==================================================================
 
 type EnvSetCmd struct {
 	name        string

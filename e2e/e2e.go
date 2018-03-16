@@ -45,6 +45,13 @@ func (e *e2e) close() {
 	Expect(err).ToNot(HaveOccurred())
 }
 
+func (e *e2e) wd() string {
+	wd, err := os.Getwd()
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+
+	return wd
+}
+
 func (e *e2e) ksBin() string {
 	return filepath.Join(e.root, "ks")
 }

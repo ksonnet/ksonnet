@@ -45,6 +45,7 @@ ks param set guestbook replicas 2 --env=dev
 ```
       --env string   Specify environment to set parameters for
   -h, --help         help for set
+  -i, --index int    Index in manifest
 ```
 
 ### Options inherited from parent commands

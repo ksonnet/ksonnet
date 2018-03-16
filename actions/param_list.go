@@ -16,79 +16,62 @@
 package actions
 
 import (
+	"io"
 	"os"
 
 	"github.com/ksonnet/ksonnet/component"
+	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/pkg/util/table"
 	"github.com/pkg/errors"
-	"github.com/spf13/afero"
 )
 
-// ParamList lists params.
-func ParamList(fs afero.Fs, appRoot, componentName, nsName, envName string) error {
-	pl, err := newParamList(fs, appRoot, componentName, nsName, envName)
+// RunParamList runs `param list`.
+func RunParamList(ksApp app.App, componentName, nsName, envName string) error {
+	pl, err := NewParamList(ksApp, componentName, nsName, envName)
 	if err != nil {
 		return err
 	}
 
-	return pl.run()
+	return pl.Run()
 }
 
-type paramList struct {
+// ParamList lists parameters for a component.
+type ParamList struct {
+	app           app.App
 	nsName        string
 	componentName string
 	envName       string
-
-	*base
+	cm            component.Manager
+	out           io.Writer
 }
 
-func newParamList(fs afero.Fs, appRoot, componentName, nsName, envName string) (*paramList, error) {
-	b, err := new(fs, appRoot)
-	if err != nil {
-		return nil, err
-	}
-
-	pl := &paramList{
+// NewParamList creates an instances of ParamList.
+func NewParamList(ksApp app.App, componentName, nsName, envName string) (*ParamList, error) {
+	pl := &ParamList{
+		app:           ksApp,
 		nsName:        nsName,
 		componentName: componentName,
 		envName:       envName,
-		base:          b,
+		cm:            component.DefaultManager,
+		out:           os.Stdout,
 	}
 
 	return pl, nil
 }
 
-func (pl *paramList) run() error {
-	// if you want env params, call app.EnvParams for the name space.
-	// then you could convert that into the list
-
-	ns, err := component.GetNamespace(pl.app, pl.nsName)
+// Run runs the ParamList action.
+func (pl *ParamList) Run() error {
+	ns, err := pl.cm.Namespace(pl.app, pl.nsName)
 	if err != nil {
 		return errors.Wrap(err, "could not find namespace")
 	}
 
-	var params []component.NamespaceParameter
-	if pl.componentName == "" {
-		cParams, err := ns.Params(pl.envName)
-		if err != nil {
-			return err
-		}
-		params = append(params, cParams...)
-	} else {
-		dm := component.DefaultManager
-		c, err := dm.Component(pl.app, pl.nsName, pl.componentName)
-		if err != nil {
-			return err
-		}
-
-		cParams, err := c.Params(pl.envName)
-		if err != nil {
-			return err
-		}
-		params = append(params, cParams...)
+	params, err := pl.collectParams(ns)
+	if err != nil {
+		return err
 	}
 
-	table := table.New(os.Stdout)
+	table := table.New(pl.out)
 
 	table.SetHeader([]string{"COMPONENT", "INDEX", "PARAM", "VALUE"})
 	for _, data := range params {
@@ -98,4 +81,17 @@ func (pl *paramList) run() error {
 	table.Render()
 
 	return nil
+}
+
+func (pl *ParamList) collectParams(ns component.Namespace) ([]component.NamespaceParameter, error) {
+	if pl.componentName == "" {
+		return ns.Params(pl.envName)
+	}
+
+	c, err := pl.cm.Component(pl.app, pl.nsName, pl.componentName)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.Params(pl.envName)
 }

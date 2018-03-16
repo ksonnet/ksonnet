@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/ksonnet/ksonnet/actions"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
@@ -30,6 +31,11 @@ const (
 	flagParamEnv       = "env"
 	flagParamComponent = "component"
 	flagParamNamespace = "namespace"
+)
+
+var (
+	vParamSetEnv   = "param-set-env"
+	vParamSetIndex = "param-set-index"
 )
 
 var paramShortDesc = map[string]string{
@@ -45,7 +51,11 @@ func init() {
 	paramCmd.AddCommand(paramListCmd)
 	paramCmd.AddCommand(paramDiffCmd)
 
-	paramSetCmd.PersistentFlags().String(flagParamEnv, "", "Specify environment to set parameters for")
+	paramSetCmd.Flags().String(flagEnv, "", "Specify environment to set parameters for")
+	viper.BindPFlag(vParamSetEnv, paramSetCmd.Flags().Lookup(flagEnv))
+	paramSetCmd.Flags().IntP(flagIndex, shortIndex, 0, "Index in manifest")
+	viper.BindPFlag(vParamSetIndex, paramSetCmd.Flags().Lookup(flagIndex))
+
 	paramListCmd.PersistentFlags().String(flagParamEnv, "", "Specify environment to list parameters for")
 	paramListCmd.Flags().String(flagParamNamespace, "", "Specify namespace to list parameters for")
 	paramDiffCmd.PersistentFlags().String(flagParamComponent, "", "Specify the component to diff against")
@@ -95,7 +105,6 @@ var paramSetCmd = &cobra.Command{
 	Use:   "set <component-name> <param-key> <param-value>",
 	Short: paramShortDesc["set"],
 	RunE: func(cmd *cobra.Command, args []string) error {
-		flags := cmd.Flags()
 		if len(args) != 3 {
 			return fmt.Errorf("'param set' takes exactly three arguments, (1) the name of the component, in addition to (2) the key and (3) value of the parameter")
 		}
@@ -104,14 +113,13 @@ var paramSetCmd = &cobra.Command{
 		param := args[1]
 		value := args[2]
 
-		env, err := flags.GetString(flagParamEnv)
-		if err != nil {
-			return err
-		}
+		env := viper.GetString(vParamSetEnv)
+		envOpt := actions.ParamSetEnv(env)
 
-		c := kubecfg.NewParamSetCmd(component, env, param, value)
+		index := viper.GetInt(vParamSetIndex)
+		idxOpt := actions.ParamSetWithIndex(index)
 
-		return c.Run()
+		return actions.RunParamSet(ka, component, param, value, idxOpt, envOpt)
 	},
 	Long: `
 The ` + "`set`" + ` command sets component or environment parameters such as replica count
@@ -165,9 +173,12 @@ var paramListCmd = &cobra.Command{
 			return err
 		}
 
-		wd, _ := os.Getwd()
+		ka, err := ksApp()
+		if err != nil {
+			return err
+		}
 
-		return actions.ParamList(appFs, wd, component, nsName, env)
+		return actions.RunParamList(ka, component, nsName, env)
 	},
 	Long: `
 The ` + "`list`" + ` command displays all known component parameters or environment parameters.
