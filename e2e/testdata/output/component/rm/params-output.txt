@@ -1,2 +1,2 @@
-COMPONENT PARAM VALUE
-========= ===== =====
+COMPONENT INDEX PARAM VALUE
+========= ===== ===== =====

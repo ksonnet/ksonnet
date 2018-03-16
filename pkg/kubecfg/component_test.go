@@ -19,18 +19,36 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/ksonnet/ksonnet/component"
+	"github.com/ksonnet/ksonnet/component/mocks"
 	"github.com/stretchr/testify/require"
 )
 
+func mockComponent(name string) *mocks.Component {
+	c := &mocks.Component{}
+	c.On("Name", true).Return(name)
+	c.On("Name", false).Return(name)
+	return c
+}
+
 func TestPrintComponents(t *testing.T) {
+	componentsA := []component.Component{
+		mockComponent("a"),
+		mockComponent("b"),
+	}
+	componentsB := []component.Component{
+		mockComponent("b"),
+		mockComponent("a"),
+	}
+
 	cases := []struct {
 		name       string
-		components []string
+		components []component.Component
 		expected   string
 	}{
 		{
 			name:       "print",
-			components: []string{"a", "b"},
+			components: componentsA,
 			expected: `COMPONENT
 =========
 a
@@ -39,7 +57,7 @@ b
 		},
 		{
 			name:       "Check that components are displayed in alphabetical order",
-			components: []string{"b", "a"},
+			components: componentsB,
 			expected: `COMPONENT
 =========
 a
@@ -48,7 +66,7 @@ b
 		},
 		{
 			name:       "Check empty components scenario",
-			components: []string{},
+			components: make([]component.Component, 0),
 			expected: `COMPONENT
 =========
 `,

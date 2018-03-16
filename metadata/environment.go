@@ -50,10 +50,8 @@ func (m *manager) CreateEnvironment(name, server, namespace, k8sSpecFlag string)
 	config := env.CreateConfig{
 		App:         a,
 		Destination: env.NewDestination(server, namespace),
-		Fs:          m.appFS,
 		K8sSpecFlag: k8sSpecFlag,
 		Name:        name,
-		RootPath:    m.rootPath,
 
 		OverrideData: m.generateOverrideData(),
 		ParamsData:   m.generateParamsData(),
@@ -70,10 +68,8 @@ func (m *manager) DeleteEnvironment(name string) error {
 	}
 
 	config := env.DeleteConfig{
-		App:     a,
-		AppRoot: m.rootPath,
-		Name:    name,
-		Fs:      m.appFS,
+		App:  a,
+		Name: name,
 	}
 	return env.Delete(config)
 }
@@ -104,27 +100,33 @@ func (m *manager) SetEnvironment(from, to string) error {
 	}
 
 	config := env.RenameConfig{
-		App:     a,
-		AppRoot: m.rootPath,
-		Fs:      m.appFS,
+		App: a,
 	}
 
 	return env.Rename(from, to, config)
 }
 
 func (m *manager) GetEnvironmentParams(name, nsName string) (map[string]param.Params, error) {
+	a, err := m.App()
+	if err != nil {
+		return nil, err
+	}
+
 	config := env.GetParamsConfig{
-		AppRoot: m.rootPath,
-		Fs:      m.appFS,
+		App: a,
 	}
 
 	return env.GetParams(name, nsName, config)
 }
 
 func (m *manager) SetEnvironmentParams(envName, component string, params param.Params) error {
+	a, err := m.App()
+	if err != nil {
+		return err
+	}
+
 	config := env.SetParamsConfig{
-		AppRoot: m.rootPath,
-		Fs:      m.appFS,
+		App: a,
 	}
 
 	return env.SetParams(envName, component, params, config)

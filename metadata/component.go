@@ -18,7 +18,6 @@ package metadata
 import (
 	"os"
 	"path"
-	"path/filepath"
 
 	"github.com/ksonnet/ksonnet/component"
 	param "github.com/ksonnet/ksonnet/metadata/params"
@@ -49,13 +48,17 @@ func (m *manager) ComponentPaths() ([]string, error) {
 	return paths, nil
 }
 
-func (m *manager) GetAllComponents() ([]string, error) {
-	namespaces, err := component.Namespaces(m.appFS, m.rootPath)
+func (m *manager) GetAllComponents() ([]component.Component, error) {
+	ksApp, err := m.App()
+	if err != nil {
+		return nil, err
+	}
+	namespaces, err := component.Namespaces(ksApp)
 	if err != nil {
 		return nil, err
 	}
 
-	var components []string
+	var components []component.Component
 	for _, ns := range namespaces {
 
 		comps, err := ns.Components()
@@ -70,7 +73,12 @@ func (m *manager) GetAllComponents() ([]string, error) {
 }
 
 func (m *manager) CreateComponent(name string, text string, params param.Params, templateType prototype.TemplateType) error {
-	_, err := component.Create(m.appFS, m.rootPath, name, text, params, templateType)
+	ksApp, err := m.App()
+	if err != nil {
+		return err
+	}
+
+	_, err = component.Create(ksApp, name, text, params, templateType)
 	if err != nil {
 		return errors.Wrap(err, "create component")
 	}
@@ -79,15 +87,20 @@ func (m *manager) CreateComponent(name string, text string, params param.Params,
 }
 
 // DeleteComponent removes the component file and all references.
-// Write operations will happen at the end to minimalize failures that leave
+// Write operations will happen at the end to minimal-ize failures that leave
 // the directory structure in a half-finished state.
 func (m *manager) DeleteComponent(name string) error {
-	componentPath, err := component.Path(m.appFS, m.rootPath, name)
+	ksApp, err := m.App()
 	if err != nil {
 		return err
 	}
 
-	ns, _ := component.ExtractNamespacedComponent(m.appFS, m.rootPath, name)
+	componentPath, err := component.Path(ksApp, name)
+	if err != nil {
+		return err
+	}
+
+	ns, _ := component.ExtractNamespacedComponent(ksApp, name)
 
 	// Build the new component/params.libsonnet file.
 	componentParamsFile, err := afero.ReadFile(m.appFS, ns.ParamsPath())
@@ -166,7 +179,12 @@ func (m *manager) GetComponentParams(component string) (param.Params, error) {
 }
 
 func (m *manager) GetAllComponentParams(root string) (map[string]param.Params, error) {
-	namespaces, err := component.Namespaces(m.appFS, root)
+	ksApp, err := m.App()
+	if err != nil {
+		return nil, err
+	}
+
+	namespaces, err := component.Namespaces(ksApp)
 	if err != nil {
 		return nil, errors.Wrap(err, "find component namespaces")
 	}
@@ -174,7 +192,7 @@ func (m *manager) GetAllComponentParams(root string) (map[string]param.Params, e
 	out := make(map[string]param.Params)
 
 	for _, ns := range namespaces {
-		paramsPath := filepath.Join(root, "components", ns.Path, "params.libsonnet")
+		paramsPath := ns.ParamsPath()
 
 		text, err := afero.ReadFile(m.appFS, paramsPath)
 		if err != nil {
@@ -183,12 +201,12 @@ func (m *manager) GetAllComponentParams(root string) (map[string]param.Params, e
 
 		params, err := param.GetAllComponentParams(string(text))
 		if err != nil {
-			return nil, errors.Wrapf(err, "get all component params for %s", ns.Path)
+			return nil, errors.Wrapf(err, "get all component params for %s", ns.Name())
 		}
 
 		for k, v := range params {
-			if ns.Path != "" {
-				k = ns.Path + "/" + k
+			if ns.Name() != "" {
+				k = ns.Name() + "/" + k
 			}
 			out[k] = v
 		}
@@ -198,7 +216,12 @@ func (m *manager) GetAllComponentParams(root string) (map[string]param.Params, e
 }
 
 func (m *manager) SetComponentParams(path string, params param.Params) error {
-	ns, componentName := component.ExtractNamespacedComponent(m.appFS, m.rootPath, path)
+	ksApp, err := m.App()
+	if err != nil {
+		return err
+	}
+
+	ns, componentName := component.ExtractNamespacedComponent(ksApp, path)
 	paramsPath := ns.ParamsPath()
 
 	text, err := afero.ReadFile(m.appFS, paramsPath)

@@ -32,10 +32,8 @@ import (
 type CreateConfig struct {
 	App         app.App
 	Destination Destination
-	Fs          afero.Fs
 	K8sSpecFlag string
 	Name        string
-	RootPath    string
 
 	OverrideData []byte
 	ParamsData   []byte
@@ -73,8 +71,8 @@ func (c *creator) Create() error {
 	log.Infof("Creating environment %q with namespace %q, pointing to cluster at address %q",
 		c.Name, c.Destination.Namespace(), c.Destination.Server())
 
-	envPath := filepath.Join(c.RootPath, app.EnvironmentDirName, c.Name)
-	err := c.Fs.MkdirAll(envPath, app.DefaultFolderPermissions)
+	envPath := filepath.Join(c.App.Root(), app.EnvironmentDirName, c.Name)
+	err := c.App.Fs().MkdirAll(envPath, app.DefaultFolderPermissions)
 	if err != nil {
 		return err
 	}
@@ -98,7 +96,7 @@ func (c *creator) Create() error {
 	for _, a := range metadata {
 		fileName := path.Base(a.path)
 		log.Debugf("Generating '%s', length: %d", fileName, len(a.data))
-		if err = afero.WriteFile(c.Fs, a.path, a.data, app.DefaultFilePermissions); err != nil {
+		if err = afero.WriteFile(c.App.Fs(), a.path, a.data, app.DefaultFilePermissions); err != nil {
 			log.Debugf("Failed to write '%s'", fileName)
 			return err
 		}

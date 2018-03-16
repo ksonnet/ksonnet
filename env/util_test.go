@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/metadata/app/mocks"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
@@ -40,7 +41,7 @@ func stageFile(t *testing.T, fs afero.Fs, src, dest string) {
 	require.NoError(t, err)
 }
 
-func withEnv(t *testing.T, fn func(afero.Fs)) {
+func withEnv(t *testing.T, fn func(*mocks.App, afero.Fs)) {
 	tmpDir, err := ioutil.TempDir("", "")
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
@@ -57,7 +58,7 @@ func withEnv(t *testing.T, fn func(afero.Fs)) {
 
 	for _, dir := range dirs {
 		path := filepath.Join("/", envRoot, dir)
-		err := fs.MkdirAll(path, app.DefaultFolderPermissions)
+		err = fs.MkdirAll(path, app.DefaultFolderPermissions)
 		require.NoError(t, err)
 
 		mainPath := filepath.Join(path, "main.jsonnet")
@@ -70,7 +71,12 @@ func withEnv(t *testing.T, fn func(afero.Fs)) {
 	componentParamsPath := filepath.Join("/", "components", "params.libsonnet")
 	stageFile(t, fs, "component-params.libsonnet", componentParamsPath)
 
-	fn(fs)
+	ksApp := &mocks.App{}
+	ksApp.On("Fs").Return(fs)
+	ksApp.On("Root").Return("/")
+	require.NoError(t, err)
+
+	fn(ksApp, fs)
 }
 
 func checkExists(t *testing.T, fs afero.Fs, path string) {

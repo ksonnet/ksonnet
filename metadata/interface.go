@@ -18,6 +18,7 @@ package metadata
 import (
 	"os"
 
+	"github.com/ksonnet/ksonnet/component"
 	"github.com/ksonnet/ksonnet/env"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
@@ -43,7 +44,7 @@ type Manager interface {
 
 	// Components API.
 	ComponentPaths() ([]string, error)
-	GetAllComponents() ([]string, error)
+	GetAllComponents() ([]component.Component, error)
 	CreateComponent(name string, text string, params param.Params, templateType prototype.TemplateType) error
 	DeleteComponent(name string) error
 

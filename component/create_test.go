@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/ksonnet/ksonnet/metadata/app/mocks"
 	"github.com/ksonnet/ksonnet/prototype"
 
 	"github.com/spf13/afero"
@@ -86,9 +87,13 @@ func Test_Create(t *testing.T) {
 			fs := afero.NewMemMapFs()
 			root := "/"
 
+			ksApp := &mocks.App{}
+			ksApp.On("Fs").Return(fs)
+			ksApp.On("Root").Return(root)
+
 			name := filepath.Join(tc.ns, tc.componentName)
 
-			path, err := Create(fs, root, name, "content", tc.params, tc.templateType)
+			path, err := Create(ksApp, name, "content", tc.params, tc.templateType)
 			if tc.isErr {
 				require.Error(t, err)
 			} else {

@@ -22,6 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/ksonnet/ksonnet/actions"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
 
@@ -164,9 +165,9 @@ var paramListCmd = &cobra.Command{
 			return err
 		}
 
-		c := kubecfg.NewParamListCmd(component, env, nsName)
+		wd, _ := os.Getwd()
 
-		return c.Run(cmd.OutOrStdout())
+		return actions.ParamList(appFs, wd, component, nsName, env)
 	},
 	Long: `
 The ` + "`list`" + ` command displays all known component parameters or environment parameters.

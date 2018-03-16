@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/prototype"
 	"github.com/pkg/errors"
@@ -36,8 +37,8 @@ var (
 )
 
 // Create creates a component.
-func Create(fs afero.Fs, root, name, text string, params param.Params, templateType prototype.TemplateType) (string, error) {
-	cc, err := newComponentCreator(fs, root)
+func Create(ksApp app.App, name, text string, params param.Params, templateType prototype.TemplateType) (string, error) {
+	cc, err := newComponentCreator(ksApp)
 	if err != nil {
 		return "", errors.Wrap(err, "initialize component creator")
 	}
@@ -46,20 +47,11 @@ func Create(fs afero.Fs, root, name, text string, params param.Params, templateT
 }
 
 type componentCreator struct {
-	fs   afero.Fs
-	root string
+	app app.App
 }
 
-func newComponentCreator(fs afero.Fs, root string) (*componentCreator, error) {
-	if fs == nil {
-		return nil, errors.New("fs is nil")
-	}
-
-	if root == "" {
-		return nil, errors.New("invalid ksonnet root")
-	}
-
-	return &componentCreator{fs: fs, root: root}, nil
+func newComponentCreator(ksApp app.App) (*componentCreator, error) {
+	return &componentCreator{app: ksApp}, nil
 }
 
 func (cc *componentCreator) Create(name, text string, params param.Params, templateType prototype.TemplateType) (string, error) {
@@ -76,7 +68,7 @@ func (cc *componentCreator) Create(name, text string, params param.Params, templ
 
 	paramsPath := filepath.Join(componentDir, "params.libsonnet")
 
-	exists, err := afero.Exists(cc.fs, componentDir)
+	exists, err := afero.Exists(cc.app.Fs(), componentDir)
 	if err != nil {
 		return "", errors.Wrapf(err, "check if %s exists", componentDir)
 	}
@@ -87,7 +79,7 @@ func (cc *componentCreator) Create(name, text string, params param.Params, templ
 		}
 	}
 
-	exists, err = afero.Exists(cc.fs, componentPath)
+	exists, err = afero.Exists(cc.app.Fs(), componentPath)
 	if err != nil {
 		return "", errors.Wrapf(err, "check if %s exists", componentPath)
 	}
@@ -97,7 +89,7 @@ func (cc *componentCreator) Create(name, text string, params param.Params, templ
 	}
 
 	log.Infof("Writing component at '%s'", componentPath)
-	if err := afero.WriteFile(cc.fs, componentPath, []byte(text), defaultFilePermissions); err != nil {
+	if err := afero.WriteFile(cc.app.Fs(), componentPath, []byte(text), defaultFilePermissions); err != nil {
 		return "", errors.Wrapf(err, "write component %s")
 	}
 
@@ -112,7 +104,7 @@ func (cc *componentCreator) Create(name, text string, params param.Params, templ
 
 // location returns the dir and full path for the component.
 func (cc *componentCreator) location(nsName, name string, templateType prototype.TemplateType) (string, string, error) {
-	componentDir := filepath.Join(cc.root, componentsRoot, nsName)
+	componentDir := filepath.Join(cc.app.Root(), componentsRoot, nsName)
 	componentPath := filepath.Join(componentDir, name)
 	switch templateType {
 	case prototype.YAML:
@@ -129,11 +121,11 @@ func (cc *componentCreator) location(nsName, name string, templateType prototype
 }
 
 func (cc *componentCreator) createNamespace(componentDir, paramsPath string) error {
-	if err := cc.fs.MkdirAll(componentDir, defaultFolderPermissions); err != nil {
+	if err := cc.app.Fs().MkdirAll(componentDir, defaultFolderPermissions); err != nil {
 		return errors.Wrapf(err, "create component dir %s", componentDir)
 	}
 
-	if err := afero.WriteFile(cc.fs, paramsPath, GenParamsContent(), defaultFilePermissions); err != nil {
+	if err := afero.WriteFile(cc.app.Fs(), paramsPath, GenParamsContent(), defaultFilePermissions); err != nil {
 		return errors.Wrap(err, "create component params")
 	}
 
@@ -141,7 +133,7 @@ func (cc *componentCreator) createNamespace(componentDir, paramsPath string) err
 }
 
 func (cc *componentCreator) writeParams(name, paramsPath string, params param.Params) error {
-	text, err := afero.ReadFile(cc.fs, paramsPath)
+	text, err := afero.ReadFile(cc.app.Fs(), paramsPath)
 	if err != nil {
 		return err
 	}
@@ -151,7 +143,7 @@ func (cc *componentCreator) writeParams(name, paramsPath string, params param.Pa
 		return err
 	}
 
-	return afero.WriteFile(cc.fs, paramsPath, []byte(appended), defaultFilePermissions)
+	return afero.WriteFile(cc.app.Fs(), paramsPath, []byte(appended), defaultFilePermissions)
 }
 
 // isValidName returns true if a name (e.g., for an environment) is valid.

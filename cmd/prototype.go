@@ -419,7 +419,12 @@ var prototypeUseCmd = &cobra.Command{
 			return err
 		}
 
-		_, prototypeName := component.ExtractNamespacedComponent(appFs, cwd, componentName)
+		ksApp, err := manager.App()
+		if err != nil {
+			return err
+		}
+
+		_, prototypeName := component.ExtractNamespacedComponent(ksApp, componentName)
 
 		text, err := expandPrototype(proto, templateType, params, prototypeName)
 		if err != nil {
