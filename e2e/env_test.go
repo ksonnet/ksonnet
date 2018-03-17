@@ -81,6 +81,16 @@ var _ = Describe("ks env", func() {
 				assertOutput("env/set/rename.txt", o.stdout)
 			})
 		})
+
+		Context("updating namespace", func() {
+			It("updates the namespace for an environment", func() {
+				o := a.runKs("env", "set", "default", "--namespace", "dev")
+				assertExitStatus(o, 0)
+
+				o = a.envDescribe("default")
+				assertOutput("env/set/rename-namespace.txt", o.stdout)
+			})
+		})
 	})
 
 	Describe("targets", func() {

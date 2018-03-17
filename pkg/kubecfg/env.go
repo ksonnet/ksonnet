@@ -51,18 +51,3 @@ func NewEnvRmCmd(name string, manager metadata.Manager) (*EnvRmCmd, error) {
 func (c *EnvRmCmd) Run() error {
 	return c.manager.DeleteEnvironment(c.name)
 }
-
-type EnvSetCmd struct {
-	name        string
-	desiredName string
-
-	manager metadata.Manager
-}
-
-func NewEnvSetCmd(name, desiredName string, manager metadata.Manager) (*EnvSetCmd, error) {
-	return &EnvSetCmd{name: name, desiredName: desiredName, manager: manager}, nil
-}
-
-func (c *EnvSetCmd) Run() error {
-	return c.manager.SetEnvironment(c.name, c.desiredName)
-}
