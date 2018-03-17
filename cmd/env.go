@@ -54,14 +54,11 @@ func init() {
 	envCmd.AddCommand(envAddCmd)
 	envCmd.AddCommand(envRmCmd)
 	envCmd.AddCommand(envListCmd)
-	envCmd.AddCommand(envSetCmd)
 
 	// TODO: We need to make this default to checking the `kubeconfig` file.
 	envAddCmd.PersistentFlags().String(flagAPISpec, "version:v1.7.0",
 		"Manually specify API version from OpenAPI schema, cluster, or Kubernetes version")
 
-	envSetCmd.PersistentFlags().String(flagEnvName, "",
-		"Name used to uniquely identify the environment. Must not already exist within the ksonnet app")
 }
 
 var envCmd = &cobra.Command{
@@ -275,57 +272,6 @@ current ksonnet app. Specifically, this will display the (1) *name*,
 
 ### Syntax
 `,
-}
-
-var envSetCmd = &cobra.Command{
-	Use:   "set <env-name>",
-	Short: envShortDesc["set"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		flags := cmd.Flags()
-		if len(args) != 1 {
-			return fmt.Errorf("'env set' takes a single argument, that is the name of the environment")
-		}
-
-		originalName := args[0]
-
-		appDir, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		manager, err := metadata.Find(appDir)
-		if err != nil {
-			return err
-		}
-
-		name, err := flags.GetString(flagEnvName)
-		if err != nil {
-			return err
-		}
-
-		c, err := kubecfg.NewEnvSetCmd(originalName, name, manager)
-		if err != nil {
-			return err
-		}
-
-		return c.Run()
-	},
-	Long: `
-The ` + "`set`" + ` command lets you change the fields of an existing environment.
-You can currently only update your environment's name.
-
-Note that changing the name of an environment will also update the corresponding
-directory structure in ` + "`environments/`" + `.
-
-### Related Commands
-
-* ` + "`ks env list` " + `— ` + envShortDesc["list"] + `
-
-### Syntax
-`,
-	Example: `#Update the name of the environment 'us-west/staging'.
-# Updating the name will update the directory structure in 'environments/'.
-ks env set us-west/staging --name=us-east/staging`,
 }
 
 func commonEnvFlags(flags *pflag.FlagSet) (server, namespace, context string, err error) {
