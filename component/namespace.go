@@ -37,27 +37,41 @@ func nsErrorMsg(format, nsName string) string {
 	return fmt.Sprintf(format, s)
 }
 
-// Namespace is a component namespace.
-type Namespace struct {
+// Namespace is a component namespace
+type Namespace interface {
+	Components() ([]Component, error)
+	// TODO: is this needed?
+	Dir() string
+	Name() string
+	Params(envName string) ([]NamespaceParameter, error)
+	ParamsPath() string
+	ResolvedParams() (string, error)
+	SetParam(path []string, value interface{}) error
+}
+
+// FilesystemNamespace is a component namespace that uses a filesystem for storage.
+type FilesystemNamespace struct {
 	path string
 
 	app app.App
 }
 
+var _ Namespace = (*FilesystemNamespace)(nil)
+
 // NewNamespace creates an instance of Namespace.
-func NewNamespace(ksApp app.App, path string) Namespace {
-	return Namespace{app: ksApp, path: path}
+func NewNamespace(ksApp app.App, path string) *FilesystemNamespace {
+	return &FilesystemNamespace{app: ksApp, path: path}
 }
 
 // ExtractNamespacedComponent extracts a namespace and a component from a path.
 func ExtractNamespacedComponent(a app.App, path string) (Namespace, string) {
 	nsPath, component := filepath.Split(path)
-	ns := Namespace{path: nsPath, app: a}
+	ns := &FilesystemNamespace{path: nsPath, app: a}
 	return ns, component
 }
 
 // Name returns the namespace name.
-func (n *Namespace) Name() string {
+func (n *FilesystemNamespace) Name() string {
 	if n.path == "" {
 		return "/"
 	}
@@ -71,23 +85,23 @@ func GetNamespace(a app.App, nsName string) (Namespace, error) {
 
 	exists, err := afero.Exists(a.Fs(), nsDir)
 	if err != nil {
-		return Namespace{}, err
+		return nil, err
 	}
 
 	if !exists {
-		return Namespace{}, errors.New(nsErrorMsg("unable to find %s", nsName))
+		return nil, errors.New(nsErrorMsg("unable to find %s", nsName))
 	}
 
-	return Namespace{path: nsName, app: a}, nil
+	return &FilesystemNamespace{path: nsName, app: a}, nil
 }
 
 // ParamsPath generates the path to params.libsonnet for a namespace.
-func (n *Namespace) ParamsPath() string {
+func (n *FilesystemNamespace) ParamsPath() string {
 	return filepath.Join(n.Dir(), paramsFile)
 }
 
 // SetParam sets params for a namespace.
-func (n *Namespace) SetParam(path []string, value interface{}) error {
+func (n *FilesystemNamespace) SetParam(path []string, value interface{}) error {
 	paramsData, err := n.readParams()
 	if err != nil {
 		return err
@@ -105,12 +119,12 @@ func (n *Namespace) SetParam(path []string, value interface{}) error {
 	return nil
 }
 
-func (n *Namespace) writeParams(src string) error {
+func (n *FilesystemNamespace) writeParams(src string) error {
 	return afero.WriteFile(n.app.Fs(), n.ParamsPath(), []byte(src), 0644)
 }
 
 // Dir is the absolute directory for a namespace.
-func (n *Namespace) Dir() string {
+func (n *FilesystemNamespace) Dir() string {
 	parts := strings.Split(n.path, "/")
 	path := []string{n.app.Root(), componentsRoot}
 	if len(n.path) != 0 {
@@ -130,7 +144,7 @@ type NamespaceParameter struct {
 
 // ResolvedParams resolves paramaters for a namespace. It returns a JSON encoded
 // string of component parameters.
-func (n *Namespace) ResolvedParams() (string, error) {
+func (n *FilesystemNamespace) ResolvedParams() (string, error) {
 	s, err := n.readParams()
 	if err != nil {
 		return "", err
@@ -140,7 +154,7 @@ func (n *Namespace) ResolvedParams() (string, error) {
 }
 
 // Params returns the params for a namespace.
-func (n *Namespace) Params(envName string) ([]NamespaceParameter, error) {
+func (n *FilesystemNamespace) Params(envName string) ([]NamespaceParameter, error) {
 	components, err := n.Components()
 	if err != nil {
 		return nil, err
@@ -161,7 +175,7 @@ func (n *Namespace) Params(envName string) ([]NamespaceParameter, error) {
 	return nsps, nil
 }
 
-func (n *Namespace) readParams() (string, error) {
+func (n *FilesystemNamespace) readParams() (string, error) {
 	b, err := afero.ReadFile(n.app.Fs(), n.ParamsPath())
 	if err != nil {
 		return "", err
@@ -217,7 +231,7 @@ func Namespaces(a app.App) ([]Namespace, error) {
 			if ok {
 				nsPath := strings.TrimPrefix(path, componentRoot)
 				nsPath = strings.TrimPrefix(nsPath, string(filepath.Separator))
-				ns := Namespace{path: nsPath, app: a}
+				ns := &FilesystemNamespace{path: nsPath, app: a}
 				namespaces = append(namespaces, ns)
 			}
 		}
@@ -237,7 +251,7 @@ func Namespaces(a app.App) ([]Namespace, error) {
 }
 
 // Components returns the components in a namespace.
-func (n *Namespace) Components() ([]Component, error) {
+func (n *FilesystemNamespace) Components() ([]Component, error) {
 	parts := strings.Split(n.path, "/")
 	nsDir := filepath.Join(append([]string{n.app.Root(), componentsRoot}, parts...)...)
 

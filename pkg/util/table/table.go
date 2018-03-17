@@ -91,7 +91,8 @@ func (t *Table) Render() error {
 			parts = append(parts, val)
 
 		}
-		_, err := fmt.Fprintf(t.w, "%s\n", strings.Join(parts, " "))
+
+		_, err := fmt.Fprintf(t.w, "%s\n", strings.TrimSpace(strings.Join(parts, " ")))
 		if err != nil {
 			return errors.Wrap(err, "render table")
 		}

@@ -20,7 +20,9 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
+	"github.com/ksonnet/ksonnet/actions"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
 
@@ -28,10 +30,20 @@ func init() {
 	RootCmd.AddCommand(componentCmd)
 
 	componentCmd.AddCommand(componentListCmd)
+	componentListCmd.Flags().StringP(flagOutput, shortOutput, "", "Output format. Valid options: wide")
+	viper.BindPFlag(vComponentListOutput, componentListCmd.Flags().Lookup(flagOutput))
+	componentListCmd.Flags().String(flagNamespace, "", "Namespace")
+	viper.BindPFlag(vComponentListNamespace, componentListCmd.Flags().Lookup(flagNamespace))
+
 	componentCmd.AddCommand(componentRmCmd)
 
 	componentRmCmd.PersistentFlags().String(flagComponent, "", "The component to be removed from components/")
 }
+
+var (
+	vComponentListNamespace = "component-list-namespace"
+	vComponentListOutput    = "component-list-output"
+)
 
 var componentCmd = &cobra.Command{
 	Use:   "component",
@@ -52,9 +64,15 @@ var componentListCmd = &cobra.Command{
 			return fmt.Errorf("'component list' takes zero arguments")
 		}
 
-		c := kubecfg.NewComponentListCmd()
+		nsName := viper.GetString(vComponentListNamespace)
+		output := viper.GetString(vComponentListOutput)
 
-		return c.Run(cmd.OutOrStdout())
+		ka, err := ksApp()
+		if err != nil {
+			return err
+		}
+
+		return actions.RunComponentList(ka, nsName, output)
 	},
 	Long: `
 The ` + "`list`" + ` command displays all known components.

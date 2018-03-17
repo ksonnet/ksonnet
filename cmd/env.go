@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/ksonnet/ksonnet/actions"
 	"github.com/ksonnet/ksonnet/client"
 	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
@@ -260,22 +261,7 @@ var envListCmd = &cobra.Command{
 			return fmt.Errorf("'env list' takes zero arguments")
 		}
 
-		appDir, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		manager, err := metadata.Find(appDir)
-		if err != nil {
-			return err
-		}
-
-		c, err := kubecfg.NewEnvListCmd(manager)
-		if err != nil {
-			return err
-		}
-
-		return c.Run(cmd.OutOrStdout())
+		return actions.RunEnvList(ka)
 	}, Long: `
 The ` + "`list`" + ` command lists all of the available environments for the
 current ksonnet app. Specifically, this will display the (1) *name*,

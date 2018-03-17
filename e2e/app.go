@@ -42,6 +42,13 @@ func (a *app) envAdd(nsName string) *output {
 	return o
 }
 
+func (a *app) envDescribe(envName string) *output {
+	o := a.runKs("env", "describe", envName)
+	assertExitStatus(o, 0)
+
+	return o
+}
+
 func (a *app) envList() *output {
 	o := a.runKs("env", "list")
 	assertExitStatus(o, 0)

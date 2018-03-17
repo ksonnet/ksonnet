@@ -44,6 +44,16 @@ func assertOutput(name, output string) {
 
 }
 
+func assertOutputContains(name, output string) {
+	path := filepath.Join("testdata", "output", name)
+	ExpectWithOffset(1, path).To(BeAnExistingFile())
+
+	b, err := ioutil.ReadFile(path)
+	ExpectWithOffset(1, err).To(Not(HaveOccurred()))
+
+	ExpectWithOffset(1, output).To(ContainSubstring(string(b)))
+}
+
 func assertExitStatus(o *output, status int) {
 	ExpectWithOffset(1, o.exitCode).To(Equal(status),
 		"expected exit status to be %d but was %d\nstdout:\n%s\nstderr:\n%s\nargs:%s\npath:%s",

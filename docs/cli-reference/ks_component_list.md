@@ -25,7 +25,9 @@ ks component list
 ### Options
 
 ```
-  -h, --help   help for list
+  -h, --help               help for list
+      --namespace string   Namespace
+  -o, --output string      Output format. Valid options: wide
 ```
 
 ### Options inherited from parent commands

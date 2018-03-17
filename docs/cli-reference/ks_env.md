@@ -77,7 +77,9 @@ ks env [flags]
 
 * [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 * [ks env add](ks_env_add.md)	 - Add a new environment to a ksonnet application
+* [ks env describe](ks_env_describe.md)	 - describe
 * [ks env list](ks_env_list.md)	 - List all environments in a ksonnet application
 * [ks env rm](ks_env_rm.md)	 - Delete an environment from a ksonnet application
 * [ks env set](ks_env_set.md)	 - Set environment-specific fields (name, namespace, server)
+* [ks env targets](ks_env_targets.md)	 - targets
 

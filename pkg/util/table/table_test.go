@@ -60,3 +60,23 @@ func TestTable_no_header(t *testing.T) {
 
 	assert.Equal(t, string(b), buf.String())
 }
+
+func TestTable_trim_space(t *testing.T) {
+	var buf bytes.Buffer
+	table := New(&buf)
+
+	table.SetHeader([]string{"name", "version", "Namespace", "SERVER"})
+	table.Append([]string{"default", "v1.7.0", "default", "http://default"})
+	table.AppendBulk([][]string{
+		{"dev", "v1.8.0", "", ""},
+		{"east/prod", "v1.8.0", "east/prod", "http://east-prod"},
+	})
+
+	table.Render()
+
+	b, err := ioutil.ReadFile("testdata/table_trim_space.txt")
+	require.NoError(t, err)
+
+	assert.Equal(t, string(b), buf.String())
+
+}
