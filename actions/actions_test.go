@@ -22,6 +22,7 @@ import (
 
 	cmocks "github.com/ksonnet/ksonnet/component/mocks"
 	"github.com/ksonnet/ksonnet/metadata/app/mocks"
+	rmocks "github.com/ksonnet/ksonnet/pkg/registry/mocks"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
@@ -61,5 +62,14 @@ func stageFile(t *testing.T, fs afero.Fs, src, dest string) {
 func mockNsWithName(name string) *cmocks.Namespace {
 	m := &cmocks.Namespace{}
 	m.On("Name").Return(name)
+	return m
+}
+
+func mockRegistry(name string) *rmocks.Registry {
+	m := &rmocks.Registry{}
+	m.On("Name").Return(name)
+	m.On("Protocol").Return("github")
+	m.On("URI").Return("github.com/ksonnet/parts/tree/master/incubator")
+
 	return m
 }

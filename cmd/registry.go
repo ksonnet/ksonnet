@@ -23,7 +23,6 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
-	"github.com/ksonnet/ksonnet/pkg/util/table"
 	"github.com/spf13/cobra"
 )
 
@@ -71,62 +70,6 @@ which can be combined together to configure a Kubernetes application for some ta
 described above. (See ` + "`ks prototype --help`" + ` for more information.)
 
 ----
-`,
-}
-
-var registryListCmd = &cobra.Command{
-	Use:   "list",
-	Short: regShortDesc["list"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		const (
-			nameHeader     = "NAME"
-			protocolHeader = "PROTOCOL"
-			uriHeader      = "URI"
-		)
-
-		if len(args) != 0 {
-			return fmt.Errorf("Command 'registry list' does not take arguments")
-		}
-
-		cwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		manager, err := metadata.Find(cwd)
-		if err != nil {
-			return err
-		}
-
-		app, err := manager.App()
-		if err != nil {
-			return err
-		}
-
-		t := table.New(os.Stdout)
-		t.SetHeader([]string{nameHeader, protocolHeader, uriHeader})
-
-		for name, regRef := range app.Registries() {
-			t.Append([]string{name, regRef.Protocol, regRef.URI})
-		}
-
-		t.Render()
-
-		return nil
-	},
-	Long: `
-The ` + "`list`" + ` command displays all known ksonnet registries in a table. This
-table includes the following info:
-
-1. Registry name
-2. Protocol (e.g. ` + "`github`" + `)
-3. Registry URI
-
-### Related Commands
-
-* ` + "`ks registry describe` " + `— ` + regShortDesc["describe"] + `
-
-### Syntax
 `,
 }
 
