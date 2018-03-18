@@ -29,35 +29,31 @@ import (
 
 // App010 is a ksonnet 0.1.0 application.
 type App010 struct {
-	spec *Spec
 	*baseApp
 }
 
 var _ App = (*App010)(nil)
 
 // NewApp010 creates an App010 instance.
-func NewApp010(fs afero.Fs, root string) (*App010, error) {
+func NewApp010(fs afero.Fs, root string) *App010 {
 	ba := newBaseApp(fs, root)
 
 	a := &App010{
 		baseApp: ba,
 	}
 
-	if err := a.load(); err != nil {
-		return nil, err
-	}
-
-	return a, nil
+	return a
 }
 
 // AddEnvironment adds an environment spec to the app spec. If the spec already exists,
 // it is overwritten.
-func (a *App010) AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec) error {
-	if err := a.load(); err != nil {
+func (a *App010) AddEnvironment(name, k8sSpecFlag string, newEnv *EnvironmentSpec) error {
+	spec, err := a.load()
+	if err != nil {
 		return err
 	}
 
-	a.spec.Environments[name] = spec
+	spec.Environments[name] = newEnv
 
 	if k8sSpecFlag != "" {
 		ver, err := LibUpdater(a.fs, k8sSpecFlag, app010LibPath(a.root), true)
@@ -65,15 +61,20 @@ func (a *App010) AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec)
 			return err
 		}
 
-		a.spec.Environments[name].KubernetesVersion = ver
+		spec.Environments[name].KubernetesVersion = ver
 	}
 
-	return a.save()
+	return a.save(spec)
 }
 
 // Environment returns the spec for an environment.
 func (a *App010) Environment(name string) (*EnvironmentSpec, error) {
-	s, ok := a.spec.Environments[name]
+	spec, err := a.load()
+	if err != nil {
+		return nil, err
+	}
+
+	s, ok := spec.Environments[name]
 	if !ok {
 		return nil, errors.Errorf("environment %q was not found", name)
 	}
@@ -83,7 +84,12 @@ func (a *App010) Environment(name string) (*EnvironmentSpec, error) {
 
 // Environments returns all environment specs.
 func (a *App010) Environments() (EnvironmentSpecs, error) {
-	return a.spec.Environments, nil
+	spec, err := a.load()
+	if err != nil {
+		return nil, err
+	}
+
+	return spec.Environments, nil
 }
 
 // Init initializes the App.
@@ -123,22 +129,33 @@ func (a *App010) LibPath(envName string) (string, error) {
 }
 
 // Libraries returns application libraries.
-func (a *App010) Libraries() LibraryRefSpecs {
-	return a.spec.Libraries
+func (a *App010) Libraries() (LibraryRefSpecs, error) {
+	spec, err := a.load()
+	if err != nil {
+		return nil, err
+	}
+
+	return spec.Libraries, nil
 }
 
 // Registries returns application registries.
-func (a *App010) Registries() RegistryRefSpecs {
-	return a.spec.Registries
+func (a *App010) Registries() (RegistryRefSpecs, error) {
+	spec, err := a.load()
+	if err != nil {
+		return nil, err
+	}
+
+	return spec.Registries, nil
 }
 
 // RemoveEnvironment removes an environment.
 func (a *App010) RemoveEnvironment(envName string) error {
-	if err := a.load(); err != nil {
+	spec, err := a.load()
+	if err != nil {
 		return err
 	}
-	delete(a.spec.Environments, envName)
-	return a.save()
+	delete(spec.Environments, envName)
+	return a.save(spec)
 }
 
 // RenameEnvironment renames environments.
@@ -147,16 +164,17 @@ func (a *App010) RenameEnvironment(from, to string) error {
 		return err
 	}
 
-	if err := a.load(); err != nil {
+	spec, err := a.load()
+	if err != nil {
 		return err
 	}
 
-	a.spec.Environments[to] = a.spec.Environments[from]
-	delete(a.spec.Environments, from)
+	spec.Environments[to] = spec.Environments[from]
+	delete(spec.Environments, from)
 
-	a.spec.Environments[to].Path = to
+	spec.Environments[to].Path = to
 
-	return a.save()
+	return a.save(spec)
 }
 
 // UpdateTargets updates the list of targets for a 0.1.0 application.
@@ -202,18 +220,4 @@ func (a *App010) findLegacySpec() ([]string, error) {
 	}
 
 	return found, nil
-}
-
-func (a *App010) save() error {
-	return Write(a.fs, a.root, a.spec)
-}
-
-func (a *App010) load() error {
-	spec, err := Read(a.fs, a.root)
-	if err != nil {
-		return err
-	}
-
-	a.spec = spec
-	return nil
 }

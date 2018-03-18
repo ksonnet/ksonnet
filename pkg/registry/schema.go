@@ -25,10 +25,13 @@ import (
 )
 
 const (
+	// DefaultAPIVersion is the default version of the registry API.
 	DefaultAPIVersion = "0.1.0"
-	DefaultKind       = "ksonnet.io/registry"
+	// DefaultKind is the default kind of the registry API.
+	DefaultKind = "ksonnet.io/registry"
 )
 
+// Spec describes how a registry is stored.
 type Spec struct {
 	APIVersion string              `json:"apiVersion"`
 	Kind       string              `json:"kind"`
@@ -36,6 +39,7 @@ type Spec struct {
 	Libraries  LibraryRefSpecs     `json:"libraries"`
 }
 
+// Unmarshal unmarshals bytes to a Spec.
 func Unmarshal(bytes []byte) (*Spec, error) {
 	schema := Spec{}
 	err := yaml.Unmarshal(bytes, &schema)
@@ -50,6 +54,7 @@ func Unmarshal(bytes []byte) (*Spec, error) {
 	return &schema, nil
 }
 
+// Marshal marshals a Spec to YAML.
 func (s *Spec) Marshal() ([]byte, error) {
 	return yaml.Marshal(s)
 }
@@ -75,11 +80,14 @@ func (s *Spec) validate() error {
 	return nil
 }
 
+// Specs is a slice of *Spec.
 type Specs []*Spec
 
+// LibraryRef is library reference.
 type LibraryRef struct {
 	Version string `json:"version"`
 	Path    string `json:"path"`
 }
 
+// LibraryRefSpecs maps LibraryRefs to a name.
 type LibraryRefSpecs map[string]*LibraryRef

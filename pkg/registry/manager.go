@@ -15,37 +15,75 @@
 
 package registry
 
-import "github.com/ksonnet/ksonnet/metadata/app"
+import (
+	"path/filepath"
+
+	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/pkg/errors"
+)
 
 var (
 	// DefaultManager is the default manager for registries.
 	DefaultManager = &defaultManager{}
 )
 
-// Registry is a registry.
-type Registry interface {
-	Name() string
-	Protocol() string
-	URI() string
+// Locate locates a registry given a spec.
+func Locate(a app.App, spec *app.RegistryRefSpec) (Registry, error) {
+	switch spec.Protocol {
+	case ProtocolGitHub:
+		return NewGitHub(spec)
+	case ProtocolFilesystem:
+		return NewFs(a, spec)
+	default:
+		return nil, errors.Errorf("invalid registry protocol %q", spec.Protocol)
+	}
+}
+
+// TODO: add this to App
+func root(a app.App) string {
+	return filepath.Join(a.Root(), ".ksonnet", "registries")
+}
+
+func makePath(a app.App, r Registry) string {
+	path := r.RegistrySpecFilePath()
+	if filepath.IsAbs(path) {
+		return path
+	}
+
+	return filepath.Join(root(a), path)
 }
 
 // Manager is a manager for registry related actions.
 type Manager interface {
+	Add(a app.App, name, protoocol, uri, version string) (*Spec, error)
 	// Registries returns a list of alphabetically sorted registries. The
 	// registries are sorted by name.
-	Registries(ksApp app.App) ([]Registry, error)
+	List(ksApp app.App) ([]Registry, error)
 }
 
 type defaultManager struct{}
 
 var _ Manager = (*defaultManager)(nil)
 
-func (dm *defaultManager) Registries(ksApp app.App) ([]Registry, error) {
+func (dm *defaultManager) List(ksApp app.App) ([]Registry, error) {
 
 	var registries []Registry
-	for name, regRef := range ksApp.Registries() {
-		registries = append(registries, NewGitHub(name, regRef))
+	appRegistries, err := ksApp.Registries()
+	if err != nil {
+		return nil, err
+	}
+	for name, regRef := range appRegistries {
+		regRef.Name = name
+		r, err := Locate(ksApp, regRef)
+		if err != nil {
+			return nil, err
+		}
+		registries = append(registries, r)
 	}
 
 	return registries, nil
+}
+
+func (dm *defaultManager) Add(a app.App, name, protoocol, uri, version string) (*Spec, error) {
+	return Add(a, name, protoocol, uri, version)
 }

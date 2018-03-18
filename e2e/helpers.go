@@ -16,7 +16,10 @@
 package e2e
 
 import (
+	"bytes"
+	"html/template"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -76,4 +79,35 @@ func assertContents(name, path string) {
 	ExpectWithOffset(1, expected).To(Equal(got),
 		"expected output to be:\n%s\nit was:\n%s\n",
 		expected, got)
+}
+
+func assertTemplate(data interface{}, name, output string) {
+	path := filepath.Join("testdata", "output", name)
+	ExpectWithOffset(1, path).To(BeAnExistingFile())
+
+	t, err := template.ParseFiles(path)
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+
+	var buf bytes.Buffer
+	err = t.Execute(&buf, data)
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+
+	expected := buf.String()
+	got := output
+	ExpectWithOffset(1, expected).To(Equal(got),
+		"expected output to be:\n%s\nit was:\n%s\n",
+		expected, got)
+}
+
+func convertPathToURI(path string) string {
+	if strings.HasPrefix(path, "file://") {
+		return path
+	}
+
+	u := url.URL{
+		Scheme: "file",
+		Path:   path,
+	}
+
+	return u.String()
 }

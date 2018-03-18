@@ -35,27 +35,20 @@ const (
 
 // App001 is a ksonnet 0.0.1 application.
 type App001 struct {
-	spec *Spec
-	out  io.Writer
+	out io.Writer
 	*baseApp
 }
 
 var _ App = (*App001)(nil)
 
 // NewApp001 creates an App001 instance.
-func NewApp001(fs afero.Fs, root string) (*App001, error) {
-	spec, err := Read(fs, root)
-	if err != nil {
-		return nil, err
-	}
-
+func NewApp001(fs afero.Fs, root string) *App001 {
 	ba := newBaseApp(fs, root)
 
 	return &App001{
-		spec:    spec,
 		out:     os.Stdout,
 		baseApp: ba,
-	}, nil
+	}
 }
 
 // AddEnvironment adds an environment spec to the app spec. If the spec already exists,
@@ -135,13 +128,22 @@ func (a *App001) LibPath(envName string) (string, error) {
 }
 
 // Libraries returns application libraries.
-func (a *App001) Libraries() LibraryRefSpecs {
-	return a.spec.Libraries
+func (a *App001) Libraries() (LibraryRefSpecs, error) {
+	spec, err := a.load()
+	if err != nil {
+		return nil, err
+	}
+	return spec.Libraries, nil
 }
 
 // Registries returns application registries.
-func (a *App001) Registries() RegistryRefSpecs {
-	return a.spec.Registries
+func (a *App001) Registries() (RegistryRefSpecs, error) {
+	spec, err := a.load()
+	if err != nil {
+		return nil, err
+	}
+
+	return spec.Registries, nil
 }
 
 // RemoveEnvironment removes an environment.
@@ -163,7 +165,8 @@ func (a *App001) UpdateTargets(envName string, targets []string) error {
 
 // Upgrade upgrades the app to the latest apiVersion.
 func (a *App001) Upgrade(dryRun bool) error {
-	if err := a.load(); err != nil {
+	spec, err := a.load()
+	if err != nil {
 		return err
 	}
 
@@ -183,10 +186,10 @@ func (a *App001) Upgrade(dryRun bool) error {
 		a.convertEnvironment(env.Path, dryRun)
 	}
 
-	a.spec.APIVersion = "0.1.0"
+	spec.APIVersion = "0.1.0"
 
 	if dryRun {
-		data, err := a.spec.Marshal()
+		data, err := spec.Marshal()
 		if err != nil {
 			return err
 		}
@@ -196,7 +199,7 @@ func (a *App001) Upgrade(dryRun bool) error {
 		return nil
 	}
 
-	return a.save()
+	return a.save(spec)
 }
 
 type k8sSchema struct {
@@ -253,7 +256,12 @@ func (a *App001) convertEnvironment(envName string, dryRun bool) error {
 		return err
 	}
 
-	a.spec.Environments[envName] = env
+	spec, err := a.load()
+	if err != nil {
+		return err
+	}
+
+	spec.Environments[envName] = env
 
 	if dryRun {
 		fmt.Fprintf(a.out, "[dry run]\t* adding the environment description in environment `%s to `app.yaml`.\n",
@@ -267,25 +275,15 @@ func (a *App001) convertEnvironment(envName string, dryRun bool) error {
 
 	k8sSpecFlag := fmt.Sprintf("version:%s", env.KubernetesVersion)
 	_, err = LibUpdater(a.fs, k8sSpecFlag, app010LibPath(a.root), true)
-	return err
-}
-
-func (a *App001) appLibPath(envName string) string {
-	return filepath.Join(a.root, EnvironmentDirName, envName, ".metadata")
-}
-
-func (a *App001) save() error {
-	return Write(a.fs, a.root, a.spec)
-}
-
-func (a *App001) load() error {
-	spec, err := Read(a.fs, a.root)
 	if err != nil {
 		return err
 	}
 
-	a.spec = spec
-	return nil
+	return a.save(spec)
+}
+
+func (a *App001) appLibPath(envName string) string {
+	return filepath.Join(a.root, EnvironmentDirName, envName, ".metadata")
 }
 
 func (a *App001) envDir(envName string) string {

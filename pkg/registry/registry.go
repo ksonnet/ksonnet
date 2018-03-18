@@ -1,4 +1,4 @@
-// Copyright 2018 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,17 +17,34 @@ package registry
 
 import (
 	"github.com/ksonnet/ksonnet/metadata/app"
-	"github.com/ksonnet/ksonnet/metadata/parts"
+	"github.com/ksonnet/ksonnet/pkg/parts"
 )
 
+const (
+	// ProtocolFilesystem is the protocol for file system based registries.
+	ProtocolFilesystem = "fs"
+	// ProtocolGitHub is a the protocol for GitHub based registries.
+	ProtocolGitHub = "github"
+
+	registryYAMLFile = "registry.yaml"
+	partsYAMLFile    = "parts.yaml"
+)
+
+// ResolveFile resolves files found when searching a part.
 type ResolveFile func(relPath string, contents []byte) error
+
+// ResolveDirectory resolves directories when searching a part.
 type ResolveDirectory func(relPath string) error
 
-type Manager interface {
+// Registry is a Registry
+type Registry interface {
 	RegistrySpecDir() string
 	RegistrySpecFilePath() string
 	FetchRegistrySpec() (*Spec, error)
 	MakeRegistryRefSpec() *app.RegistryRefSpec
 	ResolveLibrarySpec(libID, libRefSpec string) (*parts.Spec, error)
 	ResolveLibrary(libID, libAlias, version string, onFile ResolveFile, onDir ResolveDirectory) (*parts.Spec, *app.LibraryRefSpec, error)
+	Name() string
+	Protocol() string
+	URI() string
 }

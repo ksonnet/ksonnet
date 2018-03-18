@@ -47,3 +47,7 @@ table includes the following info:
 ### Syntax
 `,
 }
+
+func init() {
+	registryCmd.AddCommand(registryListCmd)
+}

@@ -39,6 +39,20 @@ func (_m *App) AddEnvironment(name string, k8sSpecFlag string, spec *app.Environ
 	return r0
 }
 
+// AddRegistry provides a mock function with given fields: spec
+func (_m *App) AddRegistry(spec *app.RegistryRefSpec) error {
+	ret := _m.Called(spec)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*app.RegistryRefSpec) error); ok {
+		r0 = rf(spec)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Environment provides a mock function with given fields: name
 func (_m *App) Environment(name string) (*app.EnvironmentSpec, error) {
 	ret := _m.Called(name)
@@ -158,7 +172,7 @@ func (_m *App) LibPath(envName string) (string, error) {
 }
 
 // Libraries provides a mock function with given fields:
-func (_m *App) Libraries() app.LibraryRefSpecs {
+func (_m *App) Libraries() (app.LibraryRefSpecs, error) {
 	ret := _m.Called()
 
 	var r0 app.LibraryRefSpecs
@@ -170,11 +184,18 @@ func (_m *App) Libraries() app.LibraryRefSpecs {
 		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // Registries provides a mock function with given fields:
-func (_m *App) Registries() app.RegistryRefSpecs {
+func (_m *App) Registries() (app.RegistryRefSpecs, error) {
 	ret := _m.Called()
 
 	var r0 app.RegistryRefSpecs
@@ -186,7 +207,14 @@ func (_m *App) Registries() app.RegistryRefSpecs {
 		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // RemoveEnvironment provides a mock function with given fields: name
@@ -226,6 +254,20 @@ func (_m *App) Root() string {
 		r0 = rf()
 	} else {
 		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// UpdateLib provides a mock function with given fields: name, spec
+func (_m *App) UpdateLib(name string, spec *app.LibraryRefSpec) error {
+	ret := _m.Called(name, spec)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, *app.LibraryRefSpec) error); ok {
+		r0 = rf(name, spec)
+	} else {
+		r0 = ret.Error(0)
 	}
 
 	return r0

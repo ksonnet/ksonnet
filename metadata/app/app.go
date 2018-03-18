@@ -50,18 +50,20 @@ var (
 // App is a ksonnet application.
 type App interface {
 	AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec) error
+	AddRegistry(spec *RegistryRefSpec) error
 	Environment(name string) (*EnvironmentSpec, error)
 	Environments() (EnvironmentSpecs, error)
 	EnvironmentParams(name string) (string, error)
 	Fs() afero.Fs
 	Init() error
 	LibPath(envName string) (string, error)
-	Libraries() LibraryRefSpecs
-	Registries() RegistryRefSpecs
+	Libraries() (LibraryRefSpecs, error)
+	Registries() (RegistryRefSpecs, error)
 	RemoveEnvironment(name string) error
 	RenameEnvironment(from, to string) error
 	Root() string
 	UpdateTargets(envName string, targets []string) error
+	UpdateLib(name string, spec *LibraryRefSpec) error
 	Upgrade(dryRun bool) error
 }
 
@@ -75,6 +77,37 @@ func newBaseApp(fs afero.Fs, root string) *baseApp {
 		fs:   fs,
 		root: root,
 	}
+}
+
+func (ba *baseApp) AddRegistry(newReg *RegistryRefSpec) error {
+	spec, err := ba.load()
+	if err != nil {
+		return err
+	}
+
+	if newReg.Name == "" {
+		return ErrRegistryNameInvalid
+	}
+
+	_, exists := spec.Registries[newReg.Name]
+	if exists {
+		return ErrRegistryExists
+	}
+
+	spec.Registries[newReg.Name] = newReg
+
+	return ba.save(spec)
+}
+
+func (ba *baseApp) UpdateLib(name string, libSpec *LibraryRefSpec) error {
+	spec, err := ba.load()
+	if err != nil {
+		return err
+	}
+
+	spec.Libraries[name] = libSpec
+
+	return ba.save(spec)
 }
 
 func (ba *baseApp) Fs() afero.Fs {
@@ -93,7 +126,6 @@ func (ba *baseApp) EnvironmentParams(envName string) (string, error) {
 	}
 
 	return string(b), nil
-
 }
 
 // Load loads the application configuration.
@@ -107,10 +139,23 @@ func Load(fs afero.Fs, appRoot string) (App, error) {
 	default:
 		return nil, errors.Errorf("unknown apiVersion %q in %s", spec.APIVersion, appYamlName)
 	case "0.0.1":
-		return NewApp001(fs, appRoot)
+		return NewApp001(fs, appRoot), nil
 	case "0.1.0":
-		return NewApp010(fs, appRoot)
+		return NewApp010(fs, appRoot), nil
 	}
+}
+
+func (ba *baseApp) save(spec *Spec) error {
+	return Write(ba.fs, ba.root, spec)
+}
+
+func (ba *baseApp) load() (*Spec, error) {
+	spec, err := Read(ba.fs, ba.root)
+	if err != nil {
+		return nil, err
+	}
+
+	return spec, nil
 }
 
 func updateLibData(fs afero.Fs, k8sSpecFlag, libPath string, useVersionPath bool) (string, error) {

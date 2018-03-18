@@ -54,7 +54,7 @@ func NewRegistryList(ksApp app.App) (*RegistryList, error) {
 
 // Run runs the env list action.
 func (rl *RegistryList) Run() error {
-	registries, err := rl.rm.Registries(rl.app)
+	registries, err := rl.rm.List(rl.app)
 	if err != nil {
 		return err
 	}

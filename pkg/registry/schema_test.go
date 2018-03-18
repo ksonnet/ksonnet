@@ -16,12 +16,65 @@
 package registry
 
 import (
+	"io/ioutil"
 	"testing"
 
 	"github.com/blang/semver"
+	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/stretchr/testify/require"
 )
 
-func TestApiVersionValidate(t *testing.T) {
+func Test_Unmarshal(t *testing.T) {
+	data, err := ioutil.ReadFile("testdata/registry.yaml")
+	require.NoError(t, err)
+
+	spec, err := Unmarshal(data)
+	require.NoError(t, err)
+
+	expected := &Spec{
+		APIVersion: DefaultAPIVersion,
+		Kind:       DefaultKind,
+		GitVersion: &app.GitVersionSpec{
+			CommitSHA: "40285d8a14f1ac5787e405e1023cf0c07f6aa28c",
+			RefSpec:   "master",
+		},
+		Libraries: LibraryRefSpecs{
+			"apache": &LibraryRef{
+				Path:    "apache",
+				Version: "master",
+			},
+		},
+	}
+
+	require.Equal(t, expected, spec)
+}
+
+func TestSpec_Marshal(t *testing.T) {
+	spec := &Spec{
+		APIVersion: DefaultAPIVersion,
+		Kind:       DefaultKind,
+		GitVersion: &app.GitVersionSpec{
+			CommitSHA: "40285d8a14f1ac5787e405e1023cf0c07f6aa28c",
+			RefSpec:   "master",
+		},
+		Libraries: LibraryRefSpecs{
+			"apache": &LibraryRef{
+				Path:    "apache",
+				Version: "master",
+			},
+		},
+	}
+
+	expected, err := ioutil.ReadFile("testdata/registry.yaml")
+	require.NoError(t, err)
+
+	data, err := spec.Marshal()
+	require.NoError(t, err)
+
+	require.Equal(t, string(expected), string(data))
+}
+
+func Test_ApiVersionValidate(t *testing.T) {
 	type spec struct {
 		spec string
 		err  bool

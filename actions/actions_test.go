@@ -22,6 +22,7 @@ import (
 
 	cmocks "github.com/ksonnet/ksonnet/component/mocks"
 	"github.com/ksonnet/ksonnet/metadata/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/registry"
 	rmocks "github.com/ksonnet/ksonnet/pkg/registry/mocks"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
@@ -68,7 +69,7 @@ func mockNsWithName(name string) *cmocks.Namespace {
 func mockRegistry(name string) *rmocks.Registry {
 	m := &rmocks.Registry{}
 	m.On("Name").Return(name)
-	m.On("Protocol").Return("github")
+	m.On("Protocol").Return(registry.ProtocolGitHub)
 	m.On("URI").Return("github.com/ksonnet/parts/tree/master/incubator")
 
 	return m
