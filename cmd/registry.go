@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/ksonnet/ksonnet/metadata"
-	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 	"github.com/spf13/cobra"
 )
 
@@ -38,7 +37,6 @@ var regShortDesc = map[string]string{
 
 func init() {
 	RootCmd.AddCommand(registryCmd)
-	registryCmd.AddCommand(registryListCmd)
 	registryCmd.AddCommand(registryDescribeCmd)
 	registryCmd.AddCommand(registryAddCmd)
 
@@ -97,7 +95,11 @@ var registryDescribeCmd = &cobra.Command{
 			return err
 		}
 
-		regRef, exists := app.Registries()[name]
+		appRegistries, err := app.Registries()
+		if err != nil {
+			return err
+		}
+		regRef, exists := appRegistries[name]
 		if !exists {
 			return fmt.Errorf("Registry '%s' doesn't exist", name)
 		}
@@ -144,60 +146,4 @@ by ` + "`<registry-name>`" + `. Specifically, it displays the following:
 
 ### Syntax
 `,
-}
-
-var registryAddCmd = &cobra.Command{
-	Use:   "add <registry-name> <registry-uri>",
-	Short: regShortDesc["add"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		flags := cmd.Flags()
-
-		if len(args) != 2 {
-			return fmt.Errorf("Command 'registry add' takes two arguments, which is the name and the repository address of the registry to add")
-		}
-
-		name := args[0]
-		uri := args[1]
-
-		version, err := flags.GetString(flagRegistryVersion)
-		if err != nil {
-			return err
-		}
-
-		// TODO allow protocol to be specified by flag once there is greater
-		// support for other protocol types.
-		return kubecfg.NewRegistryAddCmd(name, "github", uri, version).Run()
-	},
-
-	Long: `
-The ` + "`add`" + ` command allows custom registries to be added to your ksonnet app,
-provided that their file structures follow the appropriate schema. *You can look
-at the ` + "`incubator`" + ` repo (https://github.com/ksonnet/parts/tree/master/incubator)
-as an example.*
-
-A registry is uniquely identified by its:
-
-1. Name (e.g. ` + "`incubator`" + `)
-2. Version (e.g. ` + "`master`" + `)
-
-Currently, only registries supporting the **GitHub protocol** can be added.
-
-During creation, all registries must specify a unique name and URI where the
-registry lives. Optionally, a version can be provided (e.g. the *Github branch
-name*). If a version is not specified, it will default to ` + "`latest`" + `.
-
-
-### Related Commands
-
-* ` + "`ks registry list` " + `— ` + regShortDesc["list"] + `
-
-### Syntax
-`,
-	Example: `# Add a registry with the name 'databases' at the uri 'github.com/example'
-ks registry add databases github.com/example
-
-# Add a registry with the name 'databases' at the uri
-# 'github.com/example/tree/master/reg' and the version (branch name) 0.0.1
-# NOTE that "0.0.1" overrides the branch name in the URI ("master")
-ks registry add databases github.com/example/tree/master/reg --version=0.0.1`,
 }

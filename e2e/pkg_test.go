@@ -31,6 +31,16 @@ var _ = Describe("ks pkg", func() {
 		a = e.initApp("")
 	})
 
+	Describe("add", func() {
+		Context("incubator/apache", func() {
+			It("describes the package", func() {
+				o := a.runKs("pkg", "describe", "incubator/apache")
+				assertExitStatus(o, 0)
+				assertOutput("pkg/describe/output.txt", o.stdout)
+			})
+		})
+	})
+
 	Describe("describe", func() {
 		Context("incubator/apache", func() {
 			It("describes the package", func() {
@@ -42,15 +52,38 @@ var _ = Describe("ks pkg", func() {
 	})
 
 	Describe("install", func() {
-		Context("incubator/apache", func() {
-			It("describes the package", func() {
-				o := a.runKs("pkg", "install", "incubator/apache")
-				assertExitStatus(o, 0)
+		Context("github based part", func() {
+			Context("incubator/apache", func() {
+				It("describes the package", func() {
+					o := a.runKs("pkg", "install", "incubator/apache")
+					assertExitStatus(o, 0)
 
-				pkgDir := filepath.Join(a.dir, "vendor", "incubator", "apache")
-				Expect(pkgDir).To(BeADirectory())
+					pkgDir := filepath.Join(a.dir, "vendor", "incubator", "apache")
+					Expect(pkgDir).To(BeADirectory())
+				})
 			})
 		})
+
+		Context("fs based part", func() {
+			Context("local/contour", func() {
+				It("describes the package", func() {
+					path, err := filepath.Abs(filepath.Join("testdata", "registries", "parts-infra"))
+					Expect(err).ToNot(HaveOccurred())
+
+					o := a.registryAdd("local", path)
+
+					o = a.runKs("pkg", "install", "local/contour")
+					assertExitStatus(o, 0)
+
+					o = a.pkgList()
+
+					m := map[string]interface{}{}
+					tPath := filepath.Join("pkg", "install", "fs-output.txt.tmpl")
+					assertTemplate(m, tPath, o.stdout)
+				})
+			})
+		})
+
 	})
 
 	Describe("list", func() {

@@ -24,7 +24,7 @@ import (
 	"github.com/ksonnet/ksonnet/component"
 	"github.com/ksonnet/ksonnet/env"
 	"github.com/ksonnet/ksonnet/metadata/app"
-	"github.com/ksonnet/ksonnet/metadata/registry"
+	"github.com/ksonnet/ksonnet/pkg/registry"
 	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -115,7 +115,7 @@ func findManager(p string, appFS afero.Fs) (*manager, error) {
 	}
 }
 
-func initManager(name, rootPath string, k8sSpecFlag, serverURI, namespace *string, incubatorReg registry.Manager, appFS afero.Fs) (*manager, error) {
+func initManager(name, rootPath string, k8sSpecFlag, serverURI, namespace *string, incubatorReg registry.Registry, appFS afero.Fs) (*manager, error) {
 	m, err := newManager(rootPath, appFS)
 	if err != nil {
 		return nil, errors.Wrap(err, "create manager")
@@ -231,7 +231,7 @@ func (m *manager) createUserDirTree() error {
 	return nil
 }
 
-func (m *manager) createAppDirTree(name string, appYAMLData, baseLibData []byte, gh registry.Manager) error {
+func (m *manager) createAppDirTree(name string, appYAMLData, baseLibData []byte, gh registry.Registry) error {
 	exists, err := afero.DirExists(m.appFS, m.rootPath)
 	if err != nil {
 		return fmt.Errorf("Could not check existence of directory '%s':\n%v", m.rootPath, err)
@@ -289,7 +289,7 @@ func (m *manager) createAppDirTree(name string, appYAMLData, baseLibData []byte,
 	return nil
 }
 
-func generateRegistryYAMLData(incubatorReg registry.Manager) ([]byte, error) {
+func generateRegistryYAMLData(incubatorReg registry.Registry) ([]byte, error) {
 	regSpec, err := incubatorReg.FetchRegistrySpec()
 	if err != nil {
 		return nil, err

@@ -20,30 +20,24 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/metadata/app/mocks"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func Test_defaultManager_Registries(t *testing.T) {
+func OffTest_defaultManager_Registries(t *testing.T) {
 	dm := &defaultManager{}
 
 	specs := app.RegistryRefSpecs{
 		"incubator": &app.RegistryRefSpec{
-			Protocol: "github",
-			URI:      "github.com/foo/bar",
+			Protocol: ProtocolGitHub,
+			URI:      "github.com/ksonnet/parts/tree/master/incubator",
 		},
 	}
 
 	appMock := &mocks.App{}
 	appMock.On("Registries").Return(specs)
 
-	registries, err := dm.Registries(appMock)
+	registries, err := dm.List(appMock)
 	require.NoError(t, err)
 
 	require.Len(t, registries, 1)
-
-	r := registries[0]
-	assert.Equal(t, "incubator", r.Name())
-	assert.Equal(t, "github", r.Protocol())
-	assert.Equal(t, "github.com/foo/bar", r.URI())
 }

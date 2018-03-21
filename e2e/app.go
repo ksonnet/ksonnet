@@ -63,8 +63,29 @@ func (a *app) paramList(args ...string) *output {
 	return o
 }
 
+func (a *app) pkgList() *output {
+	o := a.runKs("pkg", "list")
+	assertExitStatus(o, 0)
+
+	return o
+}
+
 func (a *app) paramSet(key, value string, args ...string) *output {
 	o := a.runKs(append([]string{"param", "set", key, value}, args...)...)
+	assertExitStatus(o, 0)
+
+	return o
+}
+
+func (a *app) registryAdd(registryName, uri string) *output {
+	o := a.runKs("registry", "add", registryName, uri)
+	assertExitStatus(o, 0)
+
+	return o
+}
+
+func (a *app) registryList(args ...string) *output {
+	o := a.runKs(append([]string{"registry", "list"}, args...)...)
 	assertExitStatus(o, 0)
 
 	return o

@@ -291,7 +291,6 @@ func withApp001Fs(t *testing.T, appName string, fn func(app *App001)) {
 
 	stageFile(t, fs, appName, "/app.yaml")
 
-	app, err := NewApp001(fs, "/")
-	require.NoError(t, err)
+	app := NewApp001(fs, "/")
 	fn(app)
 }

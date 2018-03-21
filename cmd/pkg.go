@@ -18,12 +18,10 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 
 	"github.com/ksonnet/ksonnet/metadata"
-	"github.com/ksonnet/ksonnet/metadata/parts"
-	"github.com/ksonnet/ksonnet/pkg/util/table"
+	"github.com/ksonnet/ksonnet/pkg/parts"
 	"github.com/spf13/cobra"
 )
 
@@ -41,10 +39,7 @@ var errInvalidSpec = fmt.Errorf("Command 'pkg install' requires a single argumen
 
 func init() {
 	RootCmd.AddCommand(pkgCmd)
-	pkgCmd.AddCommand(pkgInstallCmd)
-	pkgCmd.AddCommand(pkgListCmd)
 	pkgCmd.AddCommand(pkgDescribeCmd)
-	pkgInstallCmd.PersistentFlags().String(flagName, "", "Name to give the dependency, to use within the ksonnet app")
 }
 
 var pkgCmd = &cobra.Command{
@@ -82,67 +77,6 @@ See the annotated file tree below, as an example:
 		}
 		return fmt.Errorf("Command 'pkg' requires a subcommand\n\n%s", cmd.UsageString())
 	},
-}
-
-var pkgInstallCmd = &cobra.Command{
-	Use:     "install <registry>/<library>@<version>",
-	Short:   pkgShortDesc["install"],
-	Aliases: []string{"get"},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("Command requires a single argument of the form <registry>/<library>@<version>\n\n%s", cmd.UsageString())
-		}
-
-		registry, libID, name, version, err := parseDepSpec(cmd, args[0])
-		if err != nil {
-			return err
-		}
-
-		cwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		manager, err := metadata.Find(cwd)
-		if err != nil {
-			return err
-		}
-
-		_, err = manager.CacheDependency(registry, libID, name, version)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	},
-	Long: `
-The ` + "`install`" + ` command caches a ksonnet library locally, and makes it available
-for use in the current ksonnet application. Enough info and metadata is recorded in
-` + "`app.yaml` " + `that new users can retrieve the dependency after a fresh clone of this app.
-
-The library itself needs to be located in a registry (e.g. Github repo). By default,
-ksonnet knows about two registries: *incubator* and *stable*, which are the release
-channels for official ksonnet libraries.
-
-### Related Commands
-
-* ` + "`ks pkg list` " + `— ` + pkgShortDesc["list"] + `
-* ` + "`ks prototype list` " + `— ` + protoShortDesc["list"] + `
-* ` + "`ks registry describe` " + `— ` + regShortDesc["describe"] + `
-
-### Syntax
-`,
-	Example: `
-# Install an nginx dependency, based on the latest branch.
-# In a ksonnet source file, this can be referenced as:
-#   local nginx = import "incubator/nginx/nginx.libsonnet";
-ks pkg install incubator/nginx
-
-# Install an nginx dependency, based on the 'master' branch.
-# In a ksonnet source file, this can be referenced as:
-#   local nginx = import "incubator/nginx/nginx.libsonnet";
-ks pkg install incubator/nginx@master
-`,
 }
 
 var pkgDescribeCmd = &cobra.Command{
@@ -218,90 +152,6 @@ known ` + "`<registry-name>`" + ` like *incubator*). The output includes:
 `,
 }
 
-var pkgListCmd = &cobra.Command{
-	Use:   "list",
-	Short: pkgShortDesc["list"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		const (
-			nameHeader      = "NAME"
-			registryHeader  = "REGISTRY"
-			installedHeader = "INSTALLED"
-			installed       = "*"
-		)
-
-		if len(args) != 0 {
-			return fmt.Errorf("Command 'pkg list' does not take arguments")
-		}
-
-		cwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		manager, err := metadata.Find(cwd)
-		if err != nil {
-			return err
-		}
-
-		app, err := manager.App()
-		if err != nil {
-			return err
-		}
-
-		t := table.New(os.Stdout)
-		t.SetHeader([]string{registryHeader, nameHeader, installedHeader})
-
-		rows := make([][]string, 0)
-		for name := range app.Registries() {
-			reg, _, err := manager.GetRegistry(name)
-			if err != nil {
-				return err
-			}
-
-			for libName := range reg.Libraries {
-				var row []string
-				_, isInstalled := app.Libraries()[libName]
-				if isInstalled {
-					row = []string{name, libName, installed}
-				} else {
-					row = []string{name, libName}
-				}
-
-				rows = append(rows, row)
-			}
-		}
-
-		sort.Slice(rows, func(i, j int) bool {
-			nameI := strings.Join([]string{rows[i][0], rows[i][1]}, "-")
-			nameJ := strings.Join([]string{rows[j][0], rows[j][1]}, "-")
-
-			return nameI < nameJ
-		})
-
-		t.AppendBulk(rows)
-		t.Render()
-
-		return nil
-	},
-	Long: `
-The ` + "`list`" + ` command outputs a table that describes all *known* packages (not
-necessarily downloaded, but available from existing registries). This includes
-the following info:
-
-1. Library name
-2. Registry name
-3. Installed status — an asterisk indicates 'installed'
-
-### Related Commands
-
-* ` + "`ks pkg install` " + `— ` + pkgShortDesc["install"] + `
-* ` + "`ks pkg describe` " + `— ` + pkgShortDesc["describe"] + `
-* ` + "`ks registry describe` " + `— ` + regShortDesc["describe"] + `
-
-### Syntax
-`,
-}
-
 func parsePkgSpec(spec string) (registry, libID string, err error) {
 	split := strings.SplitN(spec, "/", 2)
 	if len(split) < 2 {
@@ -310,33 +160,5 @@ func parsePkgSpec(spec string) (registry, libID string, err error) {
 	registry = split[0]
 	// Strip off the trailing `@version`.
 	libID = strings.SplitN(split[1], "@", 2)[0]
-	return
-}
-
-func parseDepSpec(cmd *cobra.Command, spec string) (registry, libID, name, version string, err error) {
-	registry, libID, err = parsePkgSpec(spec)
-	if err != nil {
-		return "", "", "", "", err
-	}
-
-	split := strings.Split(spec, "@")
-	if len(split) > 2 {
-		return "", "", "", "", fmt.Errorf("Symbol '@' is only allowed once, at the end of the argument of the form <registry>/<library>@<version>")
-	}
-	version = ""
-	if len(split) == 2 {
-		version = split[1]
-	}
-
-	name, err = cmd.Flags().GetString(flagName)
-	if err != nil {
-		return "", "", "", "", err
-	} else if name == "" {
-		// Get last component, strip off trailing `@<version>`.
-		split = strings.Split(spec, "/")
-		lastComponent := split[len(split)-1]
-		name = strings.SplitN(lastComponent, "@", 2)[0]
-	}
-
 	return
 }

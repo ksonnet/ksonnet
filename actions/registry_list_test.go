@@ -39,7 +39,7 @@ func TestRegistryList(t *testing.T) {
 		registries := []registry.Registry{
 			mockRegistry("incubator"),
 		}
-		rm.On("Registries", appMock).Return(registries, nil)
+		rm.On("List", appMock).Return(registries, nil)
 
 		err = a.Run()
 		require.NoError(t, err)

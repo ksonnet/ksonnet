@@ -25,8 +25,31 @@ type Manager struct {
 	mock.Mock
 }
 
-// Registries provides a mock function with given fields: ksApp
-func (_m *Manager) Registries(ksApp app.App) ([]registry.Registry, error) {
+// Add provides a mock function with given fields: a, name, protoocol, uri, version
+func (_m *Manager) Add(a app.App, name string, protoocol string, uri string, version string) (*registry.Spec, error) {
+	ret := _m.Called(a, name, protoocol, uri, version)
+
+	var r0 *registry.Spec
+	if rf, ok := ret.Get(0).(func(app.App, string, string, string, string) *registry.Spec); ok {
+		r0 = rf(a, name, protoocol, uri, version)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*registry.Spec)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(app.App, string, string, string, string) error); ok {
+		r1 = rf(a, name, protoocol, uri, version)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// List provides a mock function with given fields: ksApp
+func (_m *Manager) List(ksApp app.App) ([]registry.Registry, error) {
 	ret := _m.Called(ksApp)
 
 	var r0 []registry.Registry

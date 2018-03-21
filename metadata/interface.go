@@ -22,8 +22,8 @@ import (
 	"github.com/ksonnet/ksonnet/env"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
-	"github.com/ksonnet/ksonnet/metadata/parts"
-	"github.com/ksonnet/ksonnet/metadata/registry"
+	"github.com/ksonnet/ksonnet/pkg/parts"
+	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/ksonnet/ksonnet/prototype"
 	"github.com/spf13/afero"
 )
@@ -68,10 +68,8 @@ type Manager interface {
 	GetDestination(envName string) (env.Destination, error)
 
 	// Dependency/registry API.
-	AddRegistry(name, protocol, uri, version string) (*registry.Spec, error)
 	GetRegistry(name string) (*registry.Spec, string, error)
 	GetPackage(registryName, libID string) (*parts.Spec, error)
-	CacheDependency(registryName, libID, libName, libVersion string) (*parts.Spec, error)
 	GetDependency(libName string) (*parts.Spec, error)
 	GetAllPrototypes() (prototype.SpecificationSchemas, error)
 }
@@ -92,9 +90,9 @@ func Init(name, rootPath string, k8sSpecFlag, serverURI, namespace *string) (Man
 		defaultIncubatorURI     = "github.com/ksonnet/parts/tree/master/" + defaultIncubatorRegName
 	)
 
-	gh, err := makeGitHubRegistryManager(&app.RegistryRefSpec{
+	gh, err := registry.NewGitHub(&app.RegistryRefSpec{
 		Name:     "incubator",
-		Protocol: "github",
+		Protocol: registry.ProtocolGitHub,
 		URI:      defaultIncubatorURI,
 	})
 	if err != nil {

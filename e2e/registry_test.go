@@ -18,7 +18,10 @@
 package e2e
 
 import (
+	"path/filepath"
+
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ks registry", func() {
@@ -27,6 +30,46 @@ var _ = Describe("ks registry", func() {
 	BeforeEach(func() {
 		a = e.initApp("")
 		a.generateDeployedService()
+	})
+
+	Describe("add", func() {
+
+		var add = func(path string) {
+			o := a.runKs("registry", "add", "local", path)
+			assertExitStatus(o, 0)
+
+			uri := convertPathToURI(path)
+			m := map[string]interface{}{
+				"uri": uri,
+			}
+
+			o = a.registryList()
+
+			tPath := filepath.Join("registry", "add", "output.txt.tmpl")
+			assertTemplate(m, tPath, o.stdout)
+		}
+
+		Context("a filesystem based registry", func() {
+			Context("as a path", func() {
+				It("adds a registry", func() {
+					path, err := filepath.Abs(filepath.Join("testdata", "registries", "parts-infra"))
+					Expect(err).ToNot(HaveOccurred())
+
+					add(path)
+				})
+			})
+			Context("as a URL", func() {
+				It("adds a registry", func() {
+					path, err := filepath.Abs(filepath.Join("testdata", "registries", "parts-infra"))
+					Expect(err).ToNot(HaveOccurred())
+
+					uri := convertPathToURI(path)
+
+					add(uri)
+				})
+			})
+
+		})
 	})
 
 	Describe("list", func() {
