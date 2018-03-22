@@ -20,9 +20,6 @@ import (
 	"encoding/json"
 	"io"
 	"regexp"
-	"strings"
-
-	goyaml "github.com/ghodss/yaml"
 
 	jsonnet "github.com/google/go-jsonnet"
 	"github.com/google/go-jsonnet/ast"
@@ -79,38 +76,6 @@ func RegisterNativeFuncs(vm *jsonnet.VM, resolver Resolver) {
 					ret = append(ret, doc)
 				}
 				return ret, nil
-			},
-		})
-
-	vm.NativeFunction(
-		&jsonnet.NativeFunction{
-			Name:   "manifestJsonFromJson",
-			Params: ast.Identifiers{"json", "indent"},
-			Func: func(data []interface{}) (interface{}, error) {
-				indent := int(data[1].(float64))
-				dataBytes := []byte(data[0].(string))
-				dataBytes = bytes.TrimSpace(dataBytes)
-				buf := bytes.Buffer{}
-				if err := json.Indent(&buf, dataBytes, "", strings.Repeat(" ", indent)); err != nil {
-					return "", err
-				}
-				buf.WriteString("\n")
-				return buf.String(), nil
-			},
-		})
-
-	vm.NativeFunction(
-		&jsonnet.NativeFunction{
-			Name:   "manifestYamlFromJson",
-			Params: ast.Identifiers{"json"},
-			Func: func(data []interface{}) (interface{}, error) {
-				var input interface{}
-				dataBytes := []byte(data[0].(string))
-				if err := json.Unmarshal(dataBytes, &input); err != nil {
-					return "", err
-				}
-				output, err := goyaml.Marshal(input)
-				return string(output), err
 			},
 		})
 

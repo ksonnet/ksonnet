@@ -27,33 +27,6 @@ baz: xyzzy
 ");
 assert x == [[3, 4], {foo: "bar", baz: "xyzzy"}] : "got " + x;
 
-local x = kubecfg.manifestJson({foo: "bar", baz: [3, 4]});
-assert x == '{
-    "baz": [
-        3,
-        4
-    ],
-    "foo": "bar"
-}
-' : "got " + x;
-
-local x = kubecfg.manifestJson({foo: "bar", baz: [3, 4]}, indent=2);
-assert x == '{
-  "baz": [
-    3,
-    4
-  ],
-  "foo": "bar"
-}
-' : "got " + x;
-
-local x = kubecfg.manifestYaml({foo: "bar", baz: [3, 4]});
-assert x == "baz:
-- 3
-- 4
-foo: bar
-" : "got " + x;
-
 local i = kubecfg.resolveImage("busybox");
 assert i == "busybox:latest" : "got " + i;
 

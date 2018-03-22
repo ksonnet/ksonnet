@@ -30,21 +30,6 @@
   // element.
   parseYaml:: std.native("parseYaml"),
 
-  // manifestJson(value, indent): convert the jsonnet object `value`
-  // to a string encoded as "pretty" (multi-line) JSON, with each
-  // nesting level indented by `indent` spaces.
-  manifestJson(value, indent=4):: (
-    local f = std.native("manifestJsonFromJson");
-    f(std.toString(value), indent)
-  ),
-
-  // manifestYaml(value): convert the jsonnet object `value` to a
-  // string encoded as a single YAML document.
-  manifestYaml(value):: (
-    local f = std.native("manifestYamlFromJson");
-    f(std.toString(value))
-  ),
-
   // escapeStringRegex(s): Quote the regex metacharacters found in s.
   // The result is a regex that will match the original literal
   // characters.
