@@ -129,7 +129,12 @@ func (ba *baseApp) EnvironmentParams(envName string) (string, error) {
 }
 
 // Load loads the application configuration.
-func Load(fs afero.Fs, appRoot string) (App, error) {
+func Load(fs afero.Fs, cwd string) (App, error) {
+	appRoot, err := findRoot(fs, cwd)
+	if err != nil {
+		return nil, err
+	}
+
 	spec, err := Read(fs, appRoot)
 	if err != nil {
 		return nil, err
@@ -260,4 +265,31 @@ func cleanEnv(fs afero.Fs, root string) error {
 	}
 
 	return nil
+}
+
+func findRoot(fs afero.Fs, cwd string) (string, error) {
+	prev := cwd
+
+	for {
+		path := filepath.Join(cwd, appYamlName)
+		exists, err := afero.Exists(fs, path)
+		if err != nil {
+			return "", err
+		}
+
+		if exists {
+			return cwd, nil
+		}
+
+		cwd, err = filepath.Abs(filepath.Join(cwd, ".."))
+		if err != nil {
+			return "", err
+		}
+
+		if cwd == prev {
+			return "", errors.Errorf("unable to find ksonnet project")
+		}
+
+		prev = cwd
+	}
 }
