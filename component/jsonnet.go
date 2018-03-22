@@ -29,6 +29,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/params"
 	"github.com/ksonnet/ksonnet/pkg/util/k8s"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -145,6 +146,7 @@ func (j *Jsonnet) Objects(paramsStr, envName string) ([]*unstructured.Unstructur
 
 	vm := jsonnet.MakeVM()
 	vm.Importer(importer)
+	log.Debugf("%s convert to jsonnet: setting %q to %q", j.Name(true), "__ksonnet/params", paramsStr)
 	vm.ExtCode("__ksonnet/params", paramsStr)
 
 	snippet, err := afero.ReadFile(j.app.Fs(), j.source)

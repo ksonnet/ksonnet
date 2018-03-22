@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"io"
 	"regexp"
+	"strings"
 
 	jsonnet "github.com/google/go-jsonnet"
 	"github.com/ksonnet/ksonnet/component"
@@ -117,6 +118,13 @@ func (p *Pipeline) Objects(filter []string) ([]*unstructured.Unstructured, error
 		return nil, err
 	}
 
+	var names []string
+	for _, n := range namespaces {
+		names = append(names, n.Name())
+	}
+
+	logrus.Debugf("pipeline: build objects for namespaces: %s", strings.Join(names, ", "))
+
 	objects := make([]*unstructured.Unstructured, 0)
 	for _, ns := range namespaces {
 		paramsStr, err := p.EnvParameters(ns.Name())
@@ -129,8 +137,15 @@ func (p *Pipeline) Objects(filter []string) ([]*unstructured.Unstructured, error
 			return nil, err
 		}
 
+		names = make([]string, 0)
 		for _, c := range components {
-			o, err := c.Objects(paramsStr, p.envName)
+			names = append(names, c.Name(true))
+		}
+
+		logrus.Debugf("pipeline: components for %s: %s", ns.Name(), strings.Join(names, ", "))
+
+		for i := range components {
+			o, err := components[i].Objects(paramsStr, p.envName)
 			if err != nil {
 				return nil, err
 			}

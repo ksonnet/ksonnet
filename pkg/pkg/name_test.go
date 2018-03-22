@@ -32,15 +32,15 @@ func Test_ParseName(t *testing.T) {
 			expected: Descriptor{Registry: "parts-infra", Part: "contour"},
 		},
 		{
+			name:     "contour",
+			expected: Descriptor{Part: "contour"},
+		},
+		{
 			name:     "parts-infra/contour@0.1.0",
 			expected: Descriptor{Registry: "parts-infra", Part: "contour", Version: "0.1.0"},
 		},
 		{
-			name:  "invalid",
-			isErr: true,
-		},
-		{
-			name:  "foo/bar@baz@doh",
+			name:  "@foo/bar@baz@doh",
 			isErr: true,
 		},
 	}
@@ -53,6 +53,7 @@ func Test_ParseName(t *testing.T) {
 				return
 			}
 
+			require.NoError(t, err)
 			require.Equal(t, tc.expected, d)
 		})
 	}

@@ -42,9 +42,18 @@ var _ = Describe("ks pkg", func() {
 	})
 
 	Describe("describe", func() {
-		Context("incubator/apache", func() {
-			It("describes the package", func() {
+		Context("registry incubator/apache", func() {
+			It("describes the registry package", func() {
 				o := a.runKs("pkg", "describe", "incubator/apache")
+				assertExitStatus(o, 0)
+				assertOutput("pkg/describe/output.txt", o.stdout)
+			})
+		})
+		Context("library apache", func() {
+			It("describes the library package", func() {
+				a.pkgInstall("incubator/apache")
+
+				o := a.runKs("pkg", "describe", "apache")
 				assertExitStatus(o, 0)
 				assertOutput("pkg/describe/output.txt", o.stdout)
 			})
