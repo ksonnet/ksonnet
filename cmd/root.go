@@ -116,18 +116,14 @@ application configuration to remote clusters.
 			return err
 		}
 
-		appConfig := filepath.Join(wd, "app.yaml")
-		exists, err := afero.Exists(appFs, appConfig)
-		if err != nil {
-			return err
+		var isInit bool
+		if len(args) == 2 && args[0] == "init" {
+			isInit = true
 		}
 
-		if exists {
-			log.Debugf("loading configuration from %s", appConfig)
-			ka, err = app.Load(appFs, wd)
-			if err != nil {
-				return err
-			}
+		ka, err = app.Load(appFs, wd)
+		if err != nil && isInit {
+			return err
 		}
 
 		return nil

@@ -22,6 +22,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
@@ -66,9 +67,13 @@ type Spec struct {
 	License      string           `json:"license,omitempty"`
 }
 
-// Read will return the specification for a ksonnet application.
-func Read(fs afero.Fs, appRoot string) (*Spec, error) {
-	bytes, err := afero.ReadFile(fs, specPath(appRoot))
+// Read will return the specification for a ksonnet application. It will navigate up directories
+// to search for `app.yaml` and return error if it hits the root directory.
+func Read(fs afero.Fs, root string) (*Spec, error) {
+	config := filepath.Join(root, appYamlName)
+	log.Debugf("loading configuration from %s", config)
+
+	bytes, err := afero.ReadFile(fs, config)
 	if err != nil {
 		return nil, err
 	}
@@ -96,6 +101,8 @@ func Read(fs afero.Fs, appRoot string) (*Spec, error) {
 
 	return schema, nil
 }
+
+
 
 // Write writes the provided spec to file system.
 func Write(fs afero.Fs, appRoot string, spec *Spec) error {
