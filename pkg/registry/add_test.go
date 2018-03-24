@@ -16,7 +16,6 @@
 package registry
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -31,18 +30,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func withMockManager(t *testing.T, fn func(*amocks.App, afero.Fs)) {
-	fs := afero.NewMemMapFs()
-	appMock := &amocks.App{}
-	appMock.On("Fs").Return(fs)
-	appMock.On("Root").Return("/app")
-	appMock.On("LibPath", mock.AnythingOfType("string")).Return(filepath.Join("/app", "lib", "v1.8.7"), nil)
+func withApp(t *testing.T, fn func(*amocks.App, afero.Fs)) {
+	ogGHF := githubFactory
+	defer func(fn ghFactoryFn) {
+		githubFactory = fn
+	}(ogGHF)
 
-	fn(appMock, fs)
+	test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
+		fn(a, fs)
+	})
+
 }
 
 func TestAdd(t *testing.T) {
-	withMockManager(t, func(appMock *amocks.App, fs afero.Fs) {
+	withApp(t, func(appMock *amocks.App, fs afero.Fs) {
 		expectedSpec := &app.RegistryRefSpec{
 			Name:     "new",
 			Protocol: ProtocolGitHub,
@@ -68,11 +69,6 @@ func TestAdd(t *testing.T) {
 			Return(registryContent, nil, nil)
 
 		ghOpt := GitHubClient(ghMock)
-		ogGHFactory := githubFactory
-		defer func(fn func(registryRef *app.RegistryRefSpec) (*GitHub, error)) {
-			githubFactory = fn
-		}(ogGHFactory)
-
 		githubFactory = func(registryRef *app.RegistryRefSpec) (*GitHub, error) {
 			return NewGitHub(registryRef, ghOpt)
 		}
@@ -86,7 +82,7 @@ func TestAdd(t *testing.T) {
 }
 
 func Test_load(t *testing.T) {
-	withMockManager(t, func(appMock *amocks.App, fs afero.Fs) {
+	withApp(t, func(appMock *amocks.App, fs afero.Fs) {
 
 		test.StageFile(t, fs, "registry.yaml", "/app/registry.yaml")
 		test.StageFile(t, fs, "invalid-registry.yaml", "/app/invalid-registry.yaml")

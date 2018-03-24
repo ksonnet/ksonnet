@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/pkg/errors"
@@ -95,5 +96,9 @@ func CacheDependency(a app.App, d pkg.Descriptor, customName string) error {
 		}
 	}
 
-	return a.UpdateLib(customName, libRef)
+	libRef.Registry = d.Registry
+
+	spew.Dump(libRef)
+
+	return a.UpdateLib(libRef.Name, libRef)
 }

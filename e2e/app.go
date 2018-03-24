@@ -63,6 +63,13 @@ func (a *app) paramList(args ...string) *output {
 	return o
 }
 
+func (a *app) pkgInstall(partName string) *output {
+	o := a.runKs("pkg", "install", partName)
+	assertExitStatus(o, 0)
+
+	return o
+}
+
 func (a *app) pkgList() *output {
 	o := a.runKs("pkg", "list")
 	assertExitStatus(o, 0)

@@ -46,6 +46,8 @@ var (
 	}
 )
 
+type ghFactoryFn func(spec *app.RegistryRefSpec) (*GitHub, error)
+
 // GitHubClient is an option for the setting a github client.
 func GitHubClient(c github.GitHub) GitHubOpt {
 	return func(gh *GitHub) {
@@ -238,6 +240,10 @@ func (gh *GitHub) ResolveLibrary(partName, partAlias, libRefSpec string, onFile 
 	parts, err := parts.Unmarshal([]byte(partsSpecText))
 	if err != nil {
 		return nil, nil, err
+	}
+
+	if partAlias == "" {
+		partAlias = partName
 	}
 
 	refSpec := app.LibraryRefSpec{

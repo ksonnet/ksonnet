@@ -55,6 +55,10 @@ type defaultGitHub struct{}
 var _ GitHub = (*defaultGitHub)(nil)
 
 func (dg *defaultGitHub) CommitSHA1(ctx context.Context, repo Repo, refSpec string) (string, error) {
+	if refSpec == "" {
+		refSpec = "master"
+	}
+
 	logrus.Debugf("github: fetching SHA1 for %s/%s - %s", repo.Org, repo.Repo, refSpec)
 	sha, _, err := dg.client().Repositories.GetCommitSHA1(ctx, repo.Org, repo.Repo, refSpec, "")
 	return sha, err

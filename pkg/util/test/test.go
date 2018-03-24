@@ -16,10 +16,14 @@
 package test
 
 import (
+	"io"
 	"io/ioutil"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/ksonnet/ksonnet/metadata/app/mocks"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
@@ -38,4 +42,55 @@ func StageFile(t *testing.T, fs afero.Fs, src, dest string) {
 
 	err = afero.WriteFile(fs, dest, b, 0644)
 	require.NoError(t, err)
+}
+
+// StageDir stages a directory on the provided filesystem from
+// testdata.
+func StageDir(t *testing.T, fs afero.Fs, src, dest string) {
+	root, err := filepath.Abs(filepath.Join("testdata", src))
+	require.NoError(t, err)
+
+	err = filepath.Walk(root, func(path string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		cur := filepath.Join(dest, strings.TrimPrefix(path, root))
+		if fi.IsDir() {
+			return fs.Mkdir(cur, 0755)
+		}
+
+		copyFile(fs, path, cur)
+		return nil
+	})
+
+	require.NoError(t, err)
+}
+
+func copyFile(fs afero.Fs, src, dest string) error {
+	from, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer from.Close()
+
+	to, err := fs.OpenFile(dest, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer to.Close()
+
+	_, err = io.Copy(to, from)
+	return err
+}
+
+// WithApp runs an enclosure with a mocked app and fs.
+func WithApp(t *testing.T, root string, fn func(*mocks.App, afero.Fs)) {
+	fs := afero.NewMemMapFs()
+
+	a := &mocks.App{}
+	a.On("Fs").Return(fs)
+	a.On("Root").Return(root)
+
+	fn(a, fs)
 }

@@ -17,11 +17,8 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
-	"github.com/ksonnet/ksonnet/metadata"
-	"github.com/ksonnet/ksonnet/pkg/parts"
 	"github.com/spf13/cobra"
 )
 
@@ -39,7 +36,6 @@ var errInvalidSpec = fmt.Errorf("Command 'pkg install' requires a single argumen
 
 func init() {
 	RootCmd.AddCommand(pkgCmd)
-	pkgCmd.AddCommand(pkgDescribeCmd)
 }
 
 var pkgCmd = &cobra.Command{
@@ -77,79 +73,6 @@ See the annotated file tree below, as an example:
 		}
 		return fmt.Errorf("Command 'pkg' requires a subcommand\n\n%s", cmd.UsageString())
 	},
-}
-
-var pkgDescribeCmd = &cobra.Command{
-	Use:   "describe [<registry-name>/]<package-name>",
-	Short: pkgShortDesc["describe"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("Command 'pkg describe' requires a package name\n\n%s", cmd.UsageString())
-		}
-
-		registryName, libID, err := parsePkgSpec(args[0])
-		if err == errInvalidSpec {
-			registryName = ""
-			libID = args[0]
-		} else if err != nil {
-			return err
-		}
-
-		cwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		manager, err := metadata.Find(cwd)
-		if err != nil {
-			return err
-		}
-
-		var lib *parts.Spec
-		if registryName == "" {
-			lib, err = manager.GetDependency(libID)
-			if err != nil {
-				return err
-			}
-		} else {
-			lib, err = manager.GetPackage(registryName, libID)
-			if err != nil {
-				return err
-			}
-		}
-
-		fmt.Println(`LIBRARY NAME:`)
-		fmt.Println(lib.Name)
-		fmt.Println()
-		fmt.Println(`DESCRIPTION:`)
-		fmt.Println(lib.Description)
-		fmt.Println()
-		fmt.Println(`PROTOTYPES:`)
-		for _, proto := range lib.Prototypes {
-			fmt.Printf("  %s\n", proto)
-		}
-		fmt.Println()
-
-		return nil
-	},
-
-	Long: `
-The ` + "`describe`" + ` command outputs documentation for a package that is available
-(e.g. downloaded) in the current ksonnet application. (This must belong to an already
-known ` + "`<registry-name>`" + ` like *incubator*). The output includes:
-
-1. The library name
-2. A brief description provided by the library authors
-3. A list of available prototypes provided by the library
-
-### Related Commands
-
-* ` + "`ks pkg list` " + `— ` + pkgShortDesc["list"] + `
-* ` + "`ks prototype describe` " + `— ` + protoShortDesc["describe"] + `
-* ` + "`ks generate` " + `— ` + protoShortDesc["use"] + `
-
-### Syntax
-`,
 }
 
 func parsePkgSpec(spec string) (registry, libID string, err error) {

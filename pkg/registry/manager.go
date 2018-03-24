@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/pkg/errors"
 )
 
@@ -27,11 +28,41 @@ var (
 	DefaultManager = &defaultManager{}
 )
 
+// Package finds a package in a registry by name.
+func Package(a app.App, name string) (*pkg.Package, error) {
+	d, err := pkg.ParseName(name)
+	if err != nil {
+		return nil, err
+	}
+
+	registries, err := a.Registries()
+	if err != nil {
+		return nil, err
+	}
+
+	spec, ok := registries[d.Registry]
+	if !ok {
+		return nil, errors.Errorf("registry %q not found", d.Registry)
+	}
+
+	r, err := Locate(a, spec)
+	if err != nil {
+		return nil, err
+	}
+
+	part, err := r.ResolveLibrarySpec(d.Part, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return pkg.New(a, d, part)
+}
+
 // Locate locates a registry given a spec.
 func Locate(a app.App, spec *app.RegistryRefSpec) (Registry, error) {
 	switch spec.Protocol {
 	case ProtocolGitHub:
-		return NewGitHub(spec)
+		return githubFactory(spec)
 	case ProtocolFilesystem:
 		return NewFs(a, spec)
 	default:

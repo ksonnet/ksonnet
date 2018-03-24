@@ -114,6 +114,7 @@ func TestPipeline_Objects(t *testing.T) {
 
 		cpnt := &cmocks.Component{}
 		cpnt.On("Objects", mock.Anything, "default").Return(u, nil)
+		cpnt.On("Name", true).Return("name")
 		components := []component.Component{cpnt}
 
 		ns := component.NewNamespace(p.app, "/")
@@ -139,6 +140,7 @@ func TestPipeline_YAML(t *testing.T) {
 
 		cpnt := &cmocks.Component{}
 		cpnt.On("Objects", mock.Anything, "default").Return(u, nil)
+		cpnt.On("Name", true).Return("name")
 		components := []component.Component{cpnt}
 
 		ns := component.NewNamespace(p.app, "/")

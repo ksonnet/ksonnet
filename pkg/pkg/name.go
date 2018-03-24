@@ -17,12 +17,15 @@ package pkg
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
-var errInvalidSpec = fmt.Errorf("package name should be in the form `<registry>/<library>@<version>`")
+var (
+	errInvalidSpec = fmt.Errorf("package name should be in the form `<registry>/<library>@<version>`")
+
+	reDescriptor = regexp.MustCompile(`^([A-Za-z0-9\-]+)(\/[^@]+)?(@[^@]+)?$`)
+)
 
 // Descriptor describes a package.
 type Descriptor struct {
@@ -33,25 +36,21 @@ type Descriptor struct {
 
 // ParseName parses a package name into its components
 func ParseName(name string) (Descriptor, error) {
-	split := strings.SplitN(name, "/", 2)
-	if len(split) < 2 {
+	matches := reDescriptor.FindStringSubmatch(name)
+	if len(matches) == 0 {
 		return Descriptor{}, errInvalidSpec
 	}
 
-	registryName := split[0]
-	partName := strings.SplitN(split[1], "@", 2)[0]
+	if matches[2] == "" {
+		return Descriptor{Part: strings.TrimPrefix(matches[1], "/")}, nil
+	}
 
-	split = strings.Split(name, "@")
-	if len(split) > 2 {
-		return Descriptor{}, errors.Errorf("symbol '@' is only allowed once, at the end of the argument of the form <registry>/<library>@<version>")
-	}
-	var version string
-	if len(split) == 2 {
-		version = split[1]
-	}
+	registry := matches[1]
+	partName := strings.TrimPrefix(matches[2], "/")
+	version := strings.TrimPrefix(matches[3], "@")
 
 	return Descriptor{
-		Registry: registryName,
+		Registry: registry,
 		Part:     partName,
 		Version:  version,
 	}, nil

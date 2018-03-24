@@ -20,7 +20,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/prototype"
@@ -104,8 +103,6 @@ func (dm *defaultManager) ResolvePath(ksApp app.App, path string) (Namespace, Co
 	if err != nil {
 		return nil, nil, err
 	}
-
-	spew.Dump(nsName)
 
 	ns, err := dm.Namespace(ksApp, nsName)
 	if err != nil {
