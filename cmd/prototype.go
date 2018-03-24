@@ -43,7 +43,6 @@ var protoShortDesc = map[string]string{
 func init() {
 	RootCmd.AddCommand(prototypeCmd)
 	RootCmd.AddCommand(generateCmd)
-	prototypeCmd.AddCommand(prototypeListCmd)
 	prototypeCmd.AddCommand(prototypeDescribeCmd)
 	prototypeCmd.AddCommand(prototypeSearchCmd)
 	prototypeCmd.AddCommand(prototypeUseCmd)
@@ -74,61 +73,6 @@ use prototypes to autogenerate boilerplate code and focus on customizing them
 for your use case.
 
 ----
-`,
-}
-
-var prototypeListCmd = &cobra.Command{
-	Use:   "list",
-	Short: protoShortDesc["list"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("Command 'prototype list' does not take any arguments")
-		}
-
-		cwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		manager, err := metadata.Find(cwd)
-		if err != nil {
-			return err
-		}
-
-		extProtos, err := manager.GetAllPrototypes()
-		if err != nil {
-			return err
-		}
-
-		index := prototype.NewIndex(extProtos)
-		protos, err := index.List()
-		if err != nil {
-			return err
-		} else if len(protos) == 0 {
-			return fmt.Errorf("No prototypes found")
-		}
-
-		fmt.Print(protos)
-
-		return nil
-	},
-	Long: `
-The ` + "`list`" + ` command displays all prototypes that are available locally, as
-well as brief descriptions of what they generate.
-
-ksonnet comes with a set of system prototypes that you can use out-of-the-box
-(e.g.` + " `io.ksonnet.pkg.configMap`" + `). However, you can use more advanced
-prototypes like ` + "`io.ksonnet.pkg.redis-stateless`" + ` by downloading extra packages
-from the *incubator* registry.
-
-### Related Commands
-
-* ` + "`ks prototype describe` " + `— ` + protoShortDesc["describe"] + `
-* ` + "`ks prototype preview` " + `— ` + protoShortDesc["preview"] + `
-* ` + "`ks prototype use` " + `— ` + protoShortDesc["use"] + `
-* ` + "`ks pkg install` " + pkgShortDesc["install"] + `
-
-### Syntax
 `,
 }
 
