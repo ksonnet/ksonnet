@@ -48,10 +48,20 @@ var _ = Describe("ks prototype", func() {
 	})
 
 	Describe("list", func() {
-		It("lists available prototypes", func() {
-			o := a.runKs("prototype", "list")
-			assertExitStatus(o, 0)
-			assertOutput("prototype/list/output.txt", o.stdout)
+		Context("with system prototypes", func() {
+			It("lists available prototypes", func() {
+				o := a.runKs("prototype", "list")
+				assertExitStatus(o, 0)
+				assertOutput("prototype/list/output.txt", o.stdout)
+			})
+		})
+		Context("with a part installed", func() {
+			It("lists available prototypes", func() {
+				a.pkgInstall("incubator/apache")
+				o := a.runKs("prototype", "list")
+				assertExitStatus(o, 0)
+				assertOutput("prototype/list/output-with-addition.txt", o.stdout)
+			})
 		})
 	})
 

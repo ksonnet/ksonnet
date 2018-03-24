@@ -36,7 +36,7 @@ type Package struct {
 
 // New creates a new new instance of Package using a part.
 func New(a app.App, d Descriptor, part *parts.Spec) (*Package, error) {
-	prototypes, err := loadPrototypes(a, d)
+	prototypes, err := LoadPrototypes(a, d)
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +60,8 @@ func NewFromData(a app.App, d Descriptor, data []byte) (*Package, error) {
 	return New(a, d, part)
 }
 
-// loadPrototypes returns prototypes for a Package.
-func loadPrototypes(a app.App, d Descriptor) (prototype.SpecificationSchemas, error) {
+// LoadPrototypes returns prototypes for a Package.
+func LoadPrototypes(a app.App, d Descriptor) (prototype.SpecificationSchemas, error) {
 	vp := vendorPath(a)
 
 	var prototypes prototype.SpecificationSchemas
