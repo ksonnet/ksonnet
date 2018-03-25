@@ -22,36 +22,33 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var prototypeListCmd = &cobra.Command{
-	Use:   "list",
-	Short: protoShortDesc["list"],
+var prototypeSearchCmd = &cobra.Command{
+	Use:   "search <name-substring>",
+	Short: protoShortDesc["search"],
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("Command 'prototype list' does not take any arguments")
+		if len(args) != 1 {
+			return fmt.Errorf("Command 'prototype search' requires a prototype name\n\n%s", cmd.UsageString())
 		}
 
-		return actions.RunPrototypeList(ka)
+		query := args[0]
+		return actions.RunPrototypeSearch(ka, query)
 	},
 	Long: `
-The ` + "`list`" + ` command displays all prototypes that are available locally, as
-well as brief descriptions of what they generate.
-
-ksonnet comes with a set of system prototypes that you can use out-of-the-box
-(e.g.` + " `io.ksonnet.pkg.configMap`" + `). However, you can use more advanced
-prototypes like ` + "`io.ksonnet.pkg.redis-stateless`" + ` by downloading extra packages
-from the *incubator* registry.
+The ` + "`prototype search`" + ` command allows you to search for specific prototypes by name.
+Specifically, it matches any prototypes with names that contain the string <name-substring>.
 
 ### Related Commands
 
 * ` + "`ks prototype describe` " + `— ` + protoShortDesc["describe"] + `
-* ` + "`ks prototype preview` " + `— ` + protoShortDesc["preview"] + `
-* ` + "`ks prototype use` " + `— ` + protoShortDesc["use"] + `
-* ` + "`ks pkg install` " + pkgShortDesc["install"] + `
+* ` + "`ks prototype list` " + `— ` + protoShortDesc["list"] + `
 
 ### Syntax
 `,
+	Example: `
+# Search for prototypes with names that contain the string 'service'.
+ks prototype search service`,
 }
 
 func init() {
-	prototypeCmd.AddCommand(prototypeListCmd)
+	prototypeCmd.AddCommand(prototypeSearchCmd)
 }

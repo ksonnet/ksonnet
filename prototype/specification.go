@@ -18,12 +18,10 @@ package prototype
 import (
 	"bytes"
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/ksonnet/ksonnet/pkg/util/table"
 	"github.com/pkg/errors"
 )
 
@@ -170,27 +168,6 @@ func (s *SpecificationSchema) validate() error {
 
 // SpecificationSchemas is a slice of pointer to `SpecificationSchema`.
 type SpecificationSchemas []*SpecificationSchema
-
-func (ss SpecificationSchemas) String() string {
-	const (
-		nameHeader        = "NAME"
-		descriptionHeader = "DESCRIPTION"
-	)
-
-	sort.Slice(ss, func(i, j int) bool { return ss[i].Name < ss[j].Name })
-
-	var buf bytes.Buffer
-	t := table.New(&buf)
-	t.SetHeader([]string{nameHeader, descriptionHeader})
-
-	for _, proto := range ss {
-		t.Append([]string{proto.Name, proto.Template.ShortDescription})
-	}
-
-	t.Render()
-
-	return buf.String()
-}
 
 // RequiredParams retrieves all parameters that are required by a prototype.
 func (s *SpecificationSchema) RequiredParams() ParamSchemas {

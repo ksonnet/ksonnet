@@ -41,7 +41,7 @@ const (
 	// Prefix represents a search over prototype name prefixes.
 	Prefix SearchOptions = iota
 
-	// Suffix represents a search over prototype name suffices.
+	// Suffix represents a search over prototype name suffixes.
 	Suffix
 
 	// Substring represents a search over substrings of prototype names.

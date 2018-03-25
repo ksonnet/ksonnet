@@ -17,11 +17,8 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	"sort"
 	"strings"
 
-	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/spf13/cobra"
 )
 
@@ -37,10 +34,6 @@ var regShortDesc = map[string]string{
 
 func init() {
 	RootCmd.AddCommand(registryCmd)
-	registryCmd.AddCommand(registryDescribeCmd)
-	registryCmd.AddCommand(registryAddCmd)
-
-	registryAddCmd.PersistentFlags().String(flagRegistryVersion, "", "Version of the registry to add")
 }
 
 var registryCmd = &cobra.Command{
@@ -68,82 +61,5 @@ which can be combined together to configure a Kubernetes application for some ta
 described above. (See ` + "`ks prototype --help`" + ` for more information.)
 
 ----
-`,
-}
-
-var registryDescribeCmd = &cobra.Command{
-	Use:   "describe <registry-name>",
-	Short: regShortDesc["describe"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("Command 'registry describe' takes one argument, which is the name of the registry to describe")
-		}
-		name := args[0]
-
-		cwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		manager, err := metadata.Find(cwd)
-		if err != nil {
-			return err
-		}
-
-		app, err := manager.App()
-		if err != nil {
-			return err
-		}
-
-		appRegistries, err := app.Registries()
-		if err != nil {
-			return err
-		}
-		regRef, exists := appRegistries[name]
-		if !exists {
-			return fmt.Errorf("Registry '%s' doesn't exist", name)
-		}
-
-		reg, _, err := manager.GetRegistry(name)
-		if err != nil {
-			return err
-		}
-
-		fmt.Println(`REGISTRY NAME:`)
-		fmt.Println(regRef.Name)
-		fmt.Println()
-		fmt.Println(`URI:`)
-		fmt.Println(regRef.URI)
-		fmt.Println()
-		fmt.Println(`PROTOCOL:`)
-		fmt.Println(regRef.Protocol)
-		fmt.Println()
-		fmt.Println(`PACKAGES:`)
-
-		libs := make([]string, 0, len(reg.Libraries))
-		for _, lib := range reg.Libraries {
-			libs = append(libs, lib.Path)
-		}
-		sort.Strings(libs)
-		for _, libPath := range libs {
-			fmt.Printf("  %s\n", libPath)
-		}
-
-		return nil
-	},
-
-	Long: `
-The ` + "`describe`" + ` command outputs documentation for the ksonnet registry identified
-by ` + "`<registry-name>`" + `. Specifically, it displays the following:
-
-1. Registry URI
-2. Protocol (e.g. ` + "`github`" + `)
-3. List of packages included in the registry
-
-### Related Commands
-
-* ` + "`ks pkg install` " + `— ` + pkgShortDesc["install"] + `
-
-### Syntax
 `,
 }

@@ -75,3 +75,9 @@ ks registry add databases github.com/example
 # NOTE that "0.0.1" overrides the branch name in the URI ("master")
 ks registry add databases github.com/example/tree/master/reg --version=0.0.1`,
 }
+
+func init() {
+	registryCmd.AddCommand(registryAddCmd)
+
+	registryAddCmd.PersistentFlags().String(flagRegistryVersion, "", "Version of the registry to add")
+}
