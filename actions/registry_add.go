@@ -24,33 +24,34 @@ import (
 )
 
 // RunRegistryAdd runs `registry add`
-func RunRegistryAdd(ksApp app.App, name, uri, version string) error {
-	nl, err := NewRegistryAdd(ksApp, name, uri, version)
+func RunRegistryAdd(ksApp app.App, name, uri, version string, isOverride bool) error {
+	ra, err := NewRegistryAdd(ksApp, name, uri, version, isOverride)
 	if err != nil {
 		return err
 	}
 
-	return nl.Run()
+	return ra.Run()
 }
 
 // RegistryAdd lists namespaces.
 type RegistryAdd struct {
-	app     app.App
-	name    string
-	uri     string
-	version string
-
-	rm registry.Manager
+	app         app.App
+	name        string
+	uri         string
+	version     string
+	isOverride  bool
+	registryAdd func(a app.App, name, protocol, uri, version string, isOverride bool) (*registry.Spec, error)
 }
 
 // NewRegistryAdd creates an instance of RegistryAdd.
-func NewRegistryAdd(ksApp app.App, name, uri, version string) (*RegistryAdd, error) {
+func NewRegistryAdd(ksApp app.App, name, uri, version string, isOverride bool) (*RegistryAdd, error) {
 	ra := &RegistryAdd{
-		app:     ksApp,
-		name:    name,
-		uri:     uri,
-		version: version,
-		rm:      registry.DefaultManager,
+		app:         ksApp,
+		name:        name,
+		uri:         uri,
+		version:     version,
+		isOverride:  isOverride,
+		registryAdd: registry.Add,
 	}
 
 	return ra, nil
@@ -59,7 +60,7 @@ func NewRegistryAdd(ksApp app.App, name, uri, version string) (*RegistryAdd, err
 // Run lists namespaces.
 func (ra *RegistryAdd) Run() error {
 	uri, protocol := ra.protocol()
-	_, err := ra.rm.Add(ra.app, ra.name, protocol, uri, ra.version)
+	_, err := ra.registryAdd(ra.app, ra.name, protocol, uri, ra.version, ra.isOverride)
 	return err
 }
 

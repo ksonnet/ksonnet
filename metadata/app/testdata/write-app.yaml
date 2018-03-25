@@ -1,0 +1,5 @@
+apiVersion: 0.1.0
+registries:
+  a:
+    protocol: ""
+    uri: ""

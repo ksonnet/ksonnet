@@ -23,11 +23,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	// DefaultManager is the default manager for registries.
-	DefaultManager = &defaultManager{}
-)
-
 // Package finds a package in a registry by name.
 func Package(a app.App, name string) (*pkg.Package, error) {
 	d, err := pkg.ParseName(name)
@@ -84,20 +79,8 @@ func makePath(a app.App, r Registry) string {
 	return filepath.Join(root(a), path)
 }
 
-// Manager is a manager for registry related actions.
-type Manager interface {
-	Add(a app.App, name, protoocol, uri, version string) (*Spec, error)
-	// Registries returns a list of alphabetically sorted registries. The
-	// registries are sorted by name.
-	List(ksApp app.App) ([]Registry, error)
-}
-
-type defaultManager struct{}
-
-var _ Manager = (*defaultManager)(nil)
-
-func (dm *defaultManager) List(ksApp app.App) ([]Registry, error) {
-
+// List returns a list of alphabetically sorted Registries.
+func List(ksApp app.App) ([]Registry, error) {
 	var registries []Registry
 	appRegistries, err := ksApp.Registries()
 	if err != nil {
@@ -113,8 +96,4 @@ func (dm *defaultManager) List(ksApp app.App) ([]Registry, error) {
 	}
 
 	return registries, nil
-}
-
-func (dm *defaultManager) Add(a app.App, name, protoocol, uri, version string) (*Spec, error) {
-	return Add(a, name, protoocol, uri, version)
 }

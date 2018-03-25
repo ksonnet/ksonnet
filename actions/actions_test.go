@@ -66,11 +66,12 @@ func mockNsWithName(name string) *cmocks.Namespace {
 	return m
 }
 
-func mockRegistry(name string) *rmocks.Registry {
+func mockRegistry(name string, isOverride bool) *rmocks.Registry {
 	m := &rmocks.Registry{}
 	m.On("Name").Return(name)
 	m.On("Protocol").Return(registry.ProtocolGitHub)
 	m.On("URI").Return("github.com/ksonnet/parts/tree/master/incubator")
+	m.On("IsOverride").Return(isOverride)
 
 	return m
 }

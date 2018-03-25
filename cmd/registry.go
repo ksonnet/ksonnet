@@ -22,10 +22,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	flagRegistryVersion = "version"
-)
-
 var regShortDesc = map[string]string{
 	"list":     "List all registries known to the current ksonnet app.",
 	"describe": "Describe a ksonnet registry and the packages it contains",

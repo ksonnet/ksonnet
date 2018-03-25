@@ -27,8 +27,11 @@ import (
 
 const (
 
-	// appYamlName is the name for the app specification.
+	// appYamlName is the name for the app configuration.
 	appYamlName = "app.yaml"
+
+	// overrideYamlName is the name for the app overrides.
+	overrideYamlName = "app.override.yaml"
 
 	// EnvironmentDirName is the directory name for environments.
 	EnvironmentDirName = "environments"
@@ -50,7 +53,7 @@ var (
 // App is a ksonnet application.
 type App interface {
 	AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec) error
-	AddRegistry(spec *RegistryRefSpec) error
+	AddRegistry(spec *RegistryRefSpec, isOverride bool) error
 	Environment(name string) (*EnvironmentSpec, error)
 	Environments() (EnvironmentSpecs, error)
 	EnvironmentParams(name string) (string, error)
@@ -67,67 +70,6 @@ type App interface {
 	Upgrade(dryRun bool) error
 }
 
-type baseApp struct {
-	root string
-	fs   afero.Fs
-}
-
-func newBaseApp(fs afero.Fs, root string) *baseApp {
-	return &baseApp{
-		fs:   fs,
-		root: root,
-	}
-}
-
-func (ba *baseApp) AddRegistry(newReg *RegistryRefSpec) error {
-	spec, err := ba.load()
-	if err != nil {
-		return err
-	}
-
-	if newReg.Name == "" {
-		return ErrRegistryNameInvalid
-	}
-
-	_, exists := spec.Registries[newReg.Name]
-	if exists {
-		return ErrRegistryExists
-	}
-
-	spec.Registries[newReg.Name] = newReg
-
-	return ba.save(spec)
-}
-
-func (ba *baseApp) UpdateLib(name string, libSpec *LibraryRefSpec) error {
-	spec, err := ba.load()
-	if err != nil {
-		return err
-	}
-
-	spec.Libraries[name] = libSpec
-
-	return ba.save(spec)
-}
-
-func (ba *baseApp) Fs() afero.Fs {
-	return ba.fs
-}
-
-func (ba *baseApp) Root() string {
-	return ba.root
-}
-
-func (ba *baseApp) EnvironmentParams(envName string) (string, error) {
-	envParamsPath := filepath.Join(ba.Root(), EnvironmentDirName, envName, "params.libsonnet")
-	b, err := afero.ReadFile(ba.Fs(), envParamsPath)
-	if err != nil {
-		return "", err
-	}
-
-	return string(b), nil
-}
-
 // Load loads the application configuration.
 func Load(fs afero.Fs, cwd string) (App, error) {
 	appRoot, err := findRoot(fs, cwd)
@@ -135,7 +77,7 @@ func Load(fs afero.Fs, cwd string) (App, error) {
 		return nil, err
 	}
 
-	spec, err := Read(fs, appRoot)
+	spec, err := read(fs, appRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -148,19 +90,6 @@ func Load(fs afero.Fs, cwd string) (App, error) {
 	case "0.1.0":
 		return NewApp010(fs, appRoot), nil
 	}
-}
-
-func (ba *baseApp) save(spec *Spec) error {
-	return Write(ba.fs, ba.root, spec)
-}
-
-func (ba *baseApp) load() (*Spec, error) {
-	spec, err := Read(ba.fs, ba.root)
-	if err != nil {
-		return nil, err
-	}
-
-	return spec, nil
 }
 
 func updateLibData(fs afero.Fs, k8sSpecFlag, libPath string, useVersionPath bool) (string, error) {

@@ -39,13 +39,13 @@ func (_m *App) AddEnvironment(name string, k8sSpecFlag string, spec *app.Environ
 	return r0
 }
 
-// AddRegistry provides a mock function with given fields: spec
-func (_m *App) AddRegistry(spec *app.RegistryRefSpec) error {
-	ret := _m.Called(spec)
+// AddRegistry provides a mock function with given fields: spec, isOverride
+func (_m *App) AddRegistry(spec *app.RegistryRefSpec, isOverride bool) error {
+	ret := _m.Called(spec, isOverride)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*app.RegistryRefSpec) error); ok {
-		r0 = rf(spec)
+	if rf, ok := ret.Get(0).(func(*app.RegistryRefSpec, bool) error); ok {
+		r0 = rf(spec, isOverride)
 	} else {
 		r0 = ret.Error(0)
 	}

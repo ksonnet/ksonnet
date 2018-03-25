@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -189,7 +190,7 @@ func (a *App001) Upgrade(dryRun bool) error {
 	spec.APIVersion = "0.1.0"
 
 	if dryRun {
-		data, err := spec.Marshal()
+		data, err := yaml.Marshal(spec)
 		if err != nil {
 			return err
 		}

@@ -25,7 +25,7 @@ import (
 
 // Add adds a registry with `name`, `protocol`, and `uri` to
 // the current ksonnet application.
-func Add(a app.App, name, protocol, uri, version string) (*Spec, error) {
+func Add(a app.App, name, protocol, uri, version string, isOverride bool) (*Spec, error) {
 	var r Registry
 	var err error
 
@@ -48,7 +48,7 @@ func Add(a app.App, name, protocol, uri, version string) (*Spec, error) {
 		return nil, err
 	}
 
-	err = a.AddRegistry(r.MakeRegistryRefSpec())
+	err = a.AddRegistry(r.MakeRegistryRefSpec(), isOverride)
 	if err != nil {
 		return nil, err
 	}

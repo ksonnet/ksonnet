@@ -69,53 +69,126 @@ type Spec struct {
 
 // Read will return the specification for a ksonnet application. It will navigate up directories
 // to search for `app.yaml` and return error if it hits the root directory.
-func Read(fs afero.Fs, root string) (*Spec, error) {
-	config := filepath.Join(root, appYamlName)
-	log.Debugf("loading configuration from %s", config)
+func read(fs afero.Fs, root string) (*Spec, error) {
+	log.Debugf("loading application configuration from %s", root)
 
-	bytes, err := afero.ReadFile(fs, config)
+	appConfig, err := afero.ReadFile(fs, specPath(root))
 	if err != nil {
 		return nil, err
 	}
 
-	schema, err := Unmarshal(bytes)
+	var spec Spec
+
+	err = yaml.Unmarshal(appConfig, &spec)
 	if err != nil {
 		return nil, err
 	}
 
-	if schema.Contributors == nil {
-		schema.Contributors = ContributorSpecs{}
+	if err = spec.validate(); err != nil {
+		return nil, err
 	}
 
-	if schema.Registries == nil {
-		schema.Registries = RegistryRefSpecs{}
+	exists, err := afero.Exists(fs, overridePath(root))
+	if err != nil {
+		return nil, err
 	}
 
-	if schema.Libraries == nil {
-		schema.Libraries = LibraryRefSpecs{}
+	if exists {
+		var o Override
+
+		overrideConfig, err := afero.ReadFile(fs, overridePath(root))
+		if err != nil {
+			return nil, err
+		}
+
+		err = yaml.Unmarshal(overrideConfig, &o)
+		if err != nil {
+			return nil, err
+		}
+
+		for k, v := range o.Registries {
+			v.isOverride = true
+			spec.Registries[k] = v
+		}
 	}
 
-	if schema.Environments == nil {
-		schema.Environments = EnvironmentSpecs{}
+	if err := spec.validate(); err != nil {
+		return nil, err
 	}
 
-	return schema, nil
+	return &spec, nil
 }
 
-
-
 // Write writes the provided spec to file system.
-func Write(fs afero.Fs, appRoot string, spec *Spec) error {
-	data, err := spec.Marshal()
+func write(fs afero.Fs, appRoot string, spec *Spec) error {
+	hasOverrides := false
+
+	o := Override{
+		Registries: RegistryRefSpecs{},
+	}
+
+	overrideKeys := map[string][]string{
+		"registries": make([]string, 0),
+	}
+
+	for k, v := range spec.Registries {
+		if v.IsOverride() {
+			hasOverrides = true
+			o.Registries[k] = v
+			overrideKeys["registries"] = append(overrideKeys["registries"], k)
+		}
+	}
+
+	for _, k := range overrideKeys["registries"] {
+		delete(spec.Registries, k)
+	}
+
+	appConfig, err := yaml.Marshal(&spec)
+	if err != nil {
+		return errors.Wrap(err, "convert app configuration to YAML")
+	}
+
+	if err = afero.WriteFile(fs, specPath(appRoot), appConfig, DefaultFilePermissions); err != nil {
+		return errors.Wrap(err, "write app.yaml")
+	}
+
+	if err = cleanOverride(fs, appRoot); err != nil {
+		return errors.Wrap(err, "clean overrides")
+	}
+
+	if hasOverrides {
+		overrideConfig, err := yaml.Marshal(&o)
+		if err != nil {
+			return errors.Wrap(err, "convert app override configuration to YAML")
+		}
+
+		if err = afero.WriteFile(fs, overridePath(appRoot), overrideConfig, DefaultFilePermissions); err != nil {
+			return errors.Wrap(err, "write app.override.yaml")
+		}
+	}
+
+	return nil
+}
+
+func cleanOverride(fs afero.Fs, appRoot string) error {
+	exists, err := afero.Exists(fs, overridePath(appRoot))
 	if err != nil {
 		return err
 	}
 
-	return afero.WriteFile(fs, specPath(appRoot), data, DefaultFilePermissions)
+	if exists {
+		return fs.Remove(overridePath(appRoot))
+	}
+
+	return nil
 }
 
 func specPath(appRoot string) string {
 	return filepath.Join(appRoot, appYamlName)
+}
+
+func overridePath(appRoot string) string {
+	return filepath.Join(appRoot, overrideYamlName)
 }
 
 // RepositorySpec defines the spec for the upstream repository of this project.
@@ -130,7 +203,14 @@ type RegistryRefSpec struct {
 	Name       string          `json:"-"`
 	Protocol   string          `json:"protocol"`
 	URI        string          `json:"uri"`
-	GitVersion *GitVersionSpec `json:"gitVersion"`
+	GitVersion *GitVersionSpec `json:"gitVersion,omitempty"`
+
+	isOverride bool
+}
+
+// IsOverride is true if this RegistryRefSpec is an override.
+func (r *RegistryRefSpec) IsOverride() bool {
+	return r.isOverride
 }
 
 // RegistryRefSpecs is a map of the registry name to a RegistryRefSpec.
@@ -191,22 +271,6 @@ type ContributorSpec struct {
 // ContributorSpecs is a list of 0 or more contributors.
 type ContributorSpecs []*ContributorSpec
 
-// Unmarshal attempts to parse the bytes representing a spec file and convert
-// it into a app.Spec.
-func Unmarshal(bytes []byte) (*Spec, error) {
-	schema := Spec{}
-	err := yaml.Unmarshal(bytes, &schema)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = schema.validate(); err != nil {
-		return nil, err
-	}
-
-	return &schema, nil
-}
-
 // Marshal converts a app.Spec into bytes for file writing.
 func (s *Spec) Marshal() ([]byte, error) {
 	return yaml.Marshal(s)
@@ -216,7 +280,7 @@ func (s *Spec) Marshal() ([]byte, error) {
 func (s *Spec) GetRegistryRef(name string) (*RegistryRefSpec, bool) {
 	registryRefSpec, ok := s.Registries[name]
 	if ok {
-		// Populate name, which we do not include in the deserialization
+		// Populate name, which we do not include in the de-serialization
 		// process.
 		registryRefSpec.Name = name
 	}
@@ -239,6 +303,22 @@ func (s *Spec) AddRegistryRef(registryRefSpec *RegistryRefSpec) error {
 }
 
 func (s *Spec) validate() error {
+	if s.Contributors == nil {
+		s.Contributors = ContributorSpecs{}
+	}
+
+	if s.Registries == nil {
+		s.Registries = RegistryRefSpecs{}
+	}
+
+	if s.Libraries == nil {
+		s.Libraries = LibraryRefSpecs{}
+	}
+
+	if s.Environments == nil {
+		s.Environments = EnvironmentSpecs{}
+	}
+
 	if s.APIVersion == "0.0.0" {
 		return errors.New("invalid version")
 	}
