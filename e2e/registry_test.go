@@ -33,42 +33,105 @@ var _ = Describe("ks registry", func() {
 	})
 
 	Describe("add", func() {
+		Context("global", func() {
+			var add = func(path string) {
+				o := a.runKs("registry", "add", "local", path)
+				assertExitStatus(o, 0)
 
-		var add = func(path string) {
-			o := a.runKs("registry", "add", "local", path)
-			assertExitStatus(o, 0)
+				uri := convertPathToURI(path)
+				m := map[string]interface{}{
+					"uri": uri,
+				}
 
-			uri := convertPathToURI(path)
-			m := map[string]interface{}{
-				"uri": uri,
+				o = a.registryList()
+
+				tPath := filepath.Join("registry", "add", "output.txt.tmpl")
+				assertTemplate(m, tPath, o.stdout)
 			}
 
-			o = a.registryList()
+			Context("a filesystem based registry", func() {
+				Context("as a path", func() {
+					It("adds a registry", func() {
+						path, err := filepath.Abs(filepath.Join("testdata", "registries", "parts-infra"))
+						Expect(err).ToNot(HaveOccurred())
 
-			tPath := filepath.Join("registry", "add", "output.txt.tmpl")
-			assertTemplate(m, tPath, o.stdout)
-		}
+						add(path)
+					})
+				})
+				Context("as a URL", func() {
+					It("adds a registry", func() {
+						path, err := filepath.Abs(filepath.Join("testdata", "registries", "parts-infra"))
+						Expect(err).ToNot(HaveOccurred())
 
-		Context("a filesystem based registry", func() {
-			Context("as a path", func() {
-				It("adds a registry", func() {
-					path, err := filepath.Abs(filepath.Join("testdata", "registries", "parts-infra"))
-					Expect(err).ToNot(HaveOccurred())
+						uri := convertPathToURI(path)
 
-					add(path)
+						add(uri)
+					})
 				})
 			})
-			Context("as a URL", func() {
-				It("adds a registry", func() {
+		})
+
+		Context("override", func() {
+			var add = func(name, path string) {
+				o := a.runKs("registry", "add", "--override", name, path)
+				assertExitStatus(o, 0)
+			}
+
+			Context("a filesystem based registry", func() {
+				Context("as a path", func() {
+					It("adds a registry", func() {
+						path, err := filepath.Abs(filepath.Join("testdata", "registries", "parts-infra"))
+						Expect(err).ToNot(HaveOccurred())
+
+						add("local", path)
+
+						o := a.registryList()
+
+						uri := convertPathToURI(path)
+						m := map[string]interface{}{
+							"uri": uri,
+						}
+						tPath := filepath.Join("registry", "add", "override-output.txt.tmpl")
+						assertTemplate(m, tPath, o.stdout)
+					})
+				})
+				Context("as a URL", func() {
+					It("adds a registry", func() {
+						path, err := filepath.Abs(filepath.Join("testdata", "registries", "parts-infra"))
+						Expect(err).ToNot(HaveOccurred())
+
+						uri := convertPathToURI(path)
+
+						add("local", uri)
+
+						o := a.registryList()
+
+						m := map[string]interface{}{
+							"uri": uri,
+						}
+						tPath := filepath.Join("registry", "add", "override-output.txt.tmpl")
+						assertTemplate(m, tPath, o.stdout)
+					})
+				})
+			})
+
+			Context("an existing configuration", func() {
+				It("overrides the existing configuration", func() {
 					path, err := filepath.Abs(filepath.Join("testdata", "registries", "parts-infra"))
 					Expect(err).ToNot(HaveOccurred())
+
+					add("incubator", path)
+
+					o := a.registryList()
 
 					uri := convertPathToURI(path)
-
-					add(uri)
+					m := map[string]interface{}{
+						"uri": uri,
+					}
+					tPath := filepath.Join("registry", "add", "override-incubator.txt.tmpl")
+					assertTemplate(m, tPath, o.stdout)
 				})
 			})
-
 		})
 	})
 

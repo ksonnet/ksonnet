@@ -18,6 +18,7 @@ package actions
 import (
 	"io"
 	"os"
+	"sort"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/pkg/registry"
@@ -36,17 +37,17 @@ func RunRegistryList(ksApp app.App) error {
 
 // RegistryList lists available registries
 type RegistryList struct {
-	app app.App
-	rm  registry.Manager
-	out io.Writer
+	app          app.App
+	registryList func(ksApp app.App) ([]registry.Registry, error)
+	out          io.Writer
 }
 
 // NewRegistryList creates an instance of RegistryList
 func NewRegistryList(ksApp app.App) (*RegistryList, error) {
 	rl := &RegistryList{
-		app: ksApp,
-		rm:  registry.DefaultManager,
-		out: os.Stdout,
+		app:          ksApp,
+		registryList: registry.List,
+		out:          os.Stdout,
 	}
 
 	return rl, nil
@@ -54,23 +55,33 @@ func NewRegistryList(ksApp app.App) (*RegistryList, error) {
 
 // Run runs the env list action.
 func (rl *RegistryList) Run() error {
-	registries, err := rl.rm.List(rl.app)
+	registries, err := rl.registryList(rl.app)
 	if err != nil {
 		return err
 	}
 
 	t := table.New(rl.out)
-	t.SetHeader([]string{"name", "protocol", "uri"})
+	t.SetHeader([]string{"name", "override", "protocol", "uri"})
 
 	var rows [][]string
 
 	for _, r := range registries {
+		override := ""
+		if r.IsOverride() {
+			override = "*"
+		}
+
 		rows = append(rows, []string{
 			r.Name(),
+			override,
 			r.Protocol(),
 			r.URI(),
 		})
 	}
+
+	sort.Slice(rows, func(i, j int) bool {
+		return rows[i][0] < rows[j][0]
+	})
 
 	t.AppendBulk(rows)
 

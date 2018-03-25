@@ -47,4 +47,5 @@ type Registry interface {
 	Name() string
 	Protocol() string
 	URI() string
+	IsOverride() bool
 }

@@ -49,6 +49,20 @@ func (_m *Registry) FetchRegistrySpec() (*registry.Spec, error) {
 	return r0, r1
 }
 
+// IsOverride provides a mock function with given fields:
+func (_m *Registry) IsOverride() bool {
+	ret := _m.Called()
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // MakeRegistryRefSpec provides a mock function with given fields:
 func (_m *Registry) MakeRegistryRefSpec() *app.RegistryRefSpec {
 	ret := _m.Called()

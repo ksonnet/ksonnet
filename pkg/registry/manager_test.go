@@ -59,10 +59,7 @@ func Test_Package(t *testing.T) {
 
 }
 
-// TODO: re-enable when the manager or its mock goes away
-func OffTest_defaultManager_Registries(t *testing.T) {
-	dm := &defaultManager{}
-
+func Test_List(t *testing.T) {
 	specs := app.RegistryRefSpecs{
 		"incubator": &app.RegistryRefSpec{
 			Protocol: ProtocolGitHub,
@@ -71,9 +68,9 @@ func OffTest_defaultManager_Registries(t *testing.T) {
 	}
 
 	appMock := &mocks.App{}
-	appMock.On("Registries").Return(specs)
+	appMock.On("Registries").Return(specs, nil)
 
-	registries, err := dm.List(appMock)
+	registries, err := List(appMock)
 	require.NoError(t, err)
 
 	require.Len(t, registries, 1)

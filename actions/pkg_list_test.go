@@ -22,7 +22,6 @@ import (
 	"github.com/ksonnet/ksonnet/metadata/app"
 	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/registry"
-	rmocks "github.com/ksonnet/ksonnet/pkg/registry/mocks"
 	"github.com/stretchr/testify/require"
 )
 
@@ -40,9 +39,6 @@ func TestPkgList(t *testing.T) {
 		var buf bytes.Buffer
 		a.out = &buf
 
-		rm := &rmocks.Manager{}
-		a.rm = rm
-
 		spec := &registry.Spec{
 			Libraries: registry.LibraryRefSpecs{
 				"lib1": &registry.LibraryRef{},
@@ -50,11 +46,13 @@ func TestPkgList(t *testing.T) {
 			},
 		}
 
-		incubator := mockRegistry("incubator")
+		incubator := mockRegistry("incubator", false)
 		incubator.On("FetchRegistrySpec").Return(spec, nil)
 
-		registries := []registry.Registry{incubator}
-		rm.On("List", appMock).Return(registries, nil)
+		a.registryList = func(app.App) ([]registry.Registry, error) {
+			registries := []registry.Registry{incubator}
+			return registries, nil
+		}
 
 		err = a.Run()
 		require.NoError(t, err)

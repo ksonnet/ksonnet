@@ -59,6 +59,11 @@ func NewFs(a app.App, registryRef *app.RegistryRefSpec) (*Fs, error) {
 
 var _ Registry = (*Fs)(nil)
 
+// IsOverride is true if this registry an an override.
+func (fs *Fs) IsOverride() bool {
+	return fs.spec.IsOverride()
+}
+
 // Name is the registry name.
 func (fs *Fs) Name() string {
 	return fs.spec.Name

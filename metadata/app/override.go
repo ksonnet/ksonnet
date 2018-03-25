@@ -13,19 +13,9 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package cmd
+package app
 
-const (
-	flagEnv       = "env"
-	flagFilename  = "filename"
-	flagIndex     = "index"
-	flagNamespace = "namespace"
-	flagOutput    = "output"
-	flagOverride  = "override"
-	flagVersion   = "version"
-
-	shortFilename = "f"
-	shortIndex    = "i"
-	shortOutput   = "o"
-	shortOverride = "o"
-)
+// Override defines overrides to ksonnet project configurations.
+type Override struct {
+	Registries RegistryRefSpecs `json:"registries,omitempty"`
+}

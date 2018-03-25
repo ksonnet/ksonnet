@@ -54,7 +54,7 @@ func TestAdd(t *testing.T) {
 			},
 		}
 
-		appMock.On("AddRegistry", expectedSpec).Return(nil)
+		appMock.On("AddRegistry", expectedSpec, true).Return(nil)
 
 		ghMock := &mocks.GitHub{}
 		ghMock.On("CommitSHA1", mock.Anything, mock.Anything, "master").Return("40285d8a14f1ac5787e405e1023cf0c07f6aa28c", nil)
@@ -73,7 +73,7 @@ func TestAdd(t *testing.T) {
 			return NewGitHub(registryRef, ghOpt)
 		}
 
-		spec, err := Add(appMock, "new", ProtocolGitHub, "github.com/foo/bar", "")
+		spec, err := Add(appMock, "new", ProtocolGitHub, "github.com/foo/bar", "", true)
 		require.NoError(t, err)
 
 		require.Equal(t, registrySpec, spec)

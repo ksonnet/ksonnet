@@ -18,9 +18,10 @@ package actions
 import (
 	"testing"
 
+	"github.com/ksonnet/ksonnet/metadata/app"
 	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/registry"
-	"github.com/ksonnet/ksonnet/pkg/registry/mocks"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,12 +35,20 @@ func TestRegistryAdd(t *testing.T) {
 			version     string
 			expectedURI string
 			protocol    string
+			isOverride  bool
 		}{
 			{
 				name:        "github",
 				uri:         "github.com/foo/bar",
 				expectedURI: "github.com/foo/bar",
 				protocol:    registry.ProtocolGitHub,
+			},
+			{
+				name:        "github override",
+				uri:         "github.com/foo/bar",
+				expectedURI: "github.com/foo/bar",
+				protocol:    registry.ProtocolGitHub,
+				isOverride:  true,
 			},
 			{
 				name:        "fs",
@@ -57,12 +66,18 @@ func TestRegistryAdd(t *testing.T) {
 
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
-				a, err := NewRegistryAdd(appMock, name, tc.uri, tc.version)
+				a, err := NewRegistryAdd(appMock, name, tc.uri, tc.version, tc.isOverride)
 				require.NoError(t, err)
 
-				rm := &mocks.Manager{}
-				rm.On("Add", appMock, "new", tc.protocol, tc.expectedURI, tc.version).Return(nil, nil)
-				a.rm = rm
+				a.registryAdd = func(a app.App, name, protocol, uri, version string, isOverride bool) (*registry.Spec, error) {
+					assert.Equal(t, "new", name)
+					assert.Equal(t, tc.protocol, protocol)
+					assert.Equal(t, tc.expectedURI, uri)
+					assert.Equal(t, tc.version, version)
+					assert.Equal(t, tc.isOverride, isOverride)
+
+					return &registry.Spec{}, nil
+				}
 
 				err = a.Run()
 				require.NoError(t, err)

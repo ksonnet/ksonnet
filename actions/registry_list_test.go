@@ -19,9 +19,9 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/ksonnet/ksonnet/metadata/app"
 	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/registry"
-	rmocks "github.com/ksonnet/ksonnet/pkg/registry/mocks"
 	"github.com/stretchr/testify/require"
 )
 
@@ -33,13 +33,13 @@ func TestRegistryList(t *testing.T) {
 		var buf bytes.Buffer
 		a.out = &buf
 
-		rm := &rmocks.Manager{}
-		a.rm = rm
-
-		registries := []registry.Registry{
-			mockRegistry("incubator"),
+		a.registryList = func(app.App) ([]registry.Registry, error) {
+			registries := []registry.Registry{
+				mockRegistry("override", true),
+				mockRegistry("incubator", false),
+			}
+			return registries, nil
 		}
-		rm.On("List", appMock).Return(registries, nil)
 
 		err = a.Run()
 		require.NoError(t, err)

@@ -18,16 +18,21 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/spf13/viper"
+
 	"github.com/ksonnet/ksonnet/actions"
 	"github.com/spf13/cobra"
+)
+
+const (
+	vRegistryAddVersion  = "registry-add-version"
+	vRegistryAddOverride = "registry-add-override"
 )
 
 var registryAddCmd = &cobra.Command{
 	Use:   "add <registry-name> <registry-uri>",
 	Short: regShortDesc["add"],
 	RunE: func(cmd *cobra.Command, args []string) error {
-		flags := cmd.Flags()
-
 		if len(args) != 2 {
 			return fmt.Errorf("Command 'registry add' takes two arguments, which is the name and the repository address of the registry to add")
 		}
@@ -35,12 +40,10 @@ var registryAddCmd = &cobra.Command{
 		name := args[0]
 		uri := args[1]
 
-		version, err := flags.GetString(flagRegistryVersion)
-		if err != nil {
-			return err
-		}
+		version := viper.GetString(vRegistryAddVersion)
+		isOverride := viper.GetBool(vRegistryAddOverride)
 
-		return actions.RunRegistryAdd(ka, name, uri, version)
+		return actions.RunRegistryAdd(ka, name, uri, version, isOverride)
 	},
 
 	Long: `
@@ -54,12 +57,18 @@ A registry is uniquely identified by its:
 1. Name (e.g. ` + "`incubator`" + `)
 2. Version (e.g. ` + "`master`" + `)
 
-Currently, only registries supporting the **GitHub protocol** can be added.
+There are two supported registry protocols: **github** and **fs**.
+
+GitHub registries expect a path in a GitHub repository, and filesystem based
+registries expect a path on the local filesystem.
 
 During creation, all registries must specify a unique name and URI where the
 registry lives. Optionally, a version can be provided (e.g. the *Github branch
 name*). If a version is not specified, it will default to ` + "`latest`" + `.
 
+Registries can be overridden with ` + "`--override`" + `.  Overridden registries
+are stored in ` + "`app.override.yaml`" + ` and can be safely ignored using your
+SCM configuration.
 
 ### Related Commands
 
@@ -79,5 +88,9 @@ ks registry add databases github.com/example/tree/master/reg --version=0.0.1`,
 func init() {
 	registryCmd.AddCommand(registryAddCmd)
 
-	registryAddCmd.PersistentFlags().String(flagRegistryVersion, "", "Version of the registry to add")
+	registryAddCmd.Flags().String(flagVersion, "", "Version of the registry to add")
+	viper.BindPFlag(vRegistryAddVersion, registryAddCmd.Flags().Lookup(flagVersion))
+
+	registryAddCmd.Flags().BoolP(flagOverride, shortOverride, false, "Store in override configuration")
+	viper.BindPFlag(vRegistryAddOverride, registryAddCmd.Flags().Lookup(flagOverride))
 }
