@@ -22,7 +22,6 @@ import (
 	"github.com/ksonnet/ksonnet/env"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
-	"github.com/ksonnet/ksonnet/pkg/parts"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/ksonnet/ksonnet/prototype"
 	"github.com/spf13/afero"
@@ -66,12 +65,6 @@ type Manager interface {
 	GetEnvironment(name string) (*env.Env, error)
 	SetEnvironment(name, desiredName string) error
 	GetDestination(envName string) (env.Destination, error)
-
-	// Dependency/registry API.
-	GetRegistry(name string) (*registry.Spec, string, error)
-	GetPackage(registryName, libID string) (*parts.Spec, error)
-	GetDependency(libName string) (*parts.Spec, error)
-	GetAllPrototypes() (prototype.SpecificationSchemas, error)
 }
 
 // Find will recursively search the current directory and its parents for a

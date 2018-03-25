@@ -16,7 +16,6 @@
 package actions
 
 import (
-	"github.com/davecgh/go-spew/spew"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/registry"
@@ -75,8 +74,6 @@ func (pi *PkgInstall) Run() error {
 	if err != nil {
 		return err
 	}
-
-	spew.Dump(d)
 
 	return pi.depCacher(pi.app, d, customName)
 }
