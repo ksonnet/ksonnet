@@ -63,6 +63,8 @@ func findComponentsObj(node ast.Node) (*ast.Object, error) {
 			}
 		}
 		return nil, fmt.Errorf("Invalid params schema -- there must be a top-level object '%s'", componentsID)
+	case *ast.ApplyBrace:
+		return findComponentsObj(n.Right)
 	}
 	return nil, fmt.Errorf("Invalid params schema -- did not expect node type: %T", node)
 }
