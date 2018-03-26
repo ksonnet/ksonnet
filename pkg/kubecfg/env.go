@@ -121,14 +121,26 @@ func (c *EnvListCmd) Run(out io.Writer) error {
 type EnvSetCmd struct {
 	name        string
 	desiredName string
+	server      string
+	namespace   string
 
 	manager metadata.Manager
 }
 
-func NewEnvSetCmd(name, desiredName string, manager metadata.Manager) (*EnvSetCmd, error) {
-	return &EnvSetCmd{name: name, desiredName: desiredName, manager: manager}, nil
+func NewEnvSetCmd(name, desiredName, server, namespace string, manager metadata.Manager) (*EnvSetCmd, error) {
+	return &EnvSetCmd{
+		name:        name,
+		desiredName: desiredName,
+		server:      server,
+		namespace:   namespace,
+		manager:     manager,
+	}, nil
 }
 
 func (c *EnvSetCmd) Run() error {
-	return c.manager.SetEnvironment(c.name, c.desiredName)
+	e := metadata.Environment{
+		Name:      c.desiredName,
+		Namespace: c.namespace,
+	}
+	return c.manager.SetEnvironment(c.name, e)
 }

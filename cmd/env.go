@@ -61,6 +61,9 @@ func init() {
 
 	envSetCmd.PersistentFlags().String(flagEnvName, "",
 		"Name used to uniquely identify the environment. Must not already exist within the ksonnet app")
+
+	envSetCmd.PersistentFlags().String(flagEnvNamespace, "",
+		"Name used to uniquely identify the environment. Must not already exist within the ksonnet app")
 }
 
 var envCmd = &cobra.Command{
@@ -317,7 +320,17 @@ var envSetCmd = &cobra.Command{
 			return err
 		}
 
-		c, err := kubecfg.NewEnvSetCmd(originalName, name, manager)
+		namespace, err := flags.GetString(flagEnvNamespace)
+		if err != nil {
+			return err
+		}
+
+		server, err := flags.GetString(flagEnvServer)
+		if err != nil {
+			return err
+		}
+
+		c, err := kubecfg.NewEnvSetCmd(originalName, name, server, namespace, manager)
 		if err != nil {
 			return err
 		}

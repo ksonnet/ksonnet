@@ -63,7 +63,7 @@ type Manager interface {
 	DeleteEnvironment(name string) error
 	GetEnvironments() (map[string]env.Env, error)
 	GetEnvironment(name string) (*env.Env, error)
-	SetEnvironment(name, desiredName string) error
+	SetEnvironment(name string, desired Environment) error
 	GetDestination(envName string) (env.Destination, error)
 
 	// Dependency/registry API.
