@@ -16,6 +16,7 @@
 package actions
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/ksonnet/ksonnet/component"
@@ -100,14 +101,18 @@ func NewParamSet(ksApp app.App, name, path, value string, opts ...ParamSetOpt) (
 
 // Run runs the action.
 func (ps *ParamSet) Run() error {
-
 	value, err := params.DecodeValue(ps.rawValue)
 	if err != nil {
 		return errors.Wrap(err, "value is invalid")
 	}
 
+	evaluatedValue := ps.rawValue
+	if _, ok := value.(string); ok {
+		evaluatedValue = strconv.Quote(ps.rawValue)
+	}
+
 	if ps.envName != "" {
-		return ps.setEnv(ps.app, ps.envName, ps.name, ps.rawPath, ps.rawValue)
+		return ps.setEnv(ps.app, ps.envName, ps.name, ps.rawPath, evaluatedValue)
 	}
 
 	path := strings.Split(ps.rawPath, ".")
