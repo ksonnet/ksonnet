@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/env"
+	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/metadata/lib"
 	str "github.com/ksonnet/ksonnet/strings"
 
@@ -40,6 +41,13 @@ var (
 	// envCreate is a function which creates environments.
 	envCreate = env.Create
 )
+
+// Environment represents all fields of a ksonnet environment.
+type Environment struct {
+	Name      string
+	Namespace string
+	Server    string
+}
 
 func (m *manager) CreateEnvironment(name, server, namespace, k8sSpecFlag string) error {
 	a, err := m.App()
@@ -97,19 +105,52 @@ func (m *manager) GetEnvironment(name string) (*env.Env, error) {
 	return env.Retrieve(a, name)
 }
 
-func (m *manager) SetEnvironment(from, to string) error {
+func (m *manager) SetEnvironment(from string, desired Environment) error {
 	a, err := m.App()
 	if err != nil {
 		return err
 	}
 
-	config := env.RenameConfig{
-		App:     a,
-		AppRoot: m.rootPath,
-		Fs:      m.appFS,
+	e, err := m.GetEnvironment(from)
+	if err != nil {
+		return nil
 	}
 
-	return env.Rename(from, to, config)
+	e.Name = from
+
+	if desired.Name != "" && desired.Name != e.Name {
+		config := env.RenameConfig{
+			App:     a,
+			AppRoot: m.rootPath,
+			Fs:      m.appFS,
+		}
+
+		if err = env.Rename(from, desired.Name, config); err != nil {
+			return err
+		}
+
+		e.Name = desired.Name
+	}
+
+	if desired.Namespace != "" && desired.Namespace != e.Destination.Namespace() {
+		spec := &app.EnvironmentSpec{
+			Name: e.Name,
+			Destination: &app.EnvironmentDestinationSpec{
+				Namespace: desired.Namespace,
+				Server:    e.Destination.Server(),
+			},
+			KubernetesVersion: e.KubernetesVersion,
+			Path:              e.Name,
+		}
+
+		flagSpec := fmt.Sprintf("version:%s", spec.KubernetesVersion)
+
+		if err := a.AddEnvironment(e.Name, flagSpec, spec); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (m *manager) GetEnvironmentParams(name, nsName string) (map[string]param.Params, error) {

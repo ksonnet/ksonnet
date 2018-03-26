@@ -186,20 +186,22 @@ func TestSetEnvironment(t *testing.T) {
 
 		setName := "new-env"
 
-		// Test updating an environment that doesn't exist
-		err := m.SetEnvironment("notexists", setName)
-		if err == nil {
-			t.Fatal("Expected error when setting an environment that does not exist")
+		desired := Environment{
+			Name: mockEnvName2,
 		}
 
 		// Test updating an environment to an environment that already exists
-		err = m.SetEnvironment(mockEnvName, mockEnvName2)
+		err := m.SetEnvironment(mockEnvName, desired)
 		if err == nil {
 			t.Fatalf("Expected error when setting \"%s\" to \"%s\", because env already exists", mockEnvName, mockEnvName2)
 		}
 
+		desired = Environment{
+			Name: setName,
+		}
+
 		// Test changing the name an existing environment.
-		err = m.SetEnvironment(mockEnvName, setName)
+		err = m.SetEnvironment(mockEnvName, desired)
 		if err != nil {
 			t.Fatalf("Could not set \"%s\", got:\n  %s", mockEnvName, err)
 		}
@@ -247,7 +249,8 @@ func TestSetEnvironment(t *testing.T) {
 
 		for _, v := range tests {
 			m = mockEnvironmentsWith(t, fs, v.appName, []string{v.nameOld})
-			err = m.SetEnvironment(v.nameOld, v.nameNew)
+			desired := Environment{Name: v.nameNew}
+			err = m.SetEnvironment(v.nameOld, desired)
 			if err != nil {
 				t.Fatalf("Could not set '%s', got:\n  %s", v.nameOld, err)
 			}
