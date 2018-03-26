@@ -106,6 +106,11 @@ func read(fs afero.Fs, root string) (*Spec, error) {
 			return nil, err
 		}
 
+		for k, v := range o.Environments {
+			v.isOverride = true
+			spec.Environments[k] = v
+		}
+
 		for k, v := range o.Registries {
 			v.isOverride = true
 			spec.Registries[k] = v
@@ -124,11 +129,21 @@ func write(fs afero.Fs, appRoot string, spec *Spec) error {
 	hasOverrides := false
 
 	o := Override{
-		Registries: RegistryRefSpecs{},
+		Environments: EnvironmentSpecs{},
+		Registries:   RegistryRefSpecs{},
 	}
 
 	overrideKeys := map[string][]string{
-		"registries": make([]string, 0),
+		"environments": make([]string, 0),
+		"registries":   make([]string, 0),
+	}
+
+	for k, v := range spec.Environments {
+		if v.IsOverride() {
+			hasOverrides = true
+			o.Environments[k] = v
+			overrideKeys["environments"] = append(overrideKeys["environments"], k)
+		}
 	}
 
 	for k, v := range spec.Registries {
@@ -137,6 +152,10 @@ func write(fs afero.Fs, appRoot string, spec *Spec) error {
 			o.Registries[k] = v
 			overrideKeys["registries"] = append(overrideKeys["registries"], k)
 		}
+	}
+
+	for _, k := range overrideKeys["environments"] {
+		delete(spec.Environments, k)
 	}
 
 	for _, k := range overrideKeys["registries"] {
@@ -200,9 +219,14 @@ type RepositorySpec struct {
 // RegistryRefSpec defines the spec for a registry. A registry is a collection
 // of library parts.
 type RegistryRefSpec struct {
-	Name       string          `json:"-"`
-	Protocol   string          `json:"protocol"`
-	URI        string          `json:"uri"`
+	// Name is the user defined name of a registry.
+	Name string `json:"-"`
+	// Protocol is the registry protocol for this registry. Currently supported
+	// values are `github` and `fs`.
+	Protocol string `json:"protocol"`
+	// URI is the location of the registry.
+	URI string `json:"uri"`
+	// GitVersion is the git information for the registry.
 	GitVersion *GitVersionSpec `json:"gitVersion,omitempty"`
 
 	isOverride bool
@@ -234,6 +258,13 @@ type EnvironmentSpec struct {
 	// Targets contain the relative component paths that this environment
 	// wishes to deploy on it's destination.
 	Targets []string `json:"targets,omitempty"`
+
+	isOverride bool
+}
+
+// IsOverride is true if this EnvironmentSpec is an override.
+func (e *EnvironmentSpec) IsOverride() bool {
+	return e.isOverride
 }
 
 // EnvironmentDestinationSpec contains the specification for the cluster

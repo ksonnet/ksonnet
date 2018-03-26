@@ -22,15 +22,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// DeleteConfig is a configuration for deleting an environment.
-type DeleteConfig struct {
-	App  app.App
-	Name string
-}
-
 // Delete deletes an environment.
-func Delete(config DeleteConfig) error {
-	d, err := newDeleter(config)
+func Delete(a app.App, name string, override bool) error {
+	d, err := newDeleter(a, name, override)
 	if err != nil {
 		return err
 	}
@@ -38,38 +32,42 @@ func Delete(config DeleteConfig) error {
 }
 
 type deleter struct {
-	DeleteConfig
+	app      app.App
+	name     string
+	override bool
 }
 
-func newDeleter(config DeleteConfig) (*deleter, error) {
+func newDeleter(a app.App, name string, override bool) (*deleter, error) {
 	return &deleter{
-		DeleteConfig: config,
+		app:      a,
+		name:     name,
+		override: override,
 	}, nil
 }
 
 func (d *deleter) Delete() error {
-	envPath, err := filepath.Abs(filepath.Join(d.App.Root(), envRoot, d.Name))
+	envPath, err := filepath.Abs(filepath.Join(d.app.Root(), envRoot, d.name))
 	if err != nil {
 		return err
 	}
 
-	log.Infof("Deleting environment %q with metadata at path %q", d.Name, envPath)
+	log.Infof("Deleting environment %q with metadata at path %q", d.name, envPath)
 
 	// Remove the directory and all files within the environment path.
-	if err = d.App.Fs().RemoveAll(envPath); err != nil {
+	if err = d.app.Fs().RemoveAll(envPath); err != nil {
 		// if err = d.cleanEmptyParentDirs(); err != nil {
 		log.Debugf("Failed to remove environment directory at path %q", envPath)
 		return err
 	}
 
-	if err = d.App.RemoveEnvironment(d.Name); err != nil {
+	if err = d.app.RemoveEnvironment(d.name, d.override); err != nil {
 		return err
 	}
 
-	if err = cleanEmptyDirs(d.App); err != nil {
+	if err = cleanEmptyDirs(d.app); err != nil {
 		return err
 	}
 
-	log.Infof("Successfully removed environment '%s'", d.Name)
+	log.Infof("Successfully removed environment '%s'", d.name)
 	return nil
 }

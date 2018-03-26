@@ -17,5 +17,6 @@ package app
 
 // Override defines overrides to ksonnet project configurations.
 type Override struct {
-	Registries RegistryRefSpecs `json:"registries,omitempty"`
+	Environments EnvironmentSpecs `json:"environments,omitempty"`
+	Registries   RegistryRefSpecs `json:"registries,omitempty"`
 }

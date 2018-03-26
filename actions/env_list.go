@@ -58,13 +58,19 @@ func (nl *EnvList) Run() error {
 	}
 
 	table := table.New(nl.out)
-	table.SetHeader([]string{"name", "kubernetes-version", "namespace", "server"})
+	table.SetHeader([]string{"name", "override", "kubernetes-version", "namespace", "server"})
 
 	var rows [][]string
 
 	for name, env := range environments {
+		override := ""
+		if env.IsOverride() {
+			override = "*"
+		}
+
 		rows = append(rows, []string{
 			name,
+			override,
 			env.KubernetesVersion,
 			env.Destination.Namespace,
 			env.Destination.Server,

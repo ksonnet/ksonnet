@@ -40,8 +40,8 @@ type CreateConfig struct {
 }
 
 // Create creates a new environment for the project.
-func Create(config CreateConfig) error {
-	c, err := newCreator(config)
+func Create(a app.App, d Destination, name, k8sSpecFlag string, overrideData, paramsData []byte, isOverride bool) error {
+	c, err := newCreator(a, d, name, k8sSpecFlag, overrideData, paramsData, isOverride)
 	if err != nil {
 		return err
 	}
@@ -49,30 +49,42 @@ func Create(config CreateConfig) error {
 }
 
 type creator struct {
-	CreateConfig
+	app          app.App
+	d            Destination
+	name         string
+	k8sSpecFlag  string
+	overrideData []byte
+	paramsData   []byte
+	isOverride   bool
 }
 
-func newCreator(config CreateConfig) (*creator, error) {
+func newCreator(a app.App, d Destination, name, k8sSpecFlag string, overrideData, paramsData []byte, isOverride bool) (*creator, error) {
 	return &creator{
-		CreateConfig: config,
+		app:          a,
+		d:            d,
+		name:         name,
+		k8sSpecFlag:  k8sSpecFlag,
+		overrideData: overrideData,
+		paramsData:   paramsData,
+		isOverride:   isOverride,
 	}, nil
 }
 
 func (c *creator) Create() error {
 	if c.environmentExists() {
-		return errors.Errorf("Could not create %q", c.Name)
+		return errors.Errorf("environment %q already exists", c.name)
 	}
 
 	// ensure environment name does not contain punctuation
-	if !isValidName(c.Name) {
-		return fmt.Errorf("Environment name %q is not valid; must not contain punctuation, spaces, or begin or end with a slash", c.Name)
+	if !isValidName(c.name) {
+		return fmt.Errorf("environment name %q is not valid; must not contain punctuation, spaces, or begin or end with a slash", c.name)
 	}
 
 	log.Infof("Creating environment %q with namespace %q, pointing to cluster at address %q",
-		c.Name, c.Destination.Namespace(), c.Destination.Server())
+		c.name, c.d.Namespace(), c.d.Server())
 
-	envPath := filepath.Join(c.App.Root(), app.EnvironmentDirName, c.Name)
-	err := c.App.Fs().MkdirAll(envPath, app.DefaultFolderPermissions)
+	envPath := filepath.Join(c.app.Root(), app.EnvironmentDirName, c.name)
+	err := c.app.Fs().MkdirAll(envPath, app.DefaultFolderPermissions)
 	if err != nil {
 		return err
 	}
@@ -84,39 +96,47 @@ func (c *creator) Create() error {
 		{
 			// environment base override file
 			filepath.Join(envPath, envFileName),
-			c.OverrideData,
+			c.overrideData,
 		},
 		{
 			// params file
 			filepath.Join(envPath, paramsFileName),
-			c.ParamsData,
+			c.paramsData,
 		},
 	}
 
 	for _, a := range metadata {
 		fileName := path.Base(a.path)
 		log.Debugf("Generating '%s', length: %d", fileName, len(a.data))
-		if err = afero.WriteFile(c.App.Fs(), a.path, a.data, app.DefaultFilePermissions); err != nil {
+		if err = afero.WriteFile(c.app.Fs(), a.path, a.data, app.DefaultFilePermissions); err != nil {
 			log.Debugf("Failed to write '%s'", fileName)
 			return err
 		}
 	}
 
 	// update app.yaml
-	err = c.App.AddEnvironment(c.Name, c.K8sSpecFlag, &app.EnvironmentSpec{
-		Path: c.Name,
+	err = c.app.AddEnvironment(c.name, c.k8sSpecFlag, &app.EnvironmentSpec{
+		Path: c.name,
 		Destination: &app.EnvironmentDestinationSpec{
-			Server:    c.Destination.Server(),
-			Namespace: c.Destination.Namespace(),
+			Server:    c.d.Server(),
+			Namespace: c.d.Namespace(),
 		},
-	})
+	}, c.isOverride)
 
 	return err
 }
 
 func (c *creator) environmentExists() bool {
-	_, err := c.App.Environment(c.Name)
-	return err == nil
+	if c.isOverride {
+		return false
+	}
+
+	_, err := c.app.Environment(c.name)
+	if err != nil {
+		return false
+	}
+
+	return true
 }
 
 // isValidName returns true if a name (e.g., for an environment) is valid.

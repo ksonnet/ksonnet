@@ -50,18 +50,21 @@ func RunEnvSet(ksApp app.App, envName string, opts ...EnvSetOpt) error {
 // EnvSet sets targets for an environment.
 type EnvSet struct {
 	app       app.App
-	em        env.Manager
 	envName   string
 	newName   string
 	newNsName string
+
+	envRename func(a app.App, from, to string, override bool) error
+	updateEnv func(a app.App, envName string, spec *app.EnvironmentSpec, override bool) error
 }
 
 // NewEnvSet creates an instance of EnvSet.
 func NewEnvSet(ksApp app.App, envName string, opts ...EnvSetOpt) (*EnvSet, error) {
 	es := &EnvSet{
-		app:     ksApp,
-		em:      env.DefaultManager,
-		envName: envName,
+		app:       ksApp,
+		envRename: env.Rename,
+		updateEnv: updateEnv,
+		envName:   envName,
 	}
 
 	for _, opt := range opts {
@@ -73,19 +76,21 @@ func NewEnvSet(ksApp app.App, envName string, opts ...EnvSetOpt) (*EnvSet, error
 
 // Run assigns targets to an environment.
 func (es *EnvSet) Run() error {
-	if err := es.updateName(); err != nil {
+	env, err := es.app.Environment(es.envName)
+	if err != nil {
 		return err
 	}
 
-	return es.updateNamespace()
+	if err := es.updateName(env.IsOverride()); err != nil {
+		return err
+	}
+
+	return es.updateNamespace(env)
 }
 
-func (es *EnvSet) updateName() error {
+func (es *EnvSet) updateName(isOverride bool) error {
 	if es.newName != "" {
-		config := env.RenameConfig{
-			App: es.app,
-		}
-		if err := es.em.Rename(es.envName, es.newName, config); err != nil {
+		if err := es.envRename(es.app, es.envName, es.newName, isOverride); err != nil {
 			return err
 		}
 
@@ -95,16 +100,15 @@ func (es *EnvSet) updateName() error {
 	return nil
 }
 
-func (es *EnvSet) updateNamespace() error {
+func (es *EnvSet) updateNamespace(env *app.EnvironmentSpec) error {
 	if es.newNsName != "" {
-		spec, err := es.app.Environment(es.envName)
-		if err != nil {
-			return err
-		}
-
-		spec.Destination.Namespace = es.newNsName
-		return es.app.AddEnvironment(es.envName, "", spec)
+		env.Destination.Namespace = es.newNsName
+		return updateEnv(es.app, es.envName, env, env.IsOverride())
 	}
 
 	return nil
+}
+
+func updateEnv(a app.App, envName string, spec *app.EnvironmentSpec, override bool) error {
+	return a.AddEnvironment(envName, "", spec, override)
 }

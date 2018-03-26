@@ -52,7 +52,7 @@ var (
 
 // App is a ksonnet application.
 type App interface {
-	AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec) error
+	AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec, isOverride bool) error
 	AddRegistry(spec *RegistryRefSpec, isOverride bool) error
 	Environment(name string) (*EnvironmentSpec, error)
 	Environments() (EnvironmentSpecs, error)
@@ -62,8 +62,8 @@ type App interface {
 	LibPath(envName string) (string, error)
 	Libraries() (LibraryRefSpecs, error)
 	Registries() (RegistryRefSpecs, error)
-	RemoveEnvironment(name string) error
-	RenameEnvironment(from, to string) error
+	RemoveEnvironment(name string, override bool) error
+	RenameEnvironment(from, to string, override bool) error
 	Root() string
 	UpdateTargets(envName string, targets []string) error
 	UpdateLib(name string, spec *LibraryRefSpec) error

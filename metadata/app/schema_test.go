@@ -215,7 +215,7 @@ func TestGetEnvironmentSpecSuccess(t *testing.T) {
 
 	if r1.Destination.Namespace != namespace ||
 		r1.Destination.Server != server || r1.KubernetesVersion != k8sVersion {
-		t.Errorf("Environment did not add correct values:\n%s", r1)
+		t.Errorf("Environment did not add correct values:\n%v", r1)
 	}
 }
 
@@ -258,7 +258,7 @@ func TestAddEnvironmentSpecSuccess(t *testing.T) {
 	r1, ok1 := example1.GetEnvironmentSpec(env)
 	if !ok1 || r1.Destination.Namespace != namespace ||
 		r1.Destination.Server != server || r1.KubernetesVersion != k8sVersion {
-		t.Errorf("Environment did not add correct values:\n%s", r1)
+		t.Errorf("Environment did not add correct values:\n%v", r1)
 	}
 }
 
@@ -358,6 +358,10 @@ func Test_write(t *testing.T) {
 
 	spec := &Spec{
 		APIVersion: "0.1.0",
+		Environments: EnvironmentSpecs{
+			"a": &EnvironmentSpec{},
+			"b": &EnvironmentSpec{isOverride: true},
+		},
 		Registries: RegistryRefSpecs{
 			"a": &RegistryRefSpec{},
 			"b": &RegistryRefSpec{isOverride: true},
@@ -379,6 +383,9 @@ func Test_write_no_override(t *testing.T) {
 
 	spec := &Spec{
 		APIVersion: "0.1.0",
+		Environments: EnvironmentSpecs{
+			"a": &EnvironmentSpec{},
+		},
 		Registries: RegistryRefSpecs{
 			"a": &RegistryRefSpec{},
 		},
@@ -405,8 +412,11 @@ func Test_read(t *testing.T) {
 	expected := &Spec{
 		APIVersion:   "0.1.0",
 		Contributors: ContributorSpecs{},
-		Environments: EnvironmentSpecs{},
-		Libraries:    LibraryRefSpecs{},
+		Environments: EnvironmentSpecs{
+			"a": &EnvironmentSpec{},
+			"b": &EnvironmentSpec{isOverride: true},
+		},
+		Libraries: LibraryRefSpecs{},
 		Registries: RegistryRefSpecs{
 			"a": &RegistryRefSpec{},
 			"b": &RegistryRefSpec{isOverride: true},

@@ -33,10 +33,20 @@ func (a *app) componentList() *output {
 	return o
 }
 
-func (a *app) envAdd(nsName string) *output {
-	o := a.runKs("env", "add", nsName,
+func (a *app) envAdd(nsName string, override bool) *output {
+	args := []string{
+		"env",
+		"add",
+		nsName,
 		"--server", "http://example.com",
-		"--namespace", nsName)
+		"--namespace", nsName,
+	}
+
+	if override {
+		args = append(args, "-o")
+	}
+
+	o := a.runKs(args...)
 	assertExitStatus(o, 0)
 
 	return o

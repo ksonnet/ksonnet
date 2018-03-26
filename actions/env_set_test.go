@@ -18,10 +18,9 @@ package actions
 import (
 	"testing"
 
-	"github.com/ksonnet/ksonnet/env"
-	emocks "github.com/ksonnet/ksonnet/env/mocks"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,14 +34,21 @@ func TestEnvSet_name(t *testing.T) {
 		a, err := NewEnvSet(appMock, envName, nameOpt)
 		require.NoError(t, err)
 
-		em := &emocks.Manager{}
+		a.envRename = func(a app.App, from, to string, override bool) error {
+			assert.Equal(t, envName, from)
+			assert.Equal(t, newName, to)
+			assert.False(t, override)
 
-		config := env.RenameConfig{
-			App: appMock,
+			return nil
 		}
-		em.On("Rename", envName, newName, config).Return(nil)
 
-		a.em = em
+		spec := &app.EnvironmentSpec{
+			Destination: &app.EnvironmentDestinationSpec{
+				Namespace: "default",
+			},
+		}
+
+		appMock.On("Environment", envName).Return(spec, nil)
 
 		err = a.Run()
 		require.NoError(t, err)
@@ -72,8 +78,7 @@ func TestEnvSet_namespace(t *testing.T) {
 		}
 
 		appMock.On("Environment", envName).Return(spec, nil)
-
-		appMock.On("AddEnvironment", envName, "", updatedSpec).Return(nil)
+		appMock.On("AddEnvironment", envName, "", updatedSpec, false).Return(nil)
 
 		err = a.Run()
 		require.NoError(t, err)
@@ -92,6 +97,22 @@ func TestEnvSet_name_and_namespace(t *testing.T) {
 		a, err := NewEnvSet(appMock, envName, nsOpt, nameOpt)
 		require.NoError(t, err)
 
+		a.envRename = func(a app.App, from, to string, override bool) error {
+			assert.Equal(t, envName, from)
+			assert.Equal(t, newName, to)
+			assert.False(t, override)
+
+			return nil
+		}
+
+		a.updateEnv = func(a app.App, name string, spec *app.EnvironmentSpec, override bool) error {
+			assert.Equal(t, envName, name)
+			assert.Equal(t, nsName, spec.Destination.Namespace)
+			assert.False(t, override)
+
+			return nil
+		}
+
 		spec := &app.EnvironmentSpec{
 			Destination: &app.EnvironmentDestinationSpec{
 				Namespace: "default",
@@ -104,17 +125,8 @@ func TestEnvSet_name_and_namespace(t *testing.T) {
 			},
 		}
 
-		appMock.On("Environment", newName).Return(spec, nil)
-		appMock.On("AddEnvironment", newName, "", updatedSpec).Return(nil)
-
-		em := &emocks.Manager{}
-
-		config := env.RenameConfig{
-			App: appMock,
-		}
-		em.On("Rename", envName, newName, config).Return(nil)
-
-		a.em = em
+		appMock.On("Environment", "default").Return(spec, nil)
+		appMock.On("AddEnvironment", newName, "", updatedSpec, false).Return(nil)
 
 		err = a.Run()
 		require.NoError(t, err)

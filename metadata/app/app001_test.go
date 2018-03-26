@@ -63,7 +63,7 @@ func TestApp001_RenameEnvironment(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			withApp001Fs(t, "app001_app.yaml", func(app *App001) {
-				err := app.RenameEnvironment(tc.from, tc.to)
+				err := app.RenameEnvironment(tc.from, tc.to, false)
 				require.NoError(t, err)
 
 				for _, p := range tc.shouldExist {
@@ -173,7 +173,7 @@ func TestApp001_AddEnvironment(t *testing.T) {
 		}
 
 		k8sSpecFlag := "version:v1.8.7"
-		err := app.AddEnvironment("us-west/qa", k8sSpecFlag, newEnv)
+		err := app.AddEnvironment("us-west/qa", k8sSpecFlag, newEnv, false)
 		require.NoError(t, err)
 
 		_, err = app.Environment("us-west/qa")
@@ -231,7 +231,7 @@ func TestApp001_LibPath(t *testing.T) {
 
 func TestApp001_RemoveEnvironment(t *testing.T) {
 	withApp001Fs(t, "app001_app.yaml", func(app *App001) {
-		err := app.RemoveEnvironment("default")
+		err := app.RemoveEnvironment("default", false)
 		require.NoError(t, err)
 		checkNotExist(t, app.Fs(), "/environments/default")
 	})
