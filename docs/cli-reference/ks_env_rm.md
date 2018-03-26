@@ -38,7 +38,8 @@ ks env rm us-west/staging
 ### Options
 
 ```
-  -h, --help   help for rm
+  -h, --help       help for rm
+  -o, --override   Remove the overridden environment
 ```
 
 ### Options inherited from parent commands

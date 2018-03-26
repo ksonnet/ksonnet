@@ -1,4 +1,4 @@
-// Copyright 2018 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,23 +13,34 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package env
+package actions
 
 import (
 	"testing"
 
-	"github.com/ksonnet/ksonnet/metadata/app/mocks"
-	"github.com/spf13/afero"
+	"github.com/ksonnet/ksonnet/metadata/app"
+	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestDelete(t *testing.T) {
-	withEnv(t, func(appMock *mocks.App, fs afero.Fs) {
-		appMock.On("RemoveEnvironment", "nested/env3", false).Return(nil)
+func TestEnvRm(t *testing.T) {
+	withApp(t, func(appMock *amocks.App) {
+		aName := "my-app"
+		aIsOverride := false
 
-		err := Delete(appMock, "nested/env3", false)
+		a, err := NewEnvRm(appMock, aName, aIsOverride)
 		require.NoError(t, err)
 
-		checkNotExists(t, fs, "/environments/nested")
+		a.envDeleteFn = func(a app.App, name string, override bool) error {
+			assert.Equal(t, appMock, a)
+			assert.Equal(t, aName, name)
+			assert.Equal(t, aIsOverride, override)
+
+			return nil
+		}
+
+		err = a.Run()
+		require.NoError(t, err)
 	})
 }

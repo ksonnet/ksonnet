@@ -27,66 +27,67 @@ import (
 	"github.com/ksonnet/ksonnet/metadata/app"
 )
 
-// RenameConfig are options for renaming an environment.
-type RenameConfig struct {
-	App app.App
-}
-
 // Rename renames an environment
-func Rename(from, to string, config RenameConfig) error {
-	r, err := newRenamer(config)
+func Rename(a app.App, from, to string, override bool) error {
+	r, err := newRenamer(a, from, to, override)
 	if err != nil {
 		return err
 	}
-	return r.Rename(from, to)
+	return r.Rename()
 }
 
 type renamer struct {
-	RenameConfig
+	app      app.App
+	from     string
+	to       string
+	override bool
 }
 
-func newRenamer(config RenameConfig) (*renamer, error) {
+func newRenamer(a app.App, from, to string, override bool) (*renamer, error) {
 	return &renamer{
-		RenameConfig: config,
+		app:      a,
+		from:     from,
+		to:       to,
+		override: override,
 	}, nil
 }
 
-func (r *renamer) Rename(from, to string) error {
-	if from == to || to == "" {
+func (r *renamer) Rename() error {
+	if r.from == r.to || r.to == "" {
 		return nil
 	}
 
-	if err := r.preflight(from, to); err != nil {
+	if err := r.preflight(); err != nil {
 		return err
 	}
 
-	log.Infof("Setting environment name from %q to %q", from, to)
+	log.Infof("Setting environment name from %q to %q", r.from, r.to)
 
-	if err := r.App.RenameEnvironment(from, to); err != nil {
+	if err := r.app.RenameEnvironment(r.from, r.to, r.override); err != nil {
 		return err
 	}
 
-	if err := cleanEmptyDirs(r.App); err != nil {
+	if err := cleanEmptyDirs(r.app); err != nil {
 		return errors.Wrap(err, "clean empty directories")
 	}
 
-	log.Infof("Successfully moved %q to %q", from, to)
+	log.Infof("Successfully moved %q to %q", r.from, r.to)
 	return nil
 }
 
-func (r *renamer) preflight(from, to string) error {
-	if !isValidName(to) {
+func (r *renamer) preflight() error {
+	if !isValidName(r.to) {
 		return fmt.Errorf("Environment name %q is not valid; must not contain punctuation, spaces, or begin or end with a slash",
-			to)
+			r.to)
 	}
 
-	exists, err := envExists(r.App, to)
+	exists, err := envExists(r.app, r.to)
 	if err != nil {
-		log.Debugf("Failed to check whether environment %q already exists", to)
+		log.Debugf("Failed to check whether environment %q already exists", r.to)
 		return err
 	}
 	if exists {
-		return fmt.Errorf("Failed to update %q; environment %q exists", from, to)
+		return fmt.Errorf("Failed to update %q; environment %q exists", r.from, r.to)
 	}
 
 	return nil

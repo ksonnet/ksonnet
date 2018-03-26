@@ -25,13 +25,13 @@ type App struct {
 	mock.Mock
 }
 
-// AddEnvironment provides a mock function with given fields: name, k8sSpecFlag, spec
-func (_m *App) AddEnvironment(name string, k8sSpecFlag string, spec *app.EnvironmentSpec) error {
-	ret := _m.Called(name, k8sSpecFlag, spec)
+// AddEnvironment provides a mock function with given fields: name, k8sSpecFlag, spec, isOverride
+func (_m *App) AddEnvironment(name string, k8sSpecFlag string, spec *app.EnvironmentSpec, isOverride bool) error {
+	ret := _m.Called(name, k8sSpecFlag, spec, isOverride)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, *app.EnvironmentSpec) error); ok {
-		r0 = rf(name, k8sSpecFlag, spec)
+	if rf, ok := ret.Get(0).(func(string, string, *app.EnvironmentSpec, bool) error); ok {
+		r0 = rf(name, k8sSpecFlag, spec, isOverride)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -217,13 +217,13 @@ func (_m *App) Registries() (app.RegistryRefSpecs, error) {
 	return r0, r1
 }
 
-// RemoveEnvironment provides a mock function with given fields: name
-func (_m *App) RemoveEnvironment(name string) error {
-	ret := _m.Called(name)
+// RemoveEnvironment provides a mock function with given fields: name, override
+func (_m *App) RemoveEnvironment(name string, override bool) error {
+	ret := _m.Called(name, override)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(name)
+	if rf, ok := ret.Get(0).(func(string, bool) error); ok {
+		r0 = rf(name, override)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -231,13 +231,13 @@ func (_m *App) RemoveEnvironment(name string) error {
 	return r0
 }
 
-// RenameEnvironment provides a mock function with given fields: from, to
-func (_m *App) RenameEnvironment(from string, to string) error {
-	ret := _m.Called(from, to)
+// RenameEnvironment provides a mock function with given fields: from, to, override
+func (_m *App) RenameEnvironment(from string, to string, override bool) error {
+	ret := _m.Called(from, to, override)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(from, to)
+	if rf, ok := ret.Get(0).(func(string, string, bool) error); ok {
+		r0 = rf(from, to, override)
 	} else {
 		r0 = ret.Error(0)
 	}

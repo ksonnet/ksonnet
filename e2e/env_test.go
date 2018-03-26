@@ -39,6 +39,19 @@ var _ = Describe("ks env", func() {
 			o = a.envList()
 			assertOutput("env/add/output.txt", o.stdout)
 		})
+
+		Context("override", func() {
+			It("adds an environment as an override", func() {
+				o := a.runKs("env", "add", "prod",
+					"-o",
+					"--server", "http://example.com",
+					"--namespace", "prod")
+				assertExitStatus(o, 0)
+
+				o = a.envList()
+				assertOutput("env/add/output-with-override.txt", o.stdout)
+			})
+		})
 	})
 
 	Describe("describe", func() {
@@ -46,6 +59,20 @@ var _ = Describe("ks env", func() {
 			o := a.runKs("env", "describe", "default")
 			assertExitStatus(o, 0)
 			assertOutput("env/describe/output.txt", o.stdout)
+		})
+
+		Context("with override", func() {
+			It("describes the override environment", func() {
+				o := a.runKs("env", "add", "default",
+					"-o",
+					"--server", "http://example.com",
+					"--namespace", "prod")
+				assertExitStatus(o, 0)
+
+				o = a.runKs("env", "describe", "default")
+				assertExitStatus(o, 0)
+				assertOutput("env/describe/output-with-override.txt", o.stdout)
+			})
 		})
 	})
 
@@ -59,7 +86,7 @@ var _ = Describe("ks env", func() {
 
 	Describe("rm", func() {
 		It("removes an environment", func() {
-			o := a.envAdd("prod")
+			o := a.envAdd("prod", false)
 
 			o = a.runKs("env", "rm", "prod")
 			assertExitStatus(o, 0)
@@ -67,12 +94,26 @@ var _ = Describe("ks env", func() {
 			o = a.envList()
 			assertOutput("env/rm/output.txt", o.stdout)
 		})
+
+		Context("with an override", func() {
+			It("removes an override", func() {
+				o := a.envAdd("default", true)
+				o = a.envList()
+				assertOutput("env/rm/list-with-override.txt", o.stdout)
+
+				o = a.runKs("env", "rm", "-o", "default")
+				assertExitStatus(o, 0)
+
+				o = a.envList()
+				assertOutput("env/rm/list-with-override-removed.txt", o.stdout)
+			})
+		})
 	})
 
 	Describe("set", func() {
 		Context("updating env name", func() {
 			It("updates the name of an environment", func() {
-				o := a.envAdd("prod")
+				o := a.envAdd("prod", false)
 
 				o = a.runKs("env", "set", "prod", "--name", "us-west1/prod")
 				assertExitStatus(o, 0)
@@ -89,6 +130,32 @@ var _ = Describe("ks env", func() {
 
 				o = a.envDescribe("default")
 				assertOutput("env/set/rename-namespace.txt", o.stdout)
+			})
+		})
+
+		Context("with override", func() {
+			Context("update the namespace", func() {
+				It("updates the override namespace", func() {
+					o := a.envAdd("default", true)
+
+					o = a.runKs("env", "set", "default", "--namespace", "new-name")
+					assertExitStatus(o, 0)
+
+					o = a.envList()
+					assertOutput("env/set/rename-with-override-ns.txt", o.stdout)
+				})
+			})
+
+			Context("update the name", func() {
+				It("renames the environment", func() {
+					o := a.envAdd("default", true)
+
+					o = a.runKs("env", "set", "default", "--name", "new-name")
+					assertExitStatus(o, 0)
+
+					o = a.envList()
+					assertOutput("env/set/rename-with-override-name.txt", o.stdout)
+				})
 			})
 		})
 	})

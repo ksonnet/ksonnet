@@ -13,22 +13,14 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package env
+package registry
 
-var (
-	// DefaultManager is the default manager for env.
-	DefaultManager = &defaultManager{}
-)
+// DefaultYAMLData generates the contents for a registry's spec.
+func DefaultYAMLData(r Registry) ([]byte, error) {
+	regSpec, err := r.FetchRegistrySpec()
+	if err != nil {
+		return nil, err
+	}
 
-// Manager is a manager for interfacing with env operations.
-type Manager interface {
-	Rename(from, to string, config RenameConfig) error
-}
-
-type defaultManager struct{}
-
-var _ Manager = (*defaultManager)(nil)
-
-func (dm *defaultManager) Rename(from, to string, config RenameConfig) error {
-	return Rename(from, to, config)
+	return regSpec.Marshal()
 }

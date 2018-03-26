@@ -30,4 +30,7 @@ registries:
   incubator:
     protocol: ""
     uri: ""
+  new:
+    protocol: ""
+    uri: ""
 version: 0.0.1

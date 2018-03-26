@@ -1,3 +1,8 @@
+environments:
+  b:
+    destination: null
+    k8sVersion: ""
+    path: ""
 registries:
   b:
     protocol: ""

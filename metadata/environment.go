@@ -18,10 +18,12 @@ package metadata
 import (
 	"bytes"
 	"fmt"
+	"runtime/debug"
 
 	"github.com/ksonnet/ksonnet/env"
 	"github.com/ksonnet/ksonnet/metadata/lib"
 	str "github.com/ksonnet/ksonnet/strings"
+	"github.com/pkg/errors"
 
 	log "github.com/sirupsen/logrus"
 
@@ -42,22 +44,24 @@ var (
 )
 
 func (m *manager) CreateEnvironment(name, server, namespace, k8sSpecFlag string) error {
-	a, err := m.App()
-	if err != nil {
-		return err
-	}
+	debug.PrintStack()
+	return errors.Errorf("deprecated")
+	// a, err := m.App()
+	// if err != nil {
+	// 	return err
+	// }
 
-	config := env.CreateConfig{
-		App:         a,
-		Destination: env.NewDestination(server, namespace),
-		K8sSpecFlag: k8sSpecFlag,
-		Name:        name,
+	// config := env.CreateConfig{
+	// 	App:         a,
+	// 	Destination: env.NewDestination(server, namespace),
+	// 	K8sSpecFlag: k8sSpecFlag,
+	// 	Name:        name,
 
-		OverrideData: m.generateOverrideData(),
-		ParamsData:   m.generateParamsData(),
-	}
+	// 	OverrideData: m.generateOverrideData(),
+	// 	ParamsData:   m.generateParamsData(),
+	// }
 
-	return envCreate(config)
+	// return envCreate(config)
 
 }
 
@@ -67,11 +71,8 @@ func (m *manager) DeleteEnvironment(name string) error {
 		return err
 	}
 
-	config := env.DeleteConfig{
-		App:  a,
-		Name: name,
-	}
-	return env.Delete(config)
+	// TODO: move this to actions
+	return env.Delete(a, name, false)
 }
 
 func (m *manager) GetEnvironments() (map[string]env.Env, error) {
@@ -99,11 +100,8 @@ func (m *manager) SetEnvironment(from, to string) error {
 		return err
 	}
 
-	config := env.RenameConfig{
-		App: a,
-	}
-
-	return env.Rename(from, to, config)
+	// TODO: move this to an action
+	return env.Rename(a, from, to, false)
 }
 
 func (m *manager) GetEnvironmentParams(name, nsName string) (map[string]param.Params, error) {

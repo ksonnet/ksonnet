@@ -47,13 +47,10 @@ func NewApp010(fs afero.Fs, root string) *App010 {
 
 // AddEnvironment adds an environment spec to the app spec. If the spec already exists,
 // it is overwritten.
-func (a *App010) AddEnvironment(name, k8sSpecFlag string, newEnv *EnvironmentSpec) error {
-	spec, err := a.load()
-	if err != nil {
-		return err
+func (a *App010) AddEnvironment(name, k8sSpecFlag string, newEnv *EnvironmentSpec, isOverride bool) error {
+	if err := a.load(); err != nil {
+		return errors.Wrap(err, "load configuration")
 	}
-
-	spec.Environments[name] = newEnv
 
 	if k8sSpecFlag != "" {
 		ver, err := LibUpdater(a.fs, k8sSpecFlag, app010LibPath(a.root), true)
@@ -61,35 +58,57 @@ func (a *App010) AddEnvironment(name, k8sSpecFlag string, newEnv *EnvironmentSpe
 			return err
 		}
 
-		spec.Environments[name].KubernetesVersion = ver
+		newEnv.KubernetesVersion = ver
 	}
 
-	return a.save(spec)
+	newEnv.isOverride = isOverride
+
+	if isOverride {
+		a.overrides.Environments[name] = newEnv
+	} else {
+		a.config.Environments[name] = newEnv
+	}
+
+	return a.save()
 }
 
 // Environment returns the spec for an environment.
 func (a *App010) Environment(name string) (*EnvironmentSpec, error) {
-	spec, err := a.load()
-	if err != nil {
-		return nil, err
+	if err := a.load(); err != nil {
+		return nil, errors.Wrap(err, "load configuration")
 	}
 
-	s, ok := spec.Environments[name]
-	if !ok {
-		return nil, errors.Errorf("environment %q was not found", name)
+	for k, v := range a.overrides.Environments {
+		if k == name {
+			return v, nil
+		}
 	}
 
-	return s, nil
+	for k, v := range a.config.Environments {
+		if k == name {
+			return v, nil
+		}
+	}
+
+	return nil, errors.Errorf("environment %q was not found", name)
 }
 
 // Environments returns all environment specs.
 func (a *App010) Environments() (EnvironmentSpecs, error) {
-	spec, err := a.load()
-	if err != nil {
-		return nil, err
+	if err := a.load(); err != nil {
+		return nil, errors.Wrap(err, "load configuration")
 	}
 
-	return spec.Environments, nil
+	environments := EnvironmentSpecs{}
+	for k, v := range a.config.Environments {
+		environments[k] = v
+	}
+
+	for k, v := range a.overrides.Environments {
+		environments[k] = v
+	}
+
+	return environments, nil
 }
 
 // Init initializes the App.
@@ -130,51 +149,74 @@ func (a *App010) LibPath(envName string) (string, error) {
 
 // Libraries returns application libraries.
 func (a *App010) Libraries() (LibraryRefSpecs, error) {
-	spec, err := a.load()
-	if err != nil {
-		return nil, err
+	if err := a.load(); err != nil {
+		return nil, errors.Wrap(err, "load configuration")
 	}
 
-	return spec.Libraries, nil
+	return a.config.Libraries, nil
 }
 
 // Registries returns application registries.
 func (a *App010) Registries() (RegistryRefSpecs, error) {
-	spec, err := a.load()
-	if err != nil {
-		return nil, err
+	if err := a.load(); err != nil {
+		return nil, errors.Wrap(err, "load configuration")
 	}
 
-	return spec.Registries, nil
+	registries := RegistryRefSpecs{}
+
+	for k, v := range a.config.Registries {
+		registries[k] = v
+	}
+
+	for k, v := range a.overrides.Registries {
+		registries[k] = v
+	}
+
+	return registries, nil
 }
 
 // RemoveEnvironment removes an environment.
-func (a *App010) RemoveEnvironment(envName string) error {
-	spec, err := a.load()
-	if err != nil {
-		return err
+func (a *App010) RemoveEnvironment(envName string, override bool) error {
+	if err := a.load(); err != nil {
+		return errors.Wrap(err, "load configuration")
 	}
-	delete(spec.Environments, envName)
-	return a.save(spec)
+
+	if override {
+		delete(a.overrides.Environments, envName)
+	} else {
+		delete(a.config.Environments, envName)
+	}
+
+	return a.save()
 }
 
 // RenameEnvironment renames environments.
-func (a *App010) RenameEnvironment(from, to string) error {
+func (a *App010) RenameEnvironment(from, to string, override bool) error {
+	if err := a.load(); err != nil {
+		return errors.Wrap(err, "load configuration")
+	}
+
+	if override {
+		if _, ok := a.overrides.Environments[from]; !ok {
+			return errors.Errorf("environment %q does not exist", from)
+		}
+		a.overrides.Environments[to] = a.overrides.Environments[from]
+		a.overrides.Environments[to].Path = to
+		delete(a.overrides.Environments, from)
+	} else {
+		if _, ok := a.config.Environments[from]; !ok {
+			return errors.Errorf("environment %q does not exist", from)
+		}
+		a.config.Environments[to] = a.config.Environments[from]
+		a.config.Environments[to].Path = to
+		delete(a.config.Environments, from)
+	}
+
 	if err := moveEnvironment(a.fs, a.root, from, to); err != nil {
 		return err
 	}
 
-	spec, err := a.load()
-	if err != nil {
-		return err
-	}
-
-	spec.Environments[to] = spec.Environments[from]
-	delete(spec.Environments, from)
-
-	spec.Environments[to].Path = to
-
-	return a.save(spec)
+	return a.save()
 }
 
 // UpdateTargets updates the list of targets for a 0.1.0 application.
@@ -186,7 +228,7 @@ func (a *App010) UpdateTargets(envName string, targets []string) error {
 
 	spec.Targets = targets
 
-	return errors.Wrap(a.AddEnvironment(envName, "", spec), "update targets")
+	return errors.Wrap(a.AddEnvironment(envName, "", spec, spec.isOverride), "update targets")
 }
 
 // Upgrade upgrades the app to the latest apiVersion.

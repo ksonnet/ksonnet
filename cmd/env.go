@@ -17,16 +17,14 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 
 	"github.com/ksonnet/ksonnet/actions"
 	"github.com/ksonnet/ksonnet/client"
-	"github.com/ksonnet/ksonnet/metadata"
-	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
 
 const (
@@ -59,6 +57,11 @@ func init() {
 	envAddCmd.PersistentFlags().String(flagAPISpec, "version:v1.7.0",
 		"Manually specify API version from OpenAPI schema, cluster, or Kubernetes version")
 
+	envAddCmd.Flags().BoolP(flagOverride, shortOverride, false, "Add environment as override")
+	viper.BindPFlag(vEnvAddOverride, envAddCmd.Flags().Lookup(flagOverride))
+
+	envRmCmd.Flags().BoolP(flagOverride, shortOverride, false, "Remove the overridden environment")
+	viper.BindPFlag(vEnvRmOverride, envRmCmd.Flags().Lookup(flagOverride))
 }
 
 var envCmd = &cobra.Command{
@@ -106,148 +109,6 @@ represented as a hierarchy in the ` + "`environments/`" + ` directory of a ksonn
 		}
 		return fmt.Errorf("Command 'env' requires a subcommand\n\n%s", cmd.UsageString())
 	},
-}
-
-var envAddCmd = &cobra.Command{
-	Use:   "add <env-name>",
-	Short: envShortDesc["add"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		flags := cmd.Flags()
-		if len(args) != 1 {
-			return fmt.Errorf("'env add' takes exactly one argument, which is the name of the environment")
-		}
-
-		name := args[0]
-
-		server, namespace, err := resolveEnvFlags(flags)
-		if err != nil {
-			return err
-		}
-
-		appDir, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		manager, err := metadata.Find(appDir)
-		if err != nil {
-			return err
-		}
-
-		specFlag, err := flags.GetString(flagAPISpec)
-		if err != nil {
-			return err
-		}
-		if specFlag == "" {
-			specFlag = envClientConfig.GetAPISpec(server)
-		}
-
-		c, err := kubecfg.NewEnvAddCmd(name, server, namespace, specFlag, manager)
-		if err != nil {
-			return err
-		}
-
-		return c.Run()
-	},
-
-	Long: `
-The ` + "`add`" + ` command creates a new environment (specifically for the ksonnet app
-whose directory it's executed in). This environment is cached with the following
-info:
-
-1. **Name** — A string used to uniquely identify the environment.
-2. **Server** — The address and port of a Kubernetes API server (i.e. cluster).
-3. **Namespace**  — A Kubernetes namespace. *Must already exist on the cluster.*
-4. **Kubernetes API Version**  — Used to generate a library with compatible type defs.
-
-(1) is mandatory. (2) and (3) can be inferred from $KUBECONFIG, *or* from the
-` + "`--kubeconfig`" + ` or ` + "`--context`" + ` flags. Otherwise, (2), (3), and (4) can all be
-specified by individual flags. Unless otherwise specified, (4) defaults to the
-latest Kubernetes version that ksonnet supports.
-
-Note that an environment *DOES NOT* contain user-specific data such as private keys.
-
-### Related Commands
-
-* ` + "`ks env list` " + `— ` + protoShortDesc["list"] + `
-* ` + "`ks env rm` " + `— ` + protoShortDesc["rm"] + `
-* ` + "`ks env set` " + `— ` + protoShortDesc["set"] + `
-* ` + "`ks param set` " + `— ` + paramShortDesc["set"] + `
-* ` + "`ks apply` " + `— ` + applyShortDesc + `
-
-### Syntax
-`,
-	Example: `
-# Initialize a new environment, called "staging". No flags are set, so 'server'
-# and 'namespace' info are pulled from the file specified by $KUBECONFIG.
-# 'version' defaults to the latest that ksonnet supports.
-ks env add us-west/staging
-
-# Initialize a new environment called "us-west/staging" with the pre-existing
-# namespace 'staging'. 'version' is specified, so the OpenAPI spec from the
-# Kubernetes v1.7.1 build is used to generate the helper library 'ksonnet-lib'.
-#
-# NOTE: "us-west/staging" indicates a hierarchical structure, so the env-specific
-# files here are saved in "<ksonnet-app-root>/environments/us-west/staging".
-ks env add us-west/staging --api-spec=version:v1.7.1 --namespace=staging
-
-# Initialize a new environment "my-env" using the "dev" context in your current
-# kubeconfig file ($KUBECONFIG).
-ks env add my-env --context=dev
-
-# Initialize a new environment "prod" using the address of a cluster's Kubernetes
-# API server.
-ks env add prod --server=https://ksonnet-1.us-west.elb.amazonaws.com`,
-}
-
-var envRmCmd = &cobra.Command{
-	Use:   "rm <env-name>",
-	Short: envShortDesc["rm"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("'env rm' takes a single argument, that is the name of the environment")
-		}
-
-		envName := args[0]
-
-		appDir, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		manager, err := metadata.Find(appDir)
-		if err != nil {
-			return err
-		}
-
-		c, err := kubecfg.NewEnvRmCmd(envName, manager)
-		if err != nil {
-			return err
-		}
-
-		return c.Run()
-	},
-	Long: `
-The ` + "`rm`" + ` command deletes an environment from a ksonnet application. This is
-the same as removing the ` + "`<env-name>`" + ` environment directory and all files
-contained. All empty parent directories are also subsequently deleted.
-
-NOTE: This does *NOT* delete the components running in ` + "`<env-name>`" + `. To do that, you
-need to use the ` + "`ks delete`" + ` command.
-
-### Related Commands
-
-* ` + "`ks env list` " + `— ` + protoShortDesc["list"] + `
-* ` + "`ks env add` " + `— ` + protoShortDesc["add"] + `
-* ` + "`ks env set` " + `— ` + protoShortDesc["set"] + `
-* ` + "`ks delete` " + `— ` + `Delete all the app components running in an environment (cluster)` + `
-
-### Syntax
-`,
-	Example: `
-# Remove the directory 'environments/us-west/staging' and all of its contents.
-# This will also remove the parent directory 'us-west' if it is empty.
-ks env rm us-west/staging`,
 }
 
 var envListCmd = &cobra.Command{
@@ -308,16 +169,15 @@ func resolveEnvFlags(flags *pflag.FlagSet) (string, string, error) {
 
 	if server == "" {
 		// server is not provided -- use the context.
-		server, defaultNamespace, err = envClientConfig.ResolveContext(context)
+		server, ns, err = envClientConfig.ResolveContext(context)
 		if err != nil {
 			return "", "", err
 		}
 	}
 
-	namespace := defaultNamespace
-	if ns != "" {
-		namespace = ns
+	if ns == "" {
+		ns = defaultNamespace
 	}
 
-	return server, namespace, nil
+	return server, ns, nil
 }

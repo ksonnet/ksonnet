@@ -67,6 +67,7 @@ ks env add prod --server=https://ksonnet-1.us-west.elb.amazonaws.com
 ```
       --api-spec string   Manually specify API version from OpenAPI schema, cluster, or Kubernetes version (default "version:v1.7.0")
   -h, --help              help for add
+  -o, --override          Add environment as override
 ```
 
 ### Options inherited from parent commands

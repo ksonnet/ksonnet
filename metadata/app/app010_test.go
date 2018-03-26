@@ -42,7 +42,7 @@ func TestApp010_AddEnvironment(t *testing.T) {
 		}
 
 		k8sSpecFlag := "version:v1.8.7"
-		err = app.AddEnvironment("us-west/qa", k8sSpecFlag, newEnv)
+		err = app.AddEnvironment("us-west/qa", k8sSpecFlag, newEnv, false)
 		require.NoError(t, err)
 
 		envs, err = app.Environments()
@@ -67,7 +67,7 @@ func TestApp010_AddEnvironment_empty_spec_flag(t *testing.T) {
 
 		env.Destination.Namespace = "updated"
 
-		err = app.AddEnvironment("default", "", env)
+		err = app.AddEnvironment("default", "", env, false)
 		require.NoError(t, err)
 
 		envs, err = app.Environments()
@@ -187,7 +187,7 @@ func TestApp010_RemoveEnvironment(t *testing.T) {
 		_, err := app.Environment("default")
 		require.NoError(t, err)
 
-		err = app.RemoveEnvironment("default")
+		err = app.RemoveEnvironment("default", false)
 		require.NoError(t, err)
 
 		_, err = app.Environment("default")
@@ -241,7 +241,7 @@ func TestApp010_RenameEnvironment(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			withApp010Fs(t, "app010_app.yaml", func(app *App010) {
-				err := app.RenameEnvironment(tc.from, tc.to)
+				err := app.RenameEnvironment(tc.from, tc.to, false)
 				require.NoError(t, err)
 
 				for _, p := range tc.shouldExist {

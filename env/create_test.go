@@ -34,16 +34,12 @@ func TestCreate(t *testing.T) {
 			"newenv",
 			"version:v1.8.7",
 			mock.AnythingOfType("*app.EnvironmentSpec"),
+			false,
 		).Return(nil)
 
-		config := CreateConfig{
-			App:         appMock,
-			Destination: NewDestination("http://example.com", "default"),
-			Name:        "newenv",
-			K8sSpecFlag: "version:v1.8.7",
-		}
-
-		err := Create(config)
+		d := NewDestination("http://example.com", "default")
+		var od, pd []byte
+		err := Create(appMock, d, "newenv", "version:v1.8.7", od, pd, false)
 		require.NoError(t, err)
 
 		checkExists(t, fs, "/environments/newenv/main.jsonnet")

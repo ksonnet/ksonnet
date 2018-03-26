@@ -59,7 +59,7 @@ type Manager interface {
 	SetEnvironmentParams(env, component string, params param.Params) error
 
 	// Environment API.
-	CreateEnvironment(name, uri, namespace, spec string) error
+	// CreateEnvironment(name, uri, namespace, spec string) error
 	DeleteEnvironment(name string) error
 	GetEnvironments() (map[string]env.Env, error)
 	GetEnvironment(name string) (*env.Env, error)

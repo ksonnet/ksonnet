@@ -1,4 +1,4 @@
-NAME          KUBERNETES-VERSION NAMESPACE SERVER
-====          ================== ========= ======
-default       v1.7.0             default   http://example.com
-us-west1/prod v1.7.0             prod      http://example.com
+NAME          OVERRIDE KUBERNETES-VERSION NAMESPACE SERVER
+====          ======== ================== ========= ======
+default                v1.7.0             default   http://example.com
+us-west1/prod          v1.7.0             prod      http://example.com

@@ -54,7 +54,9 @@ func NewApp001(fs afero.Fs, root string) *App001 {
 
 // AddEnvironment adds an environment spec to the app spec. If the spec already exists,
 // it is overwritten.
-func (a *App001) AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec) error {
+func (a *App001) AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec, isOverride bool) error {
+	// if it is an override, write the destination to override file. If not, do the normal thing.
+
 	envPath := filepath.Join(a.root, EnvironmentDirName, name)
 	if err := a.fs.MkdirAll(envPath, DefaultFolderPermissions); err != nil {
 		return err
@@ -73,6 +75,10 @@ func (a *App001) AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec)
 
 	_, err = LibUpdater(a.fs, k8sSpecFlag, a.appLibPath(name), false)
 	return err
+}
+
+func (a *App001) overrideDestintation(name string, envSpec *EnvironmentSpec) error {
+	return nil
 }
 
 // Environment returns the spec for an environment. In 0.1.0, the file lives in
@@ -130,31 +136,39 @@ func (a *App001) LibPath(envName string) (string, error) {
 
 // Libraries returns application libraries.
 func (a *App001) Libraries() (LibraryRefSpecs, error) {
-	spec, err := a.load()
-	if err != nil {
-		return nil, err
+	if err := a.load(); err != nil {
+		return nil, errors.Wrap(err, "load configuration")
 	}
-	return spec.Libraries, nil
+
+	return a.config.Libraries, nil
 }
 
 // Registries returns application registries.
 func (a *App001) Registries() (RegistryRefSpecs, error) {
-	spec, err := a.load()
-	if err != nil {
-		return nil, err
+	if err := a.load(); err != nil {
+		return nil, errors.Wrap(err, "load configuration")
 	}
 
-	return spec.Registries, nil
+	registries := RegistryRefSpecs{}
+	for k, v := range a.config.Registries {
+		registries[k] = v
+	}
+
+	for k, v := range a.overrides.Registries {
+		registries[k] = v
+	}
+
+	return registries, nil
 }
 
 // RemoveEnvironment removes an environment.
-func (a *App001) RemoveEnvironment(envName string) error {
+func (a *App001) RemoveEnvironment(envName string, override bool) error {
 	a.Fs().RemoveAll(a.envDir(envName))
 	return nil
 }
 
 // RenameEnvironment renames environments.
-func (a *App001) RenameEnvironment(from, to string) error {
+func (a *App001) RenameEnvironment(from, to string, override bool) error {
 	return moveEnvironment(a.fs, a.root, from, to)
 }
 
@@ -166,9 +180,8 @@ func (a *App001) UpdateTargets(envName string, targets []string) error {
 
 // Upgrade upgrades the app to the latest apiVersion.
 func (a *App001) Upgrade(dryRun bool) error {
-	spec, err := a.load()
-	if err != nil {
-		return err
+	if err := a.load(); err != nil {
+		return errors.Wrap(err, "load configuration")
 	}
 
 	if dryRun {
@@ -187,10 +200,10 @@ func (a *App001) Upgrade(dryRun bool) error {
 		a.convertEnvironment(env.Path, dryRun)
 	}
 
-	spec.APIVersion = "0.1.0"
+	a.config.APIVersion = "0.1.0"
 
 	if dryRun {
-		data, err := yaml.Marshal(spec)
+		data, err := yaml.Marshal(a.config)
 		if err != nil {
 			return err
 		}
@@ -200,7 +213,7 @@ func (a *App001) Upgrade(dryRun bool) error {
 		return nil
 	}
 
-	return a.save(spec)
+	return a.save()
 }
 
 type k8sSchema struct {
@@ -251,18 +264,17 @@ func read001EnvSpec(fs afero.Fs, name, path string) (*EnvironmentSpec, error) {
 }
 
 func (a *App001) convertEnvironment(envName string, dryRun bool) error {
+	if err := a.load(); err != nil {
+		return errors.Wrap(err, "load configuration")
+	}
+
 	path := filepath.Join(a.root, EnvironmentDirName, envName, "spec.json")
 	env, err := read001EnvSpec(a.fs, envName, path)
 	if err != nil {
 		return err
 	}
 
-	spec, err := a.load()
-	if err != nil {
-		return err
-	}
-
-	spec.Environments[envName] = env
+	a.config.Environments[envName] = env
 
 	if dryRun {
 		fmt.Fprintf(a.out, "[dry run]\t* adding the environment description in environment `%s to `app.yaml`.\n",
@@ -280,7 +292,7 @@ func (a *App001) convertEnvironment(envName string, dryRun bool) error {
 		return err
 	}
 
-	return a.save(spec)
+	return a.save()
 }
 
 func (a *App001) appLibPath(envName string) string {
