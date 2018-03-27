@@ -1,5 +1,19 @@
 # Change Log
 
+## [v0.9.2](https://github.com/ksonnet/ksonnet/tree/v0.9.2) (2017-03-27)
+
+This patch focuses on fixes around usability bugs.
+
+**Closed issues:**
+
+- ks param set is broken [\#381](https://github.com/ksonnet/ksonnet/issues/381)
+- ks sen set default --namespace=somenamespace doesn't change the namespace [\#373](https://github.com/ksonnet/ksonnet/issues/373)
+
+**Merged pull requests:**
+
+- bug: fix updating env namespace [\#388](https://github.com/ksonnet/ksonnet/pull/388) ([bryanl](https://github.com/bryanl))
+- handle jsonnet ast.ApplyBrance in env files [\#389](https://github.com/ksonnet/ksonnet/pull/389) ([bryanl](https://github.com/bryanl))
+
 ## [v0.9.1](https://github.com/ksonnet/ksonnet/tree/v0.9.1) (2017-03-08)
 
 This patch focuses on fixes around usability bugs.
