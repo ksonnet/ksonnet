@@ -60,18 +60,30 @@ func Test_Package(t *testing.T) {
 }
 
 func Test_List(t *testing.T) {
-	specs := app.RegistryRefSpecs{
-		"incubator": &app.RegistryRefSpec{
-			Protocol: ProtocolGitHub,
-			URI:      "github.com/ksonnet/parts/tree/master/incubator",
-		},
-	}
+	withApp(t, func(a *mocks.App, fs afero.Fs) {
+		c := &ghmocks.GitHub{}
+		c.On("CommitSHA1", mock.Anything, github.Repo{Org: "ksonnet", Repo: "parts"}, mock.AnythingOfType("string")).
+			Return("12345", nil)
 
-	appMock := &mocks.App{}
-	appMock.On("Registries").Return(specs, nil)
+		ghcOpt := GitHubClient(c)
+		githubFactory = func(spec *app.RegistryRefSpec) (*GitHub, error) {
+			return NewGitHub(spec, ghcOpt)
+		}
 
-	registries, err := List(appMock)
-	require.NoError(t, err)
+		specs := app.RegistryRefSpecs{
+			"incubator": &app.RegistryRefSpec{
+				Protocol: ProtocolGitHub,
+				URI:      "github.com/ksonnet/parts/tree/master/incubator",
+			},
+		}
 
-	require.Len(t, registries, 1)
+		appMock := &mocks.App{}
+		appMock.On("Registries").Return(specs, nil)
+
+		registries, err := List(appMock)
+		require.NoError(t, err)
+
+		require.Len(t, registries, 1)
+
+	})
 }
