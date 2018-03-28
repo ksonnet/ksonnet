@@ -38,6 +38,7 @@ func RunInit(fs afero.Fs, name, rootPath, k8sSpecFlag, serverURI, namespace stri
 }
 
 type appInitFn func(fs afero.Fs, name, rootPath, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) error
+type initIncubatorFn func() (registry.Registry, error)
 
 // Init creates a component namespace
 type Init struct {
@@ -48,19 +49,21 @@ type Init struct {
 	serverURI   string
 	namespace   string
 
-	appInitFn appInitFn
+	appInitFn       appInitFn
+	initIncubatorFn initIncubatorFn
 }
 
 // NewInit creates an instance of Init.
 func NewInit(fs afero.Fs, name, rootPath, k8sSpecFlag, serverURI, namespace string) (*Init, error) {
 	i := &Init{
-		fs:          fs,
-		name:        name,
-		rootPath:    rootPath,
-		k8sSpecFlag: k8sSpecFlag,
-		serverURI:   serverURI,
-		namespace:   namespace,
-		appInitFn:   appinit.Init,
+		fs:              fs,
+		name:            name,
+		rootPath:        rootPath,
+		k8sSpecFlag:     k8sSpecFlag,
+		serverURI:       serverURI,
+		namespace:       namespace,
+		appInitFn:       appinit.Init,
+		initIncubatorFn: initIncubator,
 	}
 
 	return i, nil
@@ -68,11 +71,7 @@ func NewInit(fs afero.Fs, name, rootPath, k8sSpecFlag, serverURI, namespace stri
 
 // Run runs that ns create action.
 func (i *Init) Run() error {
-	gh, err := registry.NewGitHub(&app.RegistryRefSpec{
-		Name:     "incubator",
-		Protocol: registry.ProtocolGitHub,
-		URI:      defaultIncubatorURI,
-	})
+	gh, err := i.initIncubatorFn()
 	if err != nil {
 		return err
 	}
@@ -88,5 +87,12 @@ func (i *Init) Run() error {
 		i.namespace,
 		registries,
 	)
+}
 
+func initIncubator() (registry.Registry, error) {
+	return registry.NewGitHub(&app.RegistryRefSpec{
+		Name:     "incubator",
+		Protocol: registry.ProtocolGitHub,
+		URI:      defaultIncubatorURI,
+	})
 }

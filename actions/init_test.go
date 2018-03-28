@@ -20,6 +20,7 @@ import (
 
 	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/registry"
+	rmocks "github.com/ksonnet/ksonnet/pkg/registry/mocks"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,6 +54,14 @@ func TestInit(t *testing.T) {
 			assert.Equal(t, "incubator", r.Name())
 
 			return nil
+		}
+
+		a.initIncubatorFn = func() (registry.Registry, error) {
+			r := &rmocks.Registry{}
+			r.On("Protocol").Return("github")
+			r.On("URI").Return("github.com/ksonnet/parts/tree/master/incubator")
+			r.On("Name").Return("incubator")
+			return r, nil
 		}
 
 		err = a.Run()
