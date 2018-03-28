@@ -33,7 +33,7 @@ type ValidateCmd struct {
 }
 
 func (c ValidateCmd) Run(apiObjects []*unstructured.Unstructured, out io.Writer) error {
-	_, discovery, _, err := client.InitClient(c.Env)
+	_, discovery, _, err := c.ClientConfig.RestClient(&c.Env)
 	if err != nil {
 		return err
 	}

@@ -31,7 +31,7 @@ func TestInit(t *testing.T) {
 	rootPath := "/app"
 	specFlag := "version:v1.8.7"
 	serverURI := "http://example.com"
-	namespace := "default"
+	namespace := "my-namespace"
 
 	r := &mocks.Registry{}
 
@@ -86,21 +86,21 @@ func TestInit(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			checkApp(t, fs, rootPath, "v1.8.7")
+			checkApp(t, fs, rootPath, "v1.8.7", namespace)
 		})
 	}
 
 }
 
-func checkApp(t *testing.T, fs afero.Fs, rootPath, version string) {
+func checkApp(t *testing.T, fs afero.Fs, rootPath, version, namespace string) {
 	expectedDirs := []string{
 		"app.yaml",
 		filepath.Join(".ksonnet", "registries", "testdata", "registry.yaml"),
 		filepath.Join("components", "params.libsonnet"),
 		"vendor",
 		filepath.Join("environments", "base.libsonnet"),
-		filepath.Join("environments", "default", "main.jsonnet"),
-		filepath.Join("environments", "default", "params.libsonnet"),
+		filepath.Join("environments", namespace, "main.jsonnet"),
+		filepath.Join("environments", namespace, "params.libsonnet"),
 	}
 
 	for _, d := range expectedDirs {

@@ -287,19 +287,27 @@ func (c *Config) overrideCluster(envName string) error {
 		return err
 	}
 
-	if _, ok := servers[server]; ok {
-		clusterName := servers[server]
-		if c.Overrides.Context.Cluster == "" {
-			log.Debugf("Overwriting --cluster flag with '%s'", clusterName)
-			c.Overrides.Context.Cluster = clusterName
+	if len(servers) > 0 {
+		if _, ok := servers[server]; ok {
+			clusterName := servers[server]
+			if c.Overrides.Context.Cluster == "" {
+				log.Debugf("Overwriting --cluster flag with '%s'", clusterName)
+				c.Overrides.Context.Cluster = clusterName
+			}
+			if c.Overrides.Context.Namespace == "" {
+				log.Debugf("Overwriting --namespace flag with '%s'", destination.Namespace())
+				c.Overrides.Context.Namespace = destination.Namespace()
+			}
+			return nil
 		}
-		if c.Overrides.Context.Namespace == "" {
-			log.Debugf("Overwriting --namespace flag with '%s'", destination.Namespace())
-			c.Overrides.Context.Namespace = destination.Namespace()
-		}
-		return nil
+
+		return fmt.Errorf("Attempting to deploy to environment '%s' at '%s', but cannot locate a server at that address",
+			envName, destination.Server())
 	}
 
-	return errors.Errorf("Attempting to deploy to environment '%s' at '%s', but cannot locate a server at that address",
-		envName, destination.Server())
+	c.Overrides.Context.Namespace = destination.Namespace()
+	c.Overrides.ClusterInfo.Server = server
+	// NOTE: ignore TLS verify since we don't have a CA cert to verify with.
+	c.Overrides.ClusterInfo.InsecureSkipTLSVerify = true
+	return nil
 }

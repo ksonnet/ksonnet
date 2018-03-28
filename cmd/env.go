@@ -162,21 +162,25 @@ func commonEnvFlags(flags *pflag.FlagSet) (server, namespace, context string, er
 func resolveEnvFlags(flags *pflag.FlagSet) (string, string, error) {
 	defaultNamespace := "default"
 
-	server, ns, context, err := commonEnvFlags(flags)
+	server, envNs, context, err := commonEnvFlags(flags)
 	if err != nil {
 		return "", "", err
 	}
 
+	var ctxNs string
 	if server == "" {
 		// server is not provided -- use the context.
-		server, ns, err = envClientConfig.ResolveContext(context)
+		server, ctxNs, err = envClientConfig.ResolveContext(context)
 		if err != nil {
 			return "", "", err
 		}
 	}
 
-	if ns == "" {
-		ns = defaultNamespace
+	ns := defaultNamespace
+	if envNs != "" {
+		ns = envNs
+	} else if ctxNs != "" {
+		ns = ctxNs
 	}
 
 	return server, ns, nil

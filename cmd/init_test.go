@@ -15,7 +15,52 @@
 
 package cmd
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func withCmd(t *testing.T, cmd *cobra.Command, id initName, override interface{}, fn func()) {
+	ogAction := actionMap[id]
+	actionMap[id] = override
+
+	envConfig := os.Getenv("KUBECONFIG")
+
+	defer func() {
+		actionMap[id] = ogAction
+		os.Setenv("KUBECONFIG", envConfig)
+	}()
+
+	fn()
+}
+
+func Test_initCmd(t *testing.T) {
+	override := func(fs afero.Fs, name, root, specFlag, server, namespace string) error {
+		wd, err := os.Getwd()
+		require.NoError(t, err)
+
+		appRoot := filepath.Join(wd, "app")
+
+		assert.Equal(t, "new-namespace", namespace)
+		assert.Equal(t, appRoot, root)
+		assert.Equal(t, "app", name)
+		return nil
+	}
+
+	withCmd(t, initCmd, actionInit, override, func() {
+		args := []string{"init", "app", "--namespace", "new-namespace", "--server", "http://127.0.0.1"}
+		RootCmd.SetArgs(args)
+
+		err := RootCmd.Execute()
+		require.NoError(t, err)
+	})
+}
 
 func Test_genKsRoot(t *testing.T) {
 	cases := []struct {
