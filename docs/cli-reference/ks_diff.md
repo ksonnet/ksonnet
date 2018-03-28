@@ -66,7 +66,7 @@ ks diff dev -c redis
 ### Options
 
 ```
-  -c, --component stringArray         Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)
+  -c, --component stringSlice         Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)
       --diff-strategy string          Diff strategy, all or subset. (default "all")
   -V, --ext-str stringSlice           Values of external variables
       --ext-str-file stringSlice      Read external variable from a file

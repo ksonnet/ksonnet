@@ -204,6 +204,7 @@
     ".",
     "hcl/ast",
     "hcl/parser",
+    "hcl/printer",
     "hcl/scanner",
     "hcl/strconv",
     "hcl/token",
@@ -414,8 +415,7 @@
 [[projects]]
   name = "github.com/spf13/viper"
   packages = ["."]
-  revision = "25b30aa063fc18e48662b86996252eabdcf2f0c7"
-  version = "v1.0.0"
+  revision = "v1.0.2"
 
 [[projects]]
   name = "github.com/stretchr/objx"
@@ -668,6 +668,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6a3688925e4c4c6cc43e54ca791b705e438fad130a1c3f686d1cf9390715883a"
+  inputs-digest = "987f2622adc1ecfab64e8b614254706bc1f47fecad60bf47b03265240cfe75e1"
   solver-name = "gps-cdcl"
   solver-version = 1

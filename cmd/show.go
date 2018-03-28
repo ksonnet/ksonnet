@@ -80,7 +80,7 @@ ks show dev -c redis -c nginx-server
 		flags := cmd.Flags()
 		var err error
 
-		componentNames, err := flags.GetStringArray(flagComponent)
+		componentNames, err := flags.GetStringSlice(flagComponent)
 		if err != nil {
 			return err
 		}

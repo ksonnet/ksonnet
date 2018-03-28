@@ -25,18 +25,20 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/ksonnet/ksonnet/client"
+	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/utils"
 )
 
 // DeleteCmd represents the delete subcommand
 type DeleteCmd struct {
+	App          app.App
 	ClientConfig *client.Config
 	Env          string
 	GracePeriod  int64
 }
 
-func (c DeleteCmd) Run(apiObjects []*unstructured.Unstructured) error {
-	clientPool, discovery, namespace, err := c.ClientConfig.RestClient(&c.Env)
+func (c *DeleteCmd) Run(apiObjects []*unstructured.Unstructured) error {
+	clientPool, discovery, namespace, err := c.ClientConfig.RestClient(c.App, &c.Env)
 	if err != nil {
 		return err
 	}
@@ -45,7 +47,6 @@ func (c DeleteCmd) Run(apiObjects []*unstructured.Unstructured) error {
 	if err != nil {
 		return err
 	}
-
 	sort.Sort(sort.Reverse(utils.DependencyOrder(apiObjects)))
 
 	deleteOpts := metav1.DeleteOptions{}

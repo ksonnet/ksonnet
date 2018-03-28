@@ -78,7 +78,7 @@ var applyCmd = &cobra.Command{
 		flags := cmd.Flags()
 		var err error
 
-		c := kubecfg.ApplyCmd{}
+		c := kubecfg.ApplyCmd{App: ka}
 
 		c.Create, err = flags.GetBool(flagCreate)
 		if err != nil {
@@ -103,7 +103,7 @@ var applyCmd = &cobra.Command{
 		c.ClientConfig = applyClientConfig
 		c.Env = env
 
-		componentNames, err := flags.GetStringArray(flagComponent)
+		componentNames, err := flags.GetStringSlice(flagComponent)
 		if err != nil {
 			return err
 		}

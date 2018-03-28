@@ -28,7 +28,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/ksonnet/ksonnet/metadata"
+	"github.com/ksonnet/ksonnet/metadata/app"
 	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/ksonnet/ksonnet/utils"
 	"github.com/pkg/errors"
@@ -52,9 +52,13 @@ type Config struct {
 }
 
 // NewClientConfig initializes a new client.Config with the provided loading rules and overrides.
-func NewClientConfig(overrides clientcmd.ConfigOverrides, loadingRules clientcmd.ClientConfigLoadingRules) *Config {
+func NewClientConfig(a app.App, overrides clientcmd.ConfigOverrides, loadingRules clientcmd.ClientConfigLoadingRules) *Config {
 	config := clientcmd.NewInteractiveDeferredLoadingClientConfig(&loadingRules, &overrides, os.Stdin)
-	return &Config{Overrides: &overrides, LoadingRules: &loadingRules, Config: config}
+	return &Config{
+		Overrides:    &overrides,
+		LoadingRules: &loadingRules,
+		Config:       config,
+	}
 }
 
 // NewDefaultClientConfig initializes a new ClientConfig with default loading rules and no overrides.
@@ -64,14 +68,18 @@ func NewDefaultClientConfig() *Config {
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
 	config := clientcmd.NewInteractiveDeferredLoadingClientConfig(&loadingRules, &overrides, os.Stdin)
 
-	return &Config{Overrides: &overrides, LoadingRules: &loadingRules, Config: config}
+	return &Config{
+		Overrides:    &overrides,
+		LoadingRules: &loadingRules,
+		Config:       config,
+	}
 }
 
 // InitClient initializes a new ClientConfig given the specified environment
 // spec and returns the ClientPool, DiscoveryInterface, and namespace.
-func InitClient(env string) (dynamic.ClientPool, discovery.DiscoveryInterface, string, error) {
+func InitClient(a app.App, env string) (dynamic.ClientPool, discovery.DiscoveryInterface, string, error) {
 	clientConfig := NewDefaultClientConfig()
-	return clientConfig.RestClient(&env)
+	return clientConfig.RestClient(a, &env)
 }
 
 // GetAPISpec reads the kubernetes API version from this client's swagger.json.
@@ -166,9 +174,9 @@ func (c *Config) Namespace() (string, error) {
 }
 
 // RestClient returns the ClientPool, DiscoveryInterface, and Namespace based on the environment spec.
-func (c *Config) RestClient(envName *string) (dynamic.ClientPool, discovery.DiscoveryInterface, string, error) {
+func (c *Config) RestClient(a app.App, envName *string) (dynamic.ClientPool, discovery.DiscoveryInterface, string, error) {
 	if envName != nil {
-		err := c.overrideCluster(*envName)
+		err := c.overrideCluster(a, *envName)
 		if err != nil {
 			return nil, nil, "", err
 		}
@@ -245,17 +253,7 @@ func (c *Config) ResolveContext(context string) (server, namespace string, err e
 // If the environment server the user is attempting to deploy to is not the current
 // kubeconfig context, we must manually override the client-go --cluster flag
 // to ensure we are deploying to the correct cluster.
-func (c *Config) overrideCluster(envName string) error {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	metadataManager, err := metadata.Find(cwd)
-	if err != nil {
-		return err
-	}
-
+func (c *Config) overrideCluster(a app.App, envName string) error {
 	rawConfig, err := c.Config.RawConfig()
 	if err != nil {
 		return err
@@ -277,12 +275,14 @@ func (c *Config) overrideCluster(envName string) error {
 	//
 
 	log.Debugf("Validating deployment at '%s' with server '%v'", envName, reflect.ValueOf(servers).MapKeys())
-	destination, err := metadataManager.GetDestination(envName)
+	env, err := a.Environment(envName)
 	if err != nil {
 		return err
 	}
 
-	server, err := str.NormalizeURL(destination.Server())
+	destination := env.Destination
+
+	server, err := str.NormalizeURL(destination.Server)
 	if err != nil {
 		return err
 	}
@@ -295,17 +295,17 @@ func (c *Config) overrideCluster(envName string) error {
 				c.Overrides.Context.Cluster = clusterName
 			}
 			if c.Overrides.Context.Namespace == "" {
-				log.Debugf("Overwriting --namespace flag with '%s'", destination.Namespace())
-				c.Overrides.Context.Namespace = destination.Namespace()
+				log.Debugf("Overwriting --namespace flag with '%s'", destination.Namespace)
+				c.Overrides.Context.Namespace = destination.Namespace
 			}
 			return nil
 		}
 
 		return fmt.Errorf("Attempting to deploy to environment '%s' at '%s', but cannot locate a server at that address",
-			envName, destination.Server())
+			envName, destination.Server)
 	}
 
-	c.Overrides.Context.Namespace = destination.Namespace()
+	c.Overrides.Context.Namespace = destination.Namespace
 	c.Overrides.ClusterInfo.Server = server
 	// NOTE: ignore TLS verify since we don't have a CA cert to verify with.
 	c.Overrides.ClusterInfo.InsecureSkipTLSVerify = true

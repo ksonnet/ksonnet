@@ -16,17 +16,18 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
+	"github.com/spf13/viper"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/ksonnet/ksonnet/client"
-	"github.com/ksonnet/ksonnet/pkg/kubecfg"
+	"github.com/ksonnet/ksonnet/metadata/app"
 )
 
 const (
-	valShortDesc = "Check generated component manifests against the server's API"
+	vValidateComponent = "validate-component"
+	valShortDesc       = "Check generated component manifests against the server's API"
 )
 
 var (
@@ -39,6 +40,8 @@ func init() {
 	bindJsonnetFlags(validateCmd)
 	validateClientConfig = client.NewDefaultClientConfig()
 	validateClientConfig.BindClientGoFlags(validateCmd)
+
+	viper.BindPFlag(vValidateComponent, validateCmd.Flag(flagComponent))
 }
 
 var validateCmd = &cobra.Command{
@@ -46,40 +49,23 @@ var validateCmd = &cobra.Command{
 	Short: valShortDesc,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("'validate' requires an environment name; use `env list` to see available environments\n\n%s", cmd.UsageString())
+			return errors.Errorf("'validate' requires an environment name; use `env list` to see available environments\n\n%s", cmd.UsageString())
 		}
 		env := args[0]
 
-		flags := cmd.Flags()
-		var err error
+		componentNames := viper.GetStringSlice(vValidateComponent)
 
-		c := kubecfg.ValidateCmd{}
-
-		cwd, err := os.Getwd()
-		if err != nil {
-			return err
+		v, ok := actionMap[actionValidate]
+		if !ok {
+			return errors.New("validate action does not exist")
 		}
 
-		componentNames, err := flags.GetStringArray(flagComponent)
-		if err != nil {
-			return err
+		fn, ok := v.(func(app.App, string, string, []string, *client.Config) error)
+		if !ok {
+			return errors.New("validate action was not in the proper format")
 		}
 
-		c.ClientConfig = validateClientConfig
-		c.Env = env
-
-		te := newCmdObjExpander(cmdObjExpanderConfig{
-			cmd:        cmd,
-			env:        env,
-			components: componentNames,
-			cwd:        cwd,
-		})
-		objs, err := te.Expand()
-		if err != nil {
-			return err
-		}
-
-		return c.Run(objs, cmd.OutOrStdout())
+		return fn(ka, env, "", componentNames, validateClientConfig)
 	},
 	Long: `
 The ` + "`validate`" + ` command checks that an application or file is compliant with the
