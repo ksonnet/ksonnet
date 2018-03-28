@@ -21,8 +21,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ksonnet/ksonnet/actions"
 	"github.com/ksonnet/ksonnet/client"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
 
@@ -84,7 +84,17 @@ var initCmd = &cobra.Command{
 			specFlag = initClientConfig.GetAPISpec(server)
 		}
 
-		return actions.RunInit(
+		v, ok := actionMap[actionInit]
+		if !ok {
+			return errors.New("init action does not exist")
+		}
+
+		fn, ok := v.(func(afero.Fs, string, string, string, string, string) error)
+		if !ok {
+			return errors.New("init action was not in the proper format")
+		}
+
+		return fn(
 			appFs,
 			appName,
 			appRoot,
@@ -92,13 +102,6 @@ var initCmd = &cobra.Command{
 			server,
 			namespace,
 		)
-
-		// c, err := kubecfg.NewInitCmd(appName, appRoot, &specFlag, &server, &namespace)
-		// if err != nil {
-		// 	return err
-		// }
-
-		// return c.Run()
 	},
 	Long: `
 The ` + "`init`" + ` command initializes a ksonnet application in a new directory,` + " `app-name`" + `.

@@ -33,7 +33,7 @@ func TestInit(t *testing.T) {
 		aRootPath := appMock.Root()
 		aK8sSpecFlag := "specFlag"
 		aServerURI := "http://example.com"
-		aNamespace := "default"
+		aNamespace := "my-namespace"
 
 		a, err := NewInit(aFs, aName, aRootPath, aK8sSpecFlag, aServerURI, aNamespace)
 		require.NoError(t, err)
