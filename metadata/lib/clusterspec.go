@@ -135,7 +135,7 @@ func (cs *clusterSpecVersion) OpenAPI() ([]byte, error) {
 
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf(
-			"Recieved status code '%d' when trying to retrieve OpenAPI schema for cluster version '%s' from URL '%s'",
+			"Received status code '%d' when trying to retrieve OpenAPI schema for cluster version '%s' from URL '%s'",
 			resp.StatusCode, cs.k8sVersion, versionURL)
 	}
 

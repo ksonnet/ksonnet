@@ -16,6 +16,8 @@
 package client
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -29,6 +31,7 @@ import (
 	"github.com/ksonnet/ksonnet/metadata"
 	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/ksonnet/ksonnet/utils"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/discovery"
@@ -92,6 +95,27 @@ func (c *Config) GetAPISpec(server string) string {
 		Timeout: time.Second * 2,
 	}
 
+	restConfig, err := c.Config.ClientConfig()
+	if err != nil {
+		log.Debugf("Failed to retrieve REST config:\n%v", err)
+	}
+
+	if len(restConfig.TLSClientConfig.CAData) > 0 {
+		log.Info("Configuring TLS (from data) for retrieving cluster swagger.json")
+		client.Transport = buildTransportFromData(restConfig.TLSClientConfig.CAData)
+	}
+
+	if restConfig.TLSClientConfig.CAFile != "" {
+		log.Info("Configuring TLS (from file) for retrieving cluster swagger.json")
+		transport, err := buildTransportFromFile(restConfig.TLSClientConfig.CAFile)
+		if err != nil {
+			log.Debugf("Failed to read CA file: %v", err)
+			return defaultVersion
+		}
+
+		client.Transport = transport
+	}
+
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		log.Debugf("Failed to create request at %s\n%s", url, err.Error())
@@ -118,6 +142,21 @@ func (c *Config) GetAPISpec(server string) string {
 	}
 
 	return fmt.Sprintf("version:%s", spec.Info.Version)
+}
+
+func buildTransportFromData(data []byte) *http.Transport {
+	tlsConfig := &tls.Config{RootCAs: x509.NewCertPool()}
+	tlsConfig.RootCAs.AppendCertsFromPEM(data)
+	return &http.Transport{TLSClientConfig: tlsConfig}
+}
+
+func buildTransportFromFile(file string) (*http.Transport, error) {
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to ready CA file")
+	}
+
+	return buildTransportFromData(data), nil
 }
 
 // Namespace returns the namespace for the provided ClientConfig.
@@ -179,7 +218,7 @@ func (c *Config) ResolveContext(context string) (server, namespace string, err e
 	if context == "" {
 		if rawConfig.CurrentContext == "" && len(rawConfig.Clusters) == 0 {
 			// User likely does not have a kubeconfig file.
-			return "", "", fmt.Errorf("No current context found. Make sure a kubeconfig file is present")
+			return "", "", errors.Errorf("No current context found. Make sure a kubeconfig file is present")
 		}
 		// Note: "" is a valid rawConfig.CurrentContext
 		context = rawConfig.CurrentContext
@@ -187,13 +226,13 @@ func (c *Config) ResolveContext(context string) (server, namespace string, err e
 
 	ctx := rawConfig.Contexts[context]
 	if ctx == nil {
-		return "", "", fmt.Errorf("context '%s' does not exist in the kubeconfig file", context)
+		return "", "", errors.Errorf("context '%s' does not exist in the kubeconfig file", context)
 	}
 
 	log.Infof("Using context '%s' from the kubeconfig file specified at the environment variable $KUBECONFIG", context)
 	cluster, exists := rawConfig.Clusters[ctx.Cluster]
 	if !exists {
-		return "", "", fmt.Errorf("No cluster with name '%s' exists", ctx.Cluster)
+		return "", "", errors.Errorf("No cluster with name '%s' exists", ctx.Cluster)
 	}
 
 	return cluster.Server, ctx.Namespace, nil
@@ -261,6 +300,6 @@ func (c *Config) overrideCluster(envName string) error {
 		return nil
 	}
 
-	return fmt.Errorf("Attempting to deploy to environment '%s' at '%s', but cannot locate a server at that address",
+	return errors.Errorf("Attempting to deploy to environment '%s' at '%s', but cannot locate a server at that address",
 		envName, destination.Server())
 }
