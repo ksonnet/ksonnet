@@ -21,6 +21,7 @@ import (
 	"sort"
 
 	"github.com/ksonnet/ksonnet/client"
+	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/utils"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -55,6 +56,7 @@ const (
 
 // ApplyCmd represents the apply subcommand
 type ApplyCmd struct {
+	App          app.App
 	ClientConfig *client.Config
 	Env          string
 	Create       bool
@@ -64,8 +66,8 @@ type ApplyCmd struct {
 }
 
 // Run applies the components to the designated environment cluster.
-func (c ApplyCmd) Run(apiObjects []*unstructured.Unstructured, wd string) error {
-	clientPool, discovery, namespace, err := c.ClientConfig.RestClient(&c.Env)
+func (c *ApplyCmd) Run(apiObjects []*unstructured.Unstructured, wd string) error {
+	clientPool, discovery, namespace, err := c.ClientConfig.RestClient(c.App, &c.Env)
 	if err != nil {
 		return err
 	}

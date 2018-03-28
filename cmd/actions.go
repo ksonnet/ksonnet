@@ -21,10 +21,12 @@ type initName int
 
 const (
 	actionInit initName = iota
+	actionValidate
 )
 
 var (
 	actionMap = map[initName]interface{}{
-		actionInit: actions.RunInit,
+		actionInit:     actions.RunInit,
+		actionValidate: actions.RunValidate,
 	}
 )

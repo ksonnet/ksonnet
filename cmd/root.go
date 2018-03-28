@@ -55,21 +55,14 @@ const (
 	flagResolver   = "resolve-images"
 	flagResolvFail = "resolve-images-error"
 	flagAPISpec    = "api-spec"
-
-	// For use in the commands (e.g., diff, apply, delete) that require either an
-	// environment or the -f flag.
-	flagComponent      = "component"
-	flagComponentShort = "c"
 )
 
 var (
-	appFs afero.Fs
+	appFs = afero.NewOsFs()
 	ka    app.App
 )
 
 func init() {
-	appFs = afero.NewOsFs()
-
 	RootCmd.PersistentFlags().CountP(flagVerbose, "v", "Increase verbosity. May be given multiple times.")
 	RootCmd.PersistentFlags().Set("logtostderr", "true")
 }
@@ -300,7 +293,7 @@ func dumpJSON(v interface{}) string {
 // addEnvCmdFlags adds the flags that are common to the family of commands
 // whose form is `[<env>|-f <file-name>]`, e.g., `apply` and `delete`.
 func addEnvCmdFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringArrayP(flagComponent, flagComponentShort, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
+	cmd.PersistentFlags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
 }
 
 type cmdObjExpanderConfig struct {

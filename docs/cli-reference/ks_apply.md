@@ -70,7 +70,7 @@ ks apply dev -c guestbook-ui -c nginx-depl --create false
       --client-certificate string      Path to a client certificate file for TLS
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
-  -c, --component stringArray          Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)
+  -c, --component stringSlice          Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)
       --context string                 The name of the kubeconfig context to use
       --create                         Option to create resources if they do not already exist on the cluster (default true)
       --dry-run                        Option to preview the list of operations without changing the cluster state

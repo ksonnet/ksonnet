@@ -15,21 +15,23 @@
 
 package cmd
 
-const (
-	// For use in the commands (e.g., diff, apply, delete) that require either an
-	// environment or the -f flag.
-	flagComponent = "component"
-	flagEnv       = "env"
-	flagFilename  = "filename"
-	flagIndex     = "index"
-	flagNamespace = "namespace"
-	flagOutput    = "output"
-	flagOverride  = "override"
-	flagVersion   = "version"
+import (
+	"os"
+	"testing"
 
-	shortComponent = "c"
-	shortFilename  = "f"
-	shortIndex     = "i"
-	shortOutput    = "o"
-	shortOverride  = "o"
+	"github.com/spf13/cobra"
 )
+
+func withCmd(t *testing.T, cmd *cobra.Command, id initName, override interface{}, fn func()) {
+	ogAction := actionMap[id]
+	actionMap[id] = override
+
+	envConfig := os.Getenv("KUBECONFIG")
+
+	defer func() {
+		actionMap[id] = ogAction
+		os.Setenv("KUBECONFIG", envConfig)
+	}()
+
+	fn()
+}

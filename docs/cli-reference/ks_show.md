@@ -49,7 +49,7 @@ ks show dev -c redis -c nginx-server
 ### Options
 
 ```
-  -c, --component stringArray         Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)
+  -c, --component stringSlice         Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)
   -V, --ext-str stringSlice           Values of external variables
       --ext-str-file stringSlice      Read external variable from a file
   -o, --format string                 Output format.  Supported values are: json, yaml (default "yaml")

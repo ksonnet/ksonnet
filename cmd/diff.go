@@ -59,7 +59,7 @@ var diffCmd = &cobra.Command{
 			return err
 		}
 
-		componentNames, err := flags.GetStringArray(flagComponent)
+		componentNames, err := flags.GetStringSlice(flagComponent)
 		if err != nil {
 			return err
 		}
@@ -203,7 +203,7 @@ func initDiffSingleEnv(fs afero.Fs, env, diffStrategy string, files []string, cm
 		return nil, err
 	}
 
-	c.Client.ClientPool, c.Client.Discovery, c.Client.Namespace, err = client.InitClient(env)
+	c.Client.ClientPool, c.Client.Discovery, c.Client.Namespace, err = client.InitClient(ka, env)
 	if err != nil {
 		return nil, err
 	}
@@ -255,12 +255,12 @@ func initDiffRemotesCmd(fs afero.Fs, env1, env2, diffStrategy string, cmd *cobra
 		return nil, err
 	}
 
-	c.ClientA.ClientPool, c.ClientA.Discovery, c.ClientA.Namespace, err = client.InitClient(c.ClientA.Name)
+	c.ClientA.ClientPool, c.ClientA.Discovery, c.ClientA.Namespace, err = client.InitClient(ka, c.ClientA.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	c.ClientB.ClientPool, c.ClientB.Discovery, c.ClientB.Namespace, err = client.InitClient(c.ClientB.Name)
+	c.ClientB.ClientPool, c.ClientB.Discovery, c.ClientB.Namespace, err = client.InitClient(ka, c.ClientB.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -280,7 +280,7 @@ func initDiffRemoteCmd(fs afero.Fs, localEnv, remoteEnv, diffStrategy string, cm
 		return nil, err
 	}
 
-	c.Client.ClientPool, c.Client.Discovery, c.Client.Namespace, err = client.InitClient(remoteEnv)
+	c.Client.ClientPool, c.Client.Discovery, c.Client.Namespace, err = client.InitClient(ka, remoteEnv)
 	if err != nil {
 		return nil, err
 	}

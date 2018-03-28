@@ -55,14 +55,14 @@ var deleteCmd = &cobra.Command{
 		flags := cmd.Flags()
 		var err error
 
-		c := kubecfg.DeleteCmd{}
+		c := kubecfg.DeleteCmd{App: ka}
 
 		c.GracePeriod, err = flags.GetInt64(flagGracePeriod)
 		if err != nil {
 			return err
 		}
 
-		componentNames, err := flags.GetStringArray(flagComponent)
+		componentNames, err := flags.GetStringSlice(flagComponent)
 		if err != nil {
 			return err
 		}
