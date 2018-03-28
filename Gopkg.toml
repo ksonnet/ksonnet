@@ -81,6 +81,10 @@
   revision = "a1e4933ab784095895e33dbe9f001ba10cfe2060"
 
 [[constraint]]
+  name = "github.com/spf13/viper"
+  revision = "v1.0.2"
+
+[[constraint]]
   name = "github.com/spf13/pflag"
   revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
 
