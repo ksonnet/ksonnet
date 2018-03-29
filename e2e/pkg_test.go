@@ -28,7 +28,7 @@ var _ = Describe("ks pkg", func() {
 	var a app
 
 	BeforeEach(func() {
-		a = e.initApp("")
+		a = e.initApp(nil)
 	})
 
 	Describe("add", func() {
