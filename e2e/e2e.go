@@ -16,28 +16,72 @@
 package e2e
 
 import (
+	"flag"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 
+	"github.com/pkg/errors"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+
 	// test helpers
 	. "github.com/onsi/gomega"
 )
 
+var kubeconfig = flag.String("kubeconfig", "", "absolute path to kubeconfig file")
+
 type e2e struct {
-	root string
+	root       string
+	restConfig *rest.Config
+
+	corev1 corev1.CoreV1Client
 }
 
 func newE2e() *e2e {
 	dir, err := ioutil.TempDir("", "")
 	Expect(err).ToNot(HaveOccurred())
 
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	Expect(err).ToNot(HaveOccurred(), "build client config from flags")
+
 	e := &e2e{
-		root: dir,
+		root:       dir,
+		restConfig: config,
 	}
 
 	return e
+}
+
+func (e *e2e) createNamespace() string {
+	name := fmt.Sprintf("ks-e2e-%s", lowerRandString(6))
+
+	c, err := corev1.NewForConfig(e.restConfig)
+	Expect(err).ToNot(HaveOccurred())
+
+	result, err := c.Namespaces().Create(
+		&v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: name,
+			},
+		},
+	)
+	Expect(err).ToNot(HaveOccurred())
+
+	return result.GetName()
+}
+
+func (e *e2e) removeNamespace(name string) {
+	c, err := corev1.NewForConfig(e.restConfig)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = c.Namespaces().Delete(name, &metav1.DeleteOptions{})
+	Expect(err).ToNot(HaveOccurred())
 }
 
 func (e *e2e) close() {
@@ -87,23 +131,55 @@ func (e *e2e) buildKs() {
 	assertExitStatus(o, 0)
 }
 
-func (e *e2e) initApp(server string) app {
-	if server == "" {
-		server = "http://example.com"
-	}
-
+func (e *e2e) initApp(options *initOptions) app {
 	appID := randString(6)
 	appDir := filepath.Join(e.root, appID)
-	options := []string{
+
+	opts := []string{
 		"init",
 		appID,
 		"--dir",
 		appDir,
-		"--server",
-		server,
 	}
 
-	o := e.ks(options...)
+	if options == nil {
+		options = &initOptions{}
+	}
+
+	io, err := options.toSlice()
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	opts = append(opts, io...)
+
+	o := e.ks(opts...)
 	assertExitStatus(o, 0)
 	return app{dir: appDir, e2e: e}
+}
+
+type initOptions struct {
+	server    string
+	context   string
+	namespace string
+}
+
+func (o *initOptions) toSlice() ([]string, error) {
+	if o.server != "" && o.context != "" {
+		return nil, errors.Errorf("can't specify server and context")
+	}
+
+	var options []string
+
+	switch {
+	case o.server == "" && o.context == "":
+		options = append(options, "--server", "http://example.com")
+	case o.server != "":
+		options = append(options, "--server", o.server)
+	case o.context != "":
+		options = append(options, "--context", o.context)
+	}
+
+	if o.namespace != "" {
+		options = append(options, "--namespace", o.namespace)
+	}
+
+	return options, nil
 }

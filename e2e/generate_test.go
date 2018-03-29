@@ -27,7 +27,7 @@ var _ = Describe("ks generate", func() {
 	var a app
 
 	BeforeEach(func() {
-		a = e.initApp("")
+		a = e.initApp(nil)
 	})
 
 	Context("deployed-service", func() {

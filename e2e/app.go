@@ -15,7 +15,9 @@
 
 package e2e
 
-import "path/filepath"
+import (
+	"path/filepath"
+)
 
 type app struct {
 	dir string

@@ -632,6 +632,7 @@
     "dynamic",
     "kubernetes/scheme",
     "kubernetes/typed/core/v1",
+    "kubernetes/typed/extensions/v1beta1",
     "pkg/version",
     "plugin/pkg/client/auth",
     "plugin/pkg/client/auth/azure",
@@ -668,6 +669,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "987f2622adc1ecfab64e8b614254706bc1f47fecad60bf47b03265240cfe75e1"
+  inputs-digest = "6f35693a1aeecc410f7fffeb3258dd2974cf7e4cb5a0fb0bc13ad3bc9ca48c3a"
   solver-name = "gps-cdcl"
   solver-version = 1

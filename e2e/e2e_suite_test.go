@@ -22,10 +22,13 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"k8s.io/client-go/rest"
 )
 
 var (
 	e *e2e
+
+	clusterConfig *rest.Config
 )
 
 var _ = BeforeSuite(func() {
