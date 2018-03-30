@@ -35,6 +35,11 @@ func (a *app) componentList() *output {
 	return o
 }
 
+func (a *app) apply(namespace string, opts ...string) *output {
+	args := append([]string{namespace}, opts...)
+	return a.runKs(args...)
+}
+
 func (a *app) envAdd(nsName string, override bool) *output {
 	args := []string{
 		"env",

@@ -22,6 +22,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func runCmd(args ...string) error {
+	RootCmd.SetArgs(args)
+	return RootCmd.Execute()
+}
+
+func withCmd2(id initName, override actionFn, fn func()) {
+	if override != nil {
+		ogFn := actionFns[id]
+		actionFns[id] = override
+
+		defer func() {
+			actionFns[id] = ogFn
+		}()
+	}
+
+	fn()
+}
+
 func withCmd(t *testing.T, cmd *cobra.Command, id initName, override interface{}, fn func()) {
 	ogAction := actionMap[id]
 	actionMap[id] = override

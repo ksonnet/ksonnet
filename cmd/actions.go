@@ -15,14 +15,35 @@
 
 package cmd
 
-import "github.com/ksonnet/ksonnet/actions"
+import (
+	"github.com/ksonnet/ksonnet/actions"
+	"github.com/pkg/errors"
+)
 
 type initName int
 
 const (
-	actionInit initName = iota
+	actionApply initName = iota
+	actionInit
 	actionValidate
 )
+
+type actionFn func(map[string]interface{}) error
+
+var (
+	actionFns = map[initName]actionFn{
+		actionApply: actions.RunApply,
+	}
+)
+
+func runAction(name initName, args map[string]interface{}) error {
+	fn, ok := actionFns[name]
+	if !ok {
+		return errors.Errorf("invalid action")
+	}
+
+	return fn(args)
+}
 
 var (
 	actionMap = map[initName]interface{}{

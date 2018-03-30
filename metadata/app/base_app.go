@@ -217,10 +217,13 @@ func (ba *baseApp) Root() string {
 }
 
 func (ba *baseApp) EnvironmentParams(envName string) (string, error) {
+	if envName == "" {
+		return "", errors.New("environment name is blank")
+	}
 	envParamsPath := filepath.Join(ba.Root(), EnvironmentDirName, envName, "params.libsonnet")
 	b, err := afero.ReadFile(ba.Fs(), envParamsPath)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "unable to read params for environment %s", envName)
 	}
 
 	return string(b), nil
