@@ -19,10 +19,14 @@ const (
 	// For use in the commands (e.g., diff, apply, delete) that require either an
 	// environment or the -f flag.
 	flagComponent = "component"
+	flagCreate    = "create"
+	flagDryRun    = "dry-run"
 	flagEnv       = "env"
 	flagFilename  = "filename"
+	flagGcTag     = "gc-tag"
 	flagIndex     = "index"
 	flagNamespace = "namespace"
+	flagSkipGc    = "skip-gc"
 	flagOutput    = "output"
 	flagOverride  = "override"
 	flagVersion   = "version"

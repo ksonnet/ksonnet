@@ -48,6 +48,7 @@ type Pipeline struct {
 
 // New creates an instance of Pipeline.
 func New(ksApp app.App, envName string, opts ...Opt) *Pipeline {
+	logrus.Debugf("creating ks pipeline for environment %q", envName)
 	p := &Pipeline{
 		app:     ksApp,
 		envName: envName,
@@ -70,17 +71,17 @@ func (p *Pipeline) Namespaces() ([]component.Namespace, error) {
 func (p *Pipeline) EnvParameters(nsName string) (string, error) {
 	ns, err := p.cm.Namespace(p.app, nsName)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "load namespace %s", nsName)
 	}
 
 	paramsStr, err := p.cm.NSResolveParams(ns)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "resolve params for %s", nsName)
 	}
 
 	data, err := p.app.EnvironmentParams(p.envName)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "retrieve environment params for %s", p.envName)
 	}
 
 	envParams := upgradeParams(p.envName, data)
@@ -115,7 +116,7 @@ func (p *Pipeline) Components(filter []string) ([]component.Component, error) {
 func (p *Pipeline) Objects(filter []string) ([]*unstructured.Unstructured, error) {
 	namespaces, err := p.Namespaces()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "get namespaces")
 	}
 
 	var names []string
@@ -129,12 +130,12 @@ func (p *Pipeline) Objects(filter []string) ([]*unstructured.Unstructured, error
 	for _, ns := range namespaces {
 		paramsStr, err := p.EnvParameters(ns.Name())
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "create environment parameters")
 		}
 
 		components, err := p.Components(filter)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "find objects in namespace %s", ns.Name())
 		}
 
 		names = make([]string, 0)
@@ -147,7 +148,7 @@ func (p *Pipeline) Objects(filter []string) ([]*unstructured.Unstructured, error
 		for i := range components {
 			o, err := components[i].Objects(paramsStr, p.envName)
 			if err != nil {
-				return nil, err
+				return nil, errors.Wrapf(err, "find objects for %s in %s", components[i].Name(false), ns.Name())
 			}
 
 			objects = append(objects, o...)

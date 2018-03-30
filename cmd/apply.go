@@ -17,12 +17,14 @@ package cmd
 
 import (
 	"fmt"
-	"os"
+
+	"github.com/ksonnet/ksonnet/actions"
+
+	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
 
 	"github.com/ksonnet/ksonnet/client"
-	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
 
 var (
@@ -30,10 +32,6 @@ var (
 )
 
 const (
-	flagCreate = "create"
-	flagSkipGc = "skip-gc"
-	flagGcTag  = "gc-tag"
-	flagDryRun = "dry-run"
 
 	// AnnotationGcTag annotation that triggers
 	// garbage collection. Objects with value equal to
@@ -53,17 +51,35 @@ const (
 	applyShortDesc = "Apply local Kubernetes manifests (components) to remote clusters"
 )
 
+const (
+	vApplyComponent = "apply-components"
+	vApplyCreate    = "apply-create"
+	vApplyGcTag     = "apply-gc-tag"
+	vApplyDryRun    = "apply-dry-run"
+	vApplySkipGc    = "apply-skip-gc"
+)
+
 func init() {
 	RootCmd.AddCommand(applyCmd)
 
-	addEnvCmdFlags(applyCmd)
 	applyClientConfig = client.NewDefaultClientConfig()
 	applyClientConfig.BindClientGoFlags(applyCmd)
 	bindJsonnetFlags(applyCmd)
-	applyCmd.PersistentFlags().Bool(flagCreate, true, "Option to create resources if they do not already exist on the cluster")
-	applyCmd.PersistentFlags().Bool(flagSkipGc, false, "Option to skip garbage collection, even with --"+flagGcTag+" specified")
-	applyCmd.PersistentFlags().String(flagGcTag, "", "A tag that's (1) added to all updated objects (2) used to garbage collect existing objects that are no longer in the manifest")
-	applyCmd.PersistentFlags().Bool(flagDryRun, false, "Option to preview the list of operations without changing the cluster state")
+
+	applyCmd.Flags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
+	viper.BindPFlag(vApplyComponent, applyCmd.Flags().Lookup(flagComponent))
+
+	applyCmd.Flags().Bool(flagCreate, true, "Option to create resources if they do not already exist on the cluster")
+	viper.BindPFlag(vApplyCreate, applyCmd.Flags().Lookup(flagCreate))
+
+	applyCmd.Flags().Bool(flagSkipGc, false, "Option to skip garbage collection, even with --"+flagGcTag+" specified")
+	viper.BindPFlag(vApplySkipGc, applyCmd.Flags().Lookup(flagSkipGc))
+
+	applyCmd.Flags().String(flagGcTag, "", "A tag that's (1) added to all updated objects (2) used to garbage collect existing objects that are no longer in the manifest")
+	viper.BindPFlag(vApplyGcTag, applyCmd.Flags().Lookup(flagGcTag))
+
+	applyCmd.Flags().Bool(flagDryRun, false, "Option to preview the list of operations without changing the cluster state")
+	viper.BindPFlag(vApplyDryRun, applyCmd.Flags().Lookup(flagDryRun))
 }
 
 var applyCmd = &cobra.Command{
@@ -73,58 +89,19 @@ var applyCmd = &cobra.Command{
 		if len(args) != 1 {
 			return fmt.Errorf("'apply' requires an environment name; use `env list` to see available environments\n\n%s", cmd.UsageString())
 		}
-		env := args[0]
 
-		flags := cmd.Flags()
-		var err error
-
-		c := kubecfg.ApplyCmd{App: ka}
-
-		c.Create, err = flags.GetBool(flagCreate)
-		if err != nil {
-			return err
+		m := map[string]interface{}{
+			actions.OptionApp:            ka,
+			actions.OptionClientConfig:   applyClientConfig,
+			actions.OptionComponentNames: viper.GetStringSlice(vApplyComponent),
+			actions.OptionCreate:         viper.GetBool(vApplyCreate),
+			actions.OptionDryRun:         viper.GetBool(vApplyDryRun),
+			actions.OptionEnvName:        args[0],
+			actions.OptionGcTag:          viper.GetString(vApplyGcTag),
+			actions.OptionSkipGc:         viper.GetBool(vApplySkipGc),
 		}
 
-		c.GcTag, err = flags.GetString(flagGcTag)
-		if err != nil {
-			return err
-		}
-
-		c.SkipGc, err = flags.GetBool(flagSkipGc)
-		if err != nil {
-			return err
-		}
-
-		c.DryRun, err = flags.GetBool(flagDryRun)
-		if err != nil {
-			return err
-		}
-
-		c.ClientConfig = applyClientConfig
-		c.Env = env
-
-		componentNames, err := flags.GetStringSlice(flagComponent)
-		if err != nil {
-			return err
-		}
-
-		cwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		te := newCmdObjExpander(cmdObjExpanderConfig{
-			cmd:        cmd,
-			env:        env,
-			components: componentNames,
-			cwd:        cwd,
-		})
-		objs, err := te.Expand()
-		if err != nil {
-			return err
-		}
-
-		return c.Run(objs, cwd)
+		return actionFns[actionApply](m)
 	},
 	Long: `
 The ` + "`apply`" + `command uses local manifest(s) to update (and optionally create)

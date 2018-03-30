@@ -1,19 +1,30 @@
+// Copyright 2018 The ksonnet authors
+//
+//
+//    Licensed under the Apache License, Version 2.0 (the "License");
+//    you may not use this file except in compliance with the License.
+//    You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//    Unless required by applicable law or agreed to in writing, software
+//    distributed under the License is distributed on an "AS IS" BASIS,
+//    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//    See the License for the specific language governing permissions and
+//    limitations under the License.
+
 // +build e2e
 
 package e2e
 
 import (
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	extv1beta1 "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
-
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ks apply", func() {
 	var a app
 	var namespace string
+	var o *output
 
 	BeforeEach(func() {
 		namespace = e.createNamespace()
@@ -32,23 +43,23 @@ var _ = Describe("ks apply", func() {
 	})
 
 	JustBeforeEach(func() {
-		o := a.runKs("apply", namespace)
+		o = a.runKs("apply", namespace)
+	})
+
+	It("reports which resources it creating", func() {
 		assertExitStatus(o, 0)
+
+		data := map[string]string{"Namespace": namespace}
+		assertTemplate(data, "apply/output.txt.tmpl", o.stderr)
 	})
 
 	It("creates a guestbook-ui service", func() {
-		c, err := corev1.NewForConfig(e.restConfig)
-		Expect(err).NotTo(HaveOccurred())
-
-		_, err = c.Services(namespace).Get("guestbook-ui", v1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		v := newValidator(e.restConfig, namespace)
+		v.hasService("guestbook-ui")
 	})
 
 	It("creates a guestbook-ui deployment", func() {
-		c, err := extv1beta1.NewForConfig(e.restConfig)
-		Expect(err).NotTo(HaveOccurred())
-
-		_, err = c.Deployments(namespace).Get("guestbook-ui", v1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		v := newValidator(e.restConfig, namespace)
+		v.hasDeployment("guestbook-ui")
 	})
 })

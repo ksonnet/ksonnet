@@ -13,24 +13,22 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package actions
+package cluster
 
 import (
-	"github.com/ksonnet/ksonnet/metadata/app"
-	"github.com/spf13/afero"
+	"github.com/ksonnet/ksonnet/utils"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/discovery"
 )
 
-type base struct {
-	app app.App
+// ObjectInfo can retrieve information about an object.
+type ObjectInfo interface {
+	ResourceName(d discovery.ServerResourcesInterface, o runtime.Object) string
 }
 
-func new(fs afero.Fs, appRoot string) (*base, error) {
-	a, err := app.Load(fs, appRoot)
-	if err != nil {
-		return nil, err
-	}
+type objectInfo struct {
+}
 
-	return &base{
-		app: a,
-	}, nil
+func (oi *objectInfo) ResourceName(d discovery.ServerResourcesInterface, o runtime.Object) string {
+	return utils.ResourceNameFor(d, o)
 }
