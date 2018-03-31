@@ -28,8 +28,8 @@ import (
 )
 
 // RunPrototypeDescribe runs `prototype describe`
-func RunPrototypeDescribe(ksApp app.App, query string) error {
-	pd, err := NewPrototypeDescribe(ksApp, query)
+func RunPrototypeDescribe(m map[string]interface{}) error {
+	pd, err := NewPrototypeDescribe(m)
 	if err != nil {
 		return err
 	}
@@ -39,19 +39,22 @@ func RunPrototypeDescribe(ksApp app.App, query string) error {
 
 // PrototypeDescribe lists available namespaces
 type PrototypeDescribe struct {
-	app           app.App
-	out           io.Writer
-	query         string
-	appPrototypes func(app.App, pkg.Descriptor) (prototype.SpecificationSchemas, error)
+	app             app.App
+	out             io.Writer
+	query           string
+	appPrototypesFn func(app.App, pkg.Descriptor) (prototype.SpecificationSchemas, error)
 }
 
 // NewPrototypeDescribe creates an instance of PrototypeDescribe
-func NewPrototypeDescribe(ksApp app.App, query string) (*PrototypeDescribe, error) {
+func NewPrototypeDescribe(m map[string]interface{}) (*PrototypeDescribe, error) {
+	ol := newOptionLoader(m)
+
 	pd := &PrototypeDescribe{
-		app:           ksApp,
-		out:           os.Stdout,
-		query:         query,
-		appPrototypes: pkg.LoadPrototypes,
+		app:   ol.loadApp(),
+		query: ol.loadString(OptionQuery),
+
+		out:             os.Stdout,
+		appPrototypesFn: pkg.LoadPrototypes,
 	}
 
 	return pd, nil
@@ -59,7 +62,7 @@ func NewPrototypeDescribe(ksApp app.App, query string) (*PrototypeDescribe, erro
 
 // Run runs the env list action.
 func (pd *PrototypeDescribe) Run() error {
-	prototypes, err := allPrototypes(pd.app, pd.appPrototypes)
+	prototypes, err := allPrototypes(pd.app, pd.appPrototypesFn)
 	if err != nil {
 		return err
 	}

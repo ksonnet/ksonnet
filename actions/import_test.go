@@ -34,7 +34,13 @@ func TestImport_file(t *testing.T) {
 
 		stageFile(t, appMock.Fs(), "import/file.yaml", path)
 
-		a, err := NewImport(appMock, nsName, path)
+		in := map[string]interface{}{
+			OptionApp:           appMock,
+			OptionNamespaceName: nsName,
+			OptionPath:          path,
+		}
+
+		a, err := NewImport(in)
 		require.NoError(t, err)
 
 		cm := &cmocks.Manager{}
@@ -55,7 +61,13 @@ func TestImport_directory(t *testing.T) {
 
 		stageFile(t, appMock.Fs(), "import/file.yaml", "/import/file.yaml")
 
-		a, err := NewImport(appMock, nsName, path)
+		in := map[string]interface{}{
+			OptionApp:           appMock,
+			OptionNamespaceName: nsName,
+			OptionPath:          path,
+		}
+
+		a, err := NewImport(in)
 		require.NoError(t, err)
 
 		cm := &cmocks.Manager{}
@@ -74,7 +86,13 @@ func TestImport_invalid_file(t *testing.T) {
 		nsName := "/"
 		path := "/import"
 
-		a, err := NewImport(appMock, nsName, path)
+		in := map[string]interface{}{
+			OptionApp:           appMock,
+			OptionNamespaceName: nsName,
+			OptionPath:          path,
+		}
+
+		a, err := NewImport(in)
 		require.NoError(t, err)
 
 		err = a.Run()

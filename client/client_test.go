@@ -52,8 +52,6 @@ func TestConfig_GetAPISpec(t *testing.T) {
 
 	certPEM := buildPEM(tsTLS.Certificate())
 
-	fmt.Println(string(certPEM))
-
 	_, err = tmpfile.Write(certPEM)
 	require.NoError(t, err)
 

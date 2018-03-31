@@ -36,14 +36,14 @@ var envSetCmd = &cobra.Command{
 			return fmt.Errorf("'env set' takes a single argument, that is the name of the environment")
 		}
 
-		envName := args[0]
+		m := map[string]interface{}{
+			actions.OptionApp:           ka,
+			actions.OptionEnvName:       args[0],
+			actions.OptionNewEnvName:    viper.GetString(vEnvSetName),
+			actions.OptionNamespaceName: viper.GetString(vEnvSetNamespace),
+		}
 
-		newName := viper.GetString(vEnvSetName)
-		nameOpt := actions.EnvSetName(newName)
-		newNsName := viper.GetString(vEnvSetNamespace)
-		nsOpt := actions.EnvSetNamespace(newNsName)
-
-		return actions.RunEnvSet(ka, envName, nameOpt, nsOpt)
+		return runAction(actionEnvSet, m)
 	},
 	Long: `
 The ` + "`set`" + ` command lets you change the fields of an existing environment.

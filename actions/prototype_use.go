@@ -28,8 +28,8 @@ import (
 )
 
 // RunPrototypeUse runs `prototype use`
-func RunPrototypeUse(ksApp app.App, args []string) error {
-	pl, err := NewPrototypeUse(ksApp, args)
+func RunPrototypeUse(m map[string]interface{}) error {
+	pl, err := NewPrototypeUse(m)
 	if err != nil {
 		return err
 	}
@@ -39,21 +39,28 @@ func RunPrototypeUse(ksApp app.App, args []string) error {
 
 // PrototypeUse lists available namespaces
 type PrototypeUse struct {
-	app             app.App
-	args            []string
-	out             io.Writer
-	prototypes      func(app.App, pkg.Descriptor) (prototype.SpecificationSchemas, error)
-	createComponent func(app.App, string, string, param.Params, prototype.TemplateType) (string, error)
+	app               app.App
+	args              []string
+	out               io.Writer
+	prototypesFn      func(app.App, pkg.Descriptor) (prototype.SpecificationSchemas, error)
+	createComponentFn func(app.App, string, string, param.Params, prototype.TemplateType) (string, error)
 }
 
 // NewPrototypeUse creates an instance of PrototypeUse
-func NewPrototypeUse(ksApp app.App, args []string) (*PrototypeUse, error) {
+func NewPrototypeUse(m map[string]interface{}) (*PrototypeUse, error) {
+	ol := newOptionLoader(m)
+
 	pl := &PrototypeUse{
-		app:             ksApp,
-		args:            args,
-		out:             os.Stdout,
-		prototypes:      pkg.LoadPrototypes,
-		createComponent: component.Create,
+		app:  ol.loadApp(),
+		args: ol.loadStringSlice(OptionArguments),
+
+		out:               os.Stdout,
+		prototypesFn:      pkg.LoadPrototypes,
+		createComponentFn: component.Create,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return pl, nil
@@ -61,7 +68,7 @@ func NewPrototypeUse(ksApp app.App, args []string) (*PrototypeUse, error) {
 
 // Run runs the env list action.
 func (pl *PrototypeUse) Run() error {
-	prototypes, err := allPrototypes(pl.app, pl.prototypes)
+	prototypes, err := allPrototypes(pl.app, pl.prototypesFn)
 	if err != nil {
 		return err
 	}
@@ -126,7 +133,7 @@ func (pl *PrototypeUse) Run() error {
 		return err
 	}
 
-	_, err = pl.createComponent(pl.app, componentName, text, params, templateType)
+	_, err = pl.createComponentFn(pl.app, componentName, text, params, templateType)
 	if err != nil {
 		return errors.Wrap(err, "create component")
 	}

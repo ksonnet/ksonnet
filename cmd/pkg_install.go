@@ -37,9 +37,13 @@ var pkgInstallCmd = &cobra.Command{
 			return fmt.Errorf("Command requires a single argument of the form <registry>/<library>@<version>\n\n%s", cmd.UsageString())
 		}
 
-		customName := viper.GetString(vPkgInstallName)
+		m := map[string]interface{}{
+			actions.OptionApp:     ka,
+			actions.OptionLibName: args[0],
+			actions.OptionName:    viper.GetString(vPkgInstallName),
+		}
 
-		return actions.RunPkgInstall(ka, args[0], customName)
+		return runAction(actionPkgInstall, m)
 	},
 	Long: `
 The ` + "`install`" + ` command caches a ksonnet library locally, and makes it available

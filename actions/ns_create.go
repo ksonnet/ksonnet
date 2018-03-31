@@ -22,8 +22,8 @@ import (
 )
 
 // RunNsCreate creates a namespace.
-func RunNsCreate(ksApp app.App, nsName string) error {
-	nc, err := NewNsCreate(ksApp, nsName)
+func RunNsCreate(m map[string]interface{}) error {
+	nc, err := NewNsCreate(m)
 	if err != nil {
 		return err
 	}
@@ -39,11 +39,14 @@ type NsCreate struct {
 }
 
 // NewNsCreate creates an instance of NsCreate.
-func NewNsCreate(ksApp app.App, nsName string) (*NsCreate, error) {
+func NewNsCreate(m map[string]interface{}) (*NsCreate, error) {
+	ol := newOptionLoader(m)
+
 	et := &NsCreate{
-		app:    ksApp,
-		nsName: nsName,
-		cm:     component.DefaultManager,
+		app:    ol.loadApp(),
+		nsName: ol.loadString(OptionNamespaceName),
+
+		cm: component.DefaultManager,
 	}
 
 	return et, nil

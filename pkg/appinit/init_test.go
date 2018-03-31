@@ -86,7 +86,7 @@ func TestInit(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			checkApp(t, fs, rootPath, "v1.8.7", namespace)
+			checkApp(t, fs, rootPath, "v1.8.7", "default")
 		})
 	}
 

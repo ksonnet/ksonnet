@@ -24,8 +24,9 @@ import (
 )
 
 // RunEnvDescribe runs `env describe`
-func RunEnvDescribe(ksApp app.App, envName string) error {
-	ed, err := NewEnvDescribe(ksApp, envName)
+// func RunEnvDescribe(ksApp app.App, envName string) error {
+func RunEnvDescribe(m map[string]interface{}) error {
+	ed, err := NewEnvDescribe(m)
 	if err != nil {
 		return err
 	}
@@ -41,11 +42,18 @@ type EnvDescribe struct {
 }
 
 // NewEnvDescribe creates an instance of EnvDescribe.
-func NewEnvDescribe(ksApp app.App, envName string) (*EnvDescribe, error) {
+func NewEnvDescribe(m map[string]interface{}) (*EnvDescribe, error) {
+	ol := newOptionLoader(m)
+
 	ed := &EnvDescribe{
-		app:     ksApp,
-		envName: envName,
-		out:     os.Stdout,
+		app:     ol.loadApp(),
+		envName: ol.loadString(OptionEnvName),
+
+		out: os.Stdout,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return ed, nil

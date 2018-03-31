@@ -35,7 +35,12 @@ var upgradeCmd = &cobra.Command{
 			return err
 		}
 
-		return actions.Upgrade(dryRun)
+		m := map[string]interface{}{
+			actions.OptionApp:    ka,
+			actions.OptionDryRun: dryRun,
+		}
+
+		return runAction(actionUpgrade, m)
 	},
 }
 

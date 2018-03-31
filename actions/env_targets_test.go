@@ -36,7 +36,13 @@ func TestEnvTargets(t *testing.T) {
 		appMock.On("Environment", "default").Return(env, nil)
 		appMock.On("UpdateTargets", envName, nsNames).Return(nil)
 
-		a, err := NewEnvTargets(appMock, envName, nsNames)
+		in := map[string]interface{}{
+			OptionApp:           appMock,
+			OptionEnvName:       envName,
+			OptionNamespaceName: nsNames,
+		}
+
+		a, err := NewEnvTargets(in)
 		require.NoError(t, err)
 
 		ns := &cmocks.Namespace{}
@@ -60,7 +66,13 @@ func TestEnvTargets_invalid_namespace(t *testing.T) {
 		appMock.On("Environment", "default").Return(env, nil)
 		appMock.On("UpdateTargets", envName, nsNames).Return(nil)
 
-		a, err := NewEnvTargets(appMock, envName, nsNames)
+		in := map[string]interface{}{
+			OptionApp:           appMock,
+			OptionEnvName:       envName,
+			OptionNamespaceName: nsNames,
+		}
+
+		a, err := NewEnvTargets(in)
 		require.NoError(t, err)
 
 		ns := &cmocks.Namespace{}
@@ -84,7 +96,13 @@ func TestEnvTargets_invalid_environment(t *testing.T) {
 		envErr := errors.New("environment invalid was not found")
 		appMock.On("Environment", "invalid").Return(env, envErr)
 
-		a, err := NewEnvTargets(appMock, envName, nsNames)
+		in := map[string]interface{}{
+			OptionApp:           appMock,
+			OptionEnvName:       envName,
+			OptionNamespaceName: nsNames,
+		}
+
+		a, err := NewEnvTargets(in)
 		require.NoError(t, err)
 
 		cm := &cmocks.Manager{}

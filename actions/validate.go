@@ -31,9 +31,8 @@ import (
 )
 
 // RunValidate runs `ns list`
-func RunValidate(ksApp app.App, envName, nsName string,
-	componentNames []string, clientConfig *client.Config) error {
-	v, err := NewValidate(ksApp, envName, nsName, componentNames, clientConfig)
+func RunValidate(m map[string]interface{}) error {
+	v, err := NewValidate(m)
 	if err != nil {
 		return err
 	}
@@ -64,19 +63,24 @@ type Validate struct {
 }
 
 // NewValidate creates an instance of Validate.
-func NewValidate(ksApp app.App, envName, nsName string,
-	componentNames []string, clientConfig *client.Config) (*Validate, error) {
-	v := &Validate{
-		app:            ksApp,
-		envName:        envName,
-		nsName:         nsName,
-		componentNames: componentNames,
-		clientConfig:   clientConfig,
-		out:            os.Stdout,
+func NewValidate(m map[string]interface{}) (*Validate, error) {
+	ol := newOptionLoader(m)
 
+	v := &Validate{
+		app:            ol.loadApp(),
+		envName:        ol.loadString(OptionEnvName),
+		nsName:         ol.loadString(OptionNamespaceName),
+		componentNames: ol.loadStringSlice(OptionComponentNames),
+		clientConfig:   ol.loadClientConfig(),
+
+		out:              os.Stdout,
 		discoveryFn:      loadDiscovery,
 		validateObjectFn: validateObject,
 		findObjectsFn:    findObjects,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return v, nil

@@ -19,32 +19,14 @@ import (
 	"testing"
 
 	"github.com/ksonnet/ksonnet/actions"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func Test_ApplyCmd(t *testing.T) {
-	var got map[string]interface{}
-
-	override := func(m map[string]interface{}) error {
-		got = m
-		return nil
-	}
-
-	cases := []struct {
-		name       string
-		args       []string
-		action     initName
-		isErr      bool
-		overrideFn actionFn
-		expected   map[string]interface{}
-	}{
+func Test_applyCmd(t *testing.T) {
+	cases := []cmdTestCase{
 		{
-			name:       "with no options",
-			args:       []string{"apply", "default"},
-			action:     actionApply,
-			overrideFn: override,
+			name:   "with no options",
+			args:   []string{"apply", "default"},
+			action: actionApply,
 			expected: map[string]interface{}{
 				actions.OptionApp:            nil,
 				actions.OptionEnvName:        "default",
@@ -64,20 +46,5 @@ func Test_ApplyCmd(t *testing.T) {
 		},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			withCmd2(tc.action, tc.overrideFn, func() {
-				err := runCmd(tc.args...)
-				if tc.isErr {
-					require.Error(t, err)
-					return
-				}
-
-				require.NoError(t, err)
-
-				assert.Equal(t, tc.expected, got)
-			})
-		})
-	}
-
+	runTestCmd(t, cases)
 }

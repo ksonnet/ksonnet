@@ -36,10 +36,13 @@ var envTargetsCmd = &cobra.Command{
 			return errors.New("env targets <environment> --namespace name")
 		}
 
-		environment := args[0]
+		m := map[string]interface{}{
+			actions.OptionApp:           ka,
+			actions.OptionEnvName:       args[0],
+			actions.OptionNamespaceName: viper.GetStringSlice(vEnvTargetNamespaces),
+		}
 
-		components := viper.GetStringSlice(vEnvTargetNamespaces)
-		return actions.RunEnvTargets(ka, environment, components)
+		return runAction(actionEnvTargets, m)
 	},
 }
 

@@ -15,28 +15,40 @@
 
 package actions
 
-import (
-	"os"
+import "github.com/ksonnet/ksonnet/metadata/app"
 
-	"github.com/ksonnet/ksonnet/metadata"
-)
+// RunUpgrade runs `upgrade`.
+func RunUpgrade(m map[string]interface{}) error {
+	a, err := newUpgrade(m)
+	if err != nil {
+		return err
+	}
+
+	return a.run()
+}
+
+// Upgrade upgrades an application.
+type Upgrade struct {
+	app    app.App
+	dryRun bool
+}
+
+func newUpgrade(m map[string]interface{}) (*Upgrade, error) {
+	ol := newOptionLoader(m)
+
+	a := &Upgrade{
+		app:    ol.loadApp(),
+		dryRun: ol.loadBool(OptionDryRun),
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
+	}
+
+	return a, nil
+}
 
 // Upgrade upgrades a ksonnet application.
-func Upgrade(dryRun bool) error {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	m, err := metadata.Find(cwd)
-	if err != nil {
-		return err
-	}
-
-	a, err := m.App()
-	if err != nil {
-		return err
-	}
-
-	return a.Upgrade(dryRun)
+func (u *Upgrade) run() error {
+	return u.app.Upgrade(u.dryRun)
 }

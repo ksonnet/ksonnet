@@ -39,7 +39,12 @@ var prototypeUseCmd = &cobra.Command{
 			return cmd.Help()
 		}
 
-		return actions.RunPrototypeUse(ka, rawArgs)
+		m := map[string]interface{}{
+			actions.OptionApp:       ka,
+			actions.OptionArguments: rawArgs,
+		}
+
+		return runAction(actionPrototypeUse, m)
 	},
 	Long: `
 The ` + "`generate`" + ` command (aliased from ` + "`prototype use`" + `) generates Kubernetes-

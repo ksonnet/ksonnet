@@ -23,7 +23,6 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"github.com/ksonnet/ksonnet/actions"
 	"github.com/ksonnet/ksonnet/client"
 )
 
@@ -109,30 +108,6 @@ represented as a hierarchy in the ` + "`environments/`" + ` directory of a ksonn
 		}
 		return fmt.Errorf("Command 'env' requires a subcommand\n\n%s", cmd.UsageString())
 	},
-}
-
-var envListCmd = &cobra.Command{
-	Use:   "list",
-	Short: envShortDesc["list"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("'env list' takes zero arguments")
-		}
-
-		return actions.RunEnvList(ka)
-	}, Long: `
-The ` + "`list`" + ` command lists all of the available environments for the
-current ksonnet app. Specifically, this will display the (1) *name*,
-(2) *server*, and (3) *namespace* of each environment.
-
-### Related Commands
-
-* ` + "`ks env add` " + `— ` + envShortDesc["add"] + `
-* ` + "`ks env set` " + `— ` + envShortDesc["set"] + `
-* ` + "`ks env rm` " + `— ` + envShortDesc["rm"] + `
-
-### Syntax
-`,
 }
 
 func commonEnvFlags(flags *pflag.FlagSet) (server, namespace, context string, err error) {

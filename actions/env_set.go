@@ -38,8 +38,9 @@ func EnvSetName(name string) EnvSetOpt {
 type EnvSetOpt func(*EnvSet)
 
 // RunEnvSet runs `env set`
-func RunEnvSet(ksApp app.App, envName string, opts ...EnvSetOpt) error {
-	et, err := NewEnvSet(ksApp, envName, opts...)
+// func RunEnvSet(ksApp app.App, envName string, opts ...EnvSetOpt) error {
+func RunEnvSet(m map[string]interface{}) error {
+	et, err := NewEnvSet(m)
 	if err != nil {
 		return err
 	}
@@ -54,21 +55,26 @@ type EnvSet struct {
 	newName   string
 	newNsName string
 
-	envRename func(a app.App, from, to string, override bool) error
-	updateEnv func(a app.App, envName string, spec *app.EnvironmentSpec, override bool) error
+	envRenameFn func(a app.App, from, to string, override bool) error
+	updateEnvFn func(a app.App, envName string, spec *app.EnvironmentSpec, override bool) error
 }
 
 // NewEnvSet creates an instance of EnvSet.
-func NewEnvSet(ksApp app.App, envName string, opts ...EnvSetOpt) (*EnvSet, error) {
+func NewEnvSet(m map[string]interface{}) (*EnvSet, error) {
+	ol := newOptionLoader(m)
+
 	es := &EnvSet{
-		app:       ksApp,
-		envRename: env.Rename,
-		updateEnv: updateEnv,
-		envName:   envName,
+		app:       ol.loadApp(),
+		envName:   ol.loadString(OptionEnvName),
+		newName:   ol.loadOptionalString(OptionNewEnvName),
+		newNsName: ol.loadOptionalString(OptionNamespaceName),
+
+		envRenameFn: env.Rename,
+		updateEnvFn: updateEnv,
 	}
 
-	for _, opt := range opts {
-		opt(es)
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return es, nil
@@ -90,7 +96,7 @@ func (es *EnvSet) Run() error {
 
 func (es *EnvSet) updateName(isOverride bool) error {
 	if es.newName != "" {
-		if err := es.envRename(es.app, es.envName, es.newName, isOverride); err != nil {
+		if err := es.envRenameFn(es.app, es.envName, es.newName, isOverride); err != nil {
 			return err
 		}
 

@@ -39,10 +39,17 @@ func TestPkgInstall(t *testing.T) {
 			require.Equal(t, "customName", cn)
 			return nil
 		}
-		dcOpt := PkgInstallDepCacher(dc)
 
-		a, err := NewPkgInstall(appMock, libName, customName, dcOpt)
+		in := map[string]interface{}{
+			OptionApp:     appMock,
+			OptionLibName: libName,
+			OptionName:    customName,
+		}
+
+		a, err := NewPkgInstall(in)
 		require.NoError(t, err)
+
+		a.depCacherFn = dc
 
 		libaries := app.LibraryRefSpecs{}
 		appMock.On("Libraries").Return(libaries, nil)

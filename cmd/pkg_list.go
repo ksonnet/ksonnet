@@ -30,7 +30,11 @@ var pkgListCmd = &cobra.Command{
 			return fmt.Errorf("Command 'pkg list' does not take arguments")
 		}
 
-		return actions.RunPkgList(ka)
+		m := map[string]interface{}{
+			actions.OptionApp: ka,
+		}
+
+		return runAction(actionPkgList, m)
 	},
 	Long: `
 The ` + "`list`" + ` command outputs a table that describes all *known* packages (not

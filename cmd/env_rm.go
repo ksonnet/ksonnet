@@ -35,10 +35,13 @@ var envRmCmd = &cobra.Command{
 			return fmt.Errorf("'env rm' takes a single argument, that is the name of the environment")
 		}
 
-		envName := args[0]
+		m := map[string]interface{}{
+			actions.OptionApp:      ka,
+			actions.OptionEnvName:  args[0],
+			actions.OptionOverride: viper.GetBool(vEnvRmOverride),
+		}
 
-		isOverride := viper.GetBool(vEnvRmOverride)
-		return actions.RunEnvRm(ka, envName, isOverride)
+		return runAction(actionEnvRm, m)
 	},
 	Long: `
 The ` + "`rm`" + ` command deletes an environment from a ksonnet application. This is

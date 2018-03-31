@@ -31,13 +31,18 @@ func TestPrototypeSearch(t *testing.T) {
 
 		appMock.On("Libraries").Return(libaries, nil)
 
-		a, err := NewPrototypeSearch(appMock, "search")
+		in := map[string]interface{}{
+			OptionApp:   appMock,
+			OptionQuery: "search",
+		}
+
+		a, err := NewPrototypeSearch(in)
 		require.NoError(t, err)
 
 		var buf bytes.Buffer
 		a.out = &buf
 
-		a.protoSearch = func(string, prototype.SpecificationSchemas) (prototype.SpecificationSchemas, error) {
+		a.protoSearchFn = func(string, prototype.SpecificationSchemas) (prototype.SpecificationSchemas, error) {
 			snippet := prototype.SnippetSchema{ShortDescription: "description"}
 
 			return prototype.SpecificationSchemas{

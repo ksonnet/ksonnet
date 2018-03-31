@@ -27,13 +27,18 @@ import (
 
 func TestRegistryDescribe(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		a, err := NewRegistryDescribe(appMock, "incubator")
+		in := map[string]interface{}{
+			OptionApp:  appMock,
+			OptionName: "incubator",
+		}
+
+		a, err := NewRegistryDescribe(in)
 		require.NoError(t, err)
 
 		var buf bytes.Buffer
 		a.out = &buf
 
-		a.fetchRegistrySpec = func(a app.App, name string) (*registry.Spec, *app.RegistryRefSpec, error) {
+		a.fetchRegistrySpecFn = func(a app.App, name string) (*registry.Spec, *app.RegistryRefSpec, error) {
 			require.Equal(t, "incubator", name)
 
 			spec := &registry.Spec{

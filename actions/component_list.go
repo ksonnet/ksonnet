@@ -27,8 +27,8 @@ import (
 )
 
 // RunComponentList runs `component list`
-func RunComponentList(ksApp app.App, namespace, output string) error {
-	cl, err := NewComponentList(ksApp, namespace, output)
+func RunComponentList(m map[string]interface{}) error {
+	cl, err := NewComponentList(m)
 	if err != nil {
 		return err
 	}
@@ -46,13 +46,20 @@ type ComponentList struct {
 }
 
 // NewComponentList creates an instance of ComponentList.
-func NewComponentList(ksApp app.App, namespace, output string) (*ComponentList, error) {
+func NewComponentList(m map[string]interface{}) (*ComponentList, error) {
+	ol := newOptionLoader(m)
+
 	cl := &ComponentList{
-		nsName: namespace,
-		output: output,
-		app:    ksApp,
-		cm:     component.DefaultManager,
-		out:    os.Stdout,
+		app:    ol.loadApp(),
+		nsName: ol.loadString(OptionNamespaceName),
+		output: ol.loadString(OptionOutput),
+
+		cm:  component.DefaultManager,
+		out: os.Stdout,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return cl, nil

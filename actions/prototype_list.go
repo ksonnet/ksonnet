@@ -27,8 +27,8 @@ import (
 )
 
 // RunPrototypeList runs `prototype list`
-func RunPrototypeList(ksApp app.App) error {
-	pl, err := NewPrototypeList(ksApp)
+func RunPrototypeList(m map[string]interface{}) error {
+	pl, err := NewPrototypeList(m)
 	if err != nil {
 		return err
 	}
@@ -38,17 +38,24 @@ func RunPrototypeList(ksApp app.App) error {
 
 // PrototypeList lists available namespaces
 type PrototypeList struct {
-	app        app.App
-	out        io.Writer
-	prototypes func(app.App, pkg.Descriptor) (prototype.SpecificationSchemas, error)
+	app          app.App
+	out          io.Writer
+	prototypesFn func(app.App, pkg.Descriptor) (prototype.SpecificationSchemas, error)
 }
 
 // NewPrototypeList creates an instance of PrototypeList
-func NewPrototypeList(ksApp app.App) (*PrototypeList, error) {
+func NewPrototypeList(m map[string]interface{}) (*PrototypeList, error) {
+	ol := newOptionLoader(m)
+
 	pl := &PrototypeList{
-		app:        ksApp,
-		out:        os.Stdout,
-		prototypes: pkg.LoadPrototypes,
+		app: ol.loadApp(),
+
+		out:          os.Stdout,
+		prototypesFn: pkg.LoadPrototypes,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return pl, nil
@@ -56,7 +63,7 @@ func NewPrototypeList(ksApp app.App) (*PrototypeList, error) {
 
 // Run runs the env list action.
 func (pl *PrototypeList) Run() error {
-	prototypes, err := allPrototypes(pl.app, pl.prototypes)
+	prototypes, err := allPrototypes(pl.app, pl.prototypesFn)
 	if err != nil {
 		return err
 	}

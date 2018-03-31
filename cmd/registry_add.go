@@ -37,13 +37,15 @@ var registryAddCmd = &cobra.Command{
 			return fmt.Errorf("Command 'registry add' takes two arguments, which is the name and the repository address of the registry to add")
 		}
 
-		name := args[0]
-		uri := args[1]
+		m := map[string]interface{}{
+			actions.OptionApp:      ka,
+			actions.OptionName:     args[0],
+			actions.OptionURI:      args[1],
+			actions.OptionVersion:  viper.GetString(vRegistryAddVersion),
+			actions.OptionOverride: viper.GetBool(vRegistryAddOverride),
+		}
 
-		version := viper.GetString(vRegistryAddVersion)
-		isOverride := viper.GetBool(vRegistryAddOverride)
-
-		return actions.RunRegistryAdd(ka, name, uri, version, isOverride)
+		return runAction(actionRegistryAdd, m)
 	},
 
 	Long: `

@@ -27,8 +27,8 @@ import (
 )
 
 // RunRegistryDescribe runs `prototype list`
-func RunRegistryDescribe(ksApp app.App, name string) error {
-	rd, err := NewRegistryDescribe(ksApp, name)
+func RunRegistryDescribe(m map[string]interface{}) error {
+	rd, err := NewRegistryDescribe(m)
 	if err != nil {
 		return err
 	}
@@ -38,19 +38,26 @@ func RunRegistryDescribe(ksApp app.App, name string) error {
 
 // RegistryDescribe lists available namespaces
 type RegistryDescribe struct {
-	app               app.App
-	name              string
-	out               io.Writer
-	fetchRegistrySpec func(a app.App, name string) (*registry.Spec, *app.RegistryRefSpec, error)
+	app                 app.App
+	name                string
+	out                 io.Writer
+	fetchRegistrySpecFn func(a app.App, name string) (*registry.Spec, *app.RegistryRefSpec, error)
 }
 
 // NewRegistryDescribe creates an instance of RegistryDescribe
-func NewRegistryDescribe(ksApp app.App, name string) (*RegistryDescribe, error) {
+func NewRegistryDescribe(m map[string]interface{}) (*RegistryDescribe, error) {
+	ol := newOptionLoader(m)
+
 	rd := &RegistryDescribe{
-		app:               ksApp,
-		name:              name,
-		out:               os.Stdout,
-		fetchRegistrySpec: fetchRegistrySpec,
+		app:  ol.loadApp(),
+		name: ol.loadString(OptionName),
+
+		out:                 os.Stdout,
+		fetchRegistrySpecFn: fetchRegistrySpec,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return rd, nil
@@ -58,7 +65,7 @@ func NewRegistryDescribe(ksApp app.App, name string) (*RegistryDescribe, error) 
 
 // Run runs the env list action.
 func (rd *RegistryDescribe) Run() error {
-	spec, regRef, err := rd.fetchRegistrySpec(rd.app, rd.name)
+	spec, regRef, err := rd.fetchRegistrySpecFn(rd.app, rd.name)
 	if err != nil {
 		return err
 	}

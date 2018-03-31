@@ -28,8 +28,8 @@ import (
 )
 
 // RunPrototypeSearch runs `prototype search`
-func RunPrototypeSearch(ksApp app.App, query string) error {
-	ps, err := NewPrototypeSearch(ksApp, query)
+func RunPrototypeSearch(m map[string]interface{}) error {
+	ps, err := NewPrototypeSearch(m)
 	if err != nil {
 		return err
 	}
@@ -39,21 +39,28 @@ func RunPrototypeSearch(ksApp app.App, query string) error {
 
 // PrototypeSearch lists available namespaces
 type PrototypeSearch struct {
-	app         app.App
-	query       string
-	out         io.Writer
-	prototypes  func(app.App, pkg.Descriptor) (prototype.SpecificationSchemas, error)
-	protoSearch func(string, prototype.SpecificationSchemas) (prototype.SpecificationSchemas, error)
+	app           app.App
+	query         string
+	out           io.Writer
+	prototypesFn  func(app.App, pkg.Descriptor) (prototype.SpecificationSchemas, error)
+	protoSearchFn func(string, prototype.SpecificationSchemas) (prototype.SpecificationSchemas, error)
 }
 
 // NewPrototypeSearch creates an instance of PrototypeSearch
-func NewPrototypeSearch(ksApp app.App, query string) (*PrototypeSearch, error) {
+func NewPrototypeSearch(m map[string]interface{}) (*PrototypeSearch, error) {
+	ol := newOptionLoader(m)
+
 	ps := &PrototypeSearch{
-		app:         ksApp,
-		query:       query,
-		out:         os.Stdout,
-		prototypes:  pkg.LoadPrototypes,
-		protoSearch: protoSearch,
+		app:   ol.loadApp(),
+		query: ol.loadString(OptionQuery),
+
+		out:           os.Stdout,
+		prototypesFn:  pkg.LoadPrototypes,
+		protoSearchFn: protoSearch,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return ps, nil
@@ -61,12 +68,12 @@ func NewPrototypeSearch(ksApp app.App, query string) (*PrototypeSearch, error) {
 
 // Run runs the env list action.
 func (ps *PrototypeSearch) Run() error {
-	prototypes, err := allPrototypes(ps.app, ps.prototypes)
+	prototypes, err := allPrototypes(ps.app, ps.prototypesFn)
 	if err != nil {
 		return err
 	}
 
-	results, err := ps.protoSearch(ps.query, prototypes)
+	results, err := ps.protoSearchFn(ps.query, prototypes)
 	if err != nil {
 		return err
 	}

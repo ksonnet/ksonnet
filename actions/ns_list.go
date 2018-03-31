@@ -26,8 +26,8 @@ import (
 )
 
 // RunNsList runs `ns list`
-func RunNsList(ksApp app.App, envName string) error {
-	nl, err := NewNsList(ksApp, envName)
+func RunNsList(m map[string]interface{}) error {
+	nl, err := NewNsList(m)
 	if err != nil {
 		return err
 	}
@@ -44,12 +44,19 @@ type NsList struct {
 }
 
 // NewNsList creates an instance of NsList.
-func NewNsList(ksApp app.App, envName string) (*NsList, error) {
+func NewNsList(m map[string]interface{}) (*NsList, error) {
+	ol := newOptionLoader(m)
+
 	nl := &NsList{
-		app:     ksApp,
-		envName: envName,
-		out:     os.Stdout,
-		cm:      component.DefaultManager,
+		app:     ol.loadApp(),
+		envName: ol.loadString(OptionEnvName),
+
+		out: os.Stdout,
+		cm:  component.DefaultManager,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return nl, nil

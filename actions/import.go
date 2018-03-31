@@ -30,8 +30,8 @@ import (
 )
 
 // RunImport runs `import`
-func RunImport(ksApp app.App, nsName, path string) error {
-	i, err := NewImport(ksApp, nsName, path)
+func RunImport(m map[string]interface{}) error {
+	i, err := NewImport(m)
 	if err != nil {
 		return err
 	}
@@ -49,12 +49,19 @@ type Import struct {
 
 // NewImport creates an instance of Import. `nsName` is the name of the component and
 // entity is the file or directory to import.
-func NewImport(ksApp app.App, nsName, path string) (*Import, error) {
+func NewImport(m map[string]interface{}) (*Import, error) {
+	ol := newOptionLoader(m)
+
 	i := &Import{
-		app:    ksApp,
-		nsName: nsName,
-		path:   path,
-		cm:     component.DefaultManager,
+		app:    ol.loadApp(),
+		nsName: ol.loadString(OptionNamespaceName),
+		path:   ol.loadString(OptionPath),
+
+		cm: component.DefaultManager,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return i, nil
@@ -62,6 +69,9 @@ func NewImport(ksApp app.App, nsName, path string) (*Import, error) {
 
 // Run runs the import process.
 func (i *Import) Run() error {
+	if i.path == "" {
+		return errors.New("filename is required")
+	}
 	pathFi, err := i.app.Fs().Stat(i.path)
 	if err != nil {
 		if os.IsNotExist(err) {

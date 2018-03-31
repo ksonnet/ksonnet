@@ -27,13 +27,17 @@ import (
 
 func TestRegistryList(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		a, err := NewRegistryList(appMock)
+		in := map[string]interface{}{
+			OptionApp: appMock,
+		}
+
+		a, err := NewRegistryList(in)
 		require.NoError(t, err)
 
 		var buf bytes.Buffer
 		a.out = &buf
 
-		a.registryList = func(app.App) ([]registry.Registry, error) {
+		a.registryListFn = func(app.App) ([]registry.Registry, error) {
 			registries := []registry.Registry{
 				mockRegistry("override", true),
 				mockRegistry("incubator", false),

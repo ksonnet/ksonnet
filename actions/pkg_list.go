@@ -32,8 +32,8 @@ const (
 )
 
 // RunPkgList runs `pkg list`
-func RunPkgList(ksApp app.App) error {
-	rl, err := NewPkgList(ksApp)
+func RunPkgList(m map[string]interface{}) error {
+	rl, err := NewPkgList(m)
 	if err != nil {
 		return err
 	}
@@ -43,17 +43,24 @@ func RunPkgList(ksApp app.App) error {
 
 // PkgList lists available registries
 type PkgList struct {
-	app          app.App
-	registryList func(ksApp app.App) ([]registry.Registry, error)
-	out          io.Writer
+	app            app.App
+	registryListFn func(ksApp app.App) ([]registry.Registry, error)
+	out            io.Writer
 }
 
 // NewPkgList creates an instance of PkgList
-func NewPkgList(ksApp app.App) (*PkgList, error) {
+func NewPkgList(m map[string]interface{}) (*PkgList, error) {
+	ol := newOptionLoader(m)
+
 	rl := &PkgList{
-		app:          ksApp,
-		registryList: registry.List,
-		out:          os.Stdout,
+		app: ol.loadApp(),
+
+		registryListFn: registry.List,
+		out:            os.Stdout,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return rl, nil
@@ -61,7 +68,7 @@ func NewPkgList(ksApp app.App) (*PkgList, error) {
 
 // Run runs the env list action.
 func (pl *PkgList) Run() error {
-	registries, err := pl.registryList(pl.app)
+	registries, err := pl.registryListFn(pl.app)
 	if err != nil {
 		return err
 	}

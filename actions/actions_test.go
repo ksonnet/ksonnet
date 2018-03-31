@@ -25,8 +25,49 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/registry"
 	rmocks "github.com/ksonnet/ksonnet/pkg/registry/mocks"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func Test_optionsLoader_loadApp(t *testing.T) {
+	withApp(t, func(a *mocks.App) {
+		cases := []struct {
+			name  string
+			m     map[string]interface{}
+			isErr bool
+		}{
+			{
+				name: "with app",
+				m: map[string]interface{}{
+					OptionApp: a,
+				},
+			},
+			{
+				name: "with invalid app",
+				m: map[string]interface{}{
+					OptionApp: "invalid",
+				},
+				isErr: true,
+			},
+		}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				ol := newOptionLoader(tc.m)
+
+				got := ol.loadApp()
+				if tc.isErr {
+					require.Error(t, ol.err)
+					return
+				}
+
+				require.NoError(t, ol.err)
+				assert.Equal(t, a, got)
+			})
+		}
+
+	})
+}
 
 func withApp(t *testing.T, fn func(*mocks.App)) {
 	fs := afero.NewMemMapFs()

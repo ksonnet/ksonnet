@@ -17,25 +17,15 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-
-	"github.com/ksonnet/ksonnet/actions"
-	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
 
 const (
 	flagParamEnv       = "env"
 	flagParamComponent = "component"
 	flagParamNamespace = "namespace"
-)
-
-var (
-	vParamSetEnv   = "param-set-env"
-	vParamSetIndex = "param-set-index"
 )
 
 var paramShortDesc = map[string]string{
@@ -47,18 +37,7 @@ var paramShortDesc = map[string]string{
 func init() {
 	RootCmd.AddCommand(paramCmd)
 
-	paramCmd.AddCommand(paramSetCmd)
 	paramCmd.AddCommand(paramListCmd)
-	paramCmd.AddCommand(paramDiffCmd)
-
-	paramSetCmd.Flags().String(flagEnv, "", "Specify environment to set parameters for")
-	viper.BindPFlag(vParamSetEnv, paramSetCmd.Flags().Lookup(flagEnv))
-	paramSetCmd.Flags().IntP(flagIndex, shortIndex, 0, "Index in manifest")
-	viper.BindPFlag(vParamSetIndex, paramSetCmd.Flags().Lookup(flagIndex))
-
-	paramListCmd.PersistentFlags().String(flagParamEnv, "", "Specify environment to list parameters for")
-	paramListCmd.Flags().String(flagParamNamespace, "", "Specify namespace to list parameters for")
-	paramDiffCmd.PersistentFlags().String(flagParamComponent, "", "Specify the component to diff against")
 }
 
 var paramCmd = &cobra.Command{
@@ -99,159 +78,4 @@ Jsonnet files.
 		}
 		return fmt.Errorf("Command 'param' requires a subcommand\n\n%s", cmd.UsageString())
 	},
-}
-
-var paramSetCmd = &cobra.Command{
-	Use:   "set <component-name> <param-key> <param-value>",
-	Short: paramShortDesc["set"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 3 {
-			return fmt.Errorf("'param set' takes exactly three arguments, (1) the name of the component, in addition to (2) the key and (3) value of the parameter")
-		}
-
-		component := args[0]
-		param := args[1]
-		value := args[2]
-
-		env := viper.GetString(vParamSetEnv)
-		envOpt := actions.ParamSetEnv(env)
-
-		index := viper.GetInt(vParamSetIndex)
-		idxOpt := actions.ParamSetWithIndex(index)
-
-		return actions.RunParamSet(ka, component, param, value, idxOpt, envOpt)
-	},
-	Long: `
-The ` + "`set`" + ` command sets component or environment parameters such as replica count
-or name. Parameters are set individually, one at a time. All of these changes are
-reflected in the ` + "`params.libsonnet`" + ` files.
-
-For more details on how parameters are organized, see ` + "`ks param --help`" + `.
-
-*(If you need to customize multiple parameters at once, we suggest that you modify
-your ksonnet application's ` + " `components/params.libsonnet` " + `file directly. Likewise,
-for greater customization of environment parameters, we suggest modifying the
-` + " `environments/:name/params.libsonnet` " + `file.)*
-
-### Related Commands
-
-* ` + "`ks param diff` " + `— ` + paramShortDesc["diff"] + `
-* ` + "`ks apply` " + `— ` + applyShortDesc + `
-
-### Syntax
-`,
-	Example: `
-# Update the replica count of the 'guestbook' component to 4.
-ks param set guestbook replicas 4
-
-# Update the replica count of the 'guestbook' component to 2, but only for the
-# 'dev' environment
-ks param set guestbook replicas 2 --env=dev`,
-}
-
-var paramListCmd = &cobra.Command{
-	Use:   "list [<component-name>] [--env <env-name>]",
-	Short: paramShortDesc["list"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		flags := cmd.Flags()
-		if len(args) > 1 {
-			return fmt.Errorf("'param list' takes at most one argument, that is the name of the component")
-		}
-
-		component := ""
-		if len(args) == 1 {
-			component = args[0]
-		}
-
-		env, err := flags.GetString(flagParamEnv)
-		if err != nil {
-			return err
-		}
-
-		nsName, err := flags.GetString(flagParamNamespace)
-		if err != nil {
-			return err
-		}
-
-		ka, err := ksApp()
-		if err != nil {
-			return err
-		}
-
-		return actions.RunParamList(ka, component, nsName, env)
-	},
-	Long: `
-The ` + "`list`" + ` command displays all known component parameters or environment parameters.
-
-If a component is specified, this command displays all of its specific parameters.
-If a component is NOT specified, parameters for **all** components are listed.
-Furthermore, parameters can be listed on a per-environment basis.
-
-### Related Commands
-
-* ` + "`ks param set` " + `— ` + paramShortDesc["set"] + `
-
-### Syntax
-`,
-	Example: `
-# List all component parameters
-ks param list
-
-# List all parameters for the component "guestbook"
-ks param list guestbook
-
-# List all parameters for the environment "dev"
-ks param list --env=dev
-
-# List all parameters for the component "guestbook" in the environment "dev"
-ks param list guestbook --env=dev`,
-}
-
-var paramDiffCmd = &cobra.Command{
-	Use:   "diff <env1> <env2> [--component <component-name>]",
-	Short: paramShortDesc["diff"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		flags := cmd.Flags()
-		if len(args) != 2 {
-			return fmt.Errorf("'param diff' takes exactly two arguments: the respective names of the environments being diffed")
-		}
-
-		cwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		env1 := args[0]
-		env2 := args[1]
-
-		component, err := flags.GetString(flagParamComponent)
-		if err != nil {
-			return err
-		}
-
-		c := kubecfg.NewParamDiffCmd(appFs, cwd, env1, env2, component)
-
-		return c.Run(cmd.OutOrStdout())
-	},
-	Long: `
-The ` + "`diff`" + ` command pretty prints differences between the component parameters
-of two environments.
-
-By default, the diff is performed for all components. Diff-ing for a single component
-is supported via a component flag.
-
-### Related Commands
-
-* ` + "`ks param set` " + `— ` + paramShortDesc["set"] + `
-* ` + "`ks apply` " + `— ` + applyShortDesc + `
-
-### Syntax
-`,
-	Example: `
-# Diff between all component parameters for environments 'dev' and 'prod'
-ks param diff dev prod
-
-# Diff only between the parameters for the 'guestbook' component for environments
-# 'dev' and 'prod'
-ks param diff dev prod --component=guestbook`,
 }

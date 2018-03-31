@@ -28,8 +28,8 @@ const (
 )
 
 // RunInit creates a namespace.
-func RunInit(fs afero.Fs, name, rootPath, k8sSpecFlag, serverURI, namespace string) error {
-	i, err := NewInit(fs, name, rootPath, k8sSpecFlag, serverURI, namespace)
+func RunInit(m map[string]interface{}) error {
+	i, err := NewInit(m)
 	if err != nil {
 		return err
 	}
@@ -54,16 +54,23 @@ type Init struct {
 }
 
 // NewInit creates an instance of Init.
-func NewInit(fs afero.Fs, name, rootPath, k8sSpecFlag, serverURI, namespace string) (*Init, error) {
+func NewInit(m map[string]interface{}) (*Init, error) {
+	ol := newOptionLoader(m)
+
 	i := &Init{
-		fs:              fs,
-		name:            name,
-		rootPath:        rootPath,
-		k8sSpecFlag:     k8sSpecFlag,
-		serverURI:       serverURI,
-		namespace:       namespace,
+		fs:          ol.loadFs(OptionFs),
+		name:        ol.loadString(OptionName),
+		rootPath:    ol.loadString(OptionRootPath),
+		k8sSpecFlag: ol.loadString(OptionSpecFlag),
+		serverURI:   ol.loadOptionalString(OptionServer),
+		namespace:   ol.loadString(OptionNamespaceName),
+
 		appInitFn:       appinit.Init,
 		initIncubatorFn: initIncubator,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return i, nil

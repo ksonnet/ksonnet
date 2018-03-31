@@ -30,8 +30,12 @@ var prototypeSearchCmd = &cobra.Command{
 			return fmt.Errorf("Command 'prototype search' requires a prototype name\n\n%s", cmd.UsageString())
 		}
 
-		query := args[0]
-		return actions.RunPrototypeSearch(ka, query)
+		m := map[string]interface{}{
+			actions.OptionApp:   ka,
+			actions.OptionQuery: args[0],
+		}
+
+		return runAction(actionPrototypeSearch, m)
 	},
 	Long: `
 The ` + "`prototype search`" + ` command allows you to search for specific prototypes by name.

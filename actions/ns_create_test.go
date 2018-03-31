@@ -28,7 +28,12 @@ import (
 
 func TestNsCreate(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		a, err := NewNsCreate(appMock, "name")
+		in := map[string]interface{}{
+			OptionApp:           appMock,
+			OptionNamespaceName: "name",
+		}
+
+		a, err := NewNsCreate(in)
 		require.NoError(t, err)
 
 		ns := &cmocks.Namespace{}
@@ -47,7 +52,12 @@ func TestNsCreate(t *testing.T) {
 
 func TestNsCreate_already_exists(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		a, err := NewNsCreate(appMock, "name")
+		in := map[string]interface{}{
+			OptionApp:           appMock,
+			OptionNamespaceName: "name",
+		}
+
+		a, err := NewNsCreate(in)
 		require.NoError(t, err)
 
 		ns := &cmocks.Namespace{}

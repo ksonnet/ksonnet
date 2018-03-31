@@ -40,7 +40,14 @@ func TestParamSet(t *testing.T) {
 
 		cm.On("ResolvePath", appMock, "deployment").Return(ns, c, nil)
 
-		a, err := NewParamSet(appMock, componentName, path, value)
+		in := map[string]interface{}{
+			OptionApp:   appMock,
+			OptionName:  componentName,
+			OptionPath:  path,
+			OptionValue: value,
+		}
+
+		a, err := NewParamSet(in)
 		require.NoError(t, err)
 
 		a.cm = cm
@@ -64,9 +71,15 @@ func TestParamSet_index(t *testing.T) {
 
 		cm.On("ResolvePath", appMock, "deployment").Return(ns, c, nil)
 
-		idxOpt := ParamSetWithIndex(1)
+		in := map[string]interface{}{
+			OptionApp:   appMock,
+			OptionName:  componentName,
+			OptionPath:  path,
+			OptionValue: value,
+			OptionIndex: 1,
+		}
 
-		a, err := NewParamSet(appMock, componentName, path, value, idxOpt)
+		a, err := NewParamSet(in)
 		require.NoError(t, err)
 
 		a.cm = cm
@@ -89,8 +102,15 @@ func TestParamSet_global(t *testing.T) {
 
 		cm.On("Namespace", appMock, "/").Return(ns, nil)
 
-		gOpt := ParamSetGlobal(true)
-		a, err := NewParamSet(appMock, nsName, path, value, gOpt)
+		in := map[string]interface{}{
+			OptionApp:    appMock,
+			OptionName:   nsName,
+			OptionPath:   path,
+			OptionValue:  value,
+			OptionGlobal: true,
+		}
+
+		a, err := NewParamSet(in)
 		require.NoError(t, err)
 
 		a.cm = cm
@@ -106,8 +126,15 @@ func TestParamSet_env(t *testing.T) {
 		path := "replicas"
 		value := "3"
 
-		envOpt := ParamSetEnv("default")
-		a, err := NewParamSet(appMock, name, path, value, envOpt)
+		in := map[string]interface{}{
+			OptionApp:     appMock,
+			OptionName:    name,
+			OptionPath:    path,
+			OptionValue:   value,
+			OptionEnvName: "default",
+		}
+
+		a, err := NewParamSet(in)
 		require.NoError(t, err)
 
 		envSetter := func(ksApp app.App, envName, name, pName, value string) error {

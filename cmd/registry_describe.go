@@ -29,9 +29,13 @@ var registryDescribeCmd = &cobra.Command{
 		if len(args) != 1 {
 			return fmt.Errorf("Command 'registry describe' takes one argument, which is the name of the registry to describe")
 		}
-		name := args[0]
 
-		return actions.RunRegistryDescribe(ka, name)
+		m := map[string]interface{}{
+			actions.OptionApp:  ka,
+			actions.OptionName: args[0],
+		}
+
+		return runAction(actionRegistryDescribe, m)
 	},
 
 	Long: `

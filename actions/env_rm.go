@@ -21,8 +21,8 @@ import (
 )
 
 // RunEnvRm runs `env rm`
-func RunEnvRm(ksApp app.App, envName string, isOverride bool) error {
-	ea, err := NewEnvRm(ksApp, envName, isOverride)
+func RunEnvRm(m map[string]interface{}) error {
+	ea, err := NewEnvRm(m)
 	if err != nil {
 		return err
 	}
@@ -42,13 +42,19 @@ type EnvRm struct {
 }
 
 // NewEnvRm creates an instance of EnvRm.
-func NewEnvRm(ksApp app.App, envName string, isOverride bool) (*EnvRm, error) {
+func NewEnvRm(m map[string]interface{}) (*EnvRm, error) {
+	ol := newOptionLoader(m)
+
 	ea := &EnvRm{
-		app:        ksApp,
-		envName:    envName,
-		isOverride: isOverride,
+		app:        ol.loadApp(),
+		envName:    ol.loadString(OptionEnvName),
+		isOverride: ol.loadBool(OptionOverride),
 
 		envDeleteFn: env.Delete,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return ea, nil

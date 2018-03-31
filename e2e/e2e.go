@@ -32,6 +32,12 @@ import (
 
 	// test helpers
 	. "github.com/onsi/gomega"
+
+	// client go auth plugins
+	_ "k8s.io/client-go/plugin/pkg/client/auth/azure"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/openstack"
 )
 
 var kubeconfig = flag.String("kubeconfig", "", "absolute path to kubeconfig file")

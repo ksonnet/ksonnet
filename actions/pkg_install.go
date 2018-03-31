@@ -24,19 +24,9 @@ import (
 // DepCacher is a function that caches a dependency.j
 type DepCacher func(app.App, pkg.Descriptor, string) error
 
-// PkgInstallDepCacher sets the dep cacher for pkg install.
-func PkgInstallDepCacher(dc DepCacher) PkgInstallOpt {
-	return func(pi *PkgInstall) {
-		pi.depCacher = dc
-	}
-}
-
-// PkgInstallOpt is an option for configuring PkgInstall.
-type PkgInstallOpt func(*PkgInstall)
-
 // RunPkgInstall runs `pkg install`
-func RunPkgInstall(ksApp app.App, libName, customName string, opts ...PkgInstallOpt) error {
-	pi, err := NewPkgInstall(ksApp, libName, customName, opts...)
+func RunPkgInstall(m map[string]interface{}) error {
+	pi, err := NewPkgInstall(m)
 	if err != nil {
 		return err
 	}
@@ -46,23 +36,26 @@ func RunPkgInstall(ksApp app.App, libName, customName string, opts ...PkgInstall
 
 // PkgInstall lists namespaces.
 type PkgInstall struct {
-	app        app.App
-	libName    string
-	customName string
-	depCacher  DepCacher
+	app         app.App
+	libName     string
+	customName  string
+	depCacherFn DepCacher
 }
 
 // NewPkgInstall creates an instance of PkgInstall.
-func NewPkgInstall(ksApp app.App, libName, name string, opts ...PkgInstallOpt) (*PkgInstall, error) {
+func NewPkgInstall(m map[string]interface{}) (*PkgInstall, error) {
+	ol := newOptionLoader(m)
+
 	nl := &PkgInstall{
-		app:        ksApp,
-		libName:    libName,
-		customName: name,
-		depCacher:  registry.CacheDependency,
+		app:        ol.loadApp(),
+		libName:    ol.loadString(OptionLibName),
+		customName: ol.loadString(OptionName),
+
+		depCacherFn: registry.CacheDependency,
 	}
 
-	for _, opt := range opts {
-		opt(nl)
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return nl, nil
@@ -75,7 +68,7 @@ func (pi *PkgInstall) Run() error {
 		return err
 	}
 
-	return pi.depCacher(pi.app, d, customName)
+	return pi.depCacherFn(pi.app, d, customName)
 }
 
 func (pi *PkgInstall) parseDepSpec() (pkg.Descriptor, string, error) {

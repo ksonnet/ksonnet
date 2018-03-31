@@ -24,8 +24,8 @@ import (
 )
 
 // RunRegistryAdd runs `registry add`
-func RunRegistryAdd(ksApp app.App, name, uri, version string, isOverride bool) error {
-	ra, err := NewRegistryAdd(ksApp, name, uri, version, isOverride)
+func RunRegistryAdd(m map[string]interface{}) error {
+	ra, err := NewRegistryAdd(m)
 	if err != nil {
 		return err
 	}
@@ -35,23 +35,30 @@ func RunRegistryAdd(ksApp app.App, name, uri, version string, isOverride bool) e
 
 // RegistryAdd lists namespaces.
 type RegistryAdd struct {
-	app         app.App
-	name        string
-	uri         string
-	version     string
-	isOverride  bool
-	registryAdd func(a app.App, name, protocol, uri, version string, isOverride bool) (*registry.Spec, error)
+	app           app.App
+	name          string
+	uri           string
+	version       string
+	isOverride    bool
+	registryAddFn func(a app.App, name, protocol, uri, version string, isOverride bool) (*registry.Spec, error)
 }
 
 // NewRegistryAdd creates an instance of RegistryAdd.
-func NewRegistryAdd(ksApp app.App, name, uri, version string, isOverride bool) (*RegistryAdd, error) {
+func NewRegistryAdd(m map[string]interface{}) (*RegistryAdd, error) {
+	ol := newOptionLoader(m)
+
 	ra := &RegistryAdd{
-		app:         ksApp,
-		name:        name,
-		uri:         uri,
-		version:     version,
-		isOverride:  isOverride,
-		registryAdd: registry.Add,
+		app:        ol.loadApp(),
+		name:       ol.loadString(OptionName),
+		uri:        ol.loadString(OptionURI),
+		version:    ol.loadString(OptionVersion),
+		isOverride: ol.loadBool(OptionOverride),
+
+		registryAddFn: registry.Add,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return ra, nil
@@ -60,7 +67,7 @@ func NewRegistryAdd(ksApp app.App, name, uri, version string, isOverride bool) (
 // Run lists namespaces.
 func (ra *RegistryAdd) Run() error {
 	uri, protocol := ra.protocol()
-	_, err := ra.registryAdd(ra.app, ra.name, protocol, uri, ra.version, ra.isOverride)
+	_, err := ra.registryAddFn(ra.app, ra.name, protocol, uri, ra.version, ra.isOverride)
 	return err
 }
 

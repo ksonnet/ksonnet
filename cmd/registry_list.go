@@ -30,7 +30,11 @@ var registryListCmd = &cobra.Command{
 			return fmt.Errorf("Command 'registry list' does not take arguments")
 		}
 
-		return actions.RunRegistryList(ka)
+		m := map[string]interface{}{
+			actions.OptionApp: ka,
+		}
+
+		return runAction(actionRegistryList, m)
 	},
 	Long: `
 The ` + "`list`" + ` command displays all known ksonnet registries in a table. This

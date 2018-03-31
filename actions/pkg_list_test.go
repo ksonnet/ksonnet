@@ -33,7 +33,11 @@ func TestPkgList(t *testing.T) {
 
 		appMock.On("Libraries").Return(libaries, nil)
 
-		a, err := NewPkgList(appMock)
+		in := map[string]interface{}{
+			OptionApp: appMock,
+		}
+
+		a, err := NewPkgList(in)
 		require.NoError(t, err)
 
 		var buf bytes.Buffer
@@ -49,7 +53,7 @@ func TestPkgList(t *testing.T) {
 		incubator := mockRegistry("incubator", false)
 		incubator.On("FetchRegistrySpec").Return(spec, nil)
 
-		a.registryList = func(app.App) ([]registry.Registry, error) {
+		a.registryListFn = func(app.App) ([]registry.Registry, error) {
 			registries := []registry.Registry{incubator}
 			return registries, nil
 		}
