@@ -146,7 +146,7 @@ func (m *manager) Root() string {
 }
 
 func (m *manager) App() (app.App, error) {
-	return app.Load(m.appFS, m.rootPath)
+	return app.Load(m.appFS, m.rootPath, false)
 }
 
 func (m *manager) LibPaths() (envPath, vendorPath string) {

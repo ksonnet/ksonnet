@@ -26,7 +26,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-// CacheDependency caches registry dependencies.
+// CacheDependency vendors registry dependencies.
 // TODO: create unit tests for this once mocks for this package are
 // worked out.
 func CacheDependency(a app.App, d pkg.Descriptor, customName string) error {
@@ -80,7 +80,6 @@ func CacheDependency(a app.App, d pkg.Descriptor, customName string) error {
 
 	// Add library to app specification, but wait to write it out until
 	// the end, in case one of the network calls fails.
-
 	log.Infof("Retrieved %d files", len(files))
 
 	for _, dir := range directories {

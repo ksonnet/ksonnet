@@ -20,12 +20,14 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/pkg/parts"
 	"github.com/ksonnet/ksonnet/pkg/util/github"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 )
 
 const (
@@ -37,12 +39,12 @@ var (
 	// errInvalidURI is an invalid github uri error.
 	errInvalidURI = fmt.Errorf("Invalid GitHub URI: try navigating in GitHub to the URI of the folder containing the 'yaml', and using that URI instead. Generally, this URI should be of the form 'github.com/{organization}/{repository}/tree/{branch}/[path-to-directory]'")
 
-	githubFactory = func(spec *app.RegistryRefSpec) (*GitHub, error) {
-		return NewGitHub(spec)
+	githubFactory = func(a app.App, spec *app.RegistryRefSpec) (*GitHub, error) {
+		return NewGitHub(a, spec)
 	}
 )
 
-type ghFactoryFn func(spec *app.RegistryRefSpec) (*GitHub, error)
+type ghFactoryFn func(a app.App, spec *app.RegistryRefSpec) (*GitHub, error)
 
 // GitHubClient is an option for the setting a github client.
 func GitHubClient(c github.GitHub) GitHubOpt {
@@ -56,6 +58,7 @@ type GitHubOpt func(*GitHub)
 
 // GitHub is a Github Registry
 type GitHub struct {
+	app      app.App
 	name     string
 	hd       *hubDescriptor
 	ghClient github.GitHub
@@ -63,12 +66,13 @@ type GitHub struct {
 }
 
 // NewGitHub creates an instance of GitHub.
-func NewGitHub(registryRef *app.RegistryRefSpec, opts ...GitHubOpt) (*GitHub, error) {
+func NewGitHub(a app.App, registryRef *app.RegistryRefSpec, opts ...GitHubOpt) (*GitHub, error) {
 	if registryRef == nil {
 		return nil, errors.New("registry ref is nil")
 	}
 
 	gh := &GitHub{
+		app:      a,
 		name:     registryRef.Name,
 		spec:     registryRef,
 		ghClient: github.DefaultClient,
@@ -80,19 +84,21 @@ func NewGitHub(registryRef *app.RegistryRefSpec, opts ...GitHubOpt) (*GitHub, er
 	}
 	gh.hd = hd
 
-	for _, opt := range opts {
-		opt(gh)
-	}
+	if gh.spec.GitVersion == nil || gh.spec.GitVersion.CommitSHA == "" {
+		for _, opt := range opts {
+			opt(gh)
+		}
 
-	ctx := context.Background()
-	sha, err := gh.ghClient.CommitSHA1(ctx, hd.Repo(), hd.refSpec)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to find SHA1 for repo")
-	}
+		ctx := context.Background()
+		sha, err := gh.ghClient.CommitSHA1(ctx, hd.Repo(), hd.refSpec)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to find SHA1 for repo")
+		}
 
-	gh.spec.GitVersion = &app.GitVersionSpec{
-		RefSpec:   hd.refSpec,
-		CommitSHA: sha,
+		gh.spec.GitVersion = &app.GitVersionSpec{
+			RefSpec:   hd.refSpec,
+			CommitSHA: sha,
+		}
 	}
 
 	return gh, nil
@@ -133,6 +139,47 @@ func (gh *GitHub) RegistrySpecFilePath() string {
 
 // FetchRegistrySpec fetches the registry spec.
 func (gh *GitHub) FetchRegistrySpec() (*Spec, error) {
+	// Check local disk cache.
+	registrySpecFile := makePath(gh.app, gh)
+	registrySpec, exists, err := load(gh.app, registrySpecFile)
+	if err != nil {
+		return nil, errors.Wrap(err, "load registry spec file")
+	}
+
+	if !exists {
+		// If failed, use the protocol to try to retrieve app specification.
+		registrySpec, err = gh.cacheRegistrySpec()
+		if err != nil {
+			return nil, err
+		}
+
+		var registrySpecBytes []byte
+		registrySpecBytes, err = registrySpec.Marshal()
+		if err != nil {
+			return nil, err
+		}
+
+		// NOTE: We call mkdir after getting the registry spec, since a
+		// network call might fail and leave this half-initialized empty
+		// directory.
+		registrySpecDir := filepath.Join(root(gh.app), gh.RegistrySpecDir())
+		err = gh.app.Fs().MkdirAll(registrySpecDir, app.DefaultFolderPermissions)
+		if err != nil {
+			return nil, err
+		}
+
+		err = afero.WriteFile(gh.app.Fs(), registrySpecFile, registrySpecBytes, app.DefaultFilePermissions)
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
+
+	return registrySpec, nil
+}
+
+func (gh *GitHub) cacheRegistrySpec() (*Spec, error) {
 	ctx := context.Background()
 
 	file, _, err := gh.ghClient.Contents(ctx, gh.hd.Repo(), gh.hd.regSpecRepoPath,

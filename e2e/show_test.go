@@ -18,7 +18,11 @@
 package e2e
 
 import (
+	"os"
+	"path/filepath"
+
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ks show", func() {
@@ -33,6 +37,19 @@ var _ = Describe("ks show", func() {
 		o := a.runKs("show", "default")
 		assertExitStatus(o, 0)
 		assertOutput("show/output.txt", o.stdout)
+	})
+
+	Context("lib does not exists", func() {
+		JustBeforeEach(func() {
+			err := os.RemoveAll(filepath.Join(a.dir, "lib"))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("generates spec cache", func() {
+			o := a.runKs("show", "default")
+			assertExitStatus(o, 0)
+			assertOutput("show/output.txt", o.stdout)
+		})
 	})
 
 })

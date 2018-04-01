@@ -57,7 +57,7 @@ func Package(a app.App, name string) (*pkg.Package, error) {
 func Locate(a app.App, spec *app.RegistryRefSpec) (Registry, error) {
 	switch spec.Protocol {
 	case ProtocolGitHub:
-		return githubFactory(spec)
+		return githubFactory(a, spec)
 	case ProtocolFilesystem:
 		return NewFs(a, spec)
 	default:

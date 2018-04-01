@@ -38,8 +38,8 @@ func Test_Package(t *testing.T) {
 			Return(content, nil, nil)
 
 		ghcOpt := GitHubClient(c)
-		githubFactory = func(spec *app.RegistryRefSpec) (*GitHub, error) {
-			return NewGitHub(spec, ghcOpt)
+		githubFactory = func(a app.App, spec *app.RegistryRefSpec) (*GitHub, error) {
+			return NewGitHub(a, spec, ghcOpt)
 		}
 
 		registries := app.RegistryRefSpecs{
@@ -66,8 +66,8 @@ func Test_List(t *testing.T) {
 			Return("12345", nil)
 
 		ghcOpt := GitHubClient(c)
-		githubFactory = func(spec *app.RegistryRefSpec) (*GitHub, error) {
-			return NewGitHub(spec, ghcOpt)
+		githubFactory = func(a app.App, spec *app.RegistryRefSpec) (*GitHub, error) {
+			return NewGitHub(a, spec, ghcOpt)
 		}
 
 		specs := app.RegistryRefSpecs{

@@ -69,8 +69,8 @@ func TestAdd(t *testing.T) {
 			Return(registryContent, nil, nil)
 
 		ghOpt := GitHubClient(ghMock)
-		githubFactory = func(registryRef *app.RegistryRefSpec) (*GitHub, error) {
-			return NewGitHub(registryRef, ghOpt)
+		githubFactory = func(a app.App, registryRef *app.RegistryRefSpec) (*GitHub, error) {
+			return NewGitHub(a, registryRef, ghOpt)
 		}
 
 		spec, err := Add(appMock, "new", ProtocolGitHub, "github.com/foo/bar", "", true)

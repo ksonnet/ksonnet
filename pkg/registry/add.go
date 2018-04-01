@@ -16,8 +16,6 @@
 package registry
 
 import (
-	"path/filepath"
-
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
@@ -37,7 +35,7 @@ func Add(a app.App, name, protocol, uri, version string, isOverride bool) (*Spec
 
 	switch protocol {
 	case ProtocolGitHub:
-		r, err = githubFactory(initSpec)
+		r, err = githubFactory(a, initSpec)
 	case ProtocolFilesystem:
 		r, err = NewFs(a, initSpec)
 	default:
@@ -54,49 +52,9 @@ func Add(a app.App, name, protocol, uri, version string, isOverride bool) (*Spec
 	}
 
 	// Retrieve the contents of registry.
-	registrySpec, err := getOrCacheRegistry(a, r)
+	registrySpec, err := r.FetchRegistrySpec()
 	if err != nil {
 		return nil, errors.Wrap(err, "cache registry")
-	}
-
-	return registrySpec, nil
-}
-
-func getOrCacheRegistry(a app.App, gh Registry) (*Spec, error) {
-	// Check local disk cache.
-	registrySpecFile := makePath(a, gh)
-	registrySpec, exists, err := load(a, registrySpecFile)
-	if err != nil {
-		return nil, errors.Wrap(err, "load registry spec file")
-	}
-
-	if !exists {
-		// If failed, use the protocol to try to retrieve app specification.
-		registrySpec, err = gh.FetchRegistrySpec()
-		if err != nil {
-			return nil, err
-		}
-
-		registrySpecBytes, err := registrySpec.Marshal()
-		if err != nil {
-			return nil, err
-		}
-
-		// NOTE: We call mkdir after getting the registry spec, since a
-		// network call might fail and leave this half-initialized empty
-		// directory.
-		registrySpecDir := filepath.Join(root(a), gh.RegistrySpecDir())
-		err = a.Fs().MkdirAll(registrySpecDir, app.DefaultFolderPermissions)
-		if err != nil {
-			return nil, err
-		}
-
-		err = afero.WriteFile(a.Fs(), registrySpecFile, registrySpecBytes, app.DefaultFilePermissions)
-		if err != nil {
-			return nil, err
-		}
-	} else if err != nil {
-		return nil, err
 	}
 
 	return registrySpec, nil

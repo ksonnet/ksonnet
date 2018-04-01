@@ -118,6 +118,10 @@ func (fs *Fs) ResolveLibrarySpec(partName, libRefSpec string) (*parts.Spec, erro
 
 // ResolveLibrary fetches the part and creates a parts spec and library ref spec.
 func (fs *Fs) ResolveLibrary(partName, partAlias, libRefSpec string, onFile ResolveFile, onDir ResolveDirectory) (*parts.Spec, *app.LibraryRefSpec, error) {
+	if partAlias == "" {
+		partAlias = partName
+	}
+
 	partRoot := filepath.Join(fs.RegistrySpecDir(), partName)
 	parentDir := filepath.Dir(fs.RegistrySpecDir())
 
