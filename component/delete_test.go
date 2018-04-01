@@ -1,4 +1,4 @@
-// Copyright 2018 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,42 +13,43 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package env
+package component
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/metadata/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/util/test"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
 
-func TestList(t *testing.T) {
-	withEnv(t, func(appMock *mocks.App, fs afero.Fs) {
-		specEnvs := app.EnvironmentSpecs{
-			"default": &app.EnvironmentSpec{
-				Path: "default",
-				Destination: &app.EnvironmentDestinationSpec{
-					Namespace: "default",
-					Server:    "http://example.com",
-				},
-				KubernetesVersion: "v1.8.7",
-			},
-		}
-		appMock.On("Environments").Return(specEnvs, nil)
+func TestDelete(t *testing.T) {
+	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+		test.StageDir(t, fs, "delete", "/app")
 
-		envs, err := List(appMock)
+		envs := app.EnvironmentSpecs{
+			"default": &app.EnvironmentSpec{},
+		}
+		a.On("Environments").Return(envs, nil)
+
+		err := Delete(a, "guestbook-ui")
 		require.NoError(t, err)
 
-		expected := map[string]Env{
-			"default": Env{
-				KubernetesVersion: "v1.8.7",
-				Name:              "default",
-				Destination:       NewDestination("http://example.com", "default"),
-			},
-		}
-
-		require.Equal(t, expected, envs)
+		test.AssertNotExists(t, fs, filepath.Join("/app", "components", "guestbook-ui.jsonnet"))
+		test.AssertContents(
+			t,
+			fs,
+			"delete-params.libsonnet",
+			filepath.Join("/app", "components", "params.libsonnet"),
+		)
+		test.AssertContents(
+			t,
+			fs,
+			"delete-env-params.libsonnet",
+			filepath.Join("/app", "environments", "default", "params.libsonnet"),
+		)
 	})
 }

@@ -16,8 +16,8 @@
 package actions
 
 import (
-	"github.com/ksonnet/ksonnet/env"
 	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/env"
 )
 
 // EnvSetNamespace is an option for setting a new namespace name.

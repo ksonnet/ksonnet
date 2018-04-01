@@ -98,39 +98,6 @@ func envExists(ksApp app.App, name string) (bool, error) {
 	return afero.Exists(ksApp.Fs(), path)
 }
 
-func moveDir(fs afero.Fs, src, dest string) error {
-	exists, err := afero.DirExists(fs, dest)
-	if err != nil {
-		return err
-	}
-
-	if !exists {
-		if err = fs.MkdirAll(dest, app.DefaultFolderPermissions); err != nil {
-			return errors.Wrapf(err, "unable to create destination %q", dest)
-		}
-	}
-
-	fis, err := afero.ReadDir(fs, src)
-	if err != nil {
-		return err
-	}
-
-	for _, fi := range fis {
-		if fi.IsDir() && fi.Name() != ".metadata" {
-			continue
-		}
-
-		srcPath := filepath.Join(src, fi.Name())
-		destPath := filepath.Join(dest, fi.Name())
-
-		if err = fs.Rename(srcPath, destPath); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func envPath(ksApp app.App, name string, subPath ...string) string {
 	return filepath.Join(append([]string{ksApp.Root(), envRoot, name}, subPath...)...)
 }

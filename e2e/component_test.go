@@ -55,7 +55,7 @@ var _ = Describe("ks component", func() {
 
 	Describe("rm", func() {
 		It("removes a component", func() {
-			o := a.runKs("component", "rm", "guestbook-ui")
+			o := a.runKs("component", "rm", "guestbook-ui", "-v")
 			assertExitStatus(o, 0)
 
 			o = a.componentList()

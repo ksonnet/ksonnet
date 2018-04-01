@@ -149,32 +149,6 @@ func isComponentDir(fs afero.Fs, path string) (bool, error) {
 	return false, nil
 }
 
-// MakePathsByNamespace creates a map of component paths categorized by namespace.
-func MakePathsByNamespace(a app.App, env string) (map[Namespace][]string, error) {
-	paths, err := MakePaths(a, env)
-	if err != nil {
-		return nil, err
-	}
-
-	m := make(map[Namespace][]string)
-
-	for i := range paths {
-		prefix := a.Root() + "/components/"
-		if strings.HasSuffix(a.Root(), "/") {
-			prefix = a.Root() + "components/"
-		}
-		path := strings.TrimPrefix(paths[i], prefix)
-		ns, _ := ExtractNamespacedComponent(a, path)
-		if _, ok := m[ns]; !ok {
-			m[ns] = make([]string, 0)
-		}
-
-		m[ns] = append(m[ns], paths[i])
-	}
-
-	return m, nil
-}
-
 // MakePaths creates a slice of component paths
 func MakePaths(a app.App, env string) ([]string, error) {
 	cpl, err := newComponentPathLocator(a, env)

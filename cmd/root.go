@@ -28,9 +28,9 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/ksonnet/ksonnet/env"
 	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/env"
 	"github.com/ksonnet/ksonnet/pkg/pipeline"
 	"github.com/ksonnet/ksonnet/plugin"
 	str "github.com/ksonnet/ksonnet/strings"
@@ -173,15 +173,6 @@ func runPlugin(p plugin.Plugin, args []string) error {
 
 	cmd := p.BuildRunCmd(env, args)
 	return cmd.Run()
-}
-
-func ksApp() (app.App, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
-	return app.Load(appFs, cwd)
 }
 
 func logLevel(verbosity int) log.Level {
