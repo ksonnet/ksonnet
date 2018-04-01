@@ -33,7 +33,7 @@ func RunRegistryAdd(m map[string]interface{}) error {
 	return ra.Run()
 }
 
-// RegistryAdd lists namespaces.
+// RegistryAdd adds a registry.
 type RegistryAdd struct {
 	app           app.App
 	name          string
@@ -64,7 +64,7 @@ func NewRegistryAdd(m map[string]interface{}) (*RegistryAdd, error) {
 	return ra, nil
 }
 
-// Run lists namespaces.
+// Run adds a registry.
 func (ra *RegistryAdd) Run() error {
 	uri, protocol := ra.protocol()
 	_, err := ra.registryAddFn(ra.app, ra.name, protocol, uri, ra.version, ra.isOverride)

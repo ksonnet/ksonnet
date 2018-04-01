@@ -36,7 +36,7 @@ func RunPrototypeList(m map[string]interface{}) error {
 	return pl.Run()
 }
 
-// PrototypeList lists available namespaces
+// PrototypeList lists available prototypes.
 type PrototypeList struct {
 	app          app.App
 	out          io.Writer

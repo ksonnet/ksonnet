@@ -27,13 +27,13 @@ type Manager struct {
 	mock.Mock
 }
 
-// Component provides a mock function with given fields: ksApp, nsName, componentName
-func (_m *Manager) Component(ksApp app.App, nsName string, componentName string) (component.Component, error) {
-	ret := _m.Called(ksApp, nsName, componentName)
+// Component provides a mock function with given fields: ksApp, module, componentName
+func (_m *Manager) Component(ksApp app.App, module string, componentName string) (component.Component, error) {
+	ret := _m.Called(ksApp, module, componentName)
 
 	var r0 component.Component
 	if rf, ok := ret.Get(0).(func(app.App, string, string) component.Component); ok {
-		r0 = rf(ksApp, nsName, componentName)
+		r0 = rf(ksApp, module, componentName)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(component.Component)
@@ -42,7 +42,7 @@ func (_m *Manager) Component(ksApp app.App, nsName string, componentName string)
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(app.App, string, string) error); ok {
-		r1 = rf(ksApp, nsName, componentName)
+		r1 = rf(ksApp, module, componentName)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -51,11 +51,11 @@ func (_m *Manager) Component(ksApp app.App, nsName string, componentName string)
 }
 
 // Components provides a mock function with given fields: ns
-func (_m *Manager) Components(ns component.Namespace) ([]component.Component, error) {
+func (_m *Manager) Components(ns component.Module) ([]component.Component, error) {
 	ret := _m.Called(ns)
 
 	var r0 []component.Component
-	if rf, ok := ret.Get(0).(func(component.Namespace) []component.Component); ok {
+	if rf, ok := ret.Get(0).(func(component.Module) []component.Component); ok {
 		r0 = rf(ns)
 	} else {
 		if ret.Get(0) != nil {
@@ -64,7 +64,7 @@ func (_m *Manager) Components(ns component.Namespace) ([]component.Component, er
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(component.Namespace) error); ok {
+	if rf, ok := ret.Get(1).(func(component.Module) error); ok {
 		r1 = rf(ns)
 	} else {
 		r1 = ret.Error(1)
@@ -94,8 +94,8 @@ func (_m *Manager) CreateComponent(ksApp app.App, name string, text string, _a3 
 	return r0, r1
 }
 
-// CreateNamespace provides a mock function with given fields: ksApp, name
-func (_m *Manager) CreateNamespace(ksApp app.App, name string) error {
+// CreateModule provides a mock function with given fields: ksApp, name
+func (_m *Manager) CreateModule(ksApp app.App, name string) error {
 	ret := _m.Called(ksApp, name)
 
 	var r0 error
@@ -108,43 +108,22 @@ func (_m *Manager) CreateNamespace(ksApp app.App, name string) error {
 	return r0
 }
 
-// NSResolveParams provides a mock function with given fields: ns
-func (_m *Manager) NSResolveParams(ns component.Namespace) (string, error) {
-	ret := _m.Called(ns)
+// Module provides a mock function with given fields: ksApp, module
+func (_m *Manager) Module(ksApp app.App, module string) (component.Module, error) {
+	ret := _m.Called(ksApp, module)
 
-	var r0 string
-	if rf, ok := ret.Get(0).(func(component.Namespace) string); ok {
-		r0 = rf(ns)
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(component.Namespace) error); ok {
-		r1 = rf(ns)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// Namespace provides a mock function with given fields: ksApp, nsName
-func (_m *Manager) Namespace(ksApp app.App, nsName string) (component.Namespace, error) {
-	ret := _m.Called(ksApp, nsName)
-
-	var r0 component.Namespace
-	if rf, ok := ret.Get(0).(func(app.App, string) component.Namespace); ok {
-		r0 = rf(ksApp, nsName)
+	var r0 component.Module
+	if rf, ok := ret.Get(0).(func(app.App, string) component.Module); ok {
+		r0 = rf(ksApp, module)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(component.Namespace)
+			r0 = ret.Get(0).(component.Module)
 		}
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(app.App, string) error); ok {
-		r1 = rf(ksApp, nsName)
+		r1 = rf(ksApp, module)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -152,16 +131,16 @@ func (_m *Manager) Namespace(ksApp app.App, nsName string) (component.Namespace,
 	return r0, r1
 }
 
-// Namespaces provides a mock function with given fields: ksApp, envName
-func (_m *Manager) Namespaces(ksApp app.App, envName string) ([]component.Namespace, error) {
+// Modules provides a mock function with given fields: ksApp, envName
+func (_m *Manager) Modules(ksApp app.App, envName string) ([]component.Module, error) {
 	ret := _m.Called(ksApp, envName)
 
-	var r0 []component.Namespace
-	if rf, ok := ret.Get(0).(func(app.App, string) []component.Namespace); ok {
+	var r0 []component.Module
+	if rf, ok := ret.Get(0).(func(app.App, string) []component.Module); ok {
 		r0 = rf(ksApp, envName)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]component.Namespace)
+			r0 = ret.Get(0).([]component.Module)
 		}
 	}
 
@@ -175,16 +154,37 @@ func (_m *Manager) Namespaces(ksApp app.App, envName string) ([]component.Namesp
 	return r0, r1
 }
 
+// NSResolveParams provides a mock function with given fields: ns
+func (_m *Manager) NSResolveParams(ns component.Module) (string, error) {
+	ret := _m.Called(ns)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(component.Module) string); ok {
+		r0 = rf(ns)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(component.Module) error); ok {
+		r1 = rf(ns)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ResolvePath provides a mock function with given fields: ksApp, path
-func (_m *Manager) ResolvePath(ksApp app.App, path string) (component.Namespace, component.Component, error) {
+func (_m *Manager) ResolvePath(ksApp app.App, path string) (component.Module, component.Component, error) {
 	ret := _m.Called(ksApp, path)
 
-	var r0 component.Namespace
-	if rf, ok := ret.Get(0).(func(app.App, string) component.Namespace); ok {
+	var r0 component.Module
+	if rf, ok := ret.Get(0).(func(app.App, string) component.Module); ok {
 		r0 = rf(ksApp, path)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(component.Namespace)
+			r0 = ret.Get(0).(component.Module)
 		}
 	}
 

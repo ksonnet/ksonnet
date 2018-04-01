@@ -37,7 +37,7 @@ func RunPrototypeUse(m map[string]interface{}) error {
 	return pl.Run()
 }
 
-// PrototypeUse lists available namespaces
+// PrototypeUse generates a component from a prototype.
 type PrototypeUse struct {
 	app               app.App
 	args              []string
@@ -126,7 +126,7 @@ func (pl *PrototypeUse) Run() error {
 		return err
 	}
 
-	_, prototypeName := component.ExtractNamespacedComponent(pl.app, componentName)
+	_, prototypeName := component.ExtractModuleComponent(pl.app, componentName)
 
 	text, err := expandPrototype(p, templateType, params, prototypeName)
 	if err != nil {

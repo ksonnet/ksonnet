@@ -57,7 +57,7 @@ func TestInit(t *testing.T) {
 					OptionRootPath:              aRootPath,
 					OptionSpecFlag:              aK8sSpecFlag,
 					OptionServer:                aServerURI,
-					OptionNamespaceName:         aNamespace,
+					OptionNamespace:             aNamespace,
 					OptionSkipDefaultRegistries: tc.skipRegistries,
 				}
 

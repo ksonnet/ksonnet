@@ -26,21 +26,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNsCreate(t *testing.T) {
+func TestModuleCreate(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		in := map[string]interface{}{
-			OptionApp:           appMock,
-			OptionNamespaceName: "name",
+			OptionApp:    appMock,
+			OptionModule: "name",
 		}
 
-		a, err := NewNsCreate(in)
+		a, err := NewModuleCreate(in)
 		require.NoError(t, err)
 
-		ns := &cmocks.Namespace{}
+		ns := &cmocks.Module{}
 
 		cm := &cmocks.Manager{}
-		cm.On("Namespace", mock.Anything, "name").Return(ns, errors.New("it exists"))
-		cm.On("CreateNamespace", mock.Anything, "name").Return(nil)
+		cm.On("Module", mock.Anything, "name").Return(ns, errors.New("it exists"))
+		cm.On("CreateModule", mock.Anything, "name").Return(nil)
 
 		a.cm = cm
 
@@ -50,20 +50,20 @@ func TestNsCreate(t *testing.T) {
 	})
 }
 
-func TestNsCreate_already_exists(t *testing.T) {
+func TestModuleCreate_already_exists(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		in := map[string]interface{}{
-			OptionApp:           appMock,
-			OptionNamespaceName: "name",
+			OptionApp:    appMock,
+			OptionModule: "name",
 		}
 
-		a, err := NewNsCreate(in)
+		a, err := NewModuleCreate(in)
 		require.NoError(t, err)
 
-		ns := &cmocks.Namespace{}
+		ns := &cmocks.Module{}
 
 		cm := &cmocks.Manager{}
-		cm.On("Namespace", mock.Anything, "name").Return(ns, nil)
+		cm.On("Module", mock.Anything, "name").Return(ns, nil)
 
 		a.cm = cm
 

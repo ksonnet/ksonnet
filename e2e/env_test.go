@@ -165,7 +165,7 @@ var _ = Describe("ks env", func() {
 			Context("updating the targets", func() {
 				It("updates the name of an environment", func() {
 					o := a.runKs("env", "targets", "default",
-						"--namespace", "/")
+						"--module", "/")
 					assertExitStatus(o, 0)
 
 					o = a.envDescribe("default")
@@ -182,7 +182,7 @@ var _ = Describe("ks env", func() {
 			Context("target namespace does not exist", func() {
 				It("return an error", func() {
 					o := a.runKs("env", "targets", "default",
-						"--namespace", "bad")
+						"--module", "bad")
 					assertExitStatus(o, 1)
 					assertOutput("env/targets/invalid-target.txt", o.stderr)
 				})

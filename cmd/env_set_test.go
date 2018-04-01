@@ -28,10 +28,10 @@ func Test_envSetCmd(t *testing.T) {
 			args:   []string{"env", "set", "default", "--namespace", "new-name"},
 			action: actionEnvSet,
 			expected: map[string]interface{}{
-				actions.OptionApp:           ka,
-				actions.OptionEnvName:       "default",
-				actions.OptionNamespaceName: "new-name",
-				actions.OptionNewEnvName:    "",
+				actions.OptionApp:        ka,
+				actions.OptionEnvName:    "default",
+				actions.OptionNamespace:  "new-name",
+				actions.OptionNewEnvName: "",
 			},
 		},
 	}

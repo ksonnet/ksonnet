@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNamespace_Components(t *testing.T) {
+func TestModule_Components(t *testing.T) {
 	app, fs := appMock("/app")
 
 	stageFile(t, fs, "certificate-crd.yaml", "/app/components/ns1/certificate-crd.yaml")
@@ -31,16 +31,16 @@ func TestNamespace_Components(t *testing.T) {
 
 	cases := []struct {
 		name   string
-		nsName string
+		module string
 		count  int
 	}{
 		{
 			name:   "no components",
-			nsName: "/",
+			module: "/",
 		},
 		{
 			name:   "with components",
-			nsName: "ns1",
+			module: "ns1",
 			count:  1,
 		},
 	}
@@ -48,10 +48,10 @@ func TestNamespace_Components(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 
-			ns, err := GetNamespace(app, tc.nsName)
+			ns, err := GetModule(app, tc.module)
 			require.NoError(t, err)
 
-			assert.Equal(t, tc.nsName, ns.Name())
+			assert.Equal(t, tc.module, ns.Name())
 			components, err := ns.Components()
 			require.NoError(t, err)
 

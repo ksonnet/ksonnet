@@ -54,8 +54,10 @@ const (
 	OptionLibName = "lib-name"
 	// OptionName is name option.
 	OptionName = "name"
-	// OptionNamespaceName is namespaceName option.
-	OptionNamespaceName = "namespace-name"
+	// OptionModule is component module option.
+	OptionModule = "module"
+	// OptionNamespace is a cluster namespace option
+	OptionNamespace = "namespace"
 	// OptionNewEnvName is newEnvName option. Used for renaming environments.
 	OptionNewEnvName = "new-env-name"
 	// OptionOutput is output option.

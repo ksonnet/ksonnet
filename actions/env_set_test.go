@@ -62,12 +62,12 @@ func TestEnvSet_name(t *testing.T) {
 func TestEnvSet_namespace(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		envName := "default"
-		nsName := "ns2"
+		namespace := "ns2"
 
 		in := map[string]interface{}{
-			OptionApp:           appMock,
-			OptionEnvName:       envName,
-			OptionNamespaceName: nsName,
+			OptionApp:     appMock,
+			OptionEnvName: envName,
+			OptionModule:  namespace,
 		}
 		a, err := NewEnvSet(in)
 		require.NoError(t, err)
@@ -80,7 +80,7 @@ func TestEnvSet_namespace(t *testing.T) {
 
 		updatedSpec := &app.EnvironmentSpec{
 			Destination: &app.EnvironmentDestinationSpec{
-				Namespace: nsName,
+				Namespace: namespace,
 			},
 		}
 
@@ -96,13 +96,13 @@ func TestEnvSet_name_and_namespace(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		envName := "default"
 		newName := "dev"
-		nsName := "ns2"
+		namespace := "ns2"
 
 		in := map[string]interface{}{
-			OptionApp:           appMock,
-			OptionEnvName:       envName,
-			OptionNewEnvName:    newName,
-			OptionNamespaceName: nsName,
+			OptionApp:        appMock,
+			OptionEnvName:    envName,
+			OptionNewEnvName: newName,
+			OptionModule:     namespace,
 		}
 
 		a, err := NewEnvSet(in)
@@ -118,7 +118,7 @@ func TestEnvSet_name_and_namespace(t *testing.T) {
 
 		a.updateEnvFn = func(a app.App, name string, spec *app.EnvironmentSpec, override bool) error {
 			assert.Equal(t, envName, name)
-			assert.Equal(t, nsName, spec.Destination.Namespace)
+			assert.Equal(t, namespace, spec.Destination.Namespace)
 			assert.False(t, override)
 
 			return nil
@@ -132,7 +132,7 @@ func TestEnvSet_name_and_namespace(t *testing.T) {
 
 		updatedSpec := &app.EnvironmentSpec{
 			Destination: &app.EnvironmentDestinationSpec{
-				Namespace: nsName,
+				Namespace: namespace,
 			},
 		}
 

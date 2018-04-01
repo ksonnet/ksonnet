@@ -36,8 +36,8 @@ const (
 	actionEnvTargets
 	actionImport
 	actionInit
-	actionNsCreate
-	actionNsList
+	actionModuleCreate
+	actionModuleList
 	actionParamDiff
 	actionParamList
 	actionParamSet
@@ -66,16 +66,16 @@ var (
 		actionComponentRm:   actions.RunComponentRm,
 		// actionDelete
 		// actionDiff
-		actionEnvAdd:      actions.RunEnvAdd,
-		actionEnvDescribe: actions.RunEnvDescribe,
-		actionEnvList:     actions.RunEnvList,
-		actionEnvRm:       actions.RunEnvRm,
-		actionEnvSet:      actions.RunEnvSet,
-		actionEnvTargets:  actions.RunEnvTargets,
-		actionImport:      actions.RunImport,
-		actionInit:        actions.RunInit,
-		actionNsCreate:    actions.RunNsCreate,
-		actionNsList:      actions.RunNsList,
+		actionEnvAdd:       actions.RunEnvAdd,
+		actionEnvDescribe:  actions.RunEnvDescribe,
+		actionEnvList:      actions.RunEnvList,
+		actionEnvRm:        actions.RunEnvRm,
+		actionEnvSet:       actions.RunEnvSet,
+		actionEnvTargets:   actions.RunEnvTargets,
+		actionImport:       actions.RunImport,
+		actionInit:         actions.RunInit,
+		actionModuleCreate: actions.RunModuleCreate,
+		actionModuleList:   actions.RunModuleList,
 		// actionParamDiff
 		actionParamList:         actions.RunParamList,
 		actionParamSet:          actions.RunParamSet,

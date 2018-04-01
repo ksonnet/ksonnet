@@ -30,7 +30,7 @@ func RunComponentRm(m map[string]interface{}) error {
 	return cr.Run()
 }
 
-// ComponentRm create a list of components in a namespace.
+// ComponentRm removes a component from a module.
 type ComponentRm struct {
 	app  app.App
 	name string

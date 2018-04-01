@@ -29,26 +29,26 @@ import (
 func TestParamList_with_component_name(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		componentName := "deployment"
-		nsName := "ns"
+		module := "ns"
 		envName := ""
 
-		ns := &cmocks.Namespace{}
+		ns := &cmocks.Module{}
 
 		c := &cmocks.Component{}
 
-		nsParams := []component.NamespaceParameter{
+		nsParams := []component.ModuleParameter{
 			{Component: "deployment", Index: "0", Key: "key", Value: `"value"`},
 		}
 		c.On("Params", "").Return(nsParams, nil)
 
 		cm := &cmocks.Manager{}
-		cm.On("Namespace", mock.Anything, "ns").Return(ns, nil)
+		cm.On("Module", mock.Anything, "ns").Return(ns, nil)
 		cm.On("Component", mock.Anything, "ns", "deployment").Return(c, nil)
 
 		in := map[string]interface{}{
 			OptionApp:           appMock,
 			OptionComponentName: componentName,
-			OptionNamespaceName: nsName,
+			OptionModule:        module,
 			OptionEnvName:       envName,
 		}
 
@@ -70,25 +70,25 @@ func TestParamList_with_component_name(t *testing.T) {
 func TestParamList_without_component_name(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		componentName := ""
-		nsName := "ns"
+		module := "ns"
 		envName := ""
 
-		nsParams := []component.NamespaceParameter{
+		nsParams := []component.ModuleParameter{
 			{Component: "deployment", Index: "0", Key: "key1", Value: `"value"`},
 			{Component: "deployment", Index: "0", Key: "key2", Value: `"value"`},
 		}
 
-		ns := &cmocks.Namespace{}
+		ns := &cmocks.Module{}
 
 		ns.On("Params", "").Return(nsParams, nil)
 
 		cm := &cmocks.Manager{}
-		cm.On("Namespace", mock.Anything, "ns").Return(ns, nil)
+		cm.On("Module", mock.Anything, "ns").Return(ns, nil)
 
 		in := map[string]interface{}{
 			OptionApp:           appMock,
 			OptionComponentName: componentName,
-			OptionNamespaceName: nsName,
+			OptionModule:        module,
 			OptionEnvName:       envName,
 		}
 

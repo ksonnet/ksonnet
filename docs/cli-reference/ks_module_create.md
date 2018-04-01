@@ -1,20 +1,19 @@
-## ks ns list
+## ks module create
 
-list
+create
 
 ### Synopsis
 
-list
+create
 
 ```
-ks ns list [flags]
+ks module create <name> [flags]
 ```
 
 ### Options
 
 ```
-      --env string   Environment to list namespaces for
-  -h, --help         help for list
+  -h, --help   help for create
 ```
 
 ### Options inherited from parent commands
@@ -25,5 +24,5 @@ ks ns list [flags]
 
 ### SEE ALSO
 
-* [ks ns](ks_ns.md)	 - ns
+* [ks module](ks_module.md)	 - module
 

@@ -9976,7 +9976,7 @@
       "type": "string",
       "method": "OPTIONS",
       "summary": "connect OPTIONS requests to proxy of Pod",
-      "nickname": "connectOptionsNamespacedPodProxy",
+      "nickname": "connectOptiomodulespacedPodProxy",
       "parameters": [
        {
         "type": "string",
@@ -10296,7 +10296,7 @@
       "type": "string",
       "method": "OPTIONS",
       "summary": "connect OPTIONS requests to proxy of Pod",
-      "nickname": "connectOptionsNamespacedPodProxyWithPath",
+      "nickname": "connectOptiomodulespacedPodProxyWithPath",
       "parameters": [
        {
         "type": "string",
@@ -16771,7 +16771,7 @@
       "type": "string",
       "method": "OPTIONS",
       "summary": "connect OPTIONS requests to proxy of Service",
-      "nickname": "connectOptionsNamespacedServiceProxy",
+      "nickname": "connectOptiomodulespacedServiceProxy",
       "parameters": [
        {
         "type": "string",
@@ -17091,7 +17091,7 @@
       "type": "string",
       "method": "OPTIONS",
       "summary": "connect OPTIONS requests to proxy of Service",
-      "nickname": "connectOptionsNamespacedServiceProxyWithPath",
+      "nickname": "connectOptiomodulespacedServiceProxyWithPath",
       "parameters": [
        {
         "type": "string",

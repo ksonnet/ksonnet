@@ -13,7 +13,8 @@ ks env targets [flags]
 ### Options
 
 ```
-  -h, --help   help for targets
+  -h, --help                 help for targets
+      --module stringSlice   Component modules to include
 ```
 
 ### Options inherited from parent commands

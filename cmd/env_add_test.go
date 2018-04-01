@@ -28,12 +28,12 @@ func Test_envAddCmd(t *testing.T) {
 			args:   []string{"env", "add", "prod", "--server", "http://example.com"},
 			action: actionEnvAdd,
 			expected: map[string]interface{}{
-				actions.OptionApp:           ka,
-				actions.OptionEnvName:       "prod",
-				actions.OptionNamespaceName: "default",
-				actions.OptionOverride:      false,
-				actions.OptionServer:        "http://example.com",
-				actions.OptionSpecFlag:      "version:v1.7.0",
+				actions.OptionApp:      ka,
+				actions.OptionEnvName:  "prod",
+				actions.OptionModule:   "default",
+				actions.OptionOverride: false,
+				actions.OptionServer:   "http://example.com",
+				actions.OptionSpecFlag: "version:v1.7.0",
 			},
 		},
 	}

@@ -13,9 +13,9 @@ ks import [flags]
 ### Options
 
 ```
-  -f, --filename string    Filename or directory for component to import
-  -h, --help               help for import
-      --namespace string   Component namespace
+  -f, --filename string   Filename or directory for component to import
+  -h, --help              help for import
+      --module string     Component module
 ```
 
 ### Options inherited from parent commands

@@ -37,9 +37,9 @@ var componentListCmd = &cobra.Command{
 		}
 
 		m := map[string]interface{}{
-			actions.OptionApp:           ka,
-			actions.OptionNamespaceName: viper.GetString(vComponentListNamespace),
-			actions.OptionOutput:        viper.GetString(vComponentListOutput),
+			actions.OptionApp:    ka,
+			actions.OptionModule: viper.GetString(vComponentListNamespace),
+			actions.OptionOutput: viper.GetString(vComponentListOutput),
 		}
 
 		return runAction(actionComponentList, m)
@@ -59,6 +59,6 @@ func init() {
 
 	componentListCmd.Flags().StringP(flagOutput, shortOutput, "", "Output format. Valid options: wide")
 	viper.BindPFlag(vComponentListOutput, componentListCmd.Flags().Lookup(flagOutput))
-	componentListCmd.Flags().String(flagNamespace, "", "Namespace")
-	viper.BindPFlag(vComponentListNamespace, componentListCmd.Flags().Lookup(flagNamespace))
+	componentListCmd.Flags().String(flagModule, "", "Component module")
+	viper.BindPFlag(vComponentListNamespace, componentListCmd.Flags().Lookup(flagModule))
 }

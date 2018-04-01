@@ -59,9 +59,9 @@ func (cc *componentCreator) Create(name, text string, params param.Params, templ
 		return "", errors.Errorf("Component name '%s' is not valid; must not contain punctuation, spaces, or begin or end with a slash", name)
 	}
 
-	nsName, componentName := namespaceComponent(name)
+	module, componentName := namespaceComponent(name)
 
-	componentDir, componentPath, err := cc.location(nsName, componentName, templateType)
+	componentDir, componentPath, err := cc.location(module, componentName, templateType)
 	if err != nil {
 		return "", errors.Wrap(err, "generate component location")
 	}
@@ -103,8 +103,8 @@ func (cc *componentCreator) Create(name, text string, params param.Params, templ
 }
 
 // location returns the dir and full path for the component.
-func (cc *componentCreator) location(nsName, name string, templateType prototype.TemplateType) (string, string, error) {
-	componentDir := filepath.Join(cc.app.Root(), componentsRoot, nsName)
+func (cc *componentCreator) location(module, name string, templateType prototype.TemplateType) (string, string, error) {
+	componentDir := filepath.Join(cc.app.Root(), componentsRoot, module)
 	componentPath := filepath.Join(componentDir, name)
 	switch templateType {
 	case prototype.YAML:
@@ -170,7 +170,7 @@ func namespaceComponent(name string) (string, string) {
 		return "", parts[0]
 	}
 
-	var nsName []string
+	var module []string
 	var componentName string
 	for i := range parts {
 		if i == len(parts)-1 {
@@ -178,10 +178,10 @@ func namespaceComponent(name string) (string, string) {
 			break
 		}
 
-		nsName = append(nsName, parts[i])
+		module = append(module, parts[i])
 	}
 
-	return strings.Join(nsName, "/"), componentName
+	return strings.Join(module, "/"), componentName
 }
 
 // GenParamsContent is the default content for params.libsonnet.

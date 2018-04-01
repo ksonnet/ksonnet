@@ -30,25 +30,25 @@ import (
 func TestEnvTargets(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		envName := "default"
-		nsNames := []string{"foo"}
+		modules := []string{"foo"}
 
 		env := &app.EnvironmentSpec{}
 		appMock.On("Environment", "default").Return(env, nil)
-		appMock.On("UpdateTargets", envName, nsNames).Return(nil)
+		appMock.On("UpdateTargets", envName, modules).Return(nil)
 
 		in := map[string]interface{}{
-			OptionApp:           appMock,
-			OptionEnvName:       envName,
-			OptionNamespaceName: nsNames,
+			OptionApp:     appMock,
+			OptionEnvName: envName,
+			OptionModule:  modules,
 		}
 
 		a, err := NewEnvTargets(in)
 		require.NoError(t, err)
 
-		ns := &cmocks.Namespace{}
+		ns := &cmocks.Module{}
 
 		cm := &cmocks.Manager{}
-		cm.On("Namespace", mock.Anything, "foo").Return(ns, nil)
+		cm.On("Module", mock.Anything, "foo").Return(ns, nil)
 
 		a.cm = cm
 
@@ -57,28 +57,28 @@ func TestEnvTargets(t *testing.T) {
 	})
 }
 
-func TestEnvTargets_invalid_namespace(t *testing.T) {
+func TestEnvTargets_invalid_module(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		envName := "default"
-		nsNames := []string{"foo"}
+		modules := []string{"foo"}
 
 		env := &app.EnvironmentSpec{}
 		appMock.On("Environment", "default").Return(env, nil)
-		appMock.On("UpdateTargets", envName, nsNames).Return(nil)
+		appMock.On("UpdateTargets", envName, modules).Return(nil)
 
 		in := map[string]interface{}{
-			OptionApp:           appMock,
-			OptionEnvName:       envName,
-			OptionNamespaceName: nsNames,
+			OptionApp:     appMock,
+			OptionEnvName: envName,
+			OptionModule:  modules,
 		}
 
 		a, err := NewEnvTargets(in)
 		require.NoError(t, err)
 
-		ns := &cmocks.Namespace{}
+		ns := &cmocks.Module{}
 
 		cm := &cmocks.Manager{}
-		cm.On("Namespace", mock.Anything, "foo").Return(ns, errors.New("fail"))
+		cm.On("Module", mock.Anything, "foo").Return(ns, errors.New("fail"))
 
 		a.cm = cm
 
@@ -90,16 +90,16 @@ func TestEnvTargets_invalid_namespace(t *testing.T) {
 func TestEnvTargets_invalid_environment(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		envName := "invalid"
-		nsNames := []string{"foo"}
+		modules := []string{"foo"}
 
 		env := &app.EnvironmentSpec{}
 		envErr := errors.New("environment invalid was not found")
 		appMock.On("Environment", "invalid").Return(env, envErr)
 
 		in := map[string]interface{}{
-			OptionApp:           appMock,
-			OptionEnvName:       envName,
-			OptionNamespaceName: nsNames,
+			OptionApp:     appMock,
+			OptionEnvName: envName,
+			OptionModule:  modules,
 		}
 
 		a, err := NewEnvTargets(in)

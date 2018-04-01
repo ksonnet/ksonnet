@@ -21,15 +21,15 @@ import (
 	"github.com/ksonnet/ksonnet/actions"
 )
 
-func Test_nsListCmd(t *testing.T) {
+func Test_moduleCreateCmd(t *testing.T) {
 	cases := []cmdTestCase{
 		{
 			name:   "in general",
-			args:   []string{"ns", "list"},
-			action: actionNsList,
+			args:   []string{"module", "create", "app1"},
+			action: actionModuleCreate,
 			expected: map[string]interface{}{
-				actions.OptionApp:     ka,
-				actions.OptionEnvName: "",
+				actions.OptionApp:    ka,
+				actions.OptionModule: "app1",
 			},
 		},
 	}

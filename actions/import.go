@@ -42,19 +42,19 @@ func RunImport(m map[string]interface{}) error {
 // Import imports files or directories into ksonnet.
 type Import struct {
 	app    app.App
-	nsName string
+	module string
 	path   string
 	cm     component.Manager
 }
 
-// NewImport creates an instance of Import. `nsName` is the name of the component and
+// NewImport creates an instance of Import. `module` is the name of the component and
 // entity is the file or directory to import.
 func NewImport(m map[string]interface{}) (*Import, error) {
 	ol := newOptionLoader(m)
 
 	i := &Import{
 		app:    ol.loadApp(),
-		nsName: ol.loadString(OptionNamespaceName),
+		module: ol.loadString(OptionModule),
 		path:   ol.loadString(OptionPath),
 
 		cm: component.DefaultManager,
@@ -106,8 +106,8 @@ func (i *Import) Run() error {
 
 func (i *Import) importFile(fileName string) error {
 	var name bytes.Buffer
-	if i.nsName != "" {
-		name.WriteString(i.nsName + "/")
+	if i.module != "" {
+		name.WriteString(i.module + "/")
 	}
 
 	base := filepath.Base(fileName)

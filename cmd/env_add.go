@@ -57,12 +57,12 @@ var envAddCmd = &cobra.Command{
 		isOverride := viper.GetBool(vEnvAddOverride)
 
 		m := map[string]interface{}{
-			actions.OptionApp:           ka,
-			actions.OptionEnvName:       name,
-			actions.OptionServer:        server,
-			actions.OptionNamespaceName: namespace,
-			actions.OptionSpecFlag:      specFlag,
-			actions.OptionOverride:      isOverride,
+			actions.OptionApp:      ka,
+			actions.OptionEnvName:  name,
+			actions.OptionServer:   server,
+			actions.OptionModule:   namespace,
+			actions.OptionSpecFlag: specFlag,
+			actions.OptionOverride: isOverride,
 		}
 
 		return runAction(actionEnvAdd, m)

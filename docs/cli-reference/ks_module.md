@@ -1,15 +1,15 @@
-## ks ns
+## ks module
 
-ns
+module
 
 ### Synopsis
 
-ns
+module
 
 ### Options
 
 ```
-  -h, --help   help for ns
+  -h, --help   help for module
 ```
 
 ### Options inherited from parent commands
@@ -21,6 +21,6 @@ ns
 ### SEE ALSO
 
 * [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
-* [ks ns create](ks_ns_create.md)	 - create
-* [ks ns list](ks_ns_list.md)	 - list
+* [ks module create](ks_module_create.md)	 - create
+* [ks module list](ks_module_list.md)	 - list
 

@@ -25,9 +25,9 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/util/table"
 )
 
-// RunNsList runs `ns list`
-func RunNsList(m map[string]interface{}) error {
-	nl, err := NewNsList(m)
+// RunModuleList runs `module list`
+func RunModuleList(m map[string]interface{}) error {
+	nl, err := NewModuleList(m)
 	if err != nil {
 		return err
 	}
@@ -35,19 +35,19 @@ func RunNsList(m map[string]interface{}) error {
 	return nl.Run()
 }
 
-// NsList lists namespaces.
-type NsList struct {
+// ModuleList lists modules.
+type ModuleList struct {
 	app     app.App
 	envName string
 	out     io.Writer
 	cm      component.Manager
 }
 
-// NewNsList creates an instance of NsList.
-func NewNsList(m map[string]interface{}) (*NsList, error) {
+// NewModuleList creates an instance of ModuleList.
+func NewModuleList(m map[string]interface{}) (*ModuleList, error) {
 	ol := newOptionLoader(m)
 
-	nl := &NsList{
+	nl := &ModuleList{
 		app:     ol.loadApp(),
 		envName: ol.loadString(OptionEnvName),
 
@@ -62,19 +62,19 @@ func NewNsList(m map[string]interface{}) (*NsList, error) {
 	return nl, nil
 }
 
-// Run lists namespaces.
-func (nl *NsList) Run() error {
-	namespaces, err := nl.cm.Namespaces(nl.app, nl.envName)
+// Run lists modules.
+func (nl *ModuleList) Run() error {
+	modules, err := nl.cm.Modules(nl.app, nl.envName)
 	if err != nil {
 		return err
 	}
 
 	t := table.New(nl.out)
-	t.SetHeader([]string{"namespace"})
+	t.SetHeader([]string{"module"})
 
-	names := make([]string, len(namespaces))
-	for i := range namespaces {
-		names[i] = namespaces[i].Name()
+	names := make([]string, len(modules))
+	for i := range modules {
+		names[i] = modules[i].Name()
 	}
 
 	sort.Strings(names)

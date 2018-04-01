@@ -25,22 +25,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNsList(t *testing.T) {
+func TestModuleList(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		cm := &cmocks.Manager{}
 
-		namespaces := []component.Namespace{
+		modules := []component.Module{
 			mockNsWithName("b"),
 			mockNsWithName("a"),
 		}
-		cm.On("Namespaces", appMock, "").Return(namespaces, nil)
+		cm.On("Modules", appMock, "").Return(modules, nil)
 
 		in := map[string]interface{}{
 			OptionApp:     appMock,
 			OptionEnvName: "",
 		}
 
-		a, err := NewNsList(in)
+		a, err := NewModuleList(in)
 		require.NoError(t, err)
 
 		a.cm = cm

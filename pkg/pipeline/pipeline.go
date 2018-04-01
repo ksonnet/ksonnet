@@ -63,20 +63,20 @@ func New(ksApp app.App, envName string, opts ...Opt) *Pipeline {
 }
 
 // Namespaces returns the namespaces that belong to this pipeline.
-func (p *Pipeline) Namespaces() ([]component.Namespace, error) {
-	return p.cm.Namespaces(p.app, p.envName)
+func (p *Pipeline) Modules() ([]component.Module, error) {
+	return p.cm.Modules(p.app, p.envName)
 }
 
 // EnvParameters creates parameters for a namespace given an environment.
-func (p *Pipeline) EnvParameters(nsName string) (string, error) {
-	ns, err := p.cm.Namespace(p.app, nsName)
+func (p *Pipeline) EnvParameters(module string) (string, error) {
+	ns, err := p.cm.Module(p.app, module)
 	if err != nil {
-		return "", errors.Wrapf(err, "load namespace %s", nsName)
+		return "", errors.Wrapf(err, "load module %s", module)
 	}
 
 	paramsStr, err := p.cm.NSResolveParams(ns)
 	if err != nil {
-		return "", errors.Wrapf(err, "resolve params for %s", nsName)
+		return "", errors.Wrapf(err, "resolve params for %s", module)
 	}
 
 	data, err := p.app.EnvironmentParams(p.envName)
@@ -93,7 +93,7 @@ func (p *Pipeline) EnvParameters(nsName string) (string, error) {
 
 // Components returns the components that belong to this pipeline.
 func (p *Pipeline) Components(filter []string) ([]component.Component, error) {
-	namespaces, err := p.Namespaces()
+	namespaces, err := p.Modules()
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func (p *Pipeline) Components(filter []string) ([]component.Component, error) {
 
 // Objects converts components into Kubernetes objects.
 func (p *Pipeline) Objects(filter []string) ([]*unstructured.Unstructured, error) {
-	namespaces, err := p.Namespaces()
+	namespaces, err := p.Modules()
 	if err != nil {
 		return nil, errors.Wrap(err, "get namespaces")
 	}

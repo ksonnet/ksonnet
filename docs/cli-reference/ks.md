@@ -32,7 +32,7 @@ ks [flags]
 * [ks generate](ks_generate.md)	 - Use the specified prototype to generate a component manifest
 * [ks import](ks_import.md)	 - Import manifest
 * [ks init](ks_init.md)	 - Initialize a ksonnet application
-* [ks ns](ks_ns.md)	 - ns
+* [ks module](ks_module.md)	 - module
 * [ks param](ks_param.md)	 - Manage ksonnet parameters for components and environments
 * [ks pkg](ks_pkg.md)	 - Manage packages and dependencies for the current ksonnet application
 * [ks prototype](ks_prototype.md)	 - Instantiate, inspect, and get examples for ksonnet prototypes

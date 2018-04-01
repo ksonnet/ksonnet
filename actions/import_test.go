@@ -29,15 +29,15 @@ import (
 
 func TestImport_file(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		nsName := "/"
+		module := "/"
 		path := "/file.yaml"
 
 		stageFile(t, appMock.Fs(), "import/file.yaml", path)
 
 		in := map[string]interface{}{
-			OptionApp:           appMock,
-			OptionNamespaceName: nsName,
-			OptionPath:          path,
+			OptionApp:    appMock,
+			OptionModule: module,
+			OptionPath:   path,
 		}
 
 		a, err := NewImport(in)
@@ -56,15 +56,15 @@ func TestImport_file(t *testing.T) {
 
 func TestImport_directory(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		nsName := "/"
+		module := "/"
 		path := "/import"
 
 		stageFile(t, appMock.Fs(), "import/file.yaml", "/import/file.yaml")
 
 		in := map[string]interface{}{
-			OptionApp:           appMock,
-			OptionNamespaceName: nsName,
-			OptionPath:          path,
+			OptionApp:    appMock,
+			OptionModule: module,
+			OptionPath:   path,
 		}
 
 		a, err := NewImport(in)
@@ -83,13 +83,13 @@ func TestImport_directory(t *testing.T) {
 
 func TestImport_invalid_file(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		nsName := "/"
+		module := "/"
 		path := "/import"
 
 		in := map[string]interface{}{
-			OptionApp:           appMock,
-			OptionNamespaceName: nsName,
-			OptionPath:          path,
+			OptionApp:    appMock,
+			OptionModule: module,
+			OptionPath:   path,
 		}
 
 		a, err := NewImport(in)

@@ -30,6 +30,7 @@ const (
 	flagGcTag                 = "gc-tag"
 	flagIndex                 = "index"
 	flagJpath                 = "jpath"
+	flagModule                = "module"
 	flagNamespace             = "namespace"
 	flagResolver              = "resolve-images"
 	flagResolvFail            = "resolve-images-error"

@@ -101,8 +101,8 @@ func stageFile(t *testing.T, fs afero.Fs, src, dest string) {
 	require.NoError(t, err)
 }
 
-func mockNsWithName(name string) *cmocks.Namespace {
-	m := &cmocks.Namespace{}
+func mockNsWithName(name string) *cmocks.Module {
+	m := &cmocks.Module{}
 	m.On("Name").Return(name)
 	return m
 }

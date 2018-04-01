@@ -52,7 +52,7 @@ type findObjectsFn func(a app.App, envName string,
 type Validate struct {
 	app            app.App
 	envName        string
-	nsName         string
+	module         string
 	componentNames []string
 	clientConfig   *client.Config
 	out            io.Writer
@@ -69,7 +69,7 @@ func NewValidate(m map[string]interface{}) (*Validate, error) {
 	v := &Validate{
 		app:            ol.loadApp(),
 		envName:        ol.loadString(OptionEnvName),
-		nsName:         ol.loadString(OptionNamespaceName),
+		module:         ol.loadString(OptionModule),
 		componentNames: ol.loadStringSlice(OptionComponentNames),
 		clientConfig:   ol.loadClientConfig(),
 

@@ -77,15 +77,15 @@ func (_m *Component) Objects(paramsStr string, envName string) ([]*unstructured.
 }
 
 // Params provides a mock function with given fields: envName
-func (_m *Component) Params(envName string) ([]component.NamespaceParameter, error) {
+func (_m *Component) Params(envName string) ([]component.ModuleParameter, error) {
 	ret := _m.Called(envName)
 
-	var r0 []component.NamespaceParameter
-	if rf, ok := ret.Get(0).(func(string) []component.NamespaceParameter); ok {
+	var r0 []component.ModuleParameter
+	if rf, ok := ret.Get(0).(func(string) []component.ModuleParameter); ok {
 		r0 = rf(envName)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]component.NamespaceParameter)
+			r0 = ret.Get(0).([]component.ModuleParameter)
 		}
 	}
 

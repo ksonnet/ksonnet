@@ -91,20 +91,20 @@ func TestParamSet_index(t *testing.T) {
 
 func TestParamSet_global(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		nsName := "/"
+		module := "/"
 		path := "replicas"
 		value := "3"
 
 		cm := &cmocks.Manager{}
 
-		ns := &cmocks.Namespace{}
+		ns := &cmocks.Module{}
 		ns.On("SetParam", []string{"replicas"}, 3).Return(nil)
 
-		cm.On("Namespace", appMock, "/").Return(ns, nil)
+		cm.On("Module", appMock, "/").Return(ns, nil)
 
 		in := map[string]interface{}{
 			OptionApp:    appMock,
-			OptionName:   nsName,
+			OptionName:   module,
 			OptionPath:   path,
 			OptionValue:  value,
 			OptionGlobal: true,

@@ -36,10 +36,10 @@ func RunComponentList(m map[string]interface{}) error {
 	return cl.Run()
 }
 
-// ComponentList create a list of components in a namespace.
+// ComponentList create a list of components in a module.
 type ComponentList struct {
 	app    app.App
-	nsName string
+	module string
 	output string
 	cm     component.Manager
 	out    io.Writer
@@ -51,7 +51,7 @@ func NewComponentList(m map[string]interface{}) (*ComponentList, error) {
 
 	cl := &ComponentList{
 		app:    ol.loadApp(),
-		nsName: ol.loadString(OptionNamespaceName),
+		module: ol.loadString(OptionModule),
 		output: ol.loadString(OptionOutput),
 
 		cm:  component.DefaultManager,
@@ -67,7 +67,7 @@ func NewComponentList(m map[string]interface{}) (*ComponentList, error) {
 
 // Run runs the ComponentList action.
 func (cl *ComponentList) Run() error {
-	ns, err := cl.cm.Namespace(cl.app, cl.nsName)
+	ns, err := cl.cm.Module(cl.app, cl.module)
 	if err != nil {
 		return err
 	}

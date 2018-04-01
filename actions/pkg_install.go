@@ -34,7 +34,7 @@ func RunPkgInstall(m map[string]interface{}) error {
 	return pi.Run()
 }
 
-// PkgInstall lists namespaces.
+// PkgInstall installs packages.
 type PkgInstall struct {
 	app         app.App
 	libName     string
@@ -61,7 +61,7 @@ func NewPkgInstall(m map[string]interface{}) (*PkgInstall, error) {
 	return nl, nil
 }
 
-// Run lists namespaces.
+// Run installs packages.
 func (pi *PkgInstall) Run() error {
 	d, customName, err := pi.parseDepSpec()
 	if err != nil {
