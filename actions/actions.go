@@ -74,6 +74,8 @@ const (
 	OptionServer = "server"
 	// OptionServerURI is serverURI option.
 	OptionServerURI = "server-uri"
+	// OptionSkipDefaultRegistries is skipDefaultRegistries option. Used by init.
+	OptionSkipDefaultRegistries = "skip-default-registries"
 	// OptionSkipGc is skipGc option.
 	OptionSkipGc = "skip-gc"
 	// OptionSpecFlag is specFlag option. Used for setting k8s spec.

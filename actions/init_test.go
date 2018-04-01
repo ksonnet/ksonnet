@@ -35,45 +35,68 @@ func TestInit(t *testing.T) {
 		aServerURI := "http://example.com"
 		aNamespace := "my-namespace"
 
-		in := map[string]interface{}{
-			OptionFs:            aFs,
-			OptionName:          aName,
-			OptionRootPath:      aRootPath,
-			OptionSpecFlag:      aK8sSpecFlag,
-			OptionServer:        aServerURI,
-			OptionNamespaceName: aNamespace,
+		cases := []struct {
+			name           string
+			skipRegistries bool
+		}{
+			{
+				name: "with registries",
+			},
+			{
+				name:           "without registries",
+				skipRegistries: true,
+			},
 		}
 
-		a, err := NewInit(in)
-		require.NoError(t, err)
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				in := map[string]interface{}{
+					OptionFs:                    aFs,
+					OptionName:                  aName,
+					OptionRootPath:              aRootPath,
+					OptionSpecFlag:              aK8sSpecFlag,
+					OptionServer:                aServerURI,
+					OptionNamespaceName:         aNamespace,
+					OptionSkipDefaultRegistries: tc.skipRegistries,
+				}
 
-		a.appInitFn = func(fs afero.Fs, name, rootPath, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) error {
-			assert.Equal(t, aFs, fs)
-			assert.Equal(t, aName, name)
-			assert.Equal(t, aRootPath, rootPath)
-			assert.Equal(t, aK8sSpecFlag, k8sSpecFlag)
-			assert.Equal(t, aServerURI, serverURI)
-			assert.Equal(t, aNamespace, namespace)
+				a, err := NewInit(in)
+				require.NoError(t, err)
 
-			assert.Len(t, registries, 1)
-			r := registries[0]
+				a.appInitFn = func(fs afero.Fs, name, rootPath, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) error {
+					assert.Equal(t, aFs, fs)
+					assert.Equal(t, aName, name)
+					assert.Equal(t, aRootPath, rootPath)
+					assert.Equal(t, aK8sSpecFlag, k8sSpecFlag)
+					assert.Equal(t, aServerURI, serverURI)
+					assert.Equal(t, aNamespace, namespace)
 
-			assert.Equal(t, "github", r.Protocol())
-			assert.Equal(t, "github.com/ksonnet/parts/tree/master/incubator", r.URI())
-			assert.Equal(t, "incubator", r.Name())
+					if !tc.skipRegistries {
+						assert.Len(t, registries, 1)
+						r := registries[0]
 
-			return nil
+						assert.Equal(t, "github", r.Protocol())
+						assert.Equal(t, "github.com/ksonnet/parts/tree/master/incubator", r.URI())
+						assert.Equal(t, "incubator", r.Name())
+					} else {
+						assert.Empty(t, registries)
+					}
+
+					return nil
+				}
+
+				a.initIncubatorFn = func() (registry.Registry, error) {
+					r := &rmocks.Registry{}
+					r.On("Protocol").Return("github")
+					r.On("URI").Return("github.com/ksonnet/parts/tree/master/incubator")
+					r.On("Name").Return("incubator")
+					return r, nil
+				}
+
+				err = a.Run()
+				require.NoError(t, err)
+			})
 		}
 
-		a.initIncubatorFn = func() (registry.Registry, error) {
-			r := &rmocks.Registry{}
-			r.On("Protocol").Return("github")
-			r.On("URI").Return("github.com/ksonnet/parts/tree/master/incubator")
-			r.On("Name").Return("incubator")
-			return r, nil
-		}
-
-		err = a.Run()
-		require.NoError(t, err)
 	})
 }
