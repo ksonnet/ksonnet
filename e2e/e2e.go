@@ -162,9 +162,10 @@ func (e *e2e) initApp(options *initOptions) app {
 }
 
 type initOptions struct {
-	server    string
-	context   string
-	namespace string
+	server         string
+	context        string
+	namespace      string
+	skipRegistries bool
 }
 
 func (o *initOptions) toSlice() ([]string, error) {
@@ -185,6 +186,10 @@ func (o *initOptions) toSlice() ([]string, error) {
 
 	if o.namespace != "" {
 		options = append(options, "--namespace", o.namespace)
+	}
+
+	if o.skipRegistries {
+		options = append(options, "--skip-default-registries")
 	}
 
 	return options, nil

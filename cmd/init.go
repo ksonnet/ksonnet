@@ -21,14 +21,19 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/spf13/viper"
+
 	"github.com/ksonnet/ksonnet/actions"
 	"github.com/ksonnet/ksonnet/client"
 	"github.com/spf13/cobra"
 )
 
 const (
-	flagInitDir   = "dir"
 	initShortDesc = "Initialize a ksonnet application"
+
+	vInitAPISpec               = "init-api-spec"
+	vInitDir                   = "init-dir"
+	vInitSkipDefaultRegistries = "init-skip-default-registries"
 )
 
 var (
@@ -37,13 +42,19 @@ var (
 
 func init() {
 	RootCmd.AddCommand(initCmd)
-	// TODO: We need to make this default to checking the `kubeconfig` file.
-	initCmd.PersistentFlags().String(flagAPISpec, "",
-		"Manually specified Kubernetes API version. The corresponding OpenAPI spec is used to generate ksonnet's Kubernetes libraries")
-
 	initClientConfig = client.NewDefaultClientConfig()
 	initClientConfig.BindClientGoFlags(initCmd)
-	initCmd.Flags().String(flagInitDir, "", "Ksonnet application directory")
+
+	initCmd.Flags().String(flagDir, "", "Ksonnet application directory")
+	viper.BindPFlag(vInitDir, initCmd.Flag(flagDir))
+
+	// TODO: We need to make this default to checking the `kubeconfig` file.
+	initCmd.Flags().String(flagAPISpec, "",
+		"Manually specified Kubernetes API version. The corresponding OpenAPI spec is used to generate ksonnet's Kubernetes libraries")
+	viper.BindPFlag(vInitAPISpec, initCmd.Flag(flagAPISpec))
+
+	initCmd.Flags().Bool(flagSkipDefaultRegistries, false, "Skip configuration of default registries")
+	viper.BindPFlag(vInitSkipDefaultRegistries, initCmd.Flag(flagSkipDefaultRegistries))
 }
 
 var initCmd = &cobra.Command{
@@ -61,10 +72,7 @@ var initCmd = &cobra.Command{
 			return err
 		}
 
-		initDir, err := flags.GetString(flagInitDir)
-		if err != nil {
-			return err
-		}
+		initDir := viper.GetString(vInitDir)
 
 		appRoot, err := genKsRoot(appName, wd, initDir)
 		if err != nil {
@@ -76,21 +84,19 @@ var initCmd = &cobra.Command{
 			return err
 		}
 
-		specFlag, err := flags.GetString(flagAPISpec)
-		if err != nil {
-			return err
-		}
+		specFlag := viper.GetString(vInitAPISpec)
 		if specFlag == "" {
 			specFlag = initClientConfig.GetAPISpec(server)
 		}
 
 		m := map[string]interface{}{
-			actions.OptionFs:            appFs,
-			actions.OptionName:          appName,
-			actions.OptionRootPath:      appRoot,
-			actions.OptionSpecFlag:      specFlag,
-			actions.OptionServer:        server,
-			actions.OptionNamespaceName: namespace,
+			actions.OptionFs:                    appFs,
+			actions.OptionName:                  appName,
+			actions.OptionRootPath:              appRoot,
+			actions.OptionSpecFlag:              specFlag,
+			actions.OptionServer:                server,
+			actions.OptionNamespaceName:         namespace,
+			actions.OptionSkipDefaultRegistries: viper.GetBool(vInitSkipDefaultRegistries),
 		}
 
 		return runAction(actionInit, m)

@@ -42,12 +42,13 @@ type initIncubatorFn func() (registry.Registry, error)
 
 // Init creates a component namespace
 type Init struct {
-	fs          afero.Fs
-	name        string
-	rootPath    string
-	k8sSpecFlag string
-	serverURI   string
-	namespace   string
+	fs                    afero.Fs
+	name                  string
+	rootPath              string
+	k8sSpecFlag           string
+	serverURI             string
+	namespace             string
+	skipDefaultRegistries bool
 
 	appInitFn       appInitFn
 	initIncubatorFn initIncubatorFn
@@ -58,12 +59,13 @@ func NewInit(m map[string]interface{}) (*Init, error) {
 	ol := newOptionLoader(m)
 
 	i := &Init{
-		fs:          ol.loadFs(OptionFs),
-		name:        ol.loadString(OptionName),
-		rootPath:    ol.loadString(OptionRootPath),
-		k8sSpecFlag: ol.loadString(OptionSpecFlag),
-		serverURI:   ol.loadOptionalString(OptionServer),
-		namespace:   ol.loadString(OptionNamespaceName),
+		fs:                    ol.loadFs(OptionFs),
+		name:                  ol.loadString(OptionName),
+		rootPath:              ol.loadString(OptionRootPath),
+		k8sSpecFlag:           ol.loadString(OptionSpecFlag),
+		serverURI:             ol.loadOptionalString(OptionServer),
+		namespace:             ol.loadString(OptionNamespaceName),
+		skipDefaultRegistries: ol.loadBool(OptionSkipDefaultRegistries),
 
 		appInitFn:       appinit.Init,
 		initIncubatorFn: initIncubator,
@@ -78,12 +80,16 @@ func NewInit(m map[string]interface{}) (*Init, error) {
 
 // Run runs that ns create action.
 func (i *Init) Run() error {
-	gh, err := i.initIncubatorFn()
-	if err != nil {
-		return err
-	}
+	var registries []registry.Registry
 
-	registries := []registry.Registry{gh}
+	if !i.skipDefaultRegistries {
+		gh, err := i.initIncubatorFn()
+		if err != nil {
+			return err
+		}
+
+		registries = append(registries, gh)
+	}
 
 	return i.appInitFn(
 		i.fs,

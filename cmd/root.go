@@ -45,18 +45,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
-const (
-	flagVerbose    = "verbose"
-	flagJpath      = "jpath"
-	flagExtVar     = "ext-str"
-	flagExtVarFile = "ext-str-file"
-	flagTlaVar     = "tla-str"
-	flagTlaVarFile = "tla-str-file"
-	flagResolver   = "resolve-images"
-	flagResolvFail = "resolve-images-error"
-	flagAPISpec    = "api-spec"
-)
-
 var (
 	appFs = afero.NewOsFs()
 	ka    app.App
