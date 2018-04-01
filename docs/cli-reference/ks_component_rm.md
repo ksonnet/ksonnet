@@ -24,8 +24,7 @@ ks component rm guestbook
 ### Options
 
 ```
-      --component string   The component to be removed from components/
-  -h, --help               help for rm
+  -h, --help   help for rm
 ```
 
 ### Options inherited from parent commands

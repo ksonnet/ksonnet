@@ -20,19 +20,76 @@ import (
 
 	"github.com/ksonnet/ksonnet/client"
 	"github.com/ksonnet/ksonnet/metadata/app"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 )
 
 const (
-	OptionAPIObjects     = "api-objects"
-	OptionApp            = "app"
-	OptionClientConfig   = "client-config"
+	// OptionApp is app option.
+	OptionApp = "app"
+	// OptionArguments is arguments option. Used for passing arguments to prototypes.
+	OptionArguments = "arguments"
+	// OptionClientConfig is clientConfig option.
+	OptionClientConfig = "client-config"
+	// OptionComponentName is a componentName option.
+	OptionComponentName = "component-name"
+	// OptionComponentNames is componentNames option.
 	OptionComponentNames = "component-names"
-	OptionCreate         = "create"
-	OptionDryRun         = "dry-run"
-	OptionEnvName        = "env-name"
-	OptionGcTag          = "gc-tag"
-	OptionSkipGc         = "skip-gc"
+	// OptionCreate is create option.
+	OptionCreate = "create"
+	// OptionDryRun is dryRun option.
+	OptionDryRun = "dry-run"
+	// OptionEnvName is envName option.
+	OptionEnvName = "env-name"
+	// OptionFs is fs option.
+	OptionFs = "fs"
+	// OptionGcTag is gcTag option.
+	OptionGcTag = "gc-tag"
+	// OptionGlobal is global option.
+	OptionGlobal = "global"
+	// OptionIndex is index option. Is used to target individual items in multi object
+	// components.
+	OptionIndex = "index"
+	// OptionLibName is libName.
+	OptionLibName = "lib-name"
+	// OptionName is name option.
+	OptionName = "name"
+	// OptionNamespaceName is namespaceName option.
+	OptionNamespaceName = "namespace-name"
+	// OptionNewEnvName is newEnvName option. Used for renaming environments.
+	OptionNewEnvName = "new-env-name"
+	// OptionOutput is output option.
+	OptionOutput = "output"
+	// OptionOverride is override option.
+	OptionOverride = "override"
+	// OptionPackageName is packageName option.
+	OptionPackageName = "package-name"
+	// OptionPath is path option.
+	OptionPath = "path"
+	// OptionQuery is query option.
+	OptionQuery = "query"
+	// OptionRootPath is path option.
+	OptionRootPath = "root-path"
+	// OptionServer is server option.
+	OptionServer = "server"
+	// OptionServerURI is serverURI option.
+	OptionServerURI = "server-uri"
+	// OptionSkipGc is skipGc option.
+	OptionSkipGc = "skip-gc"
+	// OptionSpecFlag is specFlag option. Used for setting k8s spec.
+	OptionSpecFlag = "spec-flag"
+	// OptionURI is uri option. Used for setting registry URI.
+	OptionURI = "URI"
+	// OptionValue is value option.
+	OptionValue = "value"
+	// OptionVersion is version option.
+	OptionVersion = "version"
+)
+
+var (
+	// ErrNotInApp is an error stating the user is not in a ksonnet application directory
+	// hierarchy.
+	ErrNotInApp = errors.Errorf("could not find ksonnet app")
 )
 
 type missingOptionError struct {
@@ -74,6 +131,21 @@ func newOptionLoader(m map[string]interface{}) *optionLoader {
 	}
 }
 
+func (o *optionLoader) loadFs(name string) afero.Fs {
+	i := o.load(name)
+	if i == nil {
+		return nil
+	}
+
+	a, ok := i.(afero.Fs)
+	if !ok {
+		o.err = newInvalidOptionError(name)
+		return nil
+	}
+
+	return a
+}
+
 func (o *optionLoader) loadBool(name string) bool {
 	i := o.load(name)
 	if i == nil {
@@ -84,6 +156,49 @@ func (o *optionLoader) loadBool(name string) bool {
 	if !ok {
 		o.err = newInvalidOptionError(name)
 		return false
+	}
+
+	return a
+}
+
+func (o *optionLoader) loadOptionalBool(name string) bool {
+	i := o.loadOptional(name)
+	if i == nil {
+		return false
+	}
+
+	a, ok := i.(bool)
+	if !ok {
+		return false
+	}
+
+	return a
+}
+
+func (o *optionLoader) loadInt(name string) int {
+	i := o.load(name)
+	if i == nil {
+		return 0
+	}
+
+	a, ok := i.(int)
+	if !ok {
+		o.err = newInvalidOptionError(name)
+		return 0
+	}
+
+	return a
+}
+
+func (o *optionLoader) loadOptionalInt(name string) int {
+	i := o.loadOptional(name)
+	if i == nil {
+		return 0
+	}
+
+	a, ok := i.(int)
+	if !ok {
+		return 0
 	}
 
 	return a
@@ -104,6 +219,20 @@ func (o *optionLoader) loadString(name string) string {
 	return a
 }
 
+func (o *optionLoader) loadOptionalString(name string) string {
+	i := o.loadOptional(name)
+	if i == nil {
+		return ""
+	}
+
+	a, ok := i.(string)
+	if !ok {
+		return ""
+	}
+
+	return a
+}
+
 func (o *optionLoader) loadStringSlice(name string) []string {
 	i := o.load(name)
 	if i == nil {
@@ -113,21 +242,6 @@ func (o *optionLoader) loadStringSlice(name string) []string {
 	a, ok := i.([]string)
 	if !ok {
 		o.err = newInvalidOptionError(name)
-		return nil
-	}
-
-	return a
-}
-
-func (o *optionLoader) loadAPIObjects() []*unstructured.Unstructured {
-	i := o.load(OptionAPIObjects)
-	if i == nil {
-		return nil
-	}
-
-	a, ok := i.([]*unstructured.Unstructured)
-	if !ok {
-		o.err = newInvalidOptionError(OptionAPIObjects)
 		return nil
 	}
 
@@ -152,6 +266,7 @@ func (o *optionLoader) loadClientConfig() *client.Config {
 func (o *optionLoader) loadApp() app.App {
 	i := o.load(OptionApp)
 	if i == nil {
+		o.err = ErrNotInApp
 		return nil
 	}
 
@@ -164,14 +279,27 @@ func (o *optionLoader) loadApp() app.App {
 	return a
 }
 
-func (ol *optionLoader) load(key string) interface{} {
-	if ol.err != nil {
+func (o *optionLoader) load(key string) interface{} {
+	if o.err != nil {
 		return nil
 	}
 
-	i, ok := ol.m[key]
+	i, ok := o.m[key]
 	if !ok {
-		ol.err = newMissingOptionError(key)
+		o.err = newMissingOptionError(key)
+	}
+
+	return i
+}
+
+func (o *optionLoader) loadOptional(key string) interface{} {
+	if o.err != nil {
+		return nil
+	}
+
+	i, ok := o.m[key]
+	if !ok {
+		return nil
 	}
 
 	return i

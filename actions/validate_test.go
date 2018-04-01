@@ -44,7 +44,15 @@ func TestValidate(t *testing.T) {
 		env := &app.EnvironmentSpec{}
 		appMock.On("Environment", aEnvName).Return(env, nil)
 
-		a, err := NewValidate(appMock, aEnvName, aModuleName, aComponentNames, aClientConfig)
+		in := map[string]interface{}{
+			OptionApp:            appMock,
+			OptionEnvName:        aEnvName,
+			OptionNamespaceName:  aModuleName,
+			OptionComponentNames: aComponentNames,
+			OptionClientConfig:   aClientConfig,
+		}
+
+		a, err := NewValidate(in)
 		require.NoError(t, err)
 
 		a.discoveryFn = func(a app.App, clientConfig *client.Config, envName string) (discovery.DiscoveryInterface, error) {

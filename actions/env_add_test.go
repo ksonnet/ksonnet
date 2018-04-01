@@ -33,7 +33,16 @@ func TestEnvAdd(t *testing.T) {
 		aK8sSpecFlag := "flag"
 		aIsOverride := false
 
-		a, err := NewEnvAdd(appMock, aName, aServer, aNamespace, aK8sSpecFlag, aIsOverride)
+		in := map[string]interface{}{
+			OptionApp:           appMock,
+			OptionEnvName:       aName,
+			OptionServer:        aServer,
+			OptionNamespaceName: aNamespace,
+			OptionSpecFlag:      aK8sSpecFlag,
+			OptionOverride:      aIsOverride,
+		}
+
+		a, err := NewEnvAdd(in)
 		require.NoError(t, err)
 
 		a.envCreateFn = func(a app.App, d env.Destination, name, specFlag string, od, pd []byte, override bool) error {

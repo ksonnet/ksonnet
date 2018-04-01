@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"github.com/ksonnet/ksonnet/actions"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
@@ -34,14 +33,13 @@ var importCmd = &cobra.Command{
 	Short: "Import manifest",
 	Long:  `Import manifest`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fileName := viper.GetString(vImportFilename)
-		if fileName == "" {
-			return errors.New("filename is required")
+		m := map[string]interface{}{
+			actions.OptionApp:           ka,
+			actions.OptionNamespaceName: viper.GetString(vImportNamespace),
+			actions.OptionPath:          viper.GetString(vImportFilename),
 		}
 
-		namespace := viper.GetString(vImportNamespace)
-
-		return actions.RunImport(ka, namespace, fileName)
+		return runAction(actionImport, m)
 	},
 }
 

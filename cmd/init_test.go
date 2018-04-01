@@ -20,31 +20,33 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
+	"github.com/ksonnet/ksonnet/actions"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_initCmd(t *testing.T) {
-	override := func(fs afero.Fs, name, root, specFlag, server, namespace string) error {
-		wd, err := os.Getwd()
-		require.NoError(t, err)
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
 
-		appRoot := filepath.Join(wd, "app")
+	root := filepath.Join(cwd, "app")
 
-		assert.Equal(t, "new-namespace", namespace)
-		assert.Equal(t, appRoot, root)
-		assert.Equal(t, "app", name)
-		return nil
+	cases := []cmdTestCase{
+		{
+			name:   "in general",
+			args:   []string{"init", "app", "--namespace", "new-namespace", "--server", "http://127.0.0.1"},
+			action: actionInit,
+			expected: map[string]interface{}{
+				actions.OptionFs:            appFs,
+				actions.OptionName:          "app",
+				actions.OptionRootPath:      root,
+				actions.OptionServer:        "http://127.0.0.1",
+				actions.OptionSpecFlag:      "version:v1.7.0",
+				actions.OptionNamespaceName: "new-namespace",
+			},
+		},
 	}
 
-	withCmd(t, initCmd, actionInit, override, func() {
-		args := []string{"init", "app", "--namespace", "new-namespace", "--server", "http://127.0.0.1"}
-		RootCmd.SetArgs(args)
-
-		err := RootCmd.Execute()
-		require.NoError(t, err)
-	})
+	runTestCmd(t, cases)
 }
 
 func Test_genKsRoot(t *testing.T) {

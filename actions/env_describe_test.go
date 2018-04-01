@@ -34,7 +34,12 @@ func TestEnvDescribe(t *testing.T) {
 
 		appMock.On("Environment", envName).Return(env, nil)
 
-		a, err := NewEnvDescribe(appMock, envName)
+		in := map[string]interface{}{
+			OptionApp:     appMock,
+			OptionEnvName: envName,
+		}
+
+		a, err := NewEnvDescribe(in)
 		require.NoError(t, err)
 
 		var buf bytes.Buffer

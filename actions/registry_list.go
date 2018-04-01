@@ -26,8 +26,8 @@ import (
 )
 
 // RunRegistryList runs `env list`
-func RunRegistryList(ksApp app.App) error {
-	rl, err := NewRegistryList(ksApp)
+func RunRegistryList(m map[string]interface{}) error {
+	rl, err := NewRegistryList(m)
 	if err != nil {
 		return err
 	}
@@ -37,17 +37,24 @@ func RunRegistryList(ksApp app.App) error {
 
 // RegistryList lists available registries
 type RegistryList struct {
-	app          app.App
-	registryList func(ksApp app.App) ([]registry.Registry, error)
-	out          io.Writer
+	app            app.App
+	registryListFn func(ksApp app.App) ([]registry.Registry, error)
+	out            io.Writer
 }
 
 // NewRegistryList creates an instance of RegistryList
-func NewRegistryList(ksApp app.App) (*RegistryList, error) {
+func NewRegistryList(m map[string]interface{}) (*RegistryList, error) {
+	ol := newOptionLoader(m)
+
 	rl := &RegistryList{
-		app:          ksApp,
-		registryList: registry.List,
-		out:          os.Stdout,
+		app: ol.loadApp(),
+
+		registryListFn: registry.List,
+		out:            os.Stdout,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return rl, nil
@@ -55,7 +62,7 @@ func NewRegistryList(ksApp app.App) (*RegistryList, error) {
 
 // Run runs the env list action.
 func (rl *RegistryList) Run() error {
-	registries, err := rl.registryList(rl.app)
+	registries, err := rl.registryListFn(rl.app)
 	if err != nil {
 		return err
 	}

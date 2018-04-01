@@ -39,8 +39,11 @@ func TestEnvList(t *testing.T) {
 		}
 
 		appMock.On("Environments").Return(envs, nil)
+		in := map[string]interface{}{
+			OptionApp: appMock,
+		}
 
-		a, err := NewEnvList(appMock)
+		a, err := NewEnvList(in)
 		require.NoError(t, err)
 
 		var buf bytes.Buffer

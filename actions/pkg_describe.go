@@ -26,8 +26,8 @@ import (
 )
 
 // RunPkgDescribe runs `pkg install`
-func RunPkgDescribe(ksApp app.App, pkgName string) error {
-	pd, err := NewPkgDescribe(ksApp, pkgName)
+func RunPkgDescribe(m map[string]interface{}) error {
+	pd, err := NewPkgDescribe(m)
 	if err != nil {
 		return err
 	}
@@ -45,13 +45,20 @@ type PkgDescribe struct {
 }
 
 // NewPkgDescribe creates an instance of PkgDescribe.
-func NewPkgDescribe(ksApp app.App, pkgName string) (*PkgDescribe, error) {
+func NewPkgDescribe(m map[string]interface{}) (*PkgDescribe, error) {
+	ol := newOptionLoader(m)
+
 	pd := &PkgDescribe{
-		app:            ksApp,
-		pkgName:        pkgName,
+		app:     ol.loadApp(),
+		pkgName: ol.loadString(OptionPackageName),
+
 		out:            os.Stdout,
 		libPartFn:      pkg.Find,
 		registryPartFn: registry.Package,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return pd, nil

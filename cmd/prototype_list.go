@@ -30,7 +30,11 @@ var prototypeListCmd = &cobra.Command{
 			return fmt.Errorf("Command 'prototype list' does not take any arguments")
 		}
 
-		return actions.RunPrototypeList(ka)
+		m := map[string]interface{}{
+			actions.OptionApp: ka,
+		}
+
+		return runAction(actionPrototypeList, m)
 	},
 	Long: `
 The ` + "`list`" + ` command displays all prototypes that are available locally, as

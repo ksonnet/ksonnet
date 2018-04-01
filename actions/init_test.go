@@ -35,7 +35,16 @@ func TestInit(t *testing.T) {
 		aServerURI := "http://example.com"
 		aNamespace := "my-namespace"
 
-		a, err := NewInit(aFs, aName, aRootPath, aK8sSpecFlag, aServerURI, aNamespace)
+		in := map[string]interface{}{
+			OptionFs:            aFs,
+			OptionName:          aName,
+			OptionRootPath:      aRootPath,
+			OptionSpecFlag:      aK8sSpecFlag,
+			OptionServer:        aServerURI,
+			OptionNamespaceName: aNamespace,
+		}
+
+		a, err := NewInit(in)
 		require.NoError(t, err)
 
 		a.appInitFn = func(fs afero.Fs, name, rootPath, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) error {

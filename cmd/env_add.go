@@ -44,6 +44,8 @@ var envAddCmd = &cobra.Command{
 			return err
 		}
 
+		// TODO: pass envClientConfig to the action so it can pull out the
+		// spec flag if it is empty.
 		specFlag, err := flags.GetString(flagAPISpec)
 		if err != nil {
 			return err
@@ -54,7 +56,16 @@ var envAddCmd = &cobra.Command{
 
 		isOverride := viper.GetBool(vEnvAddOverride)
 
-		return actions.RunEnvAdd(ka, name, server, namespace, specFlag, isOverride)
+		m := map[string]interface{}{
+			actions.OptionApp:           ka,
+			actions.OptionEnvName:       name,
+			actions.OptionServer:        server,
+			actions.OptionNamespaceName: namespace,
+			actions.OptionSpecFlag:      specFlag,
+			actions.OptionOverride:      isOverride,
+		}
+
+		return runAction(actionEnvAdd, m)
 	},
 
 	Long: `

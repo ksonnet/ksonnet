@@ -101,7 +101,7 @@ var applyCmd = &cobra.Command{
 			actions.OptionSkipGc:         viper.GetBool(vApplySkipGc),
 		}
 
-		return actionFns[actionApply](m)
+		return runAction(actionApply, m)
 	},
 	Long: `
 The ` + "`apply`" + `command uses local manifest(s) to update (and optionally create)

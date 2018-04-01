@@ -45,7 +45,14 @@ func TestParamList_with_component_name(t *testing.T) {
 		cm.On("Namespace", mock.Anything, "ns").Return(ns, nil)
 		cm.On("Component", mock.Anything, "ns", "deployment").Return(c, nil)
 
-		a, err := NewParamList(appMock, componentName, nsName, envName)
+		in := map[string]interface{}{
+			OptionApp:           appMock,
+			OptionComponentName: componentName,
+			OptionNamespaceName: nsName,
+			OptionEnvName:       envName,
+		}
+
+		a, err := NewParamList(in)
 		require.NoError(t, err)
 
 		a.cm = cm
@@ -78,7 +85,14 @@ func TestParamList_without_component_name(t *testing.T) {
 		cm := &cmocks.Manager{}
 		cm.On("Namespace", mock.Anything, "ns").Return(ns, nil)
 
-		a, err := NewParamList(appMock, componentName, nsName, envName)
+		in := map[string]interface{}{
+			OptionApp:           appMock,
+			OptionComponentName: componentName,
+			OptionNamespaceName: nsName,
+			OptionEnvName:       envName,
+		}
+
+		a, err := NewParamList(in)
 		require.NoError(t, err)
 
 		a.cm = cm

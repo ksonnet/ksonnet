@@ -35,9 +35,13 @@ var prototypePreviewCmd = &cobra.Command{
 			return fmt.Errorf("Command 'prototype preview' requires a prototype name\n\n%s", cmd.UsageString())
 		}
 
-		query := rawArgs[0]
+		m := map[string]interface{}{
+			actions.OptionApp:       ka,
+			actions.OptionQuery:     rawArgs[0],
+			actions.OptionArguments: rawArgs[1:],
+		}
 
-		return actions.RunPrototypePreview(ka, query, rawArgs[1:])
+		return runAction(actionPrototypePreview, m)
 	},
 	Long: `
 This ` + "`preview`" + ` command expands a prototype with CLI flag parameters, and

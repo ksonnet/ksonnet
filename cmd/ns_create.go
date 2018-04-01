@@ -35,9 +35,12 @@ var nsCreateCmd = &cobra.Command{
 			return errors.New("ns create <namespace>")
 		}
 
-		nsName := args[0]
+		m := map[string]interface{}{
+			actions.OptionApp:           ka,
+			actions.OptionNamespaceName: args[0],
+		}
 
-		return actions.RunNsCreate(ka, nsName)
+		return runAction(actionNsCreate, m)
 	},
 }
 

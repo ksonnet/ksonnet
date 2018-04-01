@@ -29,7 +29,13 @@ func TestEnvRm(t *testing.T) {
 		aName := "my-app"
 		aIsOverride := false
 
-		a, err := NewEnvRm(appMock, aName, aIsOverride)
+		in := map[string]interface{}{
+			OptionApp:      appMock,
+			OptionEnvName:  aName,
+			OptionOverride: aIsOverride,
+		}
+
+		a, err := NewEnvRm(in)
 		require.NoError(t, err)
 
 		a.envDeleteFn = func(a app.App, name string, override bool) error {

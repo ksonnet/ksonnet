@@ -66,10 +66,18 @@ func TestRegistryAdd(t *testing.T) {
 
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
-				a, err := NewRegistryAdd(appMock, name, tc.uri, tc.version, tc.isOverride)
+				in := map[string]interface{}{
+					OptionApp:      appMock,
+					OptionName:     name,
+					OptionURI:      tc.uri,
+					OptionVersion:  tc.version,
+					OptionOverride: tc.isOverride,
+				}
+
+				a, err := NewRegistryAdd(in)
 				require.NoError(t, err)
 
-				a.registryAdd = func(a app.App, name, protocol, uri, version string, isOverride bool) (*registry.Spec, error) {
+				a.registryAddFn = func(a app.App, name, protocol, uri, version string, isOverride bool) (*registry.Spec, error) {
 					assert.Equal(t, "new", name)
 					assert.Equal(t, tc.protocol, protocol)
 					assert.Equal(t, tc.expectedURI, uri)

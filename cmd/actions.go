@@ -24,7 +24,35 @@ type initName int
 
 const (
 	actionApply initName = iota
+	actionComponentList
+	actionDelete
+	actionDiff
+	actionEnvAdd
+	actionEnvDescribe
+	actionEnvList
+	actionEnvRm
+	actionEnvSet
+	actionEnvTargets
+	actionImport
 	actionInit
+	actionNsCreate
+	actionNsList
+	actionParamDiff
+	actionParamList
+	actionParamSet
+	actionPkgDescribe
+	actionPkgInstall
+	actionPkgList
+	actionPrototypeDescribe
+	actionPrototypeList
+	actionPrototypePreview
+	actionPrototypeSearch
+	actionPrototypeUse
+	actionRegistryAdd
+	actionRegistryDescribe
+	actionRegistryList
+	actionShow
+	actionUpgrade
 	actionValidate
 )
 
@@ -32,14 +60,44 @@ type actionFn func(map[string]interface{}) error
 
 var (
 	actionFns = map[initName]actionFn{
-		actionApply: actions.RunApply,
+		actionApply:         actions.RunApply,
+		actionComponentList: actions.RunComponentList,
+		// actionDelete
+		// actionDiff
+		actionEnvAdd:      actions.RunEnvAdd,
+		actionEnvDescribe: actions.RunEnvDescribe,
+		actionEnvList:     actions.RunEnvList,
+		actionEnvRm:       actions.RunEnvRm,
+		actionEnvSet:      actions.RunEnvSet,
+		actionEnvTargets:  actions.RunEnvTargets,
+		actionImport:      actions.RunImport,
+		actionInit:        actions.RunInit,
+		actionNsCreate:    actions.RunNsCreate,
+		actionNsList:      actions.RunNsList,
+		// actionParamDiff
+		actionParamList:         actions.RunParamList,
+		actionParamSet:          actions.RunParamSet,
+		actionPkgDescribe:       actions.RunPkgDescribe,
+		actionPkgInstall:        actions.RunPkgInstall,
+		actionPkgList:           actions.RunPkgList,
+		actionPrototypeDescribe: actions.RunPrototypeDescribe,
+		actionPrototypeList:     actions.RunPrototypeList,
+		actionPrototypePreview:  actions.RunPrototypePreview,
+		actionPrototypeSearch:   actions.RunPrototypeSearch,
+		actionPrototypeUse:      actions.RunPrototypeUse,
+		actionRegistryAdd:       actions.RunRegistryAdd,
+		actionRegistryDescribe:  actions.RunRegistryDescribe,
+		actionRegistryList:      actions.RunRegistryList,
+		// actionShow
+		actionUpgrade:  actions.RunUpgrade,
+		actionValidate: actions.RunValidate,
 	}
 )
 
 func runAction(name initName, args map[string]interface{}) error {
 	fn, ok := actionFns[name]
 	if !ok {
-		return errors.Errorf("invalid action")
+		return errors.Errorf("invalid action %q", name)
 	}
 
 	return fn(args)

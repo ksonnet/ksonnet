@@ -25,8 +25,8 @@ import (
 )
 
 // RunEnvList runs `env list`
-func RunEnvList(ksApp app.App) error {
-	nl, err := NewEnvList(ksApp)
+func RunEnvList(m map[string]interface{}) error {
+	nl, err := NewEnvList(m)
 	if err != nil {
 		return err
 	}
@@ -41,10 +41,17 @@ type EnvList struct {
 }
 
 // NewEnvList creates an instance of EnvList
-func NewEnvList(ksApp app.App) (*EnvList, error) {
+func NewEnvList(m map[string]interface{}) (*EnvList, error) {
+	ol := newOptionLoader(m)
+
 	nl := &EnvList{
-		app: ksApp,
+		app: ol.loadApp(),
+
 		out: os.Stdout,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return nl, nil

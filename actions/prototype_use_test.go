@@ -40,10 +40,15 @@ func TestPrototypeUse(t *testing.T) {
 			"--port", "80",
 		}
 
-		a, err := NewPrototypeUse(appMock, args)
+		in := map[string]interface{}{
+			OptionApp:       appMock,
+			OptionArguments: args,
+		}
+
+		a, err := NewPrototypeUse(in)
 		require.NoError(t, err)
 
-		a.createComponent = func(_ app.App, name string, text string, params param.Params, template prototype.TemplateType) (string, error) {
+		a.createComponentFn = func(_ app.App, name string, text string, params param.Params, template prototype.TemplateType) (string, error) {
 			assert.Equal(t, "myDeployment", name)
 			assertOutput(t, "prototype/use/text.txt", text)
 

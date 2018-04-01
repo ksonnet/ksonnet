@@ -30,7 +30,12 @@ func TestPrototypeDescribe(t *testing.T) {
 
 		appMock.On("Libraries").Return(libaries, nil)
 
-		a, err := NewPrototypeDescribe(appMock, "namespace")
+		in := map[string]interface{}{
+			OptionApp:   appMock,
+			OptionQuery: "namespace",
+		}
+
+		a, err := NewPrototypeDescribe(in)
 		require.NoError(t, err)
 
 		var buf bytes.Buffer

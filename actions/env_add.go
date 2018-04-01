@@ -27,8 +27,8 @@ const (
 )
 
 // RunEnvAdd runs `env add`
-func RunEnvAdd(ksApp app.App, envName, server, namespace, k8sSpecFlag string, isOverride bool) error {
-	ea, err := NewEnvAdd(ksApp, envName, server, namespace, k8sSpecFlag, isOverride)
+func RunEnvAdd(m map[string]interface{}) error {
+	ea, err := NewEnvAdd(m)
 	if err != nil {
 		return err
 	}
@@ -49,16 +49,22 @@ type EnvAdd struct {
 }
 
 // NewEnvAdd creates an instance of EnvAdd.
-func NewEnvAdd(ksApp app.App, envName, server, namespace, k8sSpecFlag string, isOverride bool) (*EnvAdd, error) {
+func NewEnvAdd(m map[string]interface{}) (*EnvAdd, error) {
+	ol := newOptionLoader(m)
+
 	ea := &EnvAdd{
-		app:         ksApp,
-		envName:     envName,
-		server:      server,
-		namespace:   namespace,
-		k8sSpecFlag: k8sSpecFlag,
-		isOverride:  isOverride,
+		app:         ol.loadApp(),
+		envName:     ol.loadString(OptionEnvName),
+		server:      ol.loadString(OptionServer),
+		namespace:   ol.loadString(OptionNamespaceName),
+		k8sSpecFlag: ol.loadString(OptionSpecFlag),
+		isOverride:  ol.loadBool(OptionOverride),
 
 		envCreateFn: env.Create,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return ea, nil

@@ -33,8 +33,8 @@ import (
 )
 
 // RunPrototypePreview runs `prototype describe`
-func RunPrototypePreview(ksApp app.App, query string, args []string) error {
-	pp, err := NewPrototypePreview(ksApp, query, args)
+func RunPrototypePreview(m map[string]interface{}) error {
+	pp, err := NewPrototypePreview(m)
 	if err != nil {
 		return err
 	}
@@ -44,21 +44,28 @@ func RunPrototypePreview(ksApp app.App, query string, args []string) error {
 
 // PrototypePreview lists available namespaces
 type PrototypePreview struct {
-	app           app.App
-	out           io.Writer
-	query         string
-	args          []string
-	appPrototypes func(app.App, pkg.Descriptor) (prototype.SpecificationSchemas, error)
+	app             app.App
+	out             io.Writer
+	query           string
+	args            []string
+	appPrototypesFn func(app.App, pkg.Descriptor) (prototype.SpecificationSchemas, error)
 }
 
 // NewPrototypePreview creates an instance of PrototypePreview
-func NewPrototypePreview(ksApp app.App, query string, args []string) (*PrototypePreview, error) {
+func NewPrototypePreview(m map[string]interface{}) (*PrototypePreview, error) {
+	ol := newOptionLoader(m)
+
 	pp := &PrototypePreview{
-		app:           ksApp,
-		out:           os.Stdout,
-		query:         query,
-		args:          args,
-		appPrototypes: pkg.LoadPrototypes,
+		app:   ol.loadApp(),
+		query: ol.loadString(OptionQuery),
+		args:  ol.loadStringSlice(OptionArguments),
+
+		out:             os.Stdout,
+		appPrototypesFn: pkg.LoadPrototypes,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return pp, nil
@@ -66,7 +73,7 @@ func NewPrototypePreview(ksApp app.App, query string, args []string) (*Prototype
 
 // Run runs the env list action.
 func (pp *PrototypePreview) Run() error {
-	prototypes, err := allPrototypes(pp.app, pp.appPrototypes)
+	prototypes, err := allPrototypes(pp.app, pp.appPrototypesFn)
 	if err != nil {
 		return err
 	}

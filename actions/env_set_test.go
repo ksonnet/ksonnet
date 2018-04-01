@@ -29,12 +29,16 @@ func TestEnvSet_name(t *testing.T) {
 		envName := "default"
 		newName := "dev"
 
-		nameOpt := EnvSetName(newName)
+		in := map[string]interface{}{
+			OptionApp:        appMock,
+			OptionEnvName:    envName,
+			OptionNewEnvName: newName,
+		}
 
-		a, err := NewEnvSet(appMock, envName, nameOpt)
+		a, err := NewEnvSet(in)
 		require.NoError(t, err)
 
-		a.envRename = func(a app.App, from, to string, override bool) error {
+		a.envRenameFn = func(a app.App, from, to string, override bool) error {
 			assert.Equal(t, envName, from)
 			assert.Equal(t, newName, to)
 			assert.False(t, override)
@@ -60,9 +64,12 @@ func TestEnvSet_namespace(t *testing.T) {
 		envName := "default"
 		nsName := "ns2"
 
-		nsOpt := EnvSetNamespace(nsName)
-
-		a, err := NewEnvSet(appMock, envName, nsOpt)
+		in := map[string]interface{}{
+			OptionApp:           appMock,
+			OptionEnvName:       envName,
+			OptionNamespaceName: nsName,
+		}
+		a, err := NewEnvSet(in)
 		require.NoError(t, err)
 
 		spec := &app.EnvironmentSpec{
@@ -91,13 +98,17 @@ func TestEnvSet_name_and_namespace(t *testing.T) {
 		newName := "dev"
 		nsName := "ns2"
 
-		nameOpt := EnvSetName(newName)
-		nsOpt := EnvSetNamespace(nsName)
+		in := map[string]interface{}{
+			OptionApp:           appMock,
+			OptionEnvName:       envName,
+			OptionNewEnvName:    newName,
+			OptionNamespaceName: nsName,
+		}
 
-		a, err := NewEnvSet(appMock, envName, nsOpt, nameOpt)
+		a, err := NewEnvSet(in)
 		require.NoError(t, err)
 
-		a.envRename = func(a app.App, from, to string, override bool) error {
+		a.envRenameFn = func(a app.App, from, to string, override bool) error {
 			assert.Equal(t, envName, from)
 			assert.Equal(t, newName, to)
 			assert.False(t, override)
@@ -105,7 +116,7 @@ func TestEnvSet_name_and_namespace(t *testing.T) {
 			return nil
 		}
 
-		a.updateEnv = func(a app.App, name string, spec *app.EnvironmentSpec, override bool) error {
+		a.updateEnvFn = func(a app.App, name string, spec *app.EnvironmentSpec, override bool) error {
 			assert.Equal(t, envName, name)
 			assert.Equal(t, nsName, spec.Destination.Namespace)
 			assert.False(t, override)

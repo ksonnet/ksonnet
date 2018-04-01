@@ -30,7 +30,7 @@ var _ = Describe("ks apply", func() {
 		namespace = e.createNamespace()
 
 		io := &initOptions{
-			context:   "minikube",
+			context:   "gke_bryan-heptio_us-central1-a_dev2",
 			namespace: namespace,
 		}
 
@@ -43,13 +43,14 @@ var _ = Describe("ks apply", func() {
 	})
 
 	JustBeforeEach(func() {
-		o = a.runKs("apply", namespace)
+		o = a.runKs("apply", "default")
+		assertExitStatus(o, 0)
 	})
 
 	It("reports which resources it creating", func() {
 		assertExitStatus(o, 0)
 
-		data := map[string]string{"Namespace": namespace}
+		data := map[string]string{"Namespace": "default"}
 		assertTemplate(data, "apply/output.txt.tmpl", o.stderr)
 	})
 

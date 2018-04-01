@@ -28,6 +28,11 @@ import (
 	"github.com/spf13/afero"
 )
 
+const (
+	// DefaultEnvName is the name of the default environment.
+	DefaultEnvName = "default"
+)
+
 // CreateConfig is configuration for creating an environment.
 type CreateConfig struct {
 	App         app.App

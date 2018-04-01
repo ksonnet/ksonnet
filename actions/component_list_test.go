@@ -42,7 +42,13 @@ func TestComponentList(t *testing.T) {
 		cm := &cmocks.Manager{}
 		cm.On("Namespace", mock.Anything, "").Return(ns, nil)
 
-		a, err := NewComponentList(appMock, nsName, output)
+		in := map[string]interface{}{
+			OptionApp:           appMock,
+			OptionNamespaceName: nsName,
+			OptionOutput:        output,
+		}
+
+		a, err := NewComponentList(in)
 		require.NoError(t, err)
 
 		a.cm = cm
@@ -76,7 +82,13 @@ func TestComponentList_wide(t *testing.T) {
 		cm := &cmocks.Manager{}
 		cm.On("Namespace", mock.Anything, "").Return(ns, nil)
 
-		a, err := NewComponentList(appMock, nsName, output)
+		in := map[string]interface{}{
+			OptionApp:           appMock,
+			OptionNamespaceName: nsName,
+			OptionOutput:        output,
+		}
+
+		a, err := NewComponentList(in)
 		require.NoError(t, err)
 
 		a.cm = cm

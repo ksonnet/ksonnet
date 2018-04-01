@@ -27,38 +27,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-// RunParamSet sets a parameter for a component.
-func RunParamSet(ksApp app.App, componentName, path, value string, opts ...ParamSetOpt) error {
-	ps, err := NewParamSet(ksApp, componentName, path, value, opts...)
+// RunParamSet runs `param set`
+func RunParamSet(m map[string]interface{}) error {
+	ps, err := NewParamSet(m)
 	if err != nil {
 		return err
 	}
 
 	return ps.Run()
-}
-
-// ParamSetOpt is an option for configuring ParamSet.
-type ParamSetOpt func(*ParamSet)
-
-// ParamSetGlobal sets if the param is global.
-func ParamSetGlobal(isGlobal bool) ParamSetOpt {
-	return func(ps *ParamSet) {
-		ps.global = isGlobal
-	}
-}
-
-// ParamSetEnv sets the env name for a param.
-func ParamSetEnv(envName string) ParamSetOpt {
-	return func(ps *ParamSet) {
-		ps.envName = envName
-	}
-}
-
-// ParamSetWithIndex sets the index for the set option.
-func ParamSetWithIndex(index int) ParamSetOpt {
-	return func(ParamSet *ParamSet) {
-		ParamSet.index = index
-	}
 }
 
 // ParamSet sets a parameter for a component.
@@ -78,18 +54,24 @@ type ParamSet struct {
 }
 
 // NewParamSet creates an instance of ParamSet.
-func NewParamSet(ksApp app.App, name, path, value string, opts ...ParamSetOpt) (*ParamSet, error) {
+func NewParamSet(m map[string]interface{}) (*ParamSet, error) {
+	ol := newOptionLoader(m)
+
 	ps := &ParamSet{
-		app:      ksApp,
-		name:     name,
-		rawPath:  path,
-		rawValue: value,
-		cm:       component.DefaultManager,
-		setEnv:   setEnv,
+		app:      ol.loadApp(),
+		name:     ol.loadString(OptionName),
+		rawPath:  ol.loadString(OptionPath),
+		rawValue: ol.loadString(OptionValue),
+		global:   ol.loadOptionalBool(OptionGlobal),
+		envName:  ol.loadOptionalString(OptionEnvName),
+		index:    ol.loadOptionalInt(OptionIndex),
+
+		cm:     component.DefaultManager,
+		setEnv: setEnv,
 	}
 
-	for _, opt := range opts {
-		opt(ps)
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	if ps.envName != "" && ps.global {

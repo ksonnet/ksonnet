@@ -30,8 +30,12 @@ var prototypeDescribeCmd = &cobra.Command{
 			return fmt.Errorf("Command 'prototype describe' requires a prototype name\n\n%s", cmd.UsageString())
 		}
 
-		query := args[0]
-		return actions.RunPrototypeDescribe(ka, query)
+		m := map[string]interface{}{
+			actions.OptionApp:   ka,
+			actions.OptionQuery: args[0],
+		}
+
+		return runAction(actionPrototypeDescribe, m)
 	},
 	Long: `
 This command outputs documentation, examples, and other information for

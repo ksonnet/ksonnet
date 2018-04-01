@@ -16,7 +16,6 @@
 package snippet
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -314,11 +313,7 @@ func TestParserParent(t *testing.T) {
 	first, second := snippet.placeholders()[0], snippet.placeholders()[1]
 	assertEqual(t, first.index, 1)
 	assertEqual(t, second.index, 2)
-	sp := second.parent()
-	fmt.Println(sp)
 	assertEqual(t, second.parent(), first)
-	fp := first.parent()
-	fmt.Println(fp)
 	assertEqual(t, first.parent(), snippet)
 
 	snippet = parse("${VAR:default${1:value}}$0", false)

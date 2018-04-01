@@ -36,7 +36,13 @@ func TestPrototypePreview(t *testing.T) {
 			"--port", "80",
 		}
 
-		a, err := NewPrototypePreview(appMock, "single-port-deployment", args)
+		in := map[string]interface{}{
+			OptionApp:       appMock,
+			OptionQuery:     "single-port-deployment",
+			OptionArguments: args,
+		}
+
+		a, err := NewPrototypePreview(in)
 		require.NoError(t, err)
 
 		var buf bytes.Buffer

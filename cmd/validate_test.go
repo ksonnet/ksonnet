@@ -1,4 +1,4 @@
-// Copyright 2018 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,29 +18,24 @@ package cmd
 import (
 	"testing"
 
-	"github.com/ksonnet/ksonnet/client"
-	"github.com/ksonnet/ksonnet/metadata/app"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/ksonnet/ksonnet/actions"
 )
 
 func Test_validateCmd(t *testing.T) {
-	override := func(ksApp app.App, envName, nsName string, componentNames []string, clientConfig *client.Config) error {
-		assert.Equal(t, "my-namespace", envName)
-		assert.Equal(t, "", nsName)
-
-		exectedComponents := []string{"module1", "module2"}
-		assert.Equal(t, exectedComponents, componentNames)
-		assert.Equal(t, validateClientConfig, clientConfig)
-
-		return nil
+	cases := []cmdTestCase{
+		{
+			name:   "in general",
+			args:   []string{"validate", "env-name"},
+			action: actionValidate,
+			expected: map[string]interface{}{
+				actions.OptionApp:            ka,
+				actions.OptionEnvName:        "env-name",
+				actions.OptionNamespaceName:  "",
+				actions.OptionComponentNames: make([]string, 0),
+				actions.OptionClientConfig:   validateClientConfig,
+			},
+		},
 	}
 
-	withCmd(t, validateCmd, actionValidate, override, func() {
-		args := []string{"validate", "my-namespace", "-c", "module1", "-c", "module2"}
-		RootCmd.SetArgs(args)
-
-		err := RootCmd.Execute()
-		require.NoError(t, err)
-	})
+	runTestCmd(t, cases)
 }

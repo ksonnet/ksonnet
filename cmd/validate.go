@@ -21,8 +21,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/ksonnet/ksonnet/actions"
 	"github.com/ksonnet/ksonnet/client"
-	"github.com/ksonnet/ksonnet/metadata/app"
 )
 
 const (
@@ -51,21 +51,16 @@ var validateCmd = &cobra.Command{
 		if len(args) != 1 {
 			return errors.Errorf("'validate' requires an environment name; use `env list` to see available environments\n\n%s", cmd.UsageString())
 		}
-		env := args[0]
 
-		componentNames := viper.GetStringSlice(vValidateComponent)
-
-		v, ok := actionMap[actionValidate]
-		if !ok {
-			return errors.New("validate action does not exist")
+		m := map[string]interface{}{
+			actions.OptionApp:            ka,
+			actions.OptionEnvName:        args[0],
+			actions.OptionNamespaceName:  "",
+			actions.OptionComponentNames: viper.GetStringSlice(vValidateComponent),
+			actions.OptionClientConfig:   validateClientConfig,
 		}
 
-		fn, ok := v.(func(app.App, string, string, []string, *client.Config) error)
-		if !ok {
-			return errors.New("validate action was not in the proper format")
-		}
-
-		return fn(ka, env, "", componentNames, validateClientConfig)
+		return runAction(actionValidate, m)
 	},
 	Long: `
 The ` + "`validate`" + ` command checks that an application or file is compliant with the

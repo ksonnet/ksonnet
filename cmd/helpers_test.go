@@ -16,10 +16,10 @@
 package cmd
 
 import (
-	"os"
 	"testing"
 
-	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func runCmd(args ...string) error {
@@ -27,7 +27,7 @@ func runCmd(args ...string) error {
 	return RootCmd.Execute()
 }
 
-func withCmd2(id initName, override actionFn, fn func()) {
+func withCmd(id initName, override actionFn, fn func()) {
 	if override != nil {
 		ogFn := actionFns[id]
 		actionFns[id] = override
@@ -40,16 +40,49 @@ func withCmd2(id initName, override actionFn, fn func()) {
 	fn()
 }
 
-func withCmd(t *testing.T, cmd *cobra.Command, id initName, override interface{}, fn func()) {
-	ogAction := actionMap[id]
-	actionMap[id] = override
+type cmdTestCase struct {
+	name     string
+	args     []string
+	action   initName
+	isErr    bool
+	expected map[string]interface{}
+}
 
-	envConfig := os.Getenv("KUBECONFIG")
+func stubCmdOverride() (*map[string]interface{}, func(map[string]interface{}) error) {
+	var got *map[string]interface{}
 
-	defer func() {
-		actionMap[id] = ogAction
-		os.Setenv("KUBECONFIG", envConfig)
-	}()
+	return got, func(m map[string]interface{}) error {
+		got = &m
+		return nil
+	}
+}
 
-	fn()
+type stubCmdOverride2 struct {
+	got map[string]interface{}
+}
+
+func (s *stubCmdOverride2) override(m map[string]interface{}) error {
+	s.got = m
+	return nil
+}
+
+func runTestCmd(t *testing.T, cases []cmdTestCase) {
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			s := stubCmdOverride2{}
+
+			withCmd(tc.action, s.override, func() {
+
+				err := runCmd(tc.args...)
+				if tc.isErr {
+					require.Error(t, err)
+					return
+				}
+
+				require.NoError(t, err)
+
+				assert.Equal(t, tc.expected, s.got)
+			})
+		})
+	}
 }

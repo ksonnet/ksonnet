@@ -31,8 +31,12 @@ var nsListCmd = &cobra.Command{
 	Short: "list",
 	Long:  `list`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		envName := viper.GetString(vNsListEnv)
-		return actions.RunNsList(ka, envName)
+		m := map[string]interface{}{
+			actions.OptionApp:     ka,
+			actions.OptionEnvName: viper.GetString(vNsListEnv),
+		}
+
+		return runAction(actionNsList, m)
 	},
 }
 

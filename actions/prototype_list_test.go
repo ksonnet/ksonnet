@@ -30,7 +30,11 @@ func TestPrototypeList(t *testing.T) {
 
 		appMock.On("Libraries").Return(libaries, nil)
 
-		a, err := NewPrototypeList(appMock)
+		in := map[string]interface{}{
+			OptionApp: appMock,
+		}
+
+		a, err := NewPrototypeList(in)
 		require.NoError(t, err)
 
 		var buf bytes.Buffer

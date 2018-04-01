@@ -35,7 +35,12 @@ func TestNsList(t *testing.T) {
 		}
 		cm.On("Namespaces", appMock, "").Return(namespaces, nil)
 
-		a, err := NewNsList(appMock, "")
+		in := map[string]interface{}{
+			OptionApp:     appMock,
+			OptionEnvName: "",
+		}
+
+		a, err := NewNsList(in)
 		require.NoError(t, err)
 
 		a.cm = cm

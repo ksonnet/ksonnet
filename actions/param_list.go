@@ -26,8 +26,8 @@ import (
 )
 
 // RunParamList runs `param list`.
-func RunParamList(ksApp app.App, componentName, nsName, envName string) error {
-	pl, err := NewParamList(ksApp, componentName, nsName, envName)
+func RunParamList(m map[string]interface{}) error {
+	pl, err := NewParamList(m)
 	if err != nil {
 		return err
 	}
@@ -46,14 +46,21 @@ type ParamList struct {
 }
 
 // NewParamList creates an instances of ParamList.
-func NewParamList(ksApp app.App, componentName, nsName, envName string) (*ParamList, error) {
+func NewParamList(m map[string]interface{}) (*ParamList, error) {
+	ol := newOptionLoader(m)
+
 	pl := &ParamList{
-		app:           ksApp,
-		nsName:        nsName,
-		componentName: componentName,
-		envName:       envName,
-		cm:            component.DefaultManager,
-		out:           os.Stdout,
+		app:           ol.loadApp(),
+		nsName:        ol.loadString(OptionNamespaceName),
+		componentName: ol.loadString(OptionComponentName),
+		envName:       ol.loadString(OptionEnvName),
+
+		cm:  component.DefaultManager,
+		out: os.Stdout,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return pl, nil

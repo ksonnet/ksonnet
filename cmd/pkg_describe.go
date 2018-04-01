@@ -30,7 +30,12 @@ var pkgDescribeCmd = &cobra.Command{
 			return fmt.Errorf("Command 'pkg describe' requires a package name\n\n%s", cmd.UsageString())
 		}
 
-		return actions.RunPkgDescribe(ka, args[0])
+		m := map[string]interface{}{
+			actions.OptionApp:         ka,
+			actions.OptionPackageName: args[0],
+		}
+
+		return runAction(actionPkgDescribe, m)
 	},
 
 	Long: `

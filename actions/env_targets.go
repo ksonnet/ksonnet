@@ -21,8 +21,8 @@ import (
 )
 
 // RunEnvTargets runs `env targets`
-func RunEnvTargets(ksApp app.App, envName string, nsNames []string) error {
-	et, err := NewEnvTargets(ksApp, envName, nsNames)
+func RunEnvTargets(m map[string]interface{}) error {
+	et, err := NewEnvTargets(m)
 	if err != nil {
 		return err
 	}
@@ -39,12 +39,19 @@ type EnvTargets struct {
 }
 
 // NewEnvTargets creates an instance of EnvTargets.
-func NewEnvTargets(ksApp app.App, envName string, nsNames []string) (*EnvTargets, error) {
+func NewEnvTargets(m map[string]interface{}) (*EnvTargets, error) {
+	ol := newOptionLoader(m)
+
 	et := &EnvTargets{
-		app:     ksApp,
-		envName: envName,
-		nsNames: nsNames,
-		cm:      component.DefaultManager,
+		app:     ol.loadApp(),
+		envName: ol.loadString(OptionEnvName),
+		nsNames: ol.loadStringSlice(OptionNamespaceName),
+
+		cm: component.DefaultManager,
+	}
+
+	if ol.err != nil {
+		return nil, ol.err
 	}
 
 	return et, nil

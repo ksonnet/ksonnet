@@ -32,7 +32,12 @@ func TestPkgDescribe_library(t *testing.T) {
 		}
 		appMock.On("Libraries").Return(libaries, nil)
 
-		a, err := NewPkgDescribe(appMock, "apache")
+		in := map[string]interface{}{
+			OptionApp:         appMock,
+			OptionPackageName: "apache",
+		}
+
+		a, err := NewPkgDescribe(in)
 		require.NoError(t, err)
 
 		var buf bytes.Buffer
@@ -61,7 +66,12 @@ func TestPkgDescribe_registry(t *testing.T) {
 		}
 		appMock.On("Registries").Return(registries, nil)
 
-		a, err := NewPkgDescribe(appMock, "incubator/apache")
+		in := map[string]interface{}{
+			OptionApp:         appMock,
+			OptionPackageName: "incubator/apache",
+		}
+
+		a, err := NewPkgDescribe(in)
 		require.NoError(t, err)
 
 		var buf bytes.Buffer

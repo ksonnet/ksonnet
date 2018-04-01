@@ -31,9 +31,12 @@ var envDescribeCmd = &cobra.Command{
 			return errors.New("env describe <environment>")
 		}
 
-		environment := args[0]
+		m := map[string]interface{}{
+			actions.OptionApp:     ka,
+			actions.OptionEnvName: args[0],
+		}
 
-		return actions.RunEnvDescribe(ka, environment)
+		return runAction(actionEnvDescribe, m)
 	},
 }
 

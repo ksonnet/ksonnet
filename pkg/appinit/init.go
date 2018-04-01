@@ -76,7 +76,7 @@ func (i *initApp) Run() error {
 		err = env.Create(
 			a,
 			d,
-			i.namespace,
+			env.DefaultEnvName,
 			i.k8sSpecFlag,
 			env.DefaultOverrideData(),
 			env.DefaultParamsData(),
