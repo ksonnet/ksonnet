@@ -37,8 +37,11 @@ func RunInit(m map[string]interface{}) error {
 	return i.Run()
 }
 
+type appLoadFn func(fs afero.Fs, root string, skipFindRoot bool) (app.App, error)
+
 type appInitFn func(fs afero.Fs, name, rootPath, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) error
-type initIncubatorFn func() (registry.Registry, error)
+
+type initIncubatorFn func(app.App) (registry.Registry, error)
 
 // Init creates a component namespace
 type Init struct {
@@ -51,6 +54,7 @@ type Init struct {
 	skipDefaultRegistries bool
 
 	appInitFn       appInitFn
+	appLoadFn       appLoadFn
 	initIncubatorFn initIncubatorFn
 }
 
@@ -68,6 +72,7 @@ func NewInit(m map[string]interface{}) (*Init, error) {
 		skipDefaultRegistries: ol.loadBool(OptionSkipDefaultRegistries),
 
 		appInitFn:       appinit.Init,
+		appLoadFn:       app.Load,
 		initIncubatorFn: initIncubator,
 	}
 
@@ -83,7 +88,12 @@ func (i *Init) Run() error {
 	var registries []registry.Registry
 
 	if !i.skipDefaultRegistries {
-		gh, err := i.initIncubatorFn()
+		a, err := i.appLoadFn(i.fs, i.rootPath, true)
+		if err != nil {
+			return err
+		}
+
+		gh, err := i.initIncubatorFn(a)
 		if err != nil {
 			return err
 		}
@@ -102,10 +112,12 @@ func (i *Init) Run() error {
 	)
 }
 
-func initIncubator() (registry.Registry, error) {
-	return registry.NewGitHub(&app.RegistryRefSpec{
-		Name:     "incubator",
-		Protocol: registry.ProtocolGitHub,
-		URI:      defaultIncubatorURI,
-	})
+func initIncubator(a app.App) (registry.Registry, error) {
+	return registry.NewGitHub(
+		a,
+		&app.RegistryRefSpec{
+			Name:     "incubator",
+			Protocol: registry.ProtocolGitHub,
+			URI:      defaultIncubatorURI,
+		})
 }

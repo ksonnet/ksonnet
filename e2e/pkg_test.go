@@ -18,6 +18,7 @@
 package e2e
 
 import (
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -100,6 +101,19 @@ var _ = Describe("ks pkg", func() {
 			o := a.runKs("pkg", "list")
 			assertExitStatus(o, 0)
 			assertOutput("pkg/list/output.txt", o.stdout)
+		})
+
+		Context("git spec cache has been been deleted", func() {
+			JustBeforeEach(func() {
+				err := os.RemoveAll(filepath.Join(a.dir, ".ksonnet"))
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("generates spec cache", func() {
+				o := a.runKs("pkg", "list")
+				assertExitStatus(o, 0)
+				assertOutput("pkg/list/output.txt", o.stdout)
+			})
 		})
 	})
 

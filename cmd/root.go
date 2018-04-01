@@ -102,7 +102,7 @@ application configuration to remote clusters.
 			isInit = true
 		}
 
-		ka, err = app.Load(appFs, wd)
+		ka, err = app.Load(appFs, wd, false)
 		if err != nil && isInit {
 			return err
 		}

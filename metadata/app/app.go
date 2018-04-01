@@ -71,15 +71,19 @@ type App interface {
 }
 
 // Load loads the application configuration.
-func Load(fs afero.Fs, cwd string) (App, error) {
-	appRoot, err := findRoot(fs, cwd)
-	if err != nil {
-		return nil, err
+func Load(fs afero.Fs, cwd string, skipFindRoot bool) (App, error) {
+	appRoot := cwd
+	if !skipFindRoot {
+		var err error
+		appRoot, err = findRoot(fs, cwd)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	spec, err := read(fs, appRoot)
 	if err != nil {
-		return nil, err
+		return NewApp010(fs, appRoot), nil
 	}
 
 	switch spec.APIVersion {

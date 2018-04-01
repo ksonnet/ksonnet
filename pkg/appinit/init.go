@@ -65,7 +65,7 @@ func (i *initApp) Run() error {
 	}
 
 	// Load application.
-	a, err := app.Load(i.fs, i.rootPath)
+	a, err := app.Load(i.fs, i.rootPath, false)
 	if err != nil {
 		return err
 	}
@@ -188,6 +188,10 @@ func (i *initApp) createAppDirTree() error {
 		content []byte
 	}{
 		{
+			filepath.Join(i.rootPath, ".gitignore"),
+			ignoreData,
+		},
+		{
 			filepath.Join(i.rootPath, "components", "params.libsonnet"),
 			component.GenParamsContent(),
 		},
@@ -210,3 +214,7 @@ func (i *initApp) createAppDirTree() error {
 
 	return nil
 }
+
+var ignoreData = []byte(`/lib
+/.ksonnet/registries
+`)

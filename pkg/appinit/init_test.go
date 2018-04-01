@@ -94,6 +94,7 @@ func TestInit(t *testing.T) {
 
 func checkApp(t *testing.T, fs afero.Fs, rootPath, version, namespace string) {
 	expectedDirs := []string{
+		".gitignore",
 		"app.yaml",
 		filepath.Join(".ksonnet", "registries", "testdata", "registry.yaml"),
 		filepath.Join("components", "params.libsonnet"),

@@ -24,15 +24,23 @@ import (
 
 	"github.com/google/go-github/github"
 	"github.com/ksonnet/ksonnet/metadata/app"
+	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/parts"
 	ghutil "github.com/ksonnet/ksonnet/pkg/util/github"
 	"github.com/ksonnet/ksonnet/pkg/util/github/mocks"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func makeGh(t *testing.T, u, sha1 string) (*GitHub, *mocks.GitHub) {
+	fs := afero.NewMemMapFs()
+	appMock := &amocks.App{}
+	appMock.On("Fs").Return(fs)
+	appMock.On("Root").Return("/app")
+	appMock.On("LibPath", mock.AnythingOfType("string")).Return(filepath.Join("/app", "lib", "v1.8.7"), nil)
+
 	ghMock := &mocks.GitHub{}
 	ghMock.On("CommitSHA1", mock.Anything, ghutil.Repo{Org: "ksonnet", Repo: "parts"}, "master").
 		Return(sha1, nil)
@@ -45,7 +53,7 @@ func makeGh(t *testing.T, u, sha1 string) (*GitHub, *mocks.GitHub) {
 		URI:      "github.com/ksonnet/parts/tree/master/incubator",
 	}
 
-	g, err := NewGitHub(spec, optGh)
+	g, err := NewGitHub(appMock, spec, optGh)
 	require.NoError(t, err)
 
 	return g, ghMock

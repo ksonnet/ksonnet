@@ -18,6 +18,7 @@ package actions
 import (
 	"testing"
 
+	"github.com/ksonnet/ksonnet/metadata/app"
 	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 	rmocks "github.com/ksonnet/ksonnet/pkg/registry/mocks"
@@ -85,7 +86,11 @@ func TestInit(t *testing.T) {
 					return nil
 				}
 
-				a.initIncubatorFn = func() (registry.Registry, error) {
+				a.appLoadFn = func(fs afero.Fs, root string, skipFindRoot bool) (app.App, error) {
+					return appMock, nil
+				}
+
+				a.initIncubatorFn = func(a app.App) (registry.Registry, error) {
 					r := &rmocks.Registry{}
 					r.On("Protocol").Return("github")
 					r.On("URI").Return("github.com/ksonnet/parts/tree/master/incubator")
