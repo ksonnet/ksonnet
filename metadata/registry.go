@@ -19,11 +19,10 @@ import (
 	"path/filepath"
 
 	"github.com/ksonnet/ksonnet/pkg/registry"
-	str "github.com/ksonnet/ksonnet/strings"
 )
 
 func (m *manager) registryDir(regManager registry.Registry) string {
-	return str.AppendToPath(m.registriesPath, regManager.RegistrySpecDir())
+	return filepath.Join(m.registriesPath, regManager.RegistrySpecDir())
 }
 
 func (m *manager) registryPath(regManager registry.Registry) string {
@@ -31,5 +30,5 @@ func (m *manager) registryPath(regManager registry.Registry) string {
 	if filepath.IsAbs(path) {
 		return path
 	}
-	return str.AppendToPath(m.registriesPath, regManager.RegistrySpecFilePath())
+	return filepath.Join(m.registriesPath, regManager.RegistrySpecFilePath())
 }

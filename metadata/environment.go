@@ -16,8 +16,9 @@
 package metadata
 
 import (
+	"path/filepath"
+
 	"github.com/ksonnet/ksonnet/pkg/env"
-	str "github.com/ksonnet/ksonnet/strings"
 
 	param "github.com/ksonnet/ksonnet/metadata/params"
 )
@@ -32,16 +33,6 @@ var (
 	// envCreate is a function which creates environments.
 	envCreate = env.Create
 )
-
-// func (m *manager) DeleteEnvironment(name string) error {
-// 	a, err := m.App()
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	// TODO: move this to actions
-// 	return env.Delete(a, name, false)
-// }
 
 func (m *manager) GetEnvironmentParams(name, nsName string) (map[string]param.Params, error) {
 	a, err := m.App()
@@ -76,12 +67,12 @@ func (m *manager) EnvPaths(env string) (libPath, mainPath, paramsPath string, er
 }
 
 func (m *manager) makeEnvPaths(env string) (mainPath, paramsPath string) {
-	envPath := str.AppendToPath(m.environmentsPath, env)
+	envPath := filepath.Join(m.environmentsPath, env)
 
 	// main.jsonnet file
-	mainPath = str.AppendToPath(envPath, envFileName)
+	mainPath = filepath.Join(envPath, envFileName)
 	// params.libsonnet file
-	paramsPath = str.AppendToPath(envPath, componentParamsFile)
+	paramsPath = filepath.Join(envPath, componentParamsFile)
 
 	return
 }

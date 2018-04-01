@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
-	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
@@ -116,27 +115,27 @@ func newManager(rootPath string, appFS afero.Fs) (*manager, error) {
 	if err != nil {
 		return nil, err
 	}
-	userRootPath := str.AppendToPath(usr.HomeDir, userKsonnetRootDir)
+	userRootPath := filepath.Join(usr.HomeDir, userKsonnetRootDir)
 
 	m := &manager{
 		appFS: appFS,
 
 		// Application paths.
 		rootPath:         rootPath,
-		ksonnetPath:      str.AppendToPath(rootPath, ksonnetDir),
-		registriesPath:   str.AppendToPath(rootPath, registriesDir),
-		libPath:          str.AppendToPath(rootPath, libDir),
-		componentsPath:   str.AppendToPath(rootPath, componentsDir),
-		environmentsPath: str.AppendToPath(rootPath, environmentsDir),
-		vendorPath:       str.AppendToPath(rootPath, vendorDir),
+		ksonnetPath:      filepath.Join(rootPath, ksonnetDir),
+		registriesPath:   filepath.Join(rootPath, registriesDir),
+		libPath:          filepath.Join(rootPath, libDir),
+		componentsPath:   filepath.Join(rootPath, componentsDir),
+		environmentsPath: filepath.Join(rootPath, environmentsDir),
+		vendorPath:       filepath.Join(rootPath, vendorDir),
 
-		componentParamsPath: str.AppendToPath(rootPath, componentsDir, componentParamsFile),
-		baseLibsonnetPath:   str.AppendToPath(rootPath, environmentsDir, baseLibsonnetFile),
-		appYAMLPath:         str.AppendToPath(rootPath, appYAMLFile),
+		componentParamsPath: filepath.Join(rootPath, componentsDir, componentParamsFile),
+		baseLibsonnetPath:   filepath.Join(rootPath, environmentsDir, baseLibsonnetFile),
+		appYAMLPath:         filepath.Join(rootPath, appYAMLFile),
 
 		// User-level paths.
 		userKsonnetRootPath: userRootPath,
-		pkgSrcCachePath:     str.AppendToPath(userRootPath, pkgSrcCacheDir),
+		pkgSrcCachePath:     filepath.Join(userRootPath, pkgSrcCacheDir),
 	}
 
 	return m, nil
