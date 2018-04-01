@@ -21,43 +21,43 @@ import (
 	"github.com/pkg/errors"
 )
 
-// RunNsCreate creates a namespace.
-func RunNsCreate(m map[string]interface{}) error {
-	nc, err := NewNsCreate(m)
+// RunModuleCreate creates a module.
+func RunModuleCreate(m map[string]interface{}) error {
+	mc, err := NewModuleCreate(m)
 	if err != nil {
 		return err
 	}
 
-	return nc.Run()
+	return mc.Run()
 }
 
-// NsCreate creates a component namespace
-type NsCreate struct {
+// ModuleCreate creates a component module
+type ModuleCreate struct {
 	app    app.App
-	nsName string
+	module string
 	cm     component.Manager
 }
 
-// NewNsCreate creates an instance of NsCreate.
-func NewNsCreate(m map[string]interface{}) (*NsCreate, error) {
+// NewModuleCreate creates an instance of ModuleCreate.
+func NewModuleCreate(m map[string]interface{}) (*ModuleCreate, error) {
 	ol := newOptionLoader(m)
 
-	et := &NsCreate{
+	mc := &ModuleCreate{
 		app:    ol.loadApp(),
-		nsName: ol.loadString(OptionNamespaceName),
+		module: ol.loadString(OptionModule),
 
 		cm: component.DefaultManager,
 	}
 
-	return et, nil
+	return mc, nil
 }
 
 // Run runs that ns create action.
-func (nc *NsCreate) Run() error {
-	_, err := nc.cm.Namespace(nc.app, nc.nsName)
+func (mc *ModuleCreate) Run() error {
+	_, err := mc.cm.Module(mc.app, mc.module)
 	if err == nil {
-		return errors.Errorf("namespace %q already exists", nc.nsName)
+		return errors.Errorf("module %q already exists", mc.module)
 	}
 
-	return nc.cm.CreateNamespace(nc.app, nc.nsName)
+	return mc.cm.CreateModule(mc.app, mc.module)
 }

@@ -46,7 +46,7 @@ var _ = Describe("ks component", func() {
 
 		Context("with a namespace", func() {
 			It("lists the components for a namespace in wide format", func() {
-				o := a.runKs("component", "list", "--namespace", "/")
+				o := a.runKs("component", "list", "--module", "/")
 				assertExitStatus(o, 0)
 				assertOutput("component/list/output.txt", o.stdout)
 			})

@@ -67,7 +67,7 @@ func NewEnvSet(m map[string]interface{}) (*EnvSet, error) {
 		app:       ol.loadApp(),
 		envName:   ol.loadString(OptionEnvName),
 		newName:   ol.loadOptionalString(OptionNewEnvName),
-		newNsName: ol.loadOptionalString(OptionNamespaceName),
+		newNsName: ol.loadOptionalString(OptionNamespace),
 
 		envRenameFn: env.Rename,
 		updateEnvFn: updateEnv,

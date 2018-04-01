@@ -75,7 +75,7 @@ func (c *ParamDiffCmd) Run(out io.Writer) error {
 		return err
 	}
 
-	ns, componentName := component.ExtractNamespacedComponent(ksApp, c.component)
+	ns, componentName := component.ExtractModuleComponent(ksApp, c.component)
 
 	params1, err := manager.GetEnvironmentParams(c.env1, ns.Name())
 	if err != nil {

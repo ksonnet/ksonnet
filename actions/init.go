@@ -27,7 +27,7 @@ const (
 	defaultIncubatorURI     = "github.com/ksonnet/parts/tree/master/" + defaultIncubatorRegName
 )
 
-// RunInit creates a namespace.
+// RunInit initializes an app.
 func RunInit(m map[string]interface{}) error {
 	i, err := NewInit(m)
 	if err != nil {
@@ -68,7 +68,7 @@ func NewInit(m map[string]interface{}) (*Init, error) {
 		rootPath:              ol.loadString(OptionRootPath),
 		k8sSpecFlag:           ol.loadString(OptionSpecFlag),
 		serverURI:             ol.loadOptionalString(OptionServer),
-		namespace:             ol.loadString(OptionNamespaceName),
+		namespace:             ol.loadString(OptionNamespace),
 		skipDefaultRegistries: ol.loadBool(OptionSkipDefaultRegistries),
 
 		appInitFn:       appinit.Init,

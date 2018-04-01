@@ -38,7 +38,7 @@ import (
 // Jsonnet is a component base on jsonnet.
 type Jsonnet struct {
 	app        app.App
-	nsName     string
+	module     string
 	source     string
 	paramsPath string
 }
@@ -46,10 +46,10 @@ type Jsonnet struct {
 var _ Component = (*Jsonnet)(nil)
 
 // NewJsonnet creates an instance of Jsonnet.
-func NewJsonnet(a app.App, nsName, source, paramsPath string) *Jsonnet {
+func NewJsonnet(a app.App, module, source, paramsPath string) *Jsonnet {
 	return &Jsonnet{
 		app:        a,
-		nsName:     nsName,
+		module:     module,
 		source:     source,
 		paramsPath: paramsPath,
 	}
@@ -63,11 +63,11 @@ func (j *Jsonnet) Name(wantsNameSpaced bool) string {
 		return name
 	}
 
-	if j.nsName == "/" {
+	if j.module == "/" {
 		return name
 	}
 
-	return path.Join(j.nsName, name)
+	return path.Join(j.module, name)
 }
 
 func (j *Jsonnet) vmImporter(envName string) (*jsonnet.MemoryImporter, error) {
@@ -226,7 +226,7 @@ func (j *Jsonnet) DeleteParam(path []string, options ParamOptions) error {
 }
 
 // Params returns params for a component.
-func (j *Jsonnet) Params(envName string) ([]NamespaceParameter, error) {
+func (j *Jsonnet) Params(envName string) ([]ModuleParameter, error) {
 	paramsData, err := j.readParams(envName)
 	if err != nil {
 		return nil, err
@@ -237,13 +237,13 @@ func (j *Jsonnet) Params(envName string) ([]NamespaceParameter, error) {
 		return nil, errors.Wrap(err, "could not find components")
 	}
 
-	var params []NamespaceParameter
+	var params []ModuleParameter
 	for k, v := range props {
 		vStr, err := j.paramValue(v)
 		if err != nil {
 			return nil, err
 		}
-		np := NamespaceParameter{
+		np := ModuleParameter{
 			Component: j.Name(false),
 			Key:       k,
 			Index:     "0",
@@ -294,7 +294,7 @@ func (j *Jsonnet) readParams(envName string) (string, error) {
 		return j.readNamespaceParams()
 	}
 
-	ns, err := GetNamespace(j.app, j.nsName)
+	ns, err := GetModule(j.app, j.module)
 	if err != nil {
 		return "", err
 	}

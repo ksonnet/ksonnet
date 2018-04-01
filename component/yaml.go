@@ -85,7 +85,7 @@ func ImportYaml(r io.Reader) (*TypeSpec, Properties, error) {
 // YAML represents a YAML component. Since JSON is a subset of YAML, it can handle JSON as well.
 type YAML struct {
 	app        app.App
-	nsName     string
+	module     string
 	source     string
 	paramsPath string
 }
@@ -93,10 +93,10 @@ type YAML struct {
 var _ Component = (*YAML)(nil)
 
 // NewYAML creates an instance of YAML.
-func NewYAML(a app.App, nsName, source, paramsPath string) *YAML {
+func NewYAML(a app.App, module, source, paramsPath string) *YAML {
 	return &YAML{
 		app:        a,
-		nsName:     nsName,
+		module:     module,
 		source:     source,
 		paramsPath: paramsPath,
 	}
@@ -110,15 +110,15 @@ func (y *YAML) Name(wantsNameSpaced bool) string {
 		return name
 	}
 
-	if y.nsName == "/" {
+	if y.module == "/" {
 		return name
 	}
 
-	return path.Join(y.nsName, name)
+	return path.Join(y.module, name)
 }
 
 // Params returns params for a component.
-func (y *YAML) Params(envName string) ([]NamespaceParameter, error) {
+func (y *YAML) Params(envName string) ([]ModuleParameter, error) {
 	libPath, err := y.app.LibPath("default")
 	if err != nil {
 		return nil, err
@@ -154,7 +154,7 @@ func (y *YAML) Params(envName string) ([]NamespaceParameter, error) {
 		return nil, err
 	}
 
-	var params []NamespaceParameter
+	var params []ModuleParameter
 	for componentName, componentValue := range props {
 		matches := re.FindAllStringSubmatch(componentName, 1)
 		if len(matches) > 0 {
@@ -202,8 +202,8 @@ func isLeaf(path []string, key string, valueMap map[string]Values) (string, bool
 	return "", false
 }
 
-func (y *YAML) paramValues(componentName, index string, valueMap map[string]Values, m map[string]interface{}, path []string) ([]NamespaceParameter, error) {
-	var params []NamespaceParameter
+func (y *YAML) paramValues(componentName, index string, valueMap map[string]Values, m map[string]interface{}, path []string) ([]ModuleParameter, error) {
+	var params []ModuleParameter
 
 	for k, v := range m {
 		var s string
@@ -211,7 +211,7 @@ func (y *YAML) paramValues(componentName, index string, valueMap map[string]Valu
 		default:
 			if childPath, exists := isLeaf(path, k, valueMap); exists {
 				s = fmt.Sprintf("%v", v)
-				p := NamespaceParameter{
+				p := ModuleParameter{
 					Component: componentName,
 					Index:     index,
 					Key:       childPath,
@@ -227,7 +227,7 @@ func (y *YAML) paramValues(componentName, index string, valueMap map[string]Valu
 					return nil, err
 				}
 				s = string(b)
-				p := NamespaceParameter{
+				p := ModuleParameter{
 					Component: componentName,
 					Index:     index,
 					Key:       childPath,
@@ -250,7 +250,7 @@ func (y *YAML) paramValues(componentName, index string, valueMap map[string]Valu
 					return nil, err
 				}
 				s = string(b)
-				p := NamespaceParameter{
+				p := ModuleParameter{
 					Component: componentName,
 					Index:     index,
 					Key:       childPath,
@@ -331,7 +331,7 @@ func (y *YAML) readParams(envName string) (string, error) {
 		return y.readNamespaceParams()
 	}
 
-	ns, err := GetNamespace(y.app, y.nsName)
+	ns, err := GetModule(y.app, y.module)
 	if err != nil {
 		return "", err
 	}

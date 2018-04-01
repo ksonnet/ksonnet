@@ -167,7 +167,7 @@ func TestJsonnet_Params(t *testing.T) {
 	params, err := c.Params("")
 	require.NoError(t, err)
 
-	expected := []NamespaceParameter{
+	expected := []ModuleParameter{
 		{
 			Component: "guestbook-ui",
 			Index:     "0",

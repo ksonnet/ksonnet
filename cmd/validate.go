@@ -55,7 +55,7 @@ var validateCmd = &cobra.Command{
 		m := map[string]interface{}{
 			actions.OptionApp:            ka,
 			actions.OptionEnvName:        args[0],
-			actions.OptionNamespaceName:  "",
+			actions.OptionModule:         "",
 			actions.OptionComponentNames: viper.GetStringSlice(vValidateComponent),
 			actions.OptionClientConfig:   validateClientConfig,
 		}

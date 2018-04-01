@@ -107,12 +107,12 @@ func (ps *ParamSet) Run() error {
 }
 
 func (ps *ParamSet) setGlobal(path []string, value interface{}) error {
-	ns, err := ps.cm.Namespace(ps.app, ps.name)
+	module, err := ps.cm.Module(ps.app, ps.name)
 	if err != nil {
-		return errors.Wrap(err, "retrieve namespace")
+		return errors.Wrap(err, "retrieve module")
 	}
 
-	if err := ns.SetParam(path, value); err != nil {
+	if err := module.SetParam(path, value); err != nil {
 		return errors.Wrap(err, "set global param")
 	}
 

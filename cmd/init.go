@@ -95,7 +95,7 @@ var initCmd = &cobra.Command{
 			actions.OptionRootPath:              appRoot,
 			actions.OptionSpecFlag:              specFlag,
 			actions.OptionServer:                server,
-			actions.OptionNamespaceName:         namespace,
+			actions.OptionNamespace:             namespace,
 			actions.OptionSkipDefaultRegistries: viper.GetBool(vInitSkipDefaultRegistries),
 		}
 

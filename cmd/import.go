@@ -23,8 +23,8 @@ import (
 )
 
 const (
-	vImportFilename  = "import-filename"
-	vImportNamespace = "import-namespace"
+	vImportFilename = "import-filename"
+	vImportModule   = "import-module"
 )
 
 // importCmd represents the import command
@@ -34,9 +34,9 @@ var importCmd = &cobra.Command{
 	Long:  `Import manifest`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		m := map[string]interface{}{
-			actions.OptionApp:           ka,
-			actions.OptionNamespaceName: viper.GetString(vImportNamespace),
-			actions.OptionPath:          viper.GetString(vImportFilename),
+			actions.OptionApp:    ka,
+			actions.OptionModule: viper.GetString(vImportModule),
+			actions.OptionPath:   viper.GetString(vImportFilename),
 		}
 
 		return runAction(actionImport, m)
@@ -48,6 +48,6 @@ func init() {
 
 	importCmd.Flags().StringP(flagFilename, shortFilename, "", "Filename or directory for component to import")
 	viper.BindPFlag(vImportFilename, importCmd.Flags().Lookup(flagFilename))
-	importCmd.Flags().String(flagNamespace, "", "Component namespace")
-	viper.BindPFlag(vImportNamespace, importCmd.Flags().Lookup(flagNamespace))
+	importCmd.Flags().String(flagModule, "", "Component module")
+	viper.BindPFlag(vImportModule, importCmd.Flags().Lookup(flagModule))
 }

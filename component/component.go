@@ -59,7 +59,7 @@ type Component interface {
 	DeleteParam(path []string, options ParamOptions) error
 	// Params returns a list of all parameters for a component. If envName is a
 	// blank string, it will report the local parameters.
-	Params(envName string) ([]NamespaceParameter, error)
+	Params(envName string) ([]ModuleParameter, error)
 	// Summarize returns a summary of the component.
 	Summarize() ([]Summary, error)
 }
@@ -71,11 +71,11 @@ const (
 	paramsFile = "params.libsonnet"
 )
 
-// LocateComponent locates a component given a nsName and a name.
-func LocateComponent(ksApp app.App, nsName, name string) (Component, error) {
+// LocateComponent locates a component given a module and a name.
+func LocateComponent(ksApp app.App, module, name string) (Component, error) {
 	path := make([]string, 0)
-	if nsName != "" && nsName != "/" {
-		path = append(path, nsName)
+	if module != "" && module != "/" {
+		path = append(path, module)
 	}
 
 	path = append(path, name)
@@ -84,7 +84,7 @@ func LocateComponent(ksApp app.App, nsName, name string) (Component, error) {
 
 // Path returns returns the file system path for a component.
 func Path(a app.App, name string) (string, error) {
-	ns, localName := ExtractNamespacedComponent(a, name)
+	ns, localName := ExtractModuleComponent(a, name)
 
 	fis, err := afero.ReadDir(a.Fs(), ns.Dir())
 	if err != nil {
@@ -119,7 +119,7 @@ func Path(a app.App, name string) (string, error) {
 
 // ExtractComponent extracts a component from a path.
 func ExtractComponent(a app.App, path string) (Component, error) {
-	ns, componentName := ExtractNamespacedComponent(a, path)
+	ns, componentName := ExtractModuleComponent(a, path)
 	members, err := ns.Components()
 	if err != nil {
 		return nil, err

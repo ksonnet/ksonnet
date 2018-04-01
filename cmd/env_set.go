@@ -37,10 +37,10 @@ var envSetCmd = &cobra.Command{
 		}
 
 		m := map[string]interface{}{
-			actions.OptionApp:           ka,
-			actions.OptionEnvName:       args[0],
-			actions.OptionNewEnvName:    viper.GetString(vEnvSetName),
-			actions.OptionNamespaceName: viper.GetString(vEnvSetNamespace),
+			actions.OptionApp:        ka,
+			actions.OptionEnvName:    args[0],
+			actions.OptionNewEnvName: viper.GetString(vEnvSetName),
+			actions.OptionNamespace:  viper.GetString(vEnvSetNamespace),
 		}
 
 		return runAction(actionEnvSet, m)

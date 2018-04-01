@@ -73,7 +73,7 @@ func TestYAML_Params(t *testing.T) {
 	require.Len(t, params, 1)
 
 	param := params[0]
-	expected := NamespaceParameter{
+	expected := ModuleParameter{
 		Component: "deployment",
 		Index:     "0",
 		Key:       "metadata.labels",
@@ -96,7 +96,7 @@ func TestYAML_Params_literal(t *testing.T) {
 	require.Len(t, params, 1)
 
 	param := params[0]
-	expected := NamespaceParameter{
+	expected := ModuleParameter{
 		Component: "rbac",
 		Index:     "1",
 		Key:       "metadata.name",

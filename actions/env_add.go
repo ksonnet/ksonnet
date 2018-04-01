@@ -50,7 +50,7 @@ func NewEnvAdd(m map[string]interface{}) (*EnvAdd, error) {
 		app:         ol.loadApp(),
 		envName:     ol.loadString(OptionEnvName),
 		server:      ol.loadString(OptionServer),
-		namespace:   ol.loadString(OptionNamespaceName),
+		namespace:   ol.loadString(OptionModule),
 		k8sSpecFlag: ol.loadString(OptionSpecFlag),
 		isOverride:  ol.loadBool(OptionOverride),
 

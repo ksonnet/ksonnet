@@ -52,7 +52,7 @@ func (m *manager) GetAllComponents() ([]component.Component, error) {
 	if err != nil {
 		return nil, err
 	}
-	namespaces, err := component.Namespaces(ksApp)
+	namespaces, err := component.Modules(ksApp)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (m *manager) GetAllComponentParams(root string) (map[string]param.Params, e
 		return nil, err
 	}
 
-	namespaces, err := component.Namespaces(ksApp)
+	namespaces, err := component.Modules(ksApp)
 	if err != nil {
 		return nil, errors.Wrap(err, "find component namespaces")
 	}
@@ -137,7 +137,7 @@ func (m *manager) SetComponentParams(path string, params param.Params) error {
 		return err
 	}
 
-	ns, componentName := component.ExtractNamespacedComponent(ksApp, path)
+	ns, componentName := component.ExtractModuleComponent(ksApp, path)
 	paramsPath := ns.ParamsPath()
 
 	text, err := afero.ReadFile(m.appFS, paramsPath)

@@ -16,23 +16,34 @@
 package cmd
 
 import (
-	"testing"
-
 	"github.com/ksonnet/ksonnet/actions"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-func Test_nsCreateCmd(t *testing.T) {
-	cases := []cmdTestCase{
-		{
-			name:   "in general",
-			args:   []string{"ns", "create", "app1"},
-			action: actionNsCreate,
-			expected: map[string]interface{}{
-				actions.OptionApp:           ka,
-				actions.OptionNamespaceName: "app1",
-			},
-		},
-	}
+const (
+	vModuleListEnv = "module-list-env"
+)
 
-	runTestCmd(t, cases)
+// moduleListCmd represents the ns list command
+var nsListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "list",
+	Long:  `list`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		m := map[string]interface{}{
+			actions.OptionApp:     ka,
+			actions.OptionEnvName: viper.GetString(vModuleListEnv),
+		}
+
+		return runAction(actionModuleList, m)
+	},
+}
+
+func init() {
+	moduleCmd.AddCommand(nsListCmd)
+
+	nsListCmd.Flags().String(flagEnv, "", "Environment to list modules for")
+	viper.BindPFlag(vModuleListEnv, nsListCmd.Flags().Lookup(flagEnv))
+
 }

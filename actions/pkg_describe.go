@@ -35,7 +35,7 @@ func RunPkgDescribe(m map[string]interface{}) error {
 	return pd.Run()
 }
 
-// PkgDescribe lists namespaces.
+// PkgDescribe describes a package.
 type PkgDescribe struct {
 	app            app.App
 	pkgName        string
@@ -64,7 +64,7 @@ func NewPkgDescribe(m map[string]interface{}) (*PkgDescribe, error) {
 	return pd, nil
 }
 
-// Run lists namespaces.
+// Run describes a package.
 func (pd *PkgDescribe) Run() error {
 	d, err := pkg.ParseName(pd.pkgName)
 	if err != nil {

@@ -66,7 +66,7 @@ type GetParamsConfig struct {
 }
 
 // GetParams gets all parameters for an environment.
-func GetParams(envName, nsName string, config GetParamsConfig) (map[string]param.Params, error) {
+func GetParams(envName, module string, config GetParamsConfig) (map[string]param.Params, error) {
 	exists, err := envExists(config.App, envName)
 	if err != nil {
 		return nil, err
@@ -87,7 +87,7 @@ func GetParams(envName, nsName string, config GetParamsConfig) (map[string]param
 	}
 
 	// figure out what component we need
-	ns := component.NewNamespace(config.App, nsName)
+	ns := component.NewModule(config.App, module)
 	componentParamsFile, err := afero.ReadFile(config.App.Fs(), ns.ParamsPath())
 	if err != nil {
 		return nil, err

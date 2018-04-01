@@ -21,7 +21,7 @@ import (
 	. "github.com/onsi/ginkgo"
 )
 
-var _ = Describe("ks ns", func() {
+var _ = Describe("ks module", func() {
 	var a app
 
 	BeforeEach(func() {
@@ -32,39 +32,39 @@ var _ = Describe("ks ns", func() {
 	Describe("create", func() {
 		Context("it does not exist", func() {
 			It("creates the namespace", func() {
-				o := a.runKs("ns", "create", "new-ns")
+				o := a.runKs("module", "create", "new-module")
 				assertExitStatus(o, 0)
 			})
 		})
 		Context("it exists", func() {
 			It("returns an error", func() {
-				o := a.runKs("ns", "create", "/")
+				o := a.runKs("module", "create", "/")
 				assertExitStatus(o, 1)
-				assertOutput("ns/create/invalid.txt", o.stderr)
+				assertOutput("module/create/invalid.txt", o.stderr)
 			})
 		})
 	})
 
 	Describe("list", func() {
-		It("shows a list of namespaces", func() {
-			o := a.runKs("ns", "list")
+		It("shows a list of modules", func() {
+			o := a.runKs("module", "list")
 			assertExitStatus(o, 0)
-			assertOutput("ns/list/output.txt", o.stdout)
+			assertOutput("module/list/output.txt", o.stdout)
 		})
 
 		Context("with a valid environment", func() {
 			It("shows a list of namespaces", func() {
-				o := a.runKs("ns", "list", "--env", "default")
+				o := a.runKs("module", "list", "--env", "default")
 				assertExitStatus(o, 0)
-				assertOutput("ns/list/output.txt", o.stdout)
+				assertOutput("module/list/output.txt", o.stdout)
 			})
 		})
 
 		Context("with an invalid environment", func() {
 			It("returns an error", func() {
-				o := a.runKs("ns", "list", "--env", "invalid")
+				o := a.runKs("module", "list", "--env", "invalid")
 				assertExitStatus(o, 1)
-				assertOutput("ns/list/invalid.txt", o.stderr)
+				assertOutput("module/list/invalid.txt", o.stderr)
 			})
 		})
 	})

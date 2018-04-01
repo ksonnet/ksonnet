@@ -30,7 +30,7 @@ func Test_paramListCmd(t *testing.T) {
 			expected: map[string]interface{}{
 				actions.OptionApp:           ka,
 				actions.OptionEnvName:       "",
-				actions.OptionNamespaceName: "",
+				actions.OptionModule:        "",
 				actions.OptionComponentName: "",
 			},
 		},

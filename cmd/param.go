@@ -22,12 +22,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	flagParamEnv       = "env"
-	flagParamComponent = "component"
-	flagParamNamespace = "namespace"
-)
-
 var paramShortDesc = map[string]string{
 	"set":  "Change component or environment parameters (e.g. replica count, name)",
 	"list": "List known component parameters",

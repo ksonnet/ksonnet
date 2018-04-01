@@ -38,7 +38,7 @@ func RunParamList(m map[string]interface{}) error {
 // ParamList lists parameters for a component.
 type ParamList struct {
 	app           app.App
-	nsName        string
+	module        string
 	componentName string
 	envName       string
 	cm            component.Manager
@@ -51,7 +51,7 @@ func NewParamList(m map[string]interface{}) (*ParamList, error) {
 
 	pl := &ParamList{
 		app:           ol.loadApp(),
-		nsName:        ol.loadString(OptionNamespaceName),
+		module:        ol.loadString(OptionModule),
 		componentName: ol.loadString(OptionComponentName),
 		envName:       ol.loadString(OptionEnvName),
 
@@ -68,7 +68,7 @@ func NewParamList(m map[string]interface{}) (*ParamList, error) {
 
 // Run runs the ParamList action.
 func (pl *ParamList) Run() error {
-	ns, err := pl.cm.Namespace(pl.app, pl.nsName)
+	ns, err := pl.cm.Module(pl.app, pl.module)
 	if err != nil {
 		return errors.Wrap(err, "could not find namespace")
 	}
@@ -90,12 +90,12 @@ func (pl *ParamList) Run() error {
 	return nil
 }
 
-func (pl *ParamList) collectParams(ns component.Namespace) ([]component.NamespaceParameter, error) {
+func (pl *ParamList) collectParams(ns component.Module) ([]component.ModuleParameter, error) {
 	if pl.componentName == "" {
 		return ns.Params(pl.envName)
 	}
 
-	c, err := pl.cm.Component(pl.app, pl.nsName, pl.componentName)
+	c, err := pl.cm.Component(pl.app, pl.module, pl.componentName)
 	if err != nil {
 		return nil, err
 	}

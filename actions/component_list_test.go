@@ -28,7 +28,7 @@ import (
 
 func TestComponentList(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		nsName := ""
+		module := ""
 		output := ""
 
 		c := &cmocks.Component{}
@@ -36,16 +36,16 @@ func TestComponentList(t *testing.T) {
 
 		cs := []component.Component{c}
 
-		ns := &cmocks.Namespace{}
+		ns := &cmocks.Module{}
 		ns.On("Components").Return(cs, nil)
 
 		cm := &cmocks.Manager{}
-		cm.On("Namespace", mock.Anything, "").Return(ns, nil)
+		cm.On("Module", mock.Anything, "").Return(ns, nil)
 
 		in := map[string]interface{}{
-			OptionApp:           appMock,
-			OptionNamespaceName: nsName,
-			OptionOutput:        output,
+			OptionApp:    appMock,
+			OptionModule: module,
+			OptionOutput: output,
 		}
 
 		a, err := NewComponentList(in)
@@ -65,7 +65,7 @@ func TestComponentList(t *testing.T) {
 
 func TestComponentList_wide(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		nsName := ""
+		module := ""
 		output := "wide"
 
 		summary := []component.Summary{
@@ -76,16 +76,16 @@ func TestComponentList_wide(t *testing.T) {
 
 		cs := []component.Component{c}
 
-		ns := &cmocks.Namespace{}
+		ns := &cmocks.Module{}
 		ns.On("Components").Return(cs, nil)
 
 		cm := &cmocks.Manager{}
-		cm.On("Namespace", mock.Anything, "").Return(ns, nil)
+		cm.On("Module", mock.Anything, "").Return(ns, nil)
 
 		in := map[string]interface{}{
-			OptionApp:           appMock,
-			OptionNamespaceName: nsName,
-			OptionOutput:        output,
+			OptionApp:    appMock,
+			OptionModule: module,
+			OptionOutput: output,
 		}
 
 		a, err := NewComponentList(in)

@@ -42,9 +42,9 @@ ks param list guestbook --env=dev
 ### Options
 
 ```
-      --env string         Specify environment to list parameters for
-  -h, --help               help for list
-      --namespace string   Specify namespace to list parameters for
+      --env string      Specify environment to list parameters for
+  -h, --help            help for list
+      --module string   Specify module to list parameters for
 ```
 
 ### Options inherited from parent commands

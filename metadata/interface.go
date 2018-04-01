@@ -48,7 +48,7 @@ type Manager interface {
 	// mapping of parameters of the form:
 	// componentName => {param key => param val}
 	// i.e.: "nginx" => {"replicas" => 1, "name": "nginx"}
-	GetEnvironmentParams(name, nsName string) (map[string]param.Params, error)
+	GetEnvironmentParams(name, module string) (map[string]param.Params, error)
 	SetEnvironmentParams(env, component string, params param.Params) error
 }
 

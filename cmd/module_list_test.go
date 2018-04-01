@@ -21,18 +21,15 @@ import (
 	"github.com/ksonnet/ksonnet/actions"
 )
 
-func Test_validateCmd(t *testing.T) {
+func Test_moduleListCmd(t *testing.T) {
 	cases := []cmdTestCase{
 		{
 			name:   "in general",
-			args:   []string{"validate", "env-name"},
-			action: actionValidate,
+			args:   []string{"module", "list"},
+			action: actionModuleList,
 			expected: map[string]interface{}{
-				actions.OptionApp:            ka,
-				actions.OptionEnvName:        "env-name",
-				actions.OptionModule:         "",
-				actions.OptionComponentNames: make([]string, 0),
-				actions.OptionClientConfig:   validateClientConfig,
+				actions.OptionApp:     ka,
+				actions.OptionEnvName: "",
 			},
 		},
 	}

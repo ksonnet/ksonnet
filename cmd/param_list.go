@@ -36,12 +36,12 @@ var paramListCmd = &cobra.Command{
 			component = args[0]
 		}
 
-		env, err := flags.GetString(flagParamEnv)
+		env, err := flags.GetString(flagEnv)
 		if err != nil {
 			return err
 		}
 
-		nsName, err := flags.GetString(flagParamNamespace)
+		module, err := flags.GetString(flagModule)
 		if err != nil {
 			return err
 		}
@@ -50,7 +50,7 @@ var paramListCmd = &cobra.Command{
 			actions.OptionApp:           ka,
 			actions.OptionComponentName: component,
 			actions.OptionEnvName:       env,
-			actions.OptionNamespaceName: nsName,
+			actions.OptionModule:        module,
 		}
 
 		return runAction(actionParamList, m)

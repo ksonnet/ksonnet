@@ -36,7 +36,7 @@ func RunRegistryDescribe(m map[string]interface{}) error {
 	return rd.Run()
 }
 
-// RegistryDescribe lists available namespaces
+// RegistryDescribe describes a registry
 type RegistryDescribe struct {
 	app                 app.App
 	name                string

@@ -47,7 +47,7 @@ func TestValidate(t *testing.T) {
 		in := map[string]interface{}{
 			OptionApp:            appMock,
 			OptionEnvName:        aEnvName,
-			OptionNamespaceName:  aModuleName,
+			OptionModule:         aModuleName,
 			OptionComponentNames: aComponentNames,
 			OptionClientConfig:   aClientConfig,
 		}

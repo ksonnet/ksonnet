@@ -30,10 +30,10 @@ import (
 
 func TestPipeline_Namespaces(t *testing.T) {
 	withPipeline(t, func(p *Pipeline, m *cmocks.Manager, a *appmocks.App) {
-		namespaces := []component.Namespace{}
-		m.On("Namespaces", p.app, "default").Return(namespaces, nil)
+		namespaces := []component.Module{}
+		m.On("Modules", p.app, "default").Return(namespaces, nil)
 
-		got, err := p.Namespaces()
+		got, err := p.Modules()
 		require.NoError(t, err)
 
 		require.Equal(t, namespaces, got)
@@ -42,10 +42,10 @@ func TestPipeline_Namespaces(t *testing.T) {
 
 func TestPipeline_EnvParameters(t *testing.T) {
 	withPipeline(t, func(p *Pipeline, m *cmocks.Manager, a *appmocks.App) {
-		ns := component.NewNamespace(p.app, "/")
-		namespaces := []component.Namespace{ns}
-		m.On("Namespaces", p.app, "default").Return(namespaces, nil)
-		m.On("Namespace", p.app, "/").Return(ns, nil)
+		ns := component.NewModule(p.app, "/")
+		namespaces := []component.Module{ns}
+		m.On("Modules", p.app, "default").Return(namespaces, nil)
+		m.On("Module", p.app, "/").Return(ns, nil)
 		m.On("NSResolveParams", ns).Return("", nil)
 		a.On("EnvironmentParams", "default").Return("{}", nil)
 
@@ -61,10 +61,10 @@ func TestPipeline_Components(t *testing.T) {
 		cpnt := &cmocks.Component{}
 		components := []component.Component{cpnt}
 
-		ns := component.NewNamespace(p.app, "/")
-		namespaces := []component.Namespace{ns}
-		m.On("Namespaces", p.app, "default").Return(namespaces, nil)
-		m.On("Namespace", p.app, "/").Return(ns, nil)
+		ns := component.NewModule(p.app, "/")
+		namespaces := []component.Module{ns}
+		m.On("Modules", p.app, "default").Return(namespaces, nil)
+		m.On("Module", p.app, "/").Return(ns, nil)
 		m.On("NSResolveParams", ns).Return("", nil)
 		a.On("EnvironmentParams", "default").Return("{}", nil)
 		m.On("Components", ns).Return(components, nil)
@@ -89,10 +89,10 @@ func TestPipeline_Components_filtered(t *testing.T) {
 		cpnt2 := mockComponent("cpnt2")
 		components := []component.Component{cpnt1, cpnt2}
 
-		ns := component.NewNamespace(p.app, "/")
-		namespaces := []component.Namespace{ns}
-		m.On("Namespaces", p.app, "default").Return(namespaces, nil)
-		m.On("Namespace", p.app, "/").Return(ns, nil)
+		ns := component.NewModule(p.app, "/")
+		namespaces := []component.Module{ns}
+		m.On("Modules", p.app, "default").Return(namespaces, nil)
+		m.On("Module", p.app, "/").Return(ns, nil)
 		m.On("NSResolveParams", ns).Return("", nil)
 		a.On("EnvironmentParams", "default").Return("{}", nil)
 		m.On("Components", ns).Return(components, nil)
@@ -117,10 +117,10 @@ func TestPipeline_Objects(t *testing.T) {
 		cpnt.On("Name", true).Return("name")
 		components := []component.Component{cpnt}
 
-		ns := component.NewNamespace(p.app, "/")
-		namespaces := []component.Namespace{ns}
-		m.On("Namespaces", p.app, "default").Return(namespaces, nil)
-		m.On("Namespace", p.app, "/").Return(ns, nil)
+		ns := component.NewModule(p.app, "/")
+		namespaces := []component.Module{ns}
+		m.On("Modules", p.app, "default").Return(namespaces, nil)
+		m.On("Module", p.app, "/").Return(ns, nil)
 		m.On("NSResolveParams", ns).Return("", nil)
 		a.On("EnvironmentParams", "default").Return("{}", nil)
 		m.On("Components", ns).Return(components, nil)
@@ -143,10 +143,10 @@ func TestPipeline_YAML(t *testing.T) {
 		cpnt.On("Name", true).Return("name")
 		components := []component.Component{cpnt}
 
-		ns := component.NewNamespace(p.app, "/")
-		namespaces := []component.Namespace{ns}
-		m.On("Namespaces", p.app, "default").Return(namespaces, nil)
-		m.On("Namespace", p.app, "/").Return(ns, nil)
+		ns := component.NewModule(p.app, "/")
+		namespaces := []component.Module{ns}
+		m.On("Modules", p.app, "default").Return(namespaces, nil)
+		m.On("Module", p.app, "/").Return(ns, nil)
 		m.On("NSResolveParams", ns).Return("", nil)
 		a.On("EnvironmentParams", "default").Return("{}", nil)
 		m.On("Components", ns).Return(components, nil)

@@ -17,13 +17,13 @@ package cmd
 
 import "github.com/spf13/cobra"
 
-// nsCmd represents the ns command
-var nsCmd = &cobra.Command{
-	Use:   "ns",
-	Short: "ns",
-	Long:  `ns`,
+// moduleCmd represents the module command
+var moduleCmd = &cobra.Command{
+	Use:   "module",
+	Short: "module",
+	Long:  `module`,
 }
 
 func init() {
-	RootCmd.AddCommand(nsCmd)
+	RootCmd.AddCommand(moduleCmd)
 }

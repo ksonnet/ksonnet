@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	vEnvTargetNamespaces = "env-target-namespaces"
+	vEnvTargetModules = "env-target-modules"
 )
 
 // envTargetsCmd represents the env targets command
@@ -33,13 +33,13 @@ var envTargetsCmd = &cobra.Command{
 	Long:  `targets`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return errors.New("env targets <environment> --namespace name")
+			return errors.New("env targets <environment> <--module name>...")
 		}
 
 		m := map[string]interface{}{
-			actions.OptionApp:           ka,
-			actions.OptionEnvName:       args[0],
-			actions.OptionNamespaceName: viper.GetStringSlice(vEnvTargetNamespaces),
+			actions.OptionApp:     ka,
+			actions.OptionEnvName: args[0],
+			actions.OptionModule:  viper.GetStringSlice(vEnvTargetModules),
 		}
 
 		return runAction(actionEnvTargets, m)
@@ -49,6 +49,6 @@ var envTargetsCmd = &cobra.Command{
 func init() {
 	envCmd.AddCommand(envTargetsCmd)
 
-	envTargetsCmd.Flags().StringSlice(flagNamespace, nil, "Components to include")
-	viper.BindPFlag(vEnvTargetNamespaces, envTargetsCmd.Flags().Lookup(flagNamespace))
+	envTargetsCmd.Flags().StringSlice(flagModule, nil, "Component modules to include")
+	viper.BindPFlag(vEnvTargetModules, envTargetsCmd.Flags().Lookup(flagModule))
 }

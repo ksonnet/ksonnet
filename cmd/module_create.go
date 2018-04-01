@@ -22,29 +22,29 @@ import (
 )
 
 const (
-	vNsCreateNamespace = "ns-create-namespace"
+	vModuleCreateNamespace = "module-create-namespace"
 )
 
-// nsCreateCmd creates a ns create command.
-var nsCreateCmd = &cobra.Command{
+// moduleCreateCmd creates a ns create command.
+var moduleCreateCmd = &cobra.Command{
 	Use:   "create <name>",
 	Short: "create",
 	Long:  `create`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return errors.New("ns create <namespace>")
+			return errors.New("module create <module name>")
 		}
 
 		m := map[string]interface{}{
-			actions.OptionApp:           ka,
-			actions.OptionNamespaceName: args[0],
+			actions.OptionApp:    ka,
+			actions.OptionModule: args[0],
 		}
 
-		return runAction(actionNsCreate, m)
+		return runAction(actionModuleCreate, m)
 	},
 }
 
 func init() {
-	nsCmd.AddCommand(nsCreateCmd)
+	moduleCmd.AddCommand(moduleCreateCmd)
 
 }

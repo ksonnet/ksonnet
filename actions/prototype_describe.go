@@ -37,7 +37,7 @@ func RunPrototypeDescribe(m map[string]interface{}) error {
 	return pd.Run()
 }
 
-// PrototypeDescribe lists available namespaces
+// PrototypeDescribe describes a prototype.
 type PrototypeDescribe struct {
 	app             app.App
 	out             io.Writer

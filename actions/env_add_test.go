@@ -34,12 +34,12 @@ func TestEnvAdd(t *testing.T) {
 		aIsOverride := false
 
 		in := map[string]interface{}{
-			OptionApp:           appMock,
-			OptionEnvName:       aName,
-			OptionServer:        aServer,
-			OptionNamespaceName: aNamespace,
-			OptionSpecFlag:      aK8sSpecFlag,
-			OptionOverride:      aIsOverride,
+			OptionApp:      appMock,
+			OptionEnvName:  aName,
+			OptionServer:   aServer,
+			OptionModule:   aNamespace,
+			OptionSpecFlag: aK8sSpecFlag,
+			OptionOverride: aIsOverride,
 		}
 
 		a, err := NewEnvAdd(in)

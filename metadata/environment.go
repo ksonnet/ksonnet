@@ -34,7 +34,7 @@ var (
 	envCreate = env.Create
 )
 
-func (m *manager) GetEnvironmentParams(name, nsName string) (map[string]param.Params, error) {
+func (m *manager) GetEnvironmentParams(name, module string) (map[string]param.Params, error) {
 	a, err := m.App()
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (m *manager) GetEnvironmentParams(name, nsName string) (map[string]param.Pa
 		App: a,
 	}
 
-	return env.GetParams(name, nsName, config)
+	return env.GetParams(name, module, config)
 }
 
 func (m *manager) SetEnvironmentParams(envName, component string, params param.Params) error {

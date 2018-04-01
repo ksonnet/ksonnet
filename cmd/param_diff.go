@@ -40,7 +40,7 @@ var paramDiffCmd = &cobra.Command{
 		env1 := args[0]
 		env2 := args[1]
 
-		component, err := flags.GetString(flagParamComponent)
+		component, err := flags.GetString(flagComponent)
 		if err != nil {
 			return err
 		}
@@ -76,7 +76,7 @@ ks param diff dev prod --component=guestbook`,
 func init() {
 	paramCmd.AddCommand(paramDiffCmd)
 
-	paramListCmd.PersistentFlags().String(flagParamEnv, "", "Specify environment to list parameters for")
-	paramListCmd.Flags().String(flagParamNamespace, "", "Specify namespace to list parameters for")
-	paramDiffCmd.PersistentFlags().String(flagParamComponent, "", "Specify the component to diff against")
+	paramListCmd.PersistentFlags().String(flagEnv, "", "Specify environment to list parameters for")
+	paramListCmd.Flags().String(flagModule, "", "Specify module to list parameters for")
+	paramDiffCmd.PersistentFlags().String(flagComponent, "", "Specify the component to diff against")
 }

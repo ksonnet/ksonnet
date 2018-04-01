@@ -37,7 +37,7 @@ func RunPrototypeSearch(m map[string]interface{}) error {
 	return ps.Run()
 }
 
-// PrototypeSearch lists available namespaces
+// PrototypeSearch searches for prototypes by name.
 type PrototypeSearch struct {
 	app           app.App
 	query         string

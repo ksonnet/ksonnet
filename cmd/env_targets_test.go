@@ -25,12 +25,12 @@ func Test_envTargetsCmd(t *testing.T) {
 	cases := []cmdTestCase{
 		{
 			name:   "in general",
-			args:   []string{"env", "targets", "prod", "--namespace", "app1"},
+			args:   []string{"env", "targets", "prod", "--module", "app1"},
 			action: actionEnvTargets,
 			expected: map[string]interface{}{
-				actions.OptionApp:           ka,
-				actions.OptionEnvName:       "prod",
-				actions.OptionNamespaceName: []string{"app1"},
+				actions.OptionApp:     ka,
+				actions.OptionEnvName: "prod",
+				actions.OptionModule:  []string{"app1"},
 			},
 		},
 	}

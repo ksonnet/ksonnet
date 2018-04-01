@@ -35,7 +35,7 @@ func Delete(a app.App, name string) error {
 		return err
 	}
 
-	ns, _ := ExtractNamespacedComponent(a, name)
+	ns, _ := ExtractModuleComponent(a, name)
 
 	// Build the new component/params.libsonnet file.
 	componentParamsFile, err := afero.ReadFile(a.Fs(), ns.ParamsPath())

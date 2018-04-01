@@ -52,31 +52,31 @@ func Test_default_manager_ResolvePath(t *testing.T) {
 	cases := []struct {
 		name   string
 		cName  string
-		nsName string
+		module string
 		isErr  bool
 	}{
 		{
 			name:   "/",
-			nsName: "/",
+			module: "/",
 		},
 		{
 			name:   "deployment",
-			nsName: "/",
+			module: "/",
 			cName:  "deployment",
 		},
 		{
 			name:   "/deployment",
-			nsName: "/",
+			module: "/",
 			cName:  "deployment",
 		},
 		{
 			name:   "/nested/deployment",
-			nsName: "/nested",
+			module: "/nested",
 			cName:  "deployment",
 		},
 		{
 			name:   "nested/deployment",
-			nsName: "/nested",
+			module: "/nested",
 			cName:  "deployment",
 		},
 		{
@@ -107,7 +107,7 @@ func Test_default_manager_ResolvePath(t *testing.T) {
 				assert.Equal(t, tc.cName, c.Name(false))
 			}
 
-			assert.Equal(t, tc.nsName, ns.Name())
+			assert.Equal(t, tc.module, ns.Name())
 		})
 	}
 }

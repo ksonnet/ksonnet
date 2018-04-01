@@ -34,7 +34,7 @@ func RunEnvTargets(m map[string]interface{}) error {
 type EnvTargets struct {
 	app     app.App
 	envName string
-	nsNames []string
+	modules []string
 	cm      component.Manager
 }
 
@@ -45,7 +45,7 @@ func NewEnvTargets(m map[string]interface{}) (*EnvTargets, error) {
 	et := &EnvTargets{
 		app:     ol.loadApp(),
 		envName: ol.loadString(OptionEnvName),
-		nsNames: ol.loadStringSlice(OptionNamespaceName),
+		modules: ol.loadStringSlice(OptionModule),
 
 		cm: component.DefaultManager,
 	}
@@ -64,12 +64,12 @@ func (et *EnvTargets) Run() error {
 		return err
 	}
 
-	for _, nsName := range et.nsNames {
-		_, err := et.cm.Namespace(et.app, nsName)
+	for _, module := range et.modules {
+		_, err := et.cm.Module(et.app, module)
 		if err != nil {
 			return err
 		}
 	}
 
-	return et.app.UpdateTargets(et.envName, et.nsNames)
+	return et.app.UpdateTargets(et.envName, et.modules)
 }
