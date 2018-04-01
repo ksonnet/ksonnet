@@ -18,7 +18,6 @@ package strings
 import (
 	"bytes"
 	"fmt"
-	"path"
 	"strings"
 
 	"github.com/PuerkitoBio/purell"
@@ -162,10 +161,4 @@ func padRows(rows []Row) ([]FormattedRow, error) {
 	}
 
 	return result, nil
-}
-
-// AppendToPath appends one or more paths to the specified original path.
-func AppendToPath(originalPath string, toAppend ...string) string {
-	paths := append([]string{originalPath}, toAppend...)
-	return path.Join(paths...)
 }

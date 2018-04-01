@@ -39,7 +39,6 @@ type Manager interface {
 	ComponentPaths() ([]string, error)
 	GetAllComponents() ([]component.Component, error)
 	CreateComponent(name string, text string, params param.Params, templateType prototype.TemplateType) error
-	DeleteComponent(name string) error
 
 	// Params API.
 	SetComponentParams(component string, params param.Params) error
@@ -51,9 +50,6 @@ type Manager interface {
 	// i.e.: "nginx" => {"replicas" => 1, "name": "nginx"}
 	GetEnvironmentParams(name, nsName string) (map[string]param.Params, error)
 	SetEnvironmentParams(env, component string, params param.Params) error
-
-	// Environment API.
-	// DeleteEnvironment(name string) error
 }
 
 // Find will recursively search the current directory and its parents for a

@@ -21,7 +21,6 @@ import (
 	"path"
 	"path/filepath"
 
-	str "github.com/ksonnet/ksonnet/strings"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 
@@ -143,7 +142,7 @@ func (m *Manager) GenerateLibData(useVersionPath bool) error {
 // GetLibPath returns the absolute path pointing to the directory with the
 // metadata files for the provided k8sVersion.
 func (m *Manager) GetLibPath(useVersionPath bool) (string, error) {
-	path := str.AppendToPath(m.libPath, m.K8sVersion)
+	path := filepath.Join(m.libPath, m.K8sVersion)
 	ok, err := afero.DirExists(m.fs, string(path))
 	if err != nil {
 		return "", err
