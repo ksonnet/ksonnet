@@ -16,55 +16,47 @@
 package actions
 
 import (
+	"github.com/ksonnet/ksonnet/component"
 	"github.com/ksonnet/ksonnet/metadata/app"
-	"github.com/ksonnet/ksonnet/pkg/env"
 )
 
-// RunEnvRm runs `env rm`
-func RunEnvRm(m map[string]interface{}) error {
-	ea, err := NewEnvRm(m)
+// RunComponentRm runs `component list`
+func RunComponentRm(m map[string]interface{}) error {
+	cr, err := NewComponentRm(m)
 	if err != nil {
 		return err
 	}
 
-	return ea.Run()
+	return cr.Run()
 }
 
-type envDeleteFn func(a app.App, name string, override bool) error
+// ComponentRm create a list of components in a namespace.
+type ComponentRm struct {
+	app  app.App
+	name string
 
-// EnvRm sets targets for an environment.
-type EnvRm struct {
-	app        app.App
-	envName    string
-	isOverride bool
-
-	envDeleteFn envDeleteFn
+	componentDeleteFn func(app.App, string) error
 }
 
-// NewEnvRm creates an instance of EnvRm.
-func NewEnvRm(m map[string]interface{}) (*EnvRm, error) {
+// NewComponentRm creates an instance of ComponentRm.
+func NewComponentRm(m map[string]interface{}) (*ComponentRm, error) {
 	ol := newOptionLoader(m)
 
-	ea := &EnvRm{
-		app:        ol.loadApp(),
-		envName:    ol.loadString(OptionEnvName),
-		isOverride: ol.loadBool(OptionOverride),
+	cr := &ComponentRm{
+		app:  ol.loadApp(),
+		name: ol.loadString(OptionComponentName),
 
-		envDeleteFn: env.Delete,
+		componentDeleteFn: component.Delete,
 	}
 
 	if ol.err != nil {
 		return nil, ol.err
 	}
 
-	return ea, nil
+	return cr, nil
 }
 
-// Run assigns targets to an environment.
-func (er *EnvRm) Run() error {
-	return er.envDeleteFn(
-		er.app,
-		er.envName,
-		er.isOverride,
-	)
+// Run runs the ComponentRm action.
+func (cr *ComponentRm) Run() error {
+	return cr.componentDeleteFn(cr.app, cr.name)
 }

@@ -1,4 +1,4 @@
-// Copyright 2018 The ksonnet authors
+// Copyright 2018 The kubecfg authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,26 +13,13 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package cmd
+package env
 
-import (
-	"testing"
+const (
+	// primary environment files.
+	envFileName    = "main.jsonnet"
+	paramsFileName = "params.libsonnet"
 
-	"github.com/ksonnet/ksonnet/actions"
+	// envRoot is the name for the environment root.
+	envRoot = "environments"
 )
-
-func Test_componentRmCmd(t *testing.T) {
-	cases := []cmdTestCase{
-		{
-			name:   "in general",
-			args:   []string{"component", "rm", "name"},
-			action: actionComponentRm,
-			expected: map[string]interface{}{
-				actions.OptionApp:           ka,
-				actions.OptionComponentName: "name",
-			},
-		},
-	}
-
-	runTestCmd(t, cases)
-}

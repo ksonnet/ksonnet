@@ -20,45 +20,35 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata/app"
 	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
-	"github.com/ksonnet/ksonnet/pkg/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestEnvAdd(t *testing.T) {
+func TestComponentRm(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		aName := "my-app"
-		aServer := "http://example.com"
-		aNamespace := "default"
-		aK8sSpecFlag := "flag"
-		aIsOverride := false
+		name := "component-name"
 
-		in := map[string]interface{}{
-			OptionApp:           appMock,
-			OptionEnvName:       aName,
-			OptionServer:        aServer,
-			OptionNamespaceName: aNamespace,
-			OptionSpecFlag:      aK8sSpecFlag,
-			OptionOverride:      aIsOverride,
-		}
+		var didDelete bool
 
-		a, err := NewEnvAdd(in)
-		require.NoError(t, err)
-
-		a.envCreateFn = func(a app.App, d env.Destination, name, specFlag string, od, pd []byte, override bool) error {
-
-			expectedDest := env.NewDestination(aServer, aNamespace)
-			assert.Equal(t, expectedDest, d)
-
-			assert.Equal(t, appMock, a)
-			assert.Equal(t, aName, name)
-			assert.Equal(t, aK8sSpecFlag, specFlag)
-			assert.Equal(t, aIsOverride, override)
-
+		deleteFn := func(a app.App, componentName string) error {
+			assert.Equal(t, componentName, name)
+			didDelete = true
 			return nil
 		}
 
+		in := map[string]interface{}{
+			OptionApp:           appMock,
+			OptionComponentName: name,
+		}
+
+		a, err := NewComponentRm(in)
+		require.NoError(t, err)
+
+		a.componentDeleteFn = deleteFn
+
 		err = a.Run()
 		require.NoError(t, err)
+
+		assert.True(t, didDelete)
 	})
 }

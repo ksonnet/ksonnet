@@ -33,17 +33,6 @@ const (
 	DefaultEnvName = "default"
 )
 
-// CreateConfig is configuration for creating an environment.
-type CreateConfig struct {
-	App         app.App
-	Destination Destination
-	K8sSpecFlag string
-	Name        string
-
-	OverrideData []byte
-	ParamsData   []byte
-}
-
 // Create creates a new environment for the project.
 func Create(a app.App, d Destination, name, k8sSpecFlag string, overrideData, paramsData []byte, isOverride bool) error {
 	c, err := newCreator(a, d, name, k8sSpecFlag, overrideData, paramsData, isOverride)

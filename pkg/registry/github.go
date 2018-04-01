@@ -31,10 +31,6 @@ import (
 const (
 	rawGitHubRoot       = "https://raw.githubusercontent.com"
 	defaultGitHubBranch = "master"
-
-	uriField         = "uri"
-	refSpecField     = "refSpec"
-	resolvedSHAField = "resolvedSHA"
 )
 
 var (

@@ -20,6 +20,7 @@ import (
 	"path"
 
 	"github.com/ksonnet/ksonnet/component"
+	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/prototype"
 	str "github.com/ksonnet/ksonnet/strings"
@@ -115,7 +116,7 @@ func (m *manager) DeleteComponent(name string) error {
 	// Build the new environment/<env>/params.libsonnet files.
 	// environment name -> jsonnet
 	envJsonnets := make(map[string]string)
-	envs, err := m.GetEnvironments()
+	envs, err := ksApp.Environments()
 	if err != nil {
 		return err
 	}
@@ -139,7 +140,7 @@ func (m *manager) DeleteComponent(name string) error {
 
 	// Remove the references in component/params.libsonnet.
 	log.Debugf("... deleting references in %s", m.componentParamsPath)
-	err = afero.WriteFile(m.appFS, ns.ParamsPath(), []byte(componentJsonnet), defaultFilePermissions)
+	err = afero.WriteFile(m.appFS, ns.ParamsPath(), []byte(componentJsonnet), app.DefaultFilePermissions)
 	if err != nil {
 		return err
 	}
@@ -148,7 +149,7 @@ func (m *manager) DeleteComponent(name string) error {
 	for _, env := range envs {
 		path := str.AppendToPath(m.environmentsPath, env.Name, paramsFileName)
 		log.Debugf("... deleting references in %s", path)
-		err = afero.WriteFile(m.appFS, path, []byte(envJsonnets[env.Name]), defaultFilePermissions)
+		err = afero.WriteFile(m.appFS, path, []byte(envJsonnets[env.Name]), app.DefaultFilePermissions)
 		if err != nil {
 			return err
 		}
@@ -234,5 +235,5 @@ func (m *manager) SetComponentParams(path string, params param.Params) error {
 		return err
 	}
 
-	return afero.WriteFile(m.appFS, paramsPath, []byte(jsonnet), defaultFilePermissions)
+	return afero.WriteFile(m.appFS, paramsPath, []byte(jsonnet), app.DefaultFilePermissions)
 }

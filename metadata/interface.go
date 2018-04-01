@@ -16,20 +16,14 @@
 package metadata
 
 import (
-	"os"
-
 	"github.com/ksonnet/ksonnet/component"
-	"github.com/ksonnet/ksonnet/env"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
-	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/ksonnet/ksonnet/prototype"
 	"github.com/spf13/afero"
 )
 
 var appFS afero.Fs
-var defaultFolderPermissions = os.FileMode(0755)
-var defaultFilePermissions = os.FileMode(0644)
 
 // Manager abstracts over a ksonnet application's metadata, allowing users to do
 // things like: create and delete environments; search for prototypes; vendor
@@ -59,12 +53,7 @@ type Manager interface {
 	SetEnvironmentParams(env, component string, params param.Params) error
 
 	// Environment API.
-	// CreateEnvironment(name, uri, namespace, spec string) error
-	DeleteEnvironment(name string) error
-	GetEnvironments() (map[string]env.Env, error)
-	GetEnvironment(name string) (*env.Env, error)
-	SetEnvironment(name, desiredName string) error
-	GetDestination(envName string) (env.Destination, error)
+	// DeleteEnvironment(name string) error
 }
 
 // Find will recursively search the current directory and its parents for a
@@ -72,27 +61,6 @@ type Manager interface {
 // is no application root.
 func Find(path string) (Manager, error) {
 	return findManager(path, afero.NewOsFs())
-}
-
-// Init will generate the directory tree for a ksonnet project.
-func Init(name, rootPath string, k8sSpecFlag, serverURI, namespace *string) (Manager, error) {
-	// Generate `incubator` registry. We do this before before creating
-	// directory tree, in case the network call fails.
-	const (
-		defaultIncubatorRegName = "incubator"
-		defaultIncubatorURI     = "github.com/ksonnet/parts/tree/master/" + defaultIncubatorRegName
-	)
-
-	gh, err := registry.NewGitHub(&app.RegistryRefSpec{
-		Name:     "incubator",
-		Protocol: registry.ProtocolGitHub,
-		URI:      defaultIncubatorURI,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return initManager(name, rootPath, k8sSpecFlag, serverURI, namespace, gh, appFS)
 }
 
 func init() {

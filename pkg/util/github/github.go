@@ -17,7 +17,6 @@ package github
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 
@@ -26,16 +25,9 @@ import (
 	"golang.org/x/oauth2"
 )
 
-const (
-	registryYAMLFile    = "registry.yaml"
-	defaultGitHubBranch = "master"
-)
-
 var (
 	// DefaultClient is the default GitHub client.
 	DefaultClient = &defaultGitHub{}
-
-	errInvalidURI = fmt.Errorf("Invalid GitHub URI: try navigating in GitHub to the URI of the folder containing the 'yaml', and using that URI instead. Generally, this URI should be of the form 'github.com/{organization}/{repository}/tree/{branch}/[path-to-directory]'")
 )
 
 // Repo is a GitHub repo

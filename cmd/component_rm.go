@@ -18,7 +18,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/ksonnet/ksonnet/pkg/kubecfg"
+	"github.com/ksonnet/ksonnet/actions"
 	"github.com/spf13/cobra"
 )
 
@@ -30,11 +30,12 @@ var componentRmCmd = &cobra.Command{
 			return fmt.Errorf("'component rm' takes a single argument, that is the name of the component")
 		}
 
-		component := args[0]
+		m := map[string]interface{}{
+			actions.OptionApp:           ka,
+			actions.OptionComponentName: args[0],
+		}
 
-		// TODO: move this to actions
-		c := kubecfg.NewComponentRmCmd(component)
-		return c.Run()
+		return runAction(actionComponentRm, m)
 	},
 	Long: `Delete a component from the ksonnet application. This is equivalent to deleting the
 component file in the components directory and cleaning up all component

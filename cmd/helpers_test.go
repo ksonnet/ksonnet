@@ -48,20 +48,11 @@ type cmdTestCase struct {
 	expected map[string]interface{}
 }
 
-func stubCmdOverride() (*map[string]interface{}, func(map[string]interface{}) error) {
-	var got *map[string]interface{}
-
-	return got, func(m map[string]interface{}) error {
-		got = &m
-		return nil
-	}
-}
-
-type stubCmdOverride2 struct {
+type stubCmdOverride struct {
 	got map[string]interface{}
 }
 
-func (s *stubCmdOverride2) override(m map[string]interface{}) error {
+func (s *stubCmdOverride) override(m map[string]interface{}) error {
 	s.got = m
 	return nil
 }
@@ -69,7 +60,7 @@ func (s *stubCmdOverride2) override(m map[string]interface{}) error {
 func runTestCmd(t *testing.T, cases []cmdTestCase) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			s := stubCmdOverride2{}
+			s := stubCmdOverride{}
 
 			withCmd(tc.action, s.override, func() {
 

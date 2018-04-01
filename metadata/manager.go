@@ -21,13 +21,9 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/ksonnet/ksonnet/component"
-	"github.com/ksonnet/ksonnet/env"
 	"github.com/ksonnet/ksonnet/metadata/app"
-	"github.com/ksonnet/ksonnet/pkg/registry"
 	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
@@ -115,55 +111,6 @@ func findManager(p string, appFS afero.Fs) (*manager, error) {
 	}
 }
 
-func initManager(name, rootPath string, k8sSpecFlag, serverURI, namespace *string, incubatorReg registry.Registry, appFS afero.Fs) (*manager, error) {
-	m, err := newManager(rootPath, appFS)
-	if err != nil {
-		return nil, errors.Wrap(err, "create manager")
-	}
-
-	// Retrieve `registry.yaml`.
-	registryYAMLData, err := generateRegistryYAMLData(incubatorReg)
-	if err != nil {
-		return nil, err
-	}
-
-	// Generate data for `app.yaml`.
-	appYAMLData, err := generateAppYAMLData(name, incubatorReg.MakeRegistryRefSpec())
-	if err != nil {
-		return nil, err
-	}
-
-	// Generate data for `base.libsonnet`.
-	baseLibData := genBaseLibsonnetContent()
-
-	// Initialize directory structure.
-	if err := m.createAppDirTree(name, appYAMLData, baseLibData, incubatorReg); err != nil {
-		return nil, err
-	}
-
-	// Initialize user dir structure.
-	if err := m.createUserDirTree(); err != nil {
-		return nil, errorOnCreateFailure(name, err)
-	}
-
-	// Initialize environment, and cache specification data.
-	if serverURI != nil {
-		err := m.CreateEnvironment(defaultEnvName, *serverURI, *namespace, *k8sSpecFlag)
-		if err != nil {
-			return nil, errorOnCreateFailure(name, err)
-		}
-	}
-
-	// Write out `incubator` registry spec.
-	registryPath := m.registryPath(incubatorReg)
-	err = afero.WriteFile(m.appFS, registryPath, registryYAMLData, defaultFilePermissions)
-	if err != nil {
-		return nil, errorOnCreateFailure(name, err)
-	}
-
-	return m, nil
-}
-
 func newManager(rootPath string, appFS afero.Fs) (*manager, error) {
 	usr, err := user.Current()
 	if err != nil {
@@ -205,127 +152,4 @@ func (m *manager) App() (app.App, error) {
 
 func (m *manager) LibPaths() (envPath, vendorPath string) {
 	return m.environmentsPath, m.vendorPath
-}
-
-func (m *manager) GetDestination(envName string) (env.Destination, error) {
-	appEnv, err := m.GetEnvironment(envName)
-	if err != nil {
-		return env.Destination{}, err
-	}
-
-	return appEnv.Destination, nil
-}
-
-func (m *manager) createUserDirTree() error {
-	dirPaths := []string{
-		m.userKsonnetRootPath,
-		m.pkgSrcCachePath,
-	}
-
-	for _, p := range dirPaths {
-		if err := m.appFS.MkdirAll(p, defaultFolderPermissions); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (m *manager) createAppDirTree(name string, appYAMLData, baseLibData []byte, gh registry.Registry) error {
-	exists, err := afero.DirExists(m.appFS, m.rootPath)
-	if err != nil {
-		return fmt.Errorf("Could not check existence of directory '%s':\n%v", m.rootPath, err)
-	} else if exists {
-		return fmt.Errorf("Could not create app; directory '%s' already exists", m.rootPath)
-	}
-
-	dirPaths := []string{
-		m.rootPath,
-		m.ksonnetPath,
-		m.registriesPath,
-		m.libPath,
-		m.componentsPath,
-		m.environmentsPath,
-		m.vendorPath,
-		m.registryDir(gh),
-	}
-
-	for _, p := range dirPaths {
-		log.Debugf("Creating directory '%s'", p)
-		if err := m.appFS.MkdirAll(p, defaultFolderPermissions); err != nil {
-			return errorOnCreateFailure(name, err)
-		}
-	}
-
-	filePaths := []struct {
-		path    string
-		content []byte
-	}{
-		{
-			m.componentParamsPath,
-			component.GenParamsContent(),
-		},
-		{
-			m.baseLibsonnetPath,
-			genBaseLibsonnetContent(),
-		},
-		{
-			m.appYAMLPath,
-			appYAMLData,
-		},
-		{
-			m.baseLibsonnetPath,
-			baseLibData,
-		},
-	}
-
-	for _, f := range filePaths {
-		log.Debugf("Creating file '%s'", f.path)
-		if err := afero.WriteFile(m.appFS, f.path, f.content, defaultFilePermissions); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func generateRegistryYAMLData(incubatorReg registry.Registry) ([]byte, error) {
-	regSpec, err := incubatorReg.FetchRegistrySpec()
-	if err != nil {
-		return nil, err
-	}
-
-	return regSpec.Marshal()
-}
-
-func generateAppYAMLData(name string, refs ...*app.RegistryRefSpec) ([]byte, error) {
-	content := app.Spec{
-		APIVersion:   app.DefaultAPIVersion,
-		Kind:         app.Kind,
-		Name:         name,
-		Version:      app.DefaultVersion,
-		Registries:   app.RegistryRefSpecs{},
-		Environments: app.EnvironmentSpecs{},
-	}
-
-	for _, ref := range refs {
-		err := content.AddRegistryRef(ref)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return content.Marshal()
-}
-
-func genBaseLibsonnetContent() []byte {
-	return []byte(`local components = std.extVar("` + ComponentsExtCodeKey + `");
-components + {
-  // Insert user-specified overrides here.
-}
-`)
-}
-
-func errorOnCreateFailure(appName string, err error) error {
-	return fmt.Errorf("%s\nTo undo this simply delete directory '%s' and re-run `ks init`.\nIf the error persists, try using flag '--context' to set a different context or run `ks init --help` for more options", err, appName)
 }

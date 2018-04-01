@@ -15,35 +15,25 @@
 
 package env
 
-import (
-	"bytes"
-	"fmt"
-)
-
 const (
 	// ComponentsExtCodeKey is the ExtCode key for component imports
 	ComponentsExtCodeKey = "__ksonnet/components"
+
+	relComponentParamsPath = "../../components/params.libsonnet"
 )
 
 // DefaultOverrideData generates the contents for an environment's `main.jsonnet`.
-func DefaultOverrideData() []byte {
-	var buf bytes.Buffer
-	buf.WriteString(fmt.Sprintf("local base = import \"%s\";\n", "base.libsonnet"))
-	buf.WriteString(fmt.Sprintf("local k = import \"%s\";\n\n", "k.libsonnet"))
-	buf.WriteString("base + {\n")
-	buf.WriteString("  // Insert user-specified overrides here. For example if a component is named \"nginx-deployment\", you might have something like:\n")
-	buf.WriteString("  //   \"nginx-deployment\"+: k.deployment.mixin.metadata.labels({foo: \"bar\"})\n")
-	buf.WriteString("}\n")
-	return buf.Bytes()
+var DefaultOverrideData = []byte(`local base = import "base.libsonnet";
+local k = import "k.libsonnet"
+
+base + {
+  // Insert user-specified overrides here. For example if a component is named \"nginx-deployment\", you might have something like:\n")
+  // "nginx-deployment"+: k.deployment.mixin.metadata.labels({foo: "bar"})
 }
+`)
 
 // DefaultParamsData generates the contents for an environment's `params.libsonnet`
-func DefaultParamsData() []byte {
-	const (
-		relComponentParamsPath = "../../components/params.libsonnet"
-	)
-
-	return []byte(`local params = import "` + relComponentParamsPath + `";
+var DefaultParamsData = []byte(`local params = import "` + relComponentParamsPath + `";
 params + {
   components +: {
     // Insert component parameter overrides here. Ex:
@@ -54,13 +44,10 @@ params + {
   },
 }
 `)
-}
 
 // DefaultBaseData generates environment `base.libsonnet`.
-func DefaultBaseData() []byte {
-	return []byte(`local components = std.extVar("` + ComponentsExtCodeKey + `");
+var DefaultBaseData = []byte(`local components = std.extVar("` + ComponentsExtCodeKey + `");
 components + {
   // Insert user-specified overrides here.
 }
 `)
-}

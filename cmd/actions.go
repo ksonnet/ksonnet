@@ -25,6 +25,7 @@ type initName int
 const (
 	actionApply initName = iota
 	actionComponentList
+	actionComponentRm
 	actionDelete
 	actionDiff
 	actionEnvAdd
@@ -62,6 +63,7 @@ var (
 	actionFns = map[initName]actionFn{
 		actionApply:         actions.RunApply,
 		actionComponentList: actions.RunComponentList,
+		actionComponentRm:   actions.RunComponentRm,
 		// actionDelete
 		// actionDiff
 		actionEnvAdd:      actions.RunEnvAdd,
@@ -102,10 +104,3 @@ func runAction(name initName, args map[string]interface{}) error {
 
 	return fn(args)
 }
-
-var (
-	actionMap = map[initName]interface{}{
-		actionInit:     actions.RunInit,
-		actionValidate: actions.RunValidate,
-	}
-)

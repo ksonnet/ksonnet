@@ -19,8 +19,8 @@ import (
 	"path/filepath"
 
 	"github.com/ksonnet/ksonnet/component"
-	"github.com/ksonnet/ksonnet/env"
 	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/env"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -78,8 +78,8 @@ func (i *initApp) Run() error {
 			d,
 			env.DefaultEnvName,
 			i.k8sSpecFlag,
-			env.DefaultOverrideData(),
-			env.DefaultParamsData(),
+			env.DefaultOverrideData,
+			env.DefaultParamsData,
 			false,
 		)
 
@@ -193,7 +193,7 @@ func (i *initApp) createAppDirTree() error {
 		},
 		{
 			filepath.Join(i.rootPath, "environments", "base.libsonnet"),
-			env.DefaultBaseData(),
+			env.DefaultBaseData,
 		},
 		{
 			filepath.Join(i.rootPath, "app.yaml"),

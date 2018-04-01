@@ -16,14 +16,8 @@
 package actions
 
 import (
-	"github.com/ksonnet/ksonnet/env"
 	"github.com/ksonnet/ksonnet/metadata/app"
-)
-
-const (
-	baseLibsonnetFile = "base.libsonnet"
-	componentsDir     = "components"
-	paramsFileName    = "params.libsonnet"
+	"github.com/ksonnet/ksonnet/pkg/env"
 )
 
 // RunEnvAdd runs `env add`
@@ -79,8 +73,8 @@ func (ea *EnvAdd) Run() error {
 		destination,
 		ea.envName,
 		ea.k8sSpecFlag,
-		env.DefaultOverrideData(),
-		env.DefaultParamsData(),
+		env.DefaultOverrideData,
+		env.DefaultParamsData,
 		ea.isOverride,
 	)
 }
