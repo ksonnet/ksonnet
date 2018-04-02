@@ -32,12 +32,17 @@ func Test_initCmd(t *testing.T) {
 
 	cases := []cmdTestCase{
 		{
-			name:   "in general",
-			args:   []string{"init", "app", "--namespace", "new-namespace", "--server", "http://127.0.0.1"},
+			name: "in general",
+			args: []string{"init", "app",
+				"--namespace", "new-namespace",
+				"--server", "http://127.0.0.1",
+				"--env", "env-name",
+			},
 			action: actionInit,
 			expected: map[string]interface{}{
 				actions.OptionFs:                    appFs,
 				actions.OptionName:                  "app",
+				actions.OptionEnvName:               "env-name",
 				actions.OptionRootPath:              root,
 				actions.OptionServer:                "http://127.0.0.1",
 				actions.OptionSpecFlag:              "version:v1.7.0",

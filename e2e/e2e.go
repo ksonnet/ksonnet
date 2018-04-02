@@ -162,9 +162,10 @@ func (e *e2e) initApp(options *initOptions) app {
 }
 
 type initOptions struct {
-	server         string
 	context        string
+	envName        string
 	namespace      string
+	server         string
 	skipRegistries bool
 }
 
@@ -190,6 +191,10 @@ func (o *initOptions) toSlice() ([]string, error) {
 
 	if o.skipRegistries {
 		options = append(options, "--skip-default-registries")
+	}
+
+	if o.envName != "" {
+		options = append(options, "--env", o.envName)
 	}
 
 	return options, nil

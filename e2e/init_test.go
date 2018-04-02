@@ -53,4 +53,15 @@ var _ = Describe("ks init", func() {
 			assertOutput(filepath.Join("init", "skip-registry-output.txt"), o.stdout)
 		})
 	})
+
+	Context("with a custom environment name", func() {
+		BeforeEach(func() {
+			opts.envName = "env-name"
+		})
+
+		It("sets the the specified environment name", func() {
+			o := a.envList()
+			assertOutput(filepath.Join("init", "custom-env-output.txt"), o.stdout)
+		})
+	})
 })

@@ -28,8 +28,8 @@ import (
 )
 
 // Init initializes a ksonnet application.
-func Init(fs afero.Fs, name, rootPath, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) error {
-	i := new(fs, name, rootPath, k8sSpecFlag, serverURI, namespace, registries)
+func Init(fs afero.Fs, name, rootPath, envName, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) error {
+	i := new(fs, name, rootPath, envName, k8sSpecFlag, serverURI, namespace, registries)
 	return i.Run()
 }
 
@@ -37,6 +37,7 @@ type initApp struct {
 	fs          afero.Fs
 	name        string
 	rootPath    string
+	envName     string
 	k8sSpecFlag string
 	serverURI   string
 	namespace   string
@@ -44,11 +45,12 @@ type initApp struct {
 }
 
 // New creates an instance of Init.
-func new(fs afero.Fs, name, rootPath, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) *initApp {
+func new(fs afero.Fs, name, rootPath, envName, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) *initApp {
 	i := &initApp{
 		fs:          fs,
 		name:        name,
 		rootPath:    rootPath,
+		envName:     envName,
 		k8sSpecFlag: k8sSpecFlag,
 		serverURI:   serverURI,
 		namespace:   namespace,
@@ -70,13 +72,18 @@ func (i *initApp) Run() error {
 		return err
 	}
 
+	envName := i.envName
+	if envName == "" {
+		envName = env.DefaultEnvName
+	}
+
 	// Initialize environment, and cache specification data.
 	if i.serverURI != "" {
 		d := env.NewDestination(i.serverURI, i.namespace)
 		err = env.Create(
 			a,
 			d,
-			env.DefaultEnvName,
+			envName,
 			i.k8sSpecFlag,
 			env.DefaultOverrideData,
 			env.DefaultParamsData,

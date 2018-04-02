@@ -90,6 +90,7 @@ ks init app-name --dir=custom-location
       --cluster string                 The name of the kubeconfig cluster to use
       --context string                 The name of the kubeconfig context to use
       --dir string                     Ksonnet application directory
+      --env string                     Name of initial environment to create
   -h, --help                           help for init
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
       --kubeconfig string              Path to a kubeconfig file. Alternative to env var $KUBECONFIG.

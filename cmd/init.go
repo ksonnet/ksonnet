@@ -34,6 +34,7 @@ const (
 	vInitAPISpec               = "init-api-spec"
 	vInitDir                   = "init-dir"
 	vInitSkipDefaultRegistries = "init-skip-default-registries"
+	vInitEnvironment           = "init-environment"
 )
 
 var (
@@ -55,6 +56,9 @@ func init() {
 
 	initCmd.Flags().Bool(flagSkipDefaultRegistries, false, "Skip configuration of default registries")
 	viper.BindPFlag(vInitSkipDefaultRegistries, initCmd.Flag(flagSkipDefaultRegistries))
+
+	initCmd.Flags().String(flagEnv, "", "Name of initial environment to create")
+	viper.BindPFlag(vInitEnvironment, initCmd.Flag(flagEnv))
 }
 
 var initCmd = &cobra.Command{
@@ -93,6 +97,7 @@ var initCmd = &cobra.Command{
 			actions.OptionFs:                    appFs,
 			actions.OptionName:                  appName,
 			actions.OptionRootPath:              appRoot,
+			actions.OptionEnvName:               viper.GetString(vInitEnvironment),
 			actions.OptionSpecFlag:              specFlag,
 			actions.OptionServer:                server,
 			actions.OptionNamespace:             namespace,

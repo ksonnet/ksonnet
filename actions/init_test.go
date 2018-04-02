@@ -39,6 +39,7 @@ func TestInit(t *testing.T) {
 		cases := []struct {
 			name           string
 			skipRegistries bool
+			envName        string
 		}{
 			{
 				name: "with registries",
@@ -46,6 +47,10 @@ func TestInit(t *testing.T) {
 			{
 				name:           "without registries",
 				skipRegistries: true,
+			},
+			{
+				name:    "custom env name",
+				envName: "env-name",
 			},
 		}
 
@@ -55,6 +60,7 @@ func TestInit(t *testing.T) {
 					OptionFs:                    aFs,
 					OptionName:                  aName,
 					OptionRootPath:              aRootPath,
+					OptionEnvName:               tc.envName,
 					OptionSpecFlag:              aK8sSpecFlag,
 					OptionServer:                aServerURI,
 					OptionNamespace:             aNamespace,
@@ -64,10 +70,11 @@ func TestInit(t *testing.T) {
 				a, err := NewInit(in)
 				require.NoError(t, err)
 
-				a.appInitFn = func(fs afero.Fs, name, rootPath, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) error {
+				a.appInitFn = func(fs afero.Fs, name, rootPath, envName, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) error {
 					assert.Equal(t, aFs, fs)
 					assert.Equal(t, aName, name)
 					assert.Equal(t, aRootPath, rootPath)
+					assert.Equal(t, tc.envName, envName)
 					assert.Equal(t, aK8sSpecFlag, k8sSpecFlag)
 					assert.Equal(t, aServerURI, serverURI)
 					assert.Equal(t, aNamespace, namespace)
