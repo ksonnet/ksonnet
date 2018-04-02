@@ -52,12 +52,19 @@ func TestInit(t *testing.T) {
 		name     string
 		appName  string
 		rootPath string
+		envName  string
 		isErr    bool
 	}{
 		{
 			name:     "with valid aptions",
 			appName:  name,
 			rootPath: rootPath,
+		},
+		{
+			name:     "set env name",
+			appName:  name,
+			rootPath: rootPath,
+			envName:  "env-name",
 		},
 		{
 			name:     "path exists",
@@ -77,7 +84,7 @@ func TestInit(t *testing.T) {
 			err := fs.MkdirAll("/existing", 0755)
 			require.NoError(t, err)
 
-			i := new(fs, tc.appName, tc.rootPath, specFlag, serverURI, namespace, registries)
+			i := new(fs, tc.appName, tc.rootPath, tc.envName, specFlag, serverURI, namespace, registries)
 			err = i.Run()
 
 			if tc.isErr {
@@ -86,7 +93,13 @@ func TestInit(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			checkApp(t, fs, rootPath, "v1.8.7", "default")
+
+			envName := tc.envName
+			if envName == "" {
+				envName = "default"
+			}
+
+			checkApp(t, fs, rootPath, "v1.8.7", envName)
 		})
 	}
 

@@ -19,7 +19,6 @@ import (
 	"context"
 	"net/http"
 	"os"
-	"runtime/debug"
 
 	"github.com/google/go-github/github"
 	"github.com/sirupsen/logrus"
@@ -51,8 +50,6 @@ func (dg *defaultGitHub) CommitSHA1(ctx context.Context, repo Repo, refSpec stri
 	if refSpec == "" {
 		refSpec = "master"
 	}
-
-	debug.PrintStack()
 
 	logrus.Debugf("github: fetching SHA1 for %s/%s - %s", repo.Org, repo.Repo, refSpec)
 	sha, _, err := dg.client().Repositories.GetCommitSHA1(ctx, repo.Org, repo.Repo, refSpec, "")

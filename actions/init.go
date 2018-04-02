@@ -39,7 +39,7 @@ func RunInit(m map[string]interface{}) error {
 
 type appLoadFn func(fs afero.Fs, root string, skipFindRoot bool) (app.App, error)
 
-type appInitFn func(fs afero.Fs, name, rootPath, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) error
+type appInitFn func(fs afero.Fs, name, rootPath, envName, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) error
 
 type initIncubatorFn func(app.App) (registry.Registry, error)
 
@@ -48,6 +48,7 @@ type Init struct {
 	fs                    afero.Fs
 	name                  string
 	rootPath              string
+	envName               string
 	k8sSpecFlag           string
 	serverURI             string
 	namespace             string
@@ -66,6 +67,7 @@ func NewInit(m map[string]interface{}) (*Init, error) {
 		fs:                    ol.loadFs(OptionFs),
 		name:                  ol.loadString(OptionName),
 		rootPath:              ol.loadString(OptionRootPath),
+		envName:               ol.loadString(OptionEnvName),
 		k8sSpecFlag:           ol.loadString(OptionSpecFlag),
 		serverURI:             ol.loadOptionalString(OptionServer),
 		namespace:             ol.loadString(OptionNamespace),
@@ -105,6 +107,7 @@ func (i *Init) Run() error {
 		i.fs,
 		i.name,
 		i.rootPath,
+		i.envName,
 		i.k8sSpecFlag,
 		i.serverURI,
 		i.namespace,
