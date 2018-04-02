@@ -364,6 +364,31 @@ func TestYAML_Summarize_json(t *testing.T) {
 	require.Equal(t, expected, list)
 }
 
+func TestYAML_Summarize_yaml_trailing_dashes(t *testing.T) {
+	app, fs := appMock("/")
+
+	stageFile(t, fs, "trailing-dash.yaml", "/components/certificate-crd.yaml")
+	stageFile(t, fs, "params-no-entry.libsonnet", "/components/params.libsonnet")
+
+	y := NewYAML(app, "", "/components/certificate-crd.yaml", "/components/params.libsonnet")
+
+	list, err := y.Summarize()
+	require.NoError(t, err)
+
+	expected := []Summary{
+		{
+			ComponentName: "certificate-crd",
+			IndexStr:      "0",
+			Type:          "yaml",
+			APIVersion:    "apiextensions.k8s.io/v1beta1",
+			Kind:          "CustomResourceDefinition",
+			Name:          "certificates_certmanager_k8s_io",
+		},
+	}
+
+	require.Equal(t, expected, list)
+}
+
 func Test_mapToPaths(t *testing.T) {
 	m := map[string]interface{}{
 		"metadata": map[string]interface{}{
