@@ -46,11 +46,20 @@ const (
 	paramsComponentRoot = "components"
 )
 
+var (
+	// ErrEmptyYAML is an empty body error.
+	ErrEmptyYAML = errors.New("body is empty")
+)
+
 // ImportYaml converts a reader containing YAML to a TypeSpec and Properties.
 func ImportYaml(r io.Reader) (*TypeSpec, Properties, error) {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, nil, err
+	}
+
+	if len(b) == 0 {
+		return nil, nil, ErrEmptyYAML
 	}
 
 	var m map[string]interface{}
@@ -166,6 +175,9 @@ func (y *YAML) Params(envName string) ([]ModuleParameter, error) {
 
 			ts, props, err := ImportYaml(readers[i])
 			if err != nil {
+				if err == ErrEmptyYAML {
+					continue
+				}
 				return nil, err
 			}
 
@@ -463,6 +475,9 @@ func (y *YAML) Summarize() ([]Summary, error) {
 	for i, r := range readers {
 		ts, props, err := ImportYaml(r)
 		if err != nil {
+			if err == ErrEmptyYAML {
+				continue
+			}
 			return nil, err
 		}
 
