@@ -1,1 +1,1 @@
-unable to find namespace "bad"
+unable to find module "bad"

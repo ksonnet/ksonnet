@@ -17,17 +17,22 @@ package cmd
 
 import (
 	"fmt"
-	"os"
+
+	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
 
+	"github.com/ksonnet/ksonnet/actions"
 	"github.com/ksonnet/ksonnet/client"
-	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
 
 const (
-	flagGracePeriod = "grace-period"
 	deleteShortDesc = "Remove component-specified Kubernetes resources from remote clusters"
+)
+
+const (
+	vDeleteComponent   = "delete-components"
+	vDeleteGracePeriod = "delete-grace-period"
 )
 
 var (
@@ -36,11 +41,16 @@ var (
 
 func init() {
 	RootCmd.AddCommand(deleteCmd)
-	addEnvCmdFlags(deleteCmd)
+
 	deleteClientConfig = client.NewDefaultClientConfig()
 	deleteClientConfig.BindClientGoFlags(deleteCmd)
 	bindJsonnetFlags(deleteCmd)
-	deleteCmd.PersistentFlags().Int64(flagGracePeriod, -1, "Number of seconds given to resources to terminate gracefully. A negative value is ignored")
+
+	deleteCmd.Flags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
+	viper.BindPFlag(vDeleteComponent, deleteCmd.Flags().Lookup(flagComponent))
+
+	deleteCmd.Flags().Int64(flagGracePeriod, -1, "Number of seconds given to resources to terminate gracefully. A negative value is ignored")
+	viper.BindPFlag(vDeleteGracePeriod, deleteCmd.Flags().Lookup(flagGracePeriod))
 }
 
 var deleteCmd = &cobra.Command{
@@ -50,43 +60,16 @@ var deleteCmd = &cobra.Command{
 		if len(args) != 1 {
 			return fmt.Errorf("'delete' requires an environment name; use `env list` to see available environments\n\n%s", cmd.UsageString())
 		}
-		env := args[0]
 
-		flags := cmd.Flags()
-		var err error
-
-		c := kubecfg.DeleteCmd{App: ka}
-
-		c.GracePeriod, err = flags.GetInt64(flagGracePeriod)
-		if err != nil {
-			return err
+		m := map[string]interface{}{
+			actions.OptionApp:            ka,
+			actions.OptionClientConfig:   deleteClientConfig,
+			actions.OptionComponentNames: viper.GetStringSlice(vDeleteComponent),
+			actions.OptionEnvName:        args[0],
+			actions.OptionGracePeriod:    viper.GetInt64(vDeleteGracePeriod),
 		}
 
-		componentNames, err := flags.GetStringSlice(flagComponent)
-		if err != nil {
-			return err
-		}
-
-		cwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		c.ClientConfig = deleteClientConfig
-		c.Env = env
-
-		te := newCmdObjExpander(cmdObjExpanderConfig{
-			cmd:        cmd,
-			env:        env,
-			components: componentNames,
-			cwd:        cwd,
-		})
-		objs, err := te.Expand()
-		if err != nil {
-			return err
-		}
-
-		return c.Run(objs)
+		return runAction(actionDelete, m)
 	},
 	Long: `
 The ` + "`delete`" + ` command removes Kubernetes resources (described in local

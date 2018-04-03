@@ -28,6 +28,7 @@ const (
 	flagExtVarFile            = "ext-str-file"
 	flagFilename              = "filename"
 	flagGcTag                 = "gc-tag"
+	flagGracePeriod           = "grace-period"
 	flagIndex                 = "index"
 	flagJpath                 = "jpath"
 	flagModule                = "module"

@@ -65,7 +65,7 @@ var (
 		actionApply:         actions.RunApply,
 		actionComponentList: actions.RunComponentList,
 		actionComponentRm:   actions.RunComponentRm,
-		// actionDelete
+		actionDelete:        actions.RunDelete,
 		// actionDiff
 		actionEnvAdd:       actions.RunEnvAdd,
 		actionEnvDescribe:  actions.RunEnvDescribe,
