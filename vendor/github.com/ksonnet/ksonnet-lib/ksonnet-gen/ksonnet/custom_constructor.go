@@ -54,6 +54,7 @@ var (
 			*newConstructor(
 				"new",
 				*newConstructorParam("name", "mixin.metadata.withName", nil),
+				*newConstructorParam("data", "withData", nil),
 			),
 		},
 		makeDescriptor("api", "core", "ConfigMapList"): objectList,
