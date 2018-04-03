@@ -16,106 +16,31 @@
 package cmd
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"os"
-	"path/filepath"
-	"reflect"
 	"testing"
+
+	"github.com/ksonnet/ksonnet/actions"
 )
 
-func cmdOutput(t *testing.T, args []string) string {
-	var buf bytes.Buffer
-	RootCmd.SetOutput(&buf)
-	defer RootCmd.SetOutput(nil)
-
-	t.Log("Running args", args)
-	RootCmd.SetArgs(args)
-	if err := RootCmd.Execute(); err != nil {
-		fmt.Println(buf.String())
-		t.Fatal("command failed:", err)
-	}
-
-	return buf.String()
-}
-
-func OffTestShow(t *testing.T) {
-	// cd to the test directory we can run the `show` command.
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = os.Chdir("../testdata/testapp")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		err = os.Chdir(wd)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-
-	// Run the show command.
-	formats := map[string]func(string) (interface{}, error){
-		"json": func(text string) (ret interface{}, err error) {
-			err = json.Unmarshal([]byte(text), &ret)
-			return
+func Test_showCmd(t *testing.T) {
+	cases := []cmdTestCase{
+		{
+			name:   "with no options",
+			args:   []string{"show", "default"},
+			action: actionShow,
+			expected: map[string]interface{}{
+				actions.OptionApp:            nil,
+				actions.OptionEnvName:        "default",
+				actions.OptionComponentNames: make([]string, 0),
+				actions.OptionFormat:         "yaml",
+			},
 		},
-
-		/* Temporarily(!) disabled due to
-		   https://github.com/ksonnet/kubecfg/issues/99
-		"yaml": func(text string) (ret interface{}, err error) {
-			err = yaml.Unmarshal([]byte(text), &ret)
-			return
+		{
+			name:   "with no env",
+			args:   []string{"show"},
+			action: actionShow,
+			isErr:  true,
 		},
-		*/
 	}
 
-	// Use the fact that JSON is also valid YAML ..
-	expected := `
-{
-  "apiVersion": "v0alpha1",
-  "kind": "TestObject",
-  "nil": null,
-  "bool": true,
-  "number": 42,
-  "string": "bar",
-  "notAVal": "aVal",
-  "notAnotherVal": "aVal2",
-  "filevar": "foo\n",
-  "array": ["one", 2, [3]],
-  "object": {"foo": "bar"}
-}
-`
-
-	for format, parser := range formats {
-		expected, err := parser(expected)
-		if err != nil {
-			t.Errorf("error parsing *expected* value: %s", err)
-		}
-
-		os.Setenv("anVar", "aVal2")
-		defer os.Unsetenv("anVar")
-
-		output := cmdOutput(t, []string{
-			"show",
-			"default",
-			"-o", format,
-			"-c", "test",
-			"-V", "aVar=aVal",
-			"-V", "anVar",
-			"--ext-str-file", "filevar=" + filepath.FromSlash("../extvar.file"),
-		})
-
-		t.Log("output is", output)
-		actual, err := parser(output)
-		if err != nil {
-			t.Errorf("error parsing output of format %s: %s", format, err)
-		} else if !reflect.DeepEqual(expected, actual) {
-			t.Errorf("format %s expected != actual: %s != %s", format, expected, actual)
-		}
-	}
+	runTestCmd(t, cases)
 }

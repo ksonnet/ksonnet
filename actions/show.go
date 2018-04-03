@@ -16,16 +16,19 @@
 package actions
 
 import (
+	"io"
+	"os"
+
 	"github.com/ksonnet/ksonnet/client"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/pkg/cluster"
 )
 
-type runDeleteFn func(cluster.DeleteConfig, ...cluster.DeleteOpts) error
+type runShowFn func(cluster.ShowConfig, ...cluster.ShowOpts) error
 
-// RunDelete runs `delete`.
-func RunDelete(m map[string]interface{}) error {
-	a, err := newDelete(m)
+// RunShow runs `show`.
+func RunShow(m map[string]interface{}) error {
+	a, err := newShow(m)
 	if err != nil {
 		return err
 	}
@@ -33,31 +36,32 @@ func RunDelete(m map[string]interface{}) error {
 	return a.run()
 }
 
-type deleteOpt func(*Delete)
+type showOpt func(*Show)
 
-// Delete collects options for applying objects to a cluster.
-type Delete struct {
+// Show shows objects.
+type Show struct {
 	app            app.App
 	clientConfig   *client.Config
 	componentNames []string
 	envName        string
-	gracePeriod    int64
+	format         string
 
-	runDeleteFn runDeleteFn
+	out       io.Writer
+	runShowFn runShowFn
 }
 
-// RunDelete runs `apply`
-func newDelete(m map[string]interface{}, opts ...deleteOpt) (*Delete, error) {
+// RunShow runs `show`
+func newShow(m map[string]interface{}, opts ...showOpt) (*Show, error) {
 	ol := newOptionLoader(m)
 
-	d := &Delete{
+	s := &Show{
 		app:            ol.loadApp(),
-		clientConfig:   ol.loadClientConfig(),
 		componentNames: ol.loadStringSlice(OptionComponentNames),
 		envName:        ol.loadString(OptionEnvName),
-		gracePeriod:    ol.loadInt64(OptionGracePeriod),
+		format:         ol.loadString(OptionFormat),
 
-		runDeleteFn: cluster.RunDelete,
+		out:       os.Stdout,
+		runShowFn: cluster.RunShow,
 	}
 
 	if ol.err != nil {
@@ -65,20 +69,20 @@ func newDelete(m map[string]interface{}, opts ...deleteOpt) (*Delete, error) {
 	}
 
 	for _, opt := range opts {
-		opt(d)
+		opt(s)
 	}
 
-	return d, nil
+	return s, nil
 }
 
-func (d *Delete) run() error {
-	config := cluster.DeleteConfig{
-		App:            d.app,
-		ClientConfig:   d.clientConfig,
-		ComponentNames: d.componentNames,
-		EnvName:        d.envName,
-		GracePeriod:    d.gracePeriod,
+func (s *Show) run() error {
+	config := cluster.ShowConfig{
+		App:            s.app,
+		ComponentNames: s.componentNames,
+		EnvName:        s.envName,
+		Format:         s.format,
+		Out:            s.out,
 	}
 
-	return d.runDeleteFn(config)
+	return s.runShowFn(config)
 }

@@ -41,6 +41,8 @@ const (
 	OptionDryRun = "dry-run"
 	// OptionEnvName is envName option.
 	OptionEnvName = "env-name"
+	// OptionFormat is format option.
+	OptionFormat = "format"
 	// OptionFs is fs option.
 	OptionFs = "fs"
 	// OptionGcTag is gcTag option.

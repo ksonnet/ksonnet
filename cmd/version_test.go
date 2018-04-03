@@ -16,6 +16,8 @@
 package cmd
 
 import (
+	"bytes"
+	"fmt"
 	"regexp"
 	"testing"
 )
@@ -27,4 +29,19 @@ func TestVersion(t *testing.T) {
 	if !regexp.MustCompile(`jsonnet version: v[\d.]+`).MatchString(output) {
 		t.Error("Failed to find jsonnet version in:", output)
 	}
+}
+
+func cmdOutput(t *testing.T, args []string) string {
+	var buf bytes.Buffer
+	RootCmd.SetOutput(&buf)
+	defer RootCmd.SetOutput(nil)
+
+	t.Log("Running args", args)
+	RootCmd.SetArgs(args)
+	if err := RootCmd.Execute(); err != nil {
+		fmt.Println(buf.String())
+		t.Fatal("command failed:", err)
+	}
+
+	return buf.String()
 }

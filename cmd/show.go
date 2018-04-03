@@ -17,11 +17,10 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
+	"github.com/ksonnet/ksonnet/actions"
 	"github.com/spf13/cobra"
-
-	"github.com/ksonnet/ksonnet/pkg/kubecfg"
+	"github.com/spf13/viper"
 )
 
 const (
@@ -29,11 +28,21 @@ const (
 	showShortDesc = "Show expanded manifests for a specific environment."
 )
 
+const (
+	vShowComponent = "show-components"
+	vShowFormat    = "show-format"
+)
+
 func init() {
 	RootCmd.AddCommand(showCmd)
-	addEnvCmdFlags(showCmd)
+
 	bindJsonnetFlags(showCmd)
-	showCmd.PersistentFlags().StringP(flagFormat, "o", "yaml", "Output format.  Supported values are: json, yaml")
+
+	showCmd.Flags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
+	viper.BindPFlag(vShowComponent, showCmd.Flags().Lookup(flagComponent))
+
+	showCmd.Flags().StringP(flagFormat, shortFormat, "yaml", "Output format.  Supported values are: json, yaml")
+	viper.BindPFlag(vShowFormat, showCmd.Flags().Lookup(flagFormat))
 }
 
 var showCmd = &cobra.Command{
@@ -75,39 +84,14 @@ ks show dev -c redis -c nginx-server
 		if len(args) != 1 {
 			return fmt.Errorf("'show' requires an environment name; use `env list` to see available environments\n\n%s", cmd.UsageString())
 		}
-		env := args[0]
 
-		flags := cmd.Flags()
-		var err error
-
-		componentNames, err := flags.GetStringSlice(flagComponent)
-		if err != nil {
-			return err
+		m := map[string]interface{}{
+			actions.OptionApp:            ka,
+			actions.OptionComponentNames: viper.GetStringSlice(vShowComponent),
+			actions.OptionEnvName:        args[0],
+			actions.OptionFormat:         viper.GetString(vShowFormat),
 		}
 
-		c := kubecfg.ShowCmd{}
-
-		c.Format, err = flags.GetString(flagFormat)
-		if err != nil {
-			return err
-		}
-
-		cwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		te := newCmdObjExpander(cmdObjExpanderConfig{
-			cmd:        cmd,
-			env:        env,
-			components: componentNames,
-			cwd:        cwd,
-		})
-		objs, err := te.Expand()
-		if err != nil {
-			return err
-		}
-
-		return c.Run(objs, cmd.OutOrStdout())
+		return runAction(actionShow, m)
 	},
 }

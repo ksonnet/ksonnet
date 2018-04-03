@@ -92,9 +92,9 @@ var (
 		actionRegistryAdd:       actions.RunRegistryAdd,
 		actionRegistryDescribe:  actions.RunRegistryDescribe,
 		actionRegistryList:      actions.RunRegistryList,
-		// actionShow
-		actionUpgrade:  actions.RunUpgrade,
-		actionValidate: actions.RunValidate,
+		actionShow:              actions.RunShow,
+		actionUpgrade:           actions.RunUpgrade,
+		actionValidate:          actions.RunValidate,
 	}
 )
 
