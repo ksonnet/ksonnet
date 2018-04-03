@@ -53,6 +53,7 @@ ks param [flags]
 ### SEE ALSO
 
 * [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
+* [ks param delete](ks_param_delete.md)	 - Delete component or environment parameters
 * [ks param diff](ks_param_diff.md)	 - Display differences between the component parameters of two environments
 * [ks param list](ks_param_list.md)	 - List known component parameters
 * [ks param set](ks_param_set.md)	 - Change component or environment parameters (e.g. replica count, name)

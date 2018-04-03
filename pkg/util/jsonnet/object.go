@@ -17,6 +17,7 @@ package jsonnet
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
@@ -128,7 +129,7 @@ func FindObject(object *astext.Object, path []string) (*astext.Object, error) {
 		}
 	}
 
-	return nil, errors.New("path was not found")
+	return nil, errors.Errorf("path %s was not found", strings.Join(path, "."))
 }
 
 // FieldID returns the id for an object field.

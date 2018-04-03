@@ -42,6 +42,15 @@ func TestSetParams(t *testing.T) {
 	})
 }
 
+func TestDeleteParams(t *testing.T) {
+	withEnv(t, func(appMock *mocks.App, fs afero.Fs) {
+		err := DeleteParam(appMock, "env1", "component1", "foo")
+		require.NoError(t, err)
+
+		compareOutput(t, fs, "delete-params.libsonnet", "/environments/env1/params.libsonnet")
+	})
+}
+
 func TestGetParams(t *testing.T) {
 	withEnv(t, func(appMock *mocks.App, fs afero.Fs) {
 		config := GetParamsConfig{

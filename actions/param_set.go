@@ -47,10 +47,9 @@ type ParamSet struct {
 	global   bool
 	envName  string
 
-	// TODO: remove once ksonnet has more robust env param handling.
-	setEnv func(ksApp app.App, envName, name, pName, value string) error
-
-	cm component.Manager
+	getModuleFn   getModuleFn
+	resolvePathFn func(a app.App, path string) (component.Module, component.Component, error)
+	setEnvFn      func(ksApp app.App, envName, name, pName, value string) error
 }
 
 // NewParamSet creates an instance of ParamSet.
@@ -66,8 +65,9 @@ func NewParamSet(m map[string]interface{}) (*ParamSet, error) {
 		envName:  ol.loadOptionalString(OptionEnvName),
 		index:    ol.loadOptionalInt(OptionIndex),
 
-		cm:     component.DefaultManager,
-		setEnv: setEnv,
+		getModuleFn:   component.GetModule,
+		resolvePathFn: component.ResolvePath,
+		setEnvFn:      setEnv,
 	}
 
 	if ol.err != nil {
@@ -94,7 +94,7 @@ func (ps *ParamSet) Run() error {
 	}
 
 	if ps.envName != "" {
-		return ps.setEnv(ps.app, ps.envName, ps.name, ps.rawPath, evaluatedValue)
+		return ps.setEnvFn(ps.app, ps.envName, ps.name, ps.rawPath, evaluatedValue)
 	}
 
 	path := strings.Split(ps.rawPath, ".")
@@ -107,7 +107,7 @@ func (ps *ParamSet) Run() error {
 }
 
 func (ps *ParamSet) setGlobal(path []string, value interface{}) error {
-	module, err := ps.cm.Module(ps.app, ps.name)
+	module, err := ps.getModuleFn(ps.app, ps.name)
 	if err != nil {
 		return errors.Wrap(err, "retrieve module")
 	}
@@ -120,7 +120,7 @@ func (ps *ParamSet) setGlobal(path []string, value interface{}) error {
 }
 
 func (ps *ParamSet) setLocal(path []string, value interface{}) error {
-	_, c, err := ps.cm.ResolvePath(ps.app, ps.name)
+	_, c, err := ps.resolvePathFn(ps.app, ps.name)
 	if err != nil {
 		return errors.Wrap(err, "could not find component")
 	}
@@ -135,6 +135,7 @@ func (ps *ParamSet) setLocal(path []string, value interface{}) error {
 	return nil
 }
 
+// TODO: move this to pkg/env
 func setEnv(ksApp app.App, envName, name, pName, value string) error {
 	spc := env.SetParamsConfig{
 		App: ksApp,

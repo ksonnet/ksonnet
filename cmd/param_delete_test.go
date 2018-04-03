@@ -13,24 +13,29 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package component
+package cmd
 
 import (
-	"path/filepath"
+	"testing"
 
-	"github.com/ksonnet/ksonnet/metadata/app/mocks"
-	"github.com/stretchr/testify/mock"
-
-	"github.com/spf13/afero"
+	"github.com/ksonnet/ksonnet/actions"
 )
 
-func appMock(root string) (*mocks.App, afero.Fs) {
-	fs := afero.NewMemMapFs()
-	app := &mocks.App{}
-	app.On("Fs").Return(fs)
-	app.On("Root").Return(root)
-	app.On("LibPath", mock.AnythingOfType("string")).Return(filepath.Join(root, "lib", "v1.8.7"), nil)
+func Test_paramDeleteCmd(t *testing.T) {
+	cases := []cmdTestCase{
+		{
+			name:   "in general",
+			args:   []string{"param", "delete", "component-name", "param-name"},
+			action: actionParamDelete,
+			expected: map[string]interface{}{
+				actions.OptionApp:     ka,
+				actions.OptionName:    "component-name",
+				actions.OptionPath:    "param-name",
+				actions.OptionEnvName: "",
+				actions.OptionIndex:   0,
+			},
+		},
+	}
 
-	return app, fs
-
+	runTestCmd(t, cases)
 }

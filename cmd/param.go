@@ -23,9 +23,10 @@ import (
 )
 
 var paramShortDesc = map[string]string{
-	"set":  "Change component or environment parameters (e.g. replica count, name)",
-	"list": "List known component parameters",
-	"diff": "Display differences between the component parameters of two environments",
+	"delete": "Delete component or environment parameters",
+	"set":    "Change component or environment parameters (e.g. replica count, name)",
+	"list":   "List known component parameters",
+	"diff":   "Display differences between the component parameters of two environments",
 }
 
 func init() {

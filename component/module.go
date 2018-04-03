@@ -29,9 +29,9 @@ import (
 )
 
 func nsErrorMsg(format, module string) string {
-	s := fmt.Sprintf("namespace %q", module)
+	s := fmt.Sprintf("module %q", module)
 	if module == "" {
-		s = "root namespace"
+		s = "root module"
 	}
 
 	return fmt.Sprintf(format, s)
@@ -47,9 +47,10 @@ type Module interface {
 	ParamsPath() string
 	ResolvedParams() (string, error)
 	SetParam(path []string, value interface{}) error
+	DeleteParam(path []string) error
 }
 
-// FilesystemModule is a component namespace that uses a filesystem for storage.
+// FilesystemModule is a component module that uses a filesystem for storage.
 type FilesystemModule struct {
 	path string
 
@@ -58,19 +59,19 @@ type FilesystemModule struct {
 
 var _ Module = (*FilesystemModule)(nil)
 
-// NewModule creates an instance of .
+// NewModule creates an instance of module.
 func NewModule(ksApp app.App, path string) *FilesystemModule {
 	return &FilesystemModule{app: ksApp, path: path}
 }
 
-// ExtractModuleComponent extracts a namespace and a component from a path.
+// ExtractModuleComponent extracts a module and a component from a path.
 func ExtractModuleComponent(a app.App, path string) (Module, string) {
 	nsPath, component := filepath.Split(path)
 	ns := &FilesystemModule{path: nsPath, app: a}
 	return ns, component
 }
 
-// Name returns the namespace name.
+// Name returns the module name.
 func (n *FilesystemModule) Name() string {
 	if n.path == "" {
 		return "/"
@@ -78,9 +79,9 @@ func (n *FilesystemModule) Name() string {
 	return n.path
 }
 
-// GetModule gets a namespace by path.
-func GetModule(a app.App, module string) (Module, error) {
-	parts := strings.Split(module, "/")
+// GetModule gets a module by path.
+func GetModule(a app.App, moduleName string) (Module, error) {
+	parts := strings.Split(moduleName, "/")
 	nsDir := filepath.Join(append([]string{a.Root(), componentsRoot}, parts...)...)
 
 	exists, err := afero.Exists(a.Fs(), nsDir)
@@ -89,34 +90,45 @@ func GetModule(a app.App, module string) (Module, error) {
 	}
 
 	if !exists {
-		return nil, errors.New(nsErrorMsg("unable to find %s", module))
+		return nil, errors.New(nsErrorMsg("unable to find %s", moduleName))
 	}
 
-	return &FilesystemModule{path: module, app: a}, nil
+	return &FilesystemModule{path: moduleName, app: a}, nil
 }
 
-// ParamsPath generates the path to params.libsonnet for a namespace.
+// ParamsPath generates the path to params.libsonnet for a module.
 func (n *FilesystemModule) ParamsPath() string {
 	return filepath.Join(n.Dir(), paramsFile)
 }
 
-// SetParam sets params for a namespace.
+// SetParam sets params for a module.
 func (n *FilesystemModule) SetParam(path []string, value interface{}) error {
 	paramsData, err := n.readParams()
 	if err != nil {
 		return err
 	}
 
-	updatedParams, err := params.Set(path, paramsData, "", value, "global")
+	updated, err := params.Set(path, paramsData, "", value, "global")
 	if err != nil {
 		return err
 	}
 
-	if err = n.writeParams(updatedParams); err != nil {
+	return n.writeParams(updated)
+}
+
+// DeleteParam deletes params for a module.
+func (n *FilesystemModule) DeleteParam(path []string) error {
+	paramsData, err := n.readParams()
+	if err != nil {
 		return err
 	}
 
-	return nil
+	updated, err := params.Delete(path, paramsData, "", "global")
+	if err != nil {
+		return err
+	}
+
+	return n.writeParams(updated)
 }
 
 func (n *FilesystemModule) writeParams(src string) error {
@@ -134,7 +146,7 @@ func (n *FilesystemModule) Dir() string {
 	return filepath.Join(path...)
 }
 
-// ModuleParameter is a namespaced paramater.
+// ModuleParameter is a module parameter.
 type ModuleParameter struct {
 	Component string
 	Index     string
@@ -142,7 +154,7 @@ type ModuleParameter struct {
 	Value     string
 }
 
-// ResolvedParams resolves paramaters for a namespace. It returns a JSON encoded
+// ResolvedParams resolves paramaters for a module. It returns a JSON encoded
 // string of component parameters.
 func (n *FilesystemModule) ResolvedParams() (string, error) {
 	s, err := n.readParams()
@@ -153,7 +165,7 @@ func (n *FilesystemModule) ResolvedParams() (string, error) {
 	return applyGlobals(s)
 }
 
-// Params returns the params for a namespace.
+// Params returns the params for a module.
 func (n *FilesystemModule) Params(envName string) ([]ModuleParameter, error) {
 	components, err := n.Components()
 	if err != nil {
@@ -184,7 +196,7 @@ func (n *FilesystemModule) readParams() (string, error) {
 	return string(b), nil
 }
 
-// ModulesFromEnv returns all namespaces given an environment.
+// ModulesFromEnv returns all modules given an environment.
 func ModulesFromEnv(a app.App, env string) ([]Module, error) {
 	paths, err := MakePaths(a, env)
 	if err != nil {
@@ -211,7 +223,7 @@ func ModulesFromEnv(a app.App, env string) ([]Module, error) {
 	return namespaces, nil
 }
 
-// Modules returns all component namespaces
+// Modules returns all component modules
 func Modules(a app.App) ([]Module, error) {
 	componentRoot := filepath.Join(a.Root(), componentsRoot)
 
@@ -250,7 +262,7 @@ func Modules(a app.App) ([]Module, error) {
 	return namespaces, nil
 }
 
-// Components returns the components in a namespace.
+// Components returns the components in a module.
 func (n *FilesystemModule) Components() ([]Component, error) {
 	parts := strings.Split(n.path, "/")
 	nsDir := filepath.Join(append([]string{n.app.Root(), componentsRoot}, parts...)...)

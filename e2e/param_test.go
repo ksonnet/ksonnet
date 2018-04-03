@@ -27,6 +27,53 @@ var _ = Describe("ks param", func() {
 	BeforeEach(func() {
 		a = e.initApp(nil)
 		a.generateDeployedService()
+
+	})
+
+	FDescribe("delete", func() {
+		var (
+			component  = "guestbook-ui"
+			envName    = "default"
+			local      = "local-value"
+			localValue = "1"
+			env        = "env-value"
+			envValue   = "2"
+		)
+
+		BeforeEach(func() {
+			a.paramSet(component, local, localValue)
+			a.paramSet(component, env, envValue, "--env", envName)
+
+			o := a.paramList()
+			assertOutput("param/delete/pre-local.txt", o.stdout)
+
+			o = a.paramList("--env", envName)
+			assertOutput("param/delete/pre-env.txt", o.stdout)
+		})
+
+		Context("at the component level", func() {
+			JustBeforeEach(func() {
+				o := a.runKs("param", "delete", component, local)
+				assertExitStatus(o, 0)
+			})
+
+			It("removes a parameter's value", func() {
+				o := a.paramList()
+				assertOutput("param/delete/local.txt", o.stdout)
+			})
+		})
+
+		Context("at the environment level", func() {
+			JustBeforeEach(func() {
+				o := a.runKs("param", "delete", component, env, "--env", envName)
+				assertExitStatus(o, 0)
+			})
+
+			XIt("removes a parameter's environment value", func() {
+				o := a.paramList("--env=" + envName)
+				assertOutput("param/delete/env.txt", o.stdout)
+			})
+		})
 	})
 
 	Describe("list", func() {

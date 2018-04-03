@@ -67,6 +67,7 @@ func Delete(path []string, paramsData, key, root string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	cur := props
 
 	for i, k := range path {
@@ -82,7 +83,12 @@ func Delete(path []string, paramsData, key, root string) (string, error) {
 		}
 	}
 
-	return Update([]string{root, key}, paramsData, props)
+	updatePath := []string{root}
+	if key != "" {
+		updatePath = []string{root, key}
+	}
+
+	return Update(updatePath, paramsData, props)
 }
 
 // Update updates a params file with the params for a component.

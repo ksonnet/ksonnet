@@ -27,6 +27,39 @@ import (
 	"github.com/spf13/afero"
 )
 
+func ResolvePath(ksApp app.App, path string) (Module, Component, error) {
+	isDir, err := isComponentDir2(ksApp, path)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "check for namespace directory")
+	}
+
+	if isDir {
+		ns, err := GetModule(ksApp, path)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return ns, nil, nil
+	}
+
+	module, cName, err := checkComponent(ksApp, path)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	ns, err := GetModule(ksApp, module)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	c, err := LocateComponent(ksApp, module, cName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return ns, c, nil
+}
+
 var (
 	// DefaultManager is the default manager for components.
 	DefaultManager = &defaultManager{}
@@ -38,10 +71,9 @@ type Manager interface {
 	Component(ksApp app.App, module, componentName string) (Component, error)
 	CreateComponent(ksApp app.App, name, text string, params param.Params, templateType prototype.TemplateType) (string, error)
 	CreateModule(ksApp app.App, name string) error
-	Module(ksApp app.App, module string) (Module, error)
+	Module(ksApp app.App, moduleName string) (Module, error)
 	Modules(ksApp app.App, envName string) ([]Module, error)
 	NSResolveParams(ns Module) (string, error)
-	ResolvePath(ksApp app.App, path string) (Module, Component, error)
 }
 
 type defaultManager struct{}
@@ -84,40 +116,7 @@ func (dm *defaultManager) CreateModule(ksApp app.App, name string) error {
 	return afero.WriteFile(ksApp.Fs(), paramsDir, GenParamsContent(), app.DefaultFilePermissions)
 }
 
-func (dm *defaultManager) ResolvePath(ksApp app.App, path string) (Module, Component, error) {
-	isDir, err := dm.isComponentDir(ksApp, path)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "check for namespace directory")
-	}
-
-	if isDir {
-		ns, err := dm.Module(ksApp, path)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		return ns, nil, nil
-	}
-
-	module, cName, err := dm.checkComponent(ksApp, path)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	ns, err := dm.Module(ksApp, module)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	c, err := dm.Component(ksApp, module, cName)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return ns, c, nil
-}
-
-func (dm *defaultManager) isComponentDir(ksApp app.App, path string) (bool, error) {
+func isComponentDir2(ksApp app.App, path string) (bool, error) {
 	parts := strings.Split(path, "/")
 	dir := filepath.Join(append([]string{ksApp.Root(), componentsRoot}, parts...)...)
 	dir = filepath.Clean(dir)
@@ -125,7 +124,7 @@ func (dm *defaultManager) isComponentDir(ksApp app.App, path string) (bool, erro
 	return afero.DirExists(ksApp.Fs(), dir)
 }
 
-func (dm *defaultManager) checkComponent(ksApp app.App, name string) (string, string, error) {
+func checkComponent(ksApp app.App, name string) (string, string, error) {
 	parts := strings.Split(name, "/")
 	base := filepath.Join(append([]string{ksApp.Root(), componentsRoot}, parts...)...)
 	base = filepath.Clean(base)
@@ -148,5 +147,5 @@ func (dm *defaultManager) checkComponent(ksApp app.App, name string) (string, st
 		}
 	}
 
-	return "", "", errors.Errorf("%q is not a component or a namespace", name)
+	return "", "", errors.Errorf("%q is not a component or a module", name)
 }

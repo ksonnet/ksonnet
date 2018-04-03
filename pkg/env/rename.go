@@ -98,6 +98,19 @@ func envExists(ksApp app.App, name string) (bool, error) {
 	return afero.Exists(ksApp.Fs(), path)
 }
 
+func ensureEnvExists(a app.App, name string) error {
+	exists, err := envExists(a, name)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return errors.Errorf("environment %q does not exist", name)
+	}
+
+	return nil
+}
+
 func envPath(ksApp app.App, name string, subPath ...string) string {
 	return filepath.Join(append([]string{ksApp.Root(), envRoot, name}, subPath...)...)
 }
