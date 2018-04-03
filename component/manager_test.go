@@ -18,96 +18,99 @@ package component
 import (
 	"testing"
 
+	"github.com/ksonnet/ksonnet/metadata/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/util/test"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_defaultManager_Component(t *testing.T) {
-	app, fs := appMock("/")
+	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
 
-	stageFile(t, fs, "params-mixed.libsonnet", "/components/params.libsonnet")
-	stageFile(t, fs, "deployment.yaml", "/components/deployment.yaml")
-	stageFile(t, fs, "params-mixed.libsonnet", "/components/nested/params.libsonnet")
-	stageFile(t, fs, "deployment.yaml", "/components/nested/deployment.yaml")
+		test.StageFile(t, fs, "params-mixed.libsonnet", "/app/components/params.libsonnet")
+		test.StageFile(t, fs, "deployment.yaml", "/app/components/deployment.yaml")
+		test.StageFile(t, fs, "params-mixed.libsonnet", "/app/components/nested/params.libsonnet")
+		test.StageFile(t, fs, "deployment.yaml", "/app/components/nested/deployment.yaml")
 
-	dm := defaultManager{}
+		dm := defaultManager{}
 
-	c, err := dm.Component(app, "", "deployment")
-	require.NoError(t, err)
+		c, err := dm.Component(a, "", "deployment")
+		require.NoError(t, err)
 
-	expected := "deployment"
-	require.Equal(t, expected, c.Name(false))
+		expected := "deployment"
+		require.Equal(t, expected, c.Name(false))
+	})
 }
 
-func Test_default_manager_ResolvePath(t *testing.T) {
-	app, fs := appMock("/")
+func Test_ResolvePath(t *testing.T) {
+	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
 
-	stageFile(t, fs, "params-mixed.libsonnet", "/components/params.libsonnet")
-	stageFile(t, fs, "deployment.yaml", "/components/deployment.yaml")
-	stageFile(t, fs, "params-mixed.libsonnet", "/components/nested/params.libsonnet")
-	stageFile(t, fs, "deployment.yaml", "/components/nested/deployment.yaml")
+		test.StageFile(t, fs, "params-mixed.libsonnet", "/app/components/params.libsonnet")
+		test.StageFile(t, fs, "deployment.yaml", "/app/components/deployment.yaml")
+		test.StageFile(t, fs, "params-mixed.libsonnet", "/app/components/nested/params.libsonnet")
+		test.StageFile(t, fs, "deployment.yaml", "/app/components/nested/deployment.yaml")
 
-	dm := &defaultManager{}
+		cases := []struct {
+			name   string
+			cName  string
+			module string
+			isErr  bool
+		}{
+			{
+				name:   "/",
+				module: "/",
+			},
+			{
+				name:   "deployment",
+				module: "/",
+				cName:  "deployment",
+			},
+			{
+				name:   "/deployment",
+				module: "/",
+				cName:  "deployment",
+			},
+			{
+				name:   "/nested/deployment",
+				module: "/nested",
+				cName:  "deployment",
+			},
+			{
+				name:   "nested/deployment",
+				module: "/nested",
+				cName:  "deployment",
+			},
+			{
+				name:  "nested/invalid",
+				isErr: true,
+			},
+			{
+				name:  "invalid",
+				isErr: true,
+			},
+		}
 
-	cases := []struct {
-		name   string
-		cName  string
-		module string
-		isErr  bool
-	}{
-		{
-			name:   "/",
-			module: "/",
-		},
-		{
-			name:   "deployment",
-			module: "/",
-			cName:  "deployment",
-		},
-		{
-			name:   "/deployment",
-			module: "/",
-			cName:  "deployment",
-		},
-		{
-			name:   "/nested/deployment",
-			module: "/nested",
-			cName:  "deployment",
-		},
-		{
-			name:   "nested/deployment",
-			module: "/nested",
-			cName:  "deployment",
-		},
-		{
-			name:  "nested/invalid",
-			isErr: true,
-		},
-		{
-			name:  "invalid",
-			isErr: true,
-		},
-	}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				ns, c, err := ResolvePath(a, tc.name)
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			ns, c, err := dm.ResolvePath(app, tc.name)
+				if tc.isErr {
+					require.Error(t, err)
+					return
+				}
 
-			if tc.isErr {
-				require.Error(t, err)
-				return
-			}
+				require.NoError(t, err)
 
-			require.NoError(t, err)
+				if tc.cName == "" {
+					assert.Nil(t, c)
+				} else {
+					require.NotNil(t, c)
+					assert.Equal(t, tc.cName, c.Name(false))
+				}
 
-			if tc.cName == "" {
-				assert.Nil(t, c)
-			} else {
-				require.NotNil(t, c)
-				assert.Equal(t, tc.cName, c.Name(false))
-			}
-
-			assert.Equal(t, tc.module, ns.Name())
-		})
-	}
+				assert.Equal(t, tc.module, ns.Name())
+			})
+		}
+	})
 }

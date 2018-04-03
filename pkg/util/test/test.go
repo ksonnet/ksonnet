@@ -25,6 +25,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata/app/mocks"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -91,6 +92,7 @@ func WithApp(t *testing.T, root string, fn func(*mocks.App, afero.Fs)) {
 	a := &mocks.App{}
 	a.On("Fs").Return(fs)
 	a.On("Root").Return(root)
+	a.On("LibPath", mock.AnythingOfType("string")).Return(filepath.Join(root, "lib", "v1.8.7"), nil)
 
 	fn(a, fs)
 }

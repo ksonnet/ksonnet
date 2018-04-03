@@ -38,6 +38,7 @@ const (
 	actionInit
 	actionModuleCreate
 	actionModuleList
+	actionParamDelete
 	actionParamDiff
 	actionParamList
 	actionParamSet
@@ -77,6 +78,7 @@ var (
 		actionModuleCreate: actions.RunModuleCreate,
 		actionModuleList:   actions.RunModuleList,
 		// actionParamDiff
+		actionParamDelete:       actions.RunParamDelete,
 		actionParamList:         actions.RunParamList,
 		actionParamSet:          actions.RunParamSet,
 		actionPkgDescribe:       actions.RunPkgDescribe,

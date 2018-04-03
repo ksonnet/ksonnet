@@ -16,8 +16,13 @@
 package params
 
 import (
+	"io/ioutil"
+	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAppendComponentParams(t *testing.T) {
@@ -217,7 +222,7 @@ local bar = import "bar";
       name: "baz",
       replicas: 5,
     },
-  },	
+  },
 }`,
 			Params{"replicas": "5", "name": `"baz"`},
 		},
@@ -1185,4 +1190,60 @@ params + {
 			t.Errorf("Expected error but not found\n  input: %v  got: %v", e, parsed)
 		}
 	}
+}
+
+func TestDeleteEnvironmentParams(t *testing.T) {
+	buildPath := func(in ...string) []string {
+		return append([]string{"delete-env-param"}, in...)
+	}
+
+	cases := []struct {
+		name          string
+		componentName string
+		paramName     string
+		snippetPath   []string
+		expectedPath  []string
+		isErr         bool
+	}{
+		{
+			name:          "params binary",
+			componentName: "foo",
+			paramName:     "name",
+			snippetPath:   buildPath("case1.libsonnet"),
+			expectedPath:  buildPath("expected1.libsonnet"),
+		},
+		{
+			name:          "params apply brace",
+			componentName: "foo",
+			paramName:     "name",
+			snippetPath:   buildPath("case2.libsonnet"),
+			expectedPath:  buildPath("expected2.libsonnet"),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			snippet := readSnippet(t, tc.snippetPath...)
+
+			updated, err := DeleteEnvironmentParam(tc.componentName, tc.paramName, snippet)
+			if tc.isErr {
+				require.Error(t, err)
+				return
+			}
+
+			expected := readSnippet(t, tc.expectedPath...)
+
+			require.NoError(t, err)
+			assert.Equal(t, expected, updated)
+		})
+	}
+}
+
+func readSnippet(t *testing.T, path ...string) string {
+	snippetPath := filepath.Join(append([]string{"testdata"}, path...)...)
+
+	data, err := ioutil.ReadFile(snippetPath)
+	require.NoError(t, err)
+
+	return string(data)
 }

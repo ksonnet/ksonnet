@@ -47,6 +47,20 @@ func (_m *Module) Components() ([]component.Component, error) {
 	return r0, r1
 }
 
+// DeleteParam provides a mock function with given fields: path
+func (_m *Module) DeleteParam(path []string) error {
+	ret := _m.Called(path)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func([]string) error); ok {
+		r0 = rf(path)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Dir provides a mock function with given fields:
 func (_m *Module) Dir() string {
 	ret := _m.Called()

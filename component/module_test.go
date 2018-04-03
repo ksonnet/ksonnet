@@ -18,45 +18,60 @@ package component
 import (
 	"testing"
 
+	"github.com/ksonnet/ksonnet/metadata/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/util/test"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestModule_Components(t *testing.T) {
-	app, fs := appMock("/app")
+	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+		test.StageFile(t, fs, "certificate-crd.yaml", "/app/components/ns1/certificate-crd.yaml")
+		test.StageFile(t, fs, "params-with-entry.libsonnet", "/app/components/ns1/params.libsonnet")
+		test.StageFile(t, fs, "params-no-entry.libsonnet", "/app/components/params.libsonnet")
 
-	stageFile(t, fs, "certificate-crd.yaml", "/app/components/ns1/certificate-crd.yaml")
-	stageFile(t, fs, "params-with-entry.libsonnet", "/app/components/ns1/params.libsonnet")
-	stageFile(t, fs, "params-no-entry.libsonnet", "/app/components/params.libsonnet")
+		cases := []struct {
+			name   string
+			module string
+			count  int
+		}{
+			{
+				name:   "no components",
+				module: "/",
+			},
+			{
+				name:   "with components",
+				module: "ns1",
+				count:  1,
+			},
+		}
 
-	cases := []struct {
-		name   string
-		module string
-		count  int
-	}{
-		{
-			name:   "no components",
-			module: "/",
-		},
-		{
-			name:   "with components",
-			module: "ns1",
-			count:  1,
-		},
-	}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
+				ns, err := GetModule(a, tc.module)
+				require.NoError(t, err)
 
-			ns, err := GetModule(app, tc.module)
-			require.NoError(t, err)
+				assert.Equal(t, tc.module, ns.Name())
+				components, err := ns.Components()
+				require.NoError(t, err)
 
-			assert.Equal(t, tc.module, ns.Name())
-			components, err := ns.Components()
-			require.NoError(t, err)
+				assert.Len(t, components, tc.count)
+			})
+		}
+	})
+}
 
-			assert.Len(t, components, tc.count)
-		})
-	}
+func TestFilesystemModule_DeleteParam(t *testing.T) {
+	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+		test.StageFile(t, fs, "params-global.libsonnet", "/app/components/params.libsonnet")
 
+		module := NewModule(a, "/")
+
+		err := module.DeleteParam([]string{"metadata"})
+		require.NoError(t, err)
+
+		test.AssertContents(t, fs, "params-delete-global.libsonnet", "/app/components/params.libsonnet")
+	})
 }

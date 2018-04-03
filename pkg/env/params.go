@@ -19,7 +19,6 @@ import (
 	"github.com/ksonnet/ksonnet/component"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
@@ -31,12 +30,8 @@ type SetParamsConfig struct {
 
 // SetParams sets params for an environment.
 func SetParams(envName, component string, params param.Params, config SetParamsConfig) error {
-	exists, err := envExists(config.App, envName)
-	if err != nil {
+	if err := ensureEnvExists(config.App, envName); err != nil {
 		return err
-	}
-	if !exists {
-		return errors.Errorf("Environment %q does not exist", envName)
 	}
 
 	path := envPath(config.App, envName, paramsFileName)
@@ -60,6 +55,34 @@ func SetParams(envName, component string, params param.Params, config SetParamsC
 	return nil
 }
 
+// DeleteParam deletes a param in an environment.
+func DeleteParam(a app.App, envName, component, name string) error {
+	if err := ensureEnvExists(a, envName); err != nil {
+		return err
+	}
+
+	path := envPath(a, envName, paramsFileName)
+
+	text, err := afero.ReadFile(a.Fs(), path)
+	if err != nil {
+		return err
+	}
+
+	updated, err := param.DeleteEnvironmentParam(component, name, string(text))
+	if err != nil {
+		return err
+	}
+
+	err = afero.WriteFile(a.Fs(), path, []byte(updated), app.DefaultFilePermissions)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("deleted parameter %q for component %q at environment %q",
+		name, component, envName)
+	return nil
+}
+
 // GetParamsConfig is config items for getting environment params.
 type GetParamsConfig struct {
 	App app.App
@@ -67,12 +90,8 @@ type GetParamsConfig struct {
 
 // GetParams gets all parameters for an environment.
 func GetParams(envName, module string, config GetParamsConfig) (map[string]param.Params, error) {
-	exists, err := envExists(config.App, envName)
-	if err != nil {
+	if err := ensureEnvExists(config.App, envName); err != nil {
 		return nil, err
-	}
-	if !exists {
-		return nil, errors.Errorf("Environment %q does not exist", envName)
 	}
 
 	// Get the environment specific params

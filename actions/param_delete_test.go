@@ -26,23 +26,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestParamSet(t *testing.T) {
+func TestParamDelete(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		componentName := "deployment"
 		path := "replicas"
-		value := "3"
 
 		c := &cmocks.Component{}
-		c.On("SetParam", []string{"replicas"}, 3, component.ParamOptions{}).Return(nil)
+		c.On("DeleteParam", []string{"replicas"}, component.ParamOptions{}).Return(nil)
 
 		in := map[string]interface{}{
-			OptionApp:   appMock,
-			OptionName:  componentName,
-			OptionPath:  path,
-			OptionValue: value,
+			OptionApp:  appMock,
+			OptionName: componentName,
+			OptionPath: path,
 		}
 
-		a, err := NewParamSet(in)
+		a, err := NewParamDelete(in)
 		require.NoError(t, err)
 
 		a.resolvePathFn = func(app.App, string) (component.Module, component.Component, error) {
@@ -54,24 +52,22 @@ func TestParamSet(t *testing.T) {
 	})
 }
 
-func TestParamSet_index(t *testing.T) {
+func TestParamDelete_index(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		componentName := "deployment"
 		path := "replicas"
-		value := "3"
 
 		c := &cmocks.Component{}
-		c.On("SetParam", []string{"replicas"}, 3, component.ParamOptions{Index: 1}).Return(nil)
+		c.On("DeleteParam", []string{"replicas"}, component.ParamOptions{Index: 1}).Return(nil)
 
 		in := map[string]interface{}{
 			OptionApp:   appMock,
 			OptionName:  componentName,
 			OptionPath:  path,
-			OptionValue: value,
 			OptionIndex: 1,
 		}
 
-		a, err := NewParamSet(in)
+		a, err := NewParamDelete(in)
 		require.NoError(t, err)
 
 		a.resolvePathFn = func(app.App, string) (component.Module, component.Component, error) {
@@ -83,24 +79,22 @@ func TestParamSet_index(t *testing.T) {
 	})
 }
 
-func TestParamSet_global(t *testing.T) {
+func TestParamDelete_global(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		module := "/"
 		path := "replicas"
-		value := "3"
 
 		m := &cmocks.Module{}
-		m.On("SetParam", []string{"replicas"}, 3).Return(nil)
+		m.On("DeleteParam", []string{"replicas"}).Return(nil)
 
 		in := map[string]interface{}{
 			OptionApp:    appMock,
 			OptionName:   module,
 			OptionPath:   path,
-			OptionValue:  value,
 			OptionGlobal: true,
 		}
 
-		a, err := NewParamSet(in)
+		a, err := NewParamDelete(in)
 		require.NoError(t, err)
 
 		a.getModuleFn = func(app.App, string) (component.Module, error) {
@@ -112,31 +106,28 @@ func TestParamSet_global(t *testing.T) {
 	})
 }
 
-func TestParamSet_env(t *testing.T) {
+func TestParamDelete_env(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		name := "deployment"
 		path := "replicas"
-		value := "3"
 
 		in := map[string]interface{}{
 			OptionApp:     appMock,
 			OptionName:    name,
 			OptionPath:    path,
-			OptionValue:   value,
 			OptionEnvName: "default",
 		}
 
-		a, err := NewParamSet(in)
+		a, err := NewParamDelete(in)
 		require.NoError(t, err)
 
-		envSetter := func(ksApp app.App, envName, name, pName, value string) error {
+		envDelete := func(ksApp app.App, envName, name, pName string) error {
 			assert.Equal(t, "default", envName)
 			assert.Equal(t, "deployment", name)
 			assert.Equal(t, "replicas", pName)
-			assert.Equal(t, "3", value)
 			return nil
 		}
-		a.setEnvFn = envSetter
+		a.deleteEnvFn = envDelete
 
 		err = a.Run()
 		require.NoError(t, err)

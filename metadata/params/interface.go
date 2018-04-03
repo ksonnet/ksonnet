@@ -15,6 +15,17 @@
 
 package params
 
+import (
+	"bytes"
+
+	"github.com/google/go-jsonnet/ast"
+	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
+	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/printer"
+	"github.com/ksonnet/ksonnet/pkg/docparser"
+	"github.com/ksonnet/ksonnet/pkg/util/jsonnet"
+	"github.com/pkg/errors"
+)
+
 type Params map[string]string
 
 // AppendComponent takes the following params
@@ -91,6 +102,74 @@ func GetAllEnvironmentParams(snippet string) (map[string]Params, error) {
 // and returns the jsonnet snippet with the modified set of environment parameters.
 func SetEnvironmentParams(component, snippet string, params Params) (string, error) {
 	return setEnvironmentParams(component, snippet, params)
+}
+
+// DeleteEnvironmentParam deletes a parameter for an environment param file. It returns
+// the updated snippet.
+func DeleteEnvironmentParam(componentName, paramName, snippet string) (string, error) {
+	tokens, err := docparser.Lex("snippet", snippet)
+	if err != nil {
+		return "", err
+	}
+
+	node, err := docparser.Parse(tokens)
+	if err != nil {
+		return "", err
+	}
+
+	l, ok := node.(*ast.Local)
+	if !ok {
+		return "", errors.New("unable to parse params")
+	}
+
+	switch t := l.Body.(type) {
+	default:
+		return "", errors.Errorf("unknown body type %T", t)
+	// params + {}
+	case *ast.Binary:
+		components, ok := t.Right.(*astext.Object)
+		if !ok {
+			return "", errors.New("unable to find components in params")
+		}
+
+		return deleteFromEnv(l, components, componentName, paramName)
+	case *ast.ApplyBrace:
+		components, ok := t.Right.(*astext.Object)
+		if !ok {
+			return "", errors.New("unable to find components in params")
+		}
+
+		return deleteFromEnv(l, components, componentName, paramName)
+	}
+}
+
+func deleteFromEnv(l *ast.Local, components *astext.Object, componentName, paramName string) (string, error) {
+	paramObject, err := jsonnet.FindObject(components, []string{"components", componentName, paramName})
+	if err != nil {
+		return "", err
+	}
+
+	var fields []astext.ObjectField
+
+	for i := range paramObject.Fields {
+		fieldID, err := jsonnet.FieldID(paramObject.Fields[i])
+		if err != nil {
+			return "", err
+		}
+
+		if fieldID != paramName {
+			fields = append(fields, paramObject.Fields[i])
+		}
+	}
+
+	paramObject.Fields = fields
+
+	var buf bytes.Buffer
+	if err := printer.Fprint(&buf, l); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }
 
 // DeleteEnvironmentComponent takes
