@@ -131,6 +131,10 @@ func (p *printer) print(n interface{}) {
 		p.handleApply(t)
 	case ast.Arguments:
 		p.handleArguments(t)
+	case *ast.ApplyBrace:
+		p.print(t.Left)
+		p.writeByte(space, 1)
+		p.print(t.Right)
 	case *ast.Array:
 		p.writeString("[")
 		for i := 0; i < len(t.Elements); i++ {
