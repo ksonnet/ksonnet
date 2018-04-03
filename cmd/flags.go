@@ -46,6 +46,7 @@ const (
 
 	shortComponent = "c"
 	shortFilename  = "f"
+	shortFormat    = "o"
 	shortIndex     = "i"
 	shortOutput    = "o"
 	shortOverride  = "o"
