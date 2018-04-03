@@ -62,7 +62,7 @@ func New(ksApp app.App, envName string, opts ...Opt) *Pipeline {
 	return p
 }
 
-// Namespaces returns the namespaces that belong to this pipeline.
+// Modules returns the modules that belong to this pipeline.
 func (p *Pipeline) Modules() ([]component.Module, error) {
 	return p.cm.Modules(p.app, p.envName)
 }
@@ -88,6 +88,7 @@ func (p *Pipeline) EnvParameters(module string) (string, error) {
 
 	vm := jsonnet.MakeVM()
 	vm.ExtCode("__ksonnet/params", paramsStr)
+
 	return vm.EvaluateSnippet("snippet", string(envParams))
 }
 
@@ -197,8 +198,12 @@ var (
 // NOTE: It warns when it makes a change. This serves as a temporary fix until
 // ksonnet generates the correct file.
 func upgradeParams(envName, in string) string {
-	logrus.Warnf("rewriting %q environment params to not use relative paths", envName)
-	return reParamSwap.ReplaceAllLiteralString(in, `std.extVar("__ksonnet/params")`)
+	if reParamSwap.MatchString(in) {
+		logrus.Warnf("rewriting %q environment params to not use relative paths", envName)
+		return reParamSwap.ReplaceAllLiteralString(in, `std.extVar("__ksonnet/params")`)
+	}
+
+	return in
 }
 
 func stringInSlice(s string, sl []string) bool {

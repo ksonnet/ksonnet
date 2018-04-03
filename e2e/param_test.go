@@ -30,7 +30,7 @@ var _ = Describe("ks param", func() {
 
 	})
 
-	FDescribe("delete", func() {
+	Describe("delete", func() {
 		var (
 			component  = "guestbook-ui"
 			envName    = "default"
