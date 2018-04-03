@@ -33,7 +33,8 @@ base + {
 `)
 
 // DefaultParamsData generates the contents for an environment's `params.libsonnet`
-var DefaultParamsData = []byte(`local params = import "` + relComponentParamsPath + `";
+var DefaultParamsData = []byte(`local params = std.extVar("__ksonnet/params");
+
 params + {
   components +: {
     // Insert component parameter overrides here. Ex:

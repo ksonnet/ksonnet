@@ -49,9 +49,7 @@ var _ = Describe("ks apply", func() {
 
 	It("reports which resources it creating", func() {
 		assertExitStatus(o, 0)
-
-		data := map[string]string{"Namespace": "default"}
-		assertTemplate(data, "apply/output.txt.tmpl", o.stderr)
+		assertOutput("apply/output.txt", o.stderr)
 	})
 
 	It("creates a guestbook-ui service", func() {
