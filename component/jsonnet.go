@@ -145,6 +145,7 @@ func (j *Jsonnet) Objects(paramsStr, envName string) ([]*unstructured.Unstructur
 	}
 
 	vm := jsonnet.MakeVM()
+	vm.ErrorFormatter.SetMaxStackTraceSize(40)
 	vm.Importer(importer)
 	log.Debugf("%s convert to jsonnet: setting %q to %q", j.Name(true), "__ksonnet/params", paramsStr)
 	vm.ExtCode("__ksonnet/params", paramsStr)
