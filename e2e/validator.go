@@ -16,6 +16,10 @@
 package e2e
 
 import (
+	"time"
+
+	"github.com/cenkalti/backoff"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	extv1beta1 "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
@@ -44,10 +48,49 @@ func (v *validator) hasService(name string) {
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }
 
+func (v *validator) hasNoService(name string) {
+	c, err := corev1.NewForConfig(v.config)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	operation := func() error {
+		_, err = c.Services(v.namespace).Get(name, metav1.GetOptions{})
+		if err == nil {
+			return errors.Errorf("expected service %s to not exist", name)
+		}
+		return nil
+	}
+
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxElapsedTime = 30 * time.Second
+
+	err = backoff.Retry(operation, bo)
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+}
+
 func (v *validator) hasDeployment(name string) {
 	c, err := extv1beta1.NewForConfig(v.config)
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	_, err = c.Deployments(v.namespace).Get(name, metav1.GetOptions{})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+}
+
+func (v *validator) hasNoDeployment(name string) {
+	c, err := extv1beta1.NewForConfig(v.config)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	operation := func() error {
+		_, err = c.Deployments(v.namespace).Get(name, metav1.GetOptions{})
+		if err == nil {
+			return errors.Errorf("expected deployment %s to not exist", name)
+		}
+		return nil
+	}
+
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxElapsedTime = 1 * time.Minute
+	bo.MaxInterval = 500 * time.Millisecond
+
+	err = backoff.Retry(operation, bo)
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 }

@@ -47,6 +47,8 @@ const (
 	OptionGcTag = "gc-tag"
 	// OptionGlobal is global option.
 	OptionGlobal = "global"
+	// OptionGracePeriod is gracePeriod option.
+	OptionGracePeriod = "grace-period"
 	// OptionIndex is index option. Is used to target individual items in multi object
 	// components.
 	OptionIndex = "index"
@@ -186,6 +188,21 @@ func (o *optionLoader) loadInt(name string) int {
 	}
 
 	a, ok := i.(int)
+	if !ok {
+		o.err = newInvalidOptionError(name)
+		return 0
+	}
+
+	return a
+}
+
+func (o *optionLoader) loadInt64(name string) int64 {
+	i := o.load(name)
+	if i == nil {
+		return 0
+	}
+
+	a, ok := i.(int64)
 	if !ok {
 		o.err = newInvalidOptionError(name)
 		return 0

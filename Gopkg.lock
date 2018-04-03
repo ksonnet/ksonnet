@@ -36,6 +36,12 @@
   version = "v3.5.1"
 
 [[projects]]
+  name = "github.com/cenkalti/backoff"
+  packages = ["."]
+  revision = "2ea60e5f094469f9e65adb9cd103795b73ae743e"
+  version = "v2.0.0"
+
+[[projects]]
   name = "github.com/cpuguy83/go-md2man"
   packages = ["md2man"]
   revision = "1d903dcb749992f3741d744c0f8376b4bd7eb3e1"
@@ -669,6 +675,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b1ae87ac0ef11d1061f455055e4c56dc7e39a753d77347d2e02af4d44e6a7633"
+  inputs-digest = "12c28be36adc447c9dfceffe28256a3ec5c0709379755082872b981f309857ee"
   solver-name = "gps-cdcl"
   solver-version = 1
