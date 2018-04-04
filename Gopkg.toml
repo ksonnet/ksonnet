@@ -70,7 +70,7 @@
 
 [[constraint]]
   name = "github.com/sirupsen/logrus"
-  revision = "3d4380f53a34dcdc95f0c1db702615992b38d9a4"
+  revision = "778f2e774c725116edbc3d039dc0dfc1cc62aae8"
 
 [[constraint]]
   name = "github.com/spf13/afero"
