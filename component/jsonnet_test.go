@@ -79,8 +79,8 @@ func TestJsonnet_Name(t *testing.T) {
 }
 
 func TestJsonnet_Objects(t *testing.T) {
-	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
-		files := []string{"guestbook-ui.jsonnet", "k.libsonnet", "k8s.libsonnet", "params.libsonnet"}
+	withAppOsFs(t, "/app", func(a *mocks.App, fs afero.Fs) {
+		files := []string{"guestbook-ui.jsonnet", "params.libsonnet"}
 		for _, file := range files {
 			test.StageFile(t, fs, "guestbook/"+file, "/app/components/"+file)
 		}
@@ -91,6 +91,7 @@ func TestJsonnet_Objects(t *testing.T) {
 		}
 
 		c := NewJsonnet(a, "", "/app/components/guestbook-ui.jsonnet", "/app/components/params.libsonnet")
+		c.useJsonnetMemoryImporter = true
 
 		paramsStr := testdata(t, "guestbook/params.libsonnet")
 

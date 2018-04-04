@@ -89,6 +89,11 @@ func copyFile(fs afero.Fs, src, dest string) error {
 func WithApp(t *testing.T, root string, fn func(*mocks.App, afero.Fs)) {
 	fs := afero.NewMemMapFs()
 
+	WithAppFs(t, root, fs, fn)
+}
+
+// WithAppFs runs an enclosure with a mocked app and fs. Allow supplying the fs.
+func WithAppFs(t *testing.T, root string, fs afero.Fs, fn func(*mocks.App, afero.Fs)) {
 	a := &mocks.App{}
 	a.On("Fs").Return(fs)
 	a.On("Root").Return(root)
