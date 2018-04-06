@@ -13,7 +13,7 @@ ks import [flags]
 ### Options
 
 ```
-  -f, --filename string   Filename or directory for component to import
+  -f, --filename string   Filename, directory, or URL for component to import
   -h, --help              help for import
       --module string     Component module
 ```

@@ -85,7 +85,10 @@ func (cc *componentCreator) Create(name, text string, params param.Params, templ
 	}
 
 	if exists {
-		return "", errors.Errorf("component with name '%s' already exists", name)
+		if module == "" {
+			module = "/"
+		}
+		return "", errors.Errorf("component with name %q in module %q already exists", name, module)
 	}
 
 	log.Infof("Writing component at '%s'", componentPath)

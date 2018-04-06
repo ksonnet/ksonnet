@@ -46,7 +46,7 @@ var importCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(importCmd)
 
-	importCmd.Flags().StringP(flagFilename, shortFilename, "", "Filename or directory for component to import")
+	importCmd.Flags().StringP(flagFilename, shortFilename, "", "Filename, directory, or URL for component to import")
 	viper.BindPFlag(vImportFilename, importCmd.Flags().Lookup(flagFilename))
 	importCmd.Flags().String(flagModule, "", "Component module")
 	viper.BindPFlag(vImportModule, importCmd.Flags().Lookup(flagModule))

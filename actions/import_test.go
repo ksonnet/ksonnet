@@ -16,7 +16,12 @@
 package actions
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/mock"
 
@@ -26,6 +31,43 @@ import (
 	"github.com/ksonnet/ksonnet/prototype"
 	"github.com/stretchr/testify/require"
 )
+
+func TestImport_http(t *testing.T) {
+	withApp(t, func(appMock *amocks.App) {
+		f, err := os.Open(filepath.Join("testdata", "import", "file.yaml"))
+		require.NoError(t, err)
+
+		defer f.Close()
+
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Disposition", `attachment; filename="manifest.yaml"`)
+			http.ServeContent(w, r, "file.yaml", time.Time{}, f)
+		}))
+		defer ts.Close()
+
+		module := "/"
+
+		in := map[string]interface{}{
+			OptionApp:    appMock,
+			OptionModule: module,
+			OptionPath:   ts.URL,
+		}
+
+		a, err := NewImport(in)
+		require.NoError(t, err)
+
+		cm := &cmocks.Manager{}
+		cm.On("CreateComponent", mock.Anything, "/manifest", "",
+			params.Params{}, prototype.YAML).Return("/", nil)
+
+		a.cm = cm
+
+		err = a.Run()
+		require.NoError(t, err)
+
+		cm.AssertExpectations(t)
+	})
+}
 
 func TestImport_file(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
