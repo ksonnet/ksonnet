@@ -17,7 +17,11 @@ package actions
 
 import (
 	"bytes"
+	"io"
+	"mime"
+	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -70,8 +74,80 @@ func NewImport(m map[string]interface{}) (*Import, error) {
 // Run runs the import process.
 func (i *Import) Run() error {
 	if i.path == "" {
-		return errors.New("filename is required")
+		return errors.New("path is required")
 	}
+
+	if strings.HasPrefix(i.path, "http") {
+		return i.handleURL()
+	}
+
+	return i.handleLocal()
+}
+
+func (i *Import) handleURL() error {
+	resp, err := http.Get(i.path)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("unable to download %s: %s", i.path, resp.Status)
+	}
+
+	dir, err := afero.TempDir(i.app.Fs(), "", "")
+	if err != nil {
+		return err
+	}
+
+	defer i.app.Fs().RemoveAll(dir)
+
+	filename, err := extractFilename(resp)
+	if err != nil {
+		return err
+	}
+
+	path := filepath.Join(dir, filename)
+	f, err := i.app.Fs().Create(path)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(f, resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if err := f.Close(); err != nil {
+		return err
+	}
+
+	return i.importFile(path)
+}
+
+func extractFilename(resp *http.Response) (string, error) {
+	filename := resp.Request.URL.Path
+	cd := resp.Header.Get("Content-Disposition")
+	if cd != "" {
+		if _, params, err := mime.ParseMediaType(cd); err == nil {
+			filename = params["filename"]
+		}
+	}
+
+	if filename == "" || strings.HasSuffix(filename, "/") || strings.Contains(filename, "\x00") {
+		return "", errors.New("unable to find name for file")
+	}
+
+	filename = filepath.Base(path.Clean("/" + filename))
+	if filename == "" || filename == "." || filename == "/" {
+		return "", errors.New("unable to find name for file in path")
+	}
+
+	return filename, nil
+}
+
+func (i *Import) handleLocal() error {
 	pathFi, err := i.app.Fs().Stat(i.path)
 	if err != nil {
 		if os.IsNotExist(err) {
