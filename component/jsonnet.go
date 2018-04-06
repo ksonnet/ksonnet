@@ -152,8 +152,27 @@ func (j *Jsonnet) Objects(paramsStr, envName string) ([]*unstructured.Unstructur
 		vm.UseMemoryImporter = true
 	}
 
-	vm.JPaths = []string{libPath}
+	vm.JPaths = []string{
+		libPath,
+		filepath.Join(j.app.Root(), "vendor"),
+	}
 	vm.ExtCode("__ksonnet/params", paramsStr)
+
+	envDetails, err := j.app.Environment(envName)
+	if err != nil {
+		return nil, err
+	}
+
+	dest := map[string]string{
+		"server":    envDetails.Destination.Server,
+		"namespace": envDetails.Destination.Namespace,
+	}
+
+	marshalledDestination, err := json.Marshal(&dest)
+	if err != nil {
+		return nil, err
+	}
+	vm.ExtCode("__ksonnet/environments", string(marshalledDestination))
 
 	snippet, err := afero.ReadFile(j.app.Fs(), j.source)
 	if err != nil {
@@ -326,7 +345,10 @@ func (j *Jsonnet) readParams(envName string) (string, error) {
 	}
 
 	vm := jsonnet.NewVM()
-	vm.JPaths = []string{env.MakePath(j.app.Root())}
+	vm.JPaths = []string{
+		env.MakePath(j.app.Root()),
+		filepath.Join(j.app.Root(), "vendor"),
+	}
 	vm.ExtCode("__ksonnet/params", paramsStr)
 	return vm.EvaluateSnippet("snippet", string(envParams))
 }

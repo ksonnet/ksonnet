@@ -18,6 +18,7 @@ package pipeline
 import (
 	"bytes"
 	"io"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -92,7 +93,9 @@ func (p *Pipeline) EnvParameters(module string) (string, error) {
 	}
 
 	vm := jsonnet.NewVM()
-	vm.JPaths = []string{env.MakePath(p.app.Root())}
+	vm.JPaths = []string{
+		env.MakePath(p.app.Root()),
+		filepath.Join(p.app.Root(), "vendor")}
 	vm.ExtCode("__ksonnet/params", paramsStr)
 	return vm.EvaluateSnippet("snippet", string(envParams))
 }
