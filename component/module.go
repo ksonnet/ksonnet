@@ -108,7 +108,7 @@ func (m *FilesystemModule) SetParam(path []string, value interface{}) error {
 		return err
 	}
 
-	updated, err := params.Set(path, paramsData, "", value, "global")
+	updated, err := params.SetInObject(path, paramsData, "", value, "global")
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (m *FilesystemModule) DeleteParam(path []string) error {
 		return err
 	}
 
-	updated, err := params.Delete(path, paramsData, "", "global")
+	updated, err := params.DeleteFromObject(path, paramsData, "", "global")
 	if err != nil {
 		return err
 	}

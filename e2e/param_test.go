@@ -69,8 +69,8 @@ var _ = Describe("ks param", func() {
 				assertExitStatus(o, 0)
 			})
 
-			XIt("removes a parameter's environment value", func() {
-				o := a.paramList("--env=" + envName)
+			It("removes a parameter's environment value", func() {
+				o := a.paramList("--env", envName)
 				assertOutput("param/delete/env.txt", o.stdout)
 			})
 		})

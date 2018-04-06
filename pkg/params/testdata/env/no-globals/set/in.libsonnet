@@ -1,8 +1,9 @@
 local params = import "../../components/params.libsonnet";
 params + {
   components +: {
-    component1 +: {
-      foo: "bar",
+    guestbook +: {
+      name: "guestbook-dev",
+      replicas: params.global.replicas,
     },
   },
 }

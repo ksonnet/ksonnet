@@ -146,8 +146,6 @@ func (j *Jsonnet) Objects(paramsStr, envName string) ([]*unstructured.Unstructur
 		return nil, err
 	}
 
-	fmt.Println("lib path is", libPath)
-
 	vm := jsonnet.NewVM()
 	if j.useJsonnetMemoryImporter {
 		vm.Fs = j.app.Fs()
@@ -204,7 +202,7 @@ func (j *Jsonnet) SetParam(path []string, value interface{}, options ParamOption
 		return err
 	}
 
-	updatedParams, err := params.Set(path, paramsData, j.Name(false), value, paramsComponentRoot)
+	updatedParams, err := params.SetInObject(path, paramsData, j.Name(false), value, paramsComponentRoot)
 	if err != nil {
 		return err
 	}
@@ -224,7 +222,7 @@ func (j *Jsonnet) DeleteParam(path []string, options ParamOptions) error {
 		return err
 	}
 
-	updatedParams, err := params.Delete(path, paramsData, j.Name(false), paramsComponentRoot)
+	updatedParams, err := params.DeleteFromObject(path, paramsData, j.Name(false), paramsComponentRoot)
 	if err != nil {
 		return err
 	}
