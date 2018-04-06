@@ -18,6 +18,7 @@ package component
 import (
 	"testing"
 
+	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/metadata/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/util/test"
 	"github.com/spf13/afero"
@@ -80,10 +81,20 @@ func TestJsonnet_Name(t *testing.T) {
 
 func TestJsonnet_Objects(t *testing.T) {
 	withAppOsFs(t, "/app", func(a *mocks.App, fs afero.Fs) {
+		env := &app.EnvironmentSpec{
+			Destination: &app.EnvironmentDestinationSpec{
+				Namespace: "default",
+				Server:    "http://example.com",
+			},
+		}
+
+		a.On("Environment", "default").Return(env, nil)
+
 		files := []string{"guestbook-ui.jsonnet", "params.libsonnet"}
 		for _, file := range files {
 			test.StageFile(t, fs, "guestbook/"+file, "/app/components/"+file)
 		}
+		fs.Mkdir("/app/vendor", 0755)
 
 		files = []string{"k.libsonnet", "k8s.libsonnet"}
 		for _, file := range files {

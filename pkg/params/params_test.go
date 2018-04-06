@@ -379,10 +379,10 @@ func TestToMap(t *testing.T) {
 			isErr:         true,
 		},
 		{
-			name:       "unable to find object in params",
+			name:       "unable to convert object to map",
 			paramsData: test.ReadTestData(t, "nested-params.libsonnet"),
 			init: func() {
-				jsonnetFindObjectFn = func(*astext.Object, []string) (*astext.Object, error) {
+				convertObjectToMapFn = func(*astext.Object) (map[string]interface{}, error) {
 					return nil, errors.New("failed")
 				}
 			},

@@ -24,6 +24,84 @@ import (
 	"github.com/spf13/afero"
 )
 
+// SetGlobalParams sets global params for an environment.
+func SetGlobalParams(a app.App, envName string, p param.Params) error {
+	if err := ensureEnvExists(a, envName); err != nil {
+		return err
+	}
+
+	path := envPath(a, envName, globalsFileName)
+
+	exists, err := afero.Exists(a.Fs(), path)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		if err = afero.WriteFile(a.Fs(), path, []byte("{\n}"), app.DefaultFilePermissions); err != nil {
+			return err
+		}
+	}
+
+	text, err := afero.ReadFile(a.Fs(), path)
+	if err != nil {
+		return err
+	}
+
+	egs := params.NewEnvGlobalsSet()
+	updated, err := egs.Set(string(text), p)
+	if err != nil {
+		return err
+	}
+
+	err = afero.WriteFile(a.Fs(), path, []byte(updated), app.DefaultFilePermissions)
+	if err != nil {
+		return err
+	}
+
+	log.WithField("environment-name", envName).
+		Debug("Set global parameters")
+	return nil
+}
+
+// UnsetGlobalParams un-sets global param for an environment.
+func UnsetGlobalParams(a app.App, envName, paramName string) error {
+	if err := ensureEnvExists(a, envName); err != nil {
+		return err
+	}
+
+	path := envPath(a, envName, globalsFileName)
+
+	exists, err := afero.Exists(a.Fs(), path)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return nil
+	}
+
+	text, err := afero.ReadFile(a.Fs(), path)
+	if err != nil {
+		return err
+	}
+
+	egu := params.NewEnvGlobalsUnset()
+	updated, err := egu.Unset(paramName, string(text))
+	if err != nil {
+		return err
+	}
+
+	err = afero.WriteFile(a.Fs(), path, []byte(updated), app.DefaultFilePermissions)
+	if err != nil {
+		return err
+	}
+
+	log.WithField("environment-name", envName).
+		Debug("Set global parameters")
+	return nil
+}
+
 // SetParamsConfig is config items for setting environment params.
 type SetParamsConfig struct {
 	App app.App

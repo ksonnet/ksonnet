@@ -145,7 +145,6 @@ func ToMap(componentName, src, root string) (map[string]interface{}, error) {
 		return nil, err
 	}
 
-	// child, err := jsonnetFindObjectFn(obj, path)
 	m, err := convertObjectToMapFn(componentObject)
 	if err != nil {
 		return nil, err
@@ -294,15 +293,18 @@ func mergeMaps(m1 map[string]interface{}, m2 map[string]interface{}, path []stri
 func componentParams(node ast.Node, componentName string) (*astext.Object, error) {
 	switch t := node.(type) {
 	default:
-		return nil, errors.New("unknown params format")
+		return nil, errors.Errorf("unknown params format: %T", t)
 	case *astext.Object:
-		path := []string{"components", componentName}
-		if componentName == "" {
-			// NOTE: this is module params, so return global
-			path = []string{"global"}
-		}
+		if len(componentName) > 0 {
+			path := []string{"components", componentName}
+			if componentName == "" {
+				// NOTE: this is module params, so return global
+				path = []string{"global"}
+			}
 
-		return jsonnetFindObjectFn(t, path)
+			return jsonnetFindObjectFn(t, path)
+		}
+		return t, nil
 	case *ast.Local:
 		root, ok := node.(*ast.Local)
 		if !ok {
