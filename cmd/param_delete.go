@@ -28,7 +28,7 @@ var (
 )
 
 var paramDeleteCmd = &cobra.Command{
-	Use:   "delete <component-name> <param-key>",
+	Use:   "delete [component-name] <param-key>",
 	Short: paramShortDesc["delete"],
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var name string
