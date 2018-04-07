@@ -16,12 +16,14 @@
 package actions
 
 import (
+	"encoding/json"
 	"io"
 	"os"
 	"sort"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/pkg/util/table"
+	"github.com/pkg/errors"
 )
 
 // RunEnvList runs `env list`
@@ -36,16 +38,18 @@ func RunEnvList(m map[string]interface{}) error {
 
 // EnvList lists available namespaces
 type EnvList struct {
-	app app.App
-	out io.Writer
+	app        app.App
+	outputType string
+	out        io.Writer
 }
 
 // NewEnvList creates an instance of EnvList
 func NewEnvList(m map[string]interface{}) (*EnvList, error) {
 	ol := newOptionLoader(m)
 
-	nl := &EnvList{
-		app: ol.loadApp(),
+	el := &EnvList{
+		app:        ol.loadApp(),
+		outputType: ol.loadOptionalString(OptionOutput),
 
 		out: os.Stdout,
 	}
@@ -54,17 +58,41 @@ func NewEnvList(m map[string]interface{}) (*EnvList, error) {
 		return nil, ol.err
 	}
 
-	return nl, nil
+	if el.outputType == "" {
+		el.outputType = OutputWide
+	}
+
+	return el, nil
 }
 
 // Run runs the env list action.
-func (nl *EnvList) Run() error {
-	environments, err := nl.app.Environments()
+func (el *EnvList) Run() error {
+	switch el.outputType {
+	default:
+		return errors.Errorf("unknown output format %q", el.outputType)
+	case OutputWide:
+		return el.outputWide()
+	case EnvListOutputJSON:
+		return el.outputJSON()
+	}
+}
+
+func (el *EnvList) outputJSON() error {
+	environments, err := el.app.Environments()
 	if err != nil {
 		return err
 	}
 
-	table := table.New(nl.out)
+	return json.NewEncoder(el.out).Encode(environments)
+}
+
+func (el *EnvList) outputWide() error {
+	environments, err := el.app.Environments()
+	if err != nil {
+		return err
+	}
+
+	table := table.New(el.out)
 	table.SetHeader([]string{"name", "override", "kubernetes-version", "namespace", "server"})
 
 	var rows [][]string

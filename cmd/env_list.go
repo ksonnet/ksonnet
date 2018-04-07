@@ -20,6 +20,11 @@ import (
 
 	"github.com/ksonnet/ksonnet/actions"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+const (
+	vEnvListOutput = "env-list-output"
 )
 
 var envListCmd = &cobra.Command{
@@ -31,7 +36,8 @@ var envListCmd = &cobra.Command{
 		}
 
 		m := map[string]interface{}{
-			actions.OptionApp: ka,
+			actions.OptionApp:    ka,
+			actions.OptionOutput: viper.GetString(vEnvListOutput),
 		}
 
 		return runAction(actionEnvList, m)
@@ -48,4 +54,11 @@ current ksonnet app. Specifically, this will display the (1) *name*,
 
 ### Syntax
 `,
+}
+
+func init() {
+	envCmd.AddCommand(envListCmd)
+
+	envListCmd.Flags().StringP(flagOutput, shortOutput, "", "Output format. One of: json|wide")
+	viper.BindPFlag(vEnvListOutput, envListCmd.Flags().Lookup(flagOutput))
 }

@@ -110,3 +110,12 @@ func WithAppFs(t *testing.T, root string, fs afero.Fs, fn func(*mocks.App, afero
 
 	fn(a, fs)
 }
+
+// AssertOutput asserts the output matches the actual contents
+func AssertOutput(t *testing.T, filename, actual string) {
+	path := filepath.Join("testdata", filename)
+	b, err := ioutil.ReadFile(path)
+	require.NoError(t, err)
+
+	require.Equal(t, string(b), actual)
+}
