@@ -17,10 +17,12 @@ package actions
 
 import (
 	"bytes"
+	"path/filepath"
 	"testing"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
 	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/util/test"
 	"github.com/stretchr/testify/require"
 )
 
@@ -39,19 +41,57 @@ func TestEnvList(t *testing.T) {
 		}
 
 		appMock.On("Environments").Return(envs, nil)
-		in := map[string]interface{}{
-			OptionApp: appMock,
+
+		cases := []struct {
+			name         string
+			outputType   string
+			expectedFile string
+			isErr        bool
+		}{
+			{
+				name:         "no format specified",
+				expectedFile: filepath.Join("env", "list", "output.txt"),
+			},
+			{
+				name:         "wide output",
+				outputType:   OutputWide,
+				expectedFile: filepath.Join("env", "list", "output.txt"),
+			},
+			{
+				name:         "json output",
+				outputType:   EnvListOutputJSON,
+				expectedFile: filepath.Join("env", "list", "output.json"),
+			},
+			{
+				name:       "invalid output format",
+				outputType: "invalid",
+				isErr:      true,
+			},
 		}
 
-		a, err := NewEnvList(in)
-		require.NoError(t, err)
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				in := map[string]interface{}{
+					OptionApp:    appMock,
+					OptionOutput: tc.outputType,
+				}
 
-		var buf bytes.Buffer
-		a.out = &buf
+				a, err := NewEnvList(in)
+				require.NoError(t, err)
 
-		err = a.Run()
-		require.NoError(t, err)
+				var buf bytes.Buffer
+				a.out = &buf
 
-		assertOutput(t, "env/list/output.txt", buf.String())
+				err = a.Run()
+				if tc.isErr {
+					require.Error(t, err)
+					return
+				}
+
+				require.NoError(t, err)
+				test.AssertOutput(t, tc.expectedFile, buf.String())
+			})
+		}
+
 	})
 }

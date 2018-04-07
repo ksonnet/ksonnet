@@ -50,7 +50,6 @@ func init() {
 
 	envCmd.AddCommand(envAddCmd)
 	envCmd.AddCommand(envRmCmd)
-	envCmd.AddCommand(envListCmd)
 
 	// TODO: We need to make this default to checking the `kubeconfig` file.
 	envAddCmd.PersistentFlags().String(flagAPISpec, "version:v1.7.0",

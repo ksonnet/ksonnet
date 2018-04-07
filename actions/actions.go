@@ -94,6 +94,13 @@ const (
 	OptionVersion = "version"
 )
 
+const (
+	// OutputWide is wide output
+	OutputWide = "wide"
+	// EnvListOutputJSON is JSON output
+	EnvListOutputJSON = "json"
+)
+
 var (
 	// ErrNotInApp is an error stating the user is not in a ksonnet application directory
 	// hierarchy.

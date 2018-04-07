@@ -28,7 +28,17 @@ func Test_envListCmd(t *testing.T) {
 			args:   []string{"env", "list"},
 			action: actionEnvList,
 			expected: map[string]interface{}{
-				actions.OptionApp: ka,
+				actions.OptionApp:    ka,
+				actions.OptionOutput: "",
+			},
+		},
+		{
+			name:   "with output flag",
+			args:   []string{"env", "list", "-o", "json"},
+			action: actionEnvList,
+			expected: map[string]interface{}{
+				actions.OptionApp:    ka,
+				actions.OptionOutput: "json",
 			},
 		},
 	}

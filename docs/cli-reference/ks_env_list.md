@@ -25,7 +25,8 @@ ks env list [flags]
 ### Options
 
 ```
-  -h, --help   help for list
+  -h, --help            help for list
+  -o, --output string   Output format. One of: json|wide
 ```
 
 ### Options inherited from parent commands
