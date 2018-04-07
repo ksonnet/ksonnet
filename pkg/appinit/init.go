@@ -225,4 +225,5 @@ func (i *initApp) createAppDirTree() error {
 var ignoreData = []byte(`/lib
 /.ksonnet/registries
 /app.override.yaml
+/.ks_environment
 `)
