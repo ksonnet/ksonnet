@@ -54,7 +54,6 @@ func newDelete(m map[string]interface{}, opts ...deleteOpt) (*Delete, error) {
 		app:            ol.loadApp(),
 		clientConfig:   ol.loadClientConfig(),
 		componentNames: ol.loadStringSlice(OptionComponentNames),
-		envName:        ol.loadString(OptionEnvName),
 		gracePeriod:    ol.loadInt64(OptionGracePeriod),
 
 		runDeleteFn: cluster.RunDelete,
@@ -66,6 +65,10 @@ func newDelete(m map[string]interface{}, opts ...deleteOpt) (*Delete, error) {
 
 	for _, opt := range opts {
 		opt(d)
+	}
+
+	if err := setCurrentEnv(d.app, d, ol); err != nil {
+		return nil, err
 	}
 
 	return d, nil
@@ -81,4 +84,8 @@ func (d *Delete) run() error {
 	}
 
 	return d.runDeleteFn(config)
+}
+
+func (d *Delete) setCurrentEnv(name string) {
+	d.envName = name
 }

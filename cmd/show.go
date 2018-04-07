@@ -16,8 +16,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/ksonnet/ksonnet/actions"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -81,14 +79,15 @@ ks show prod -c redis -o json
 ks show dev -c redis -c nginx-server
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("'show' requires an environment name; use `env list` to see available environments\n\n%s", cmd.UsageString())
+		var envName string
+		if len(args) == 1 {
+			envName = args[0]
 		}
 
 		m := map[string]interface{}{
 			actions.OptionApp:            ka,
 			actions.OptionComponentNames: viper.GetStringSlice(vShowComponent),
-			actions.OptionEnvName:        args[0],
+			actions.OptionEnvName:        envName,
 			actions.OptionFormat:         viper.GetString(vShowFormat),
 		}
 

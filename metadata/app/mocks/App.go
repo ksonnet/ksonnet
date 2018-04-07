@@ -53,6 +53,20 @@ func (_m *App) AddRegistry(spec *app.RegistryRefSpec, isOverride bool) error {
 	return r0
 }
 
+// CurrentEnvironment provides a mock function with given fields:
+func (_m *App) CurrentEnvironment() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
 // Environment provides a mock function with given fields: name
 func (_m *App) Environment(name string) (*app.EnvironmentSpec, error) {
 	ret := _m.Called(name)
@@ -254,6 +268,20 @@ func (_m *App) Root() string {
 		r0 = rf()
 	} else {
 		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// SetCurrentEnvironment provides a mock function with given fields: name
+func (_m *App) SetCurrentEnvironment(name string) error {
+	ret := _m.Called(name)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(name)
+	} else {
+		r0 = ret.Error(0)
 	}
 
 	return r0

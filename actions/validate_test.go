@@ -35,48 +35,77 @@ import (
 )
 
 func TestValidate(t *testing.T) {
-	withApp(t, func(appMock *amocks.App) {
-		aEnvName := "default"
-		aComponentNames := make([]string, 0)
-		aModuleName := "module"
-		aClientConfig := &client.Config{}
+	cases := []struct {
+		name        string
+		isSetupErr  bool
+		currentName string
+		envName     string
+	}{
+		{
+			name:    "with a supplied env",
+			envName: "default",
+		},
+		{
+			name:        "with a current env",
+			currentName: "default",
+		},
+		{
+			name:       "without supplied or current env",
+			isSetupErr: true,
+		},
+	}
 
-		env := &app.EnvironmentSpec{}
-		appMock.On("Environment", aEnvName).Return(env, nil)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			withApp(t, func(appMock *amocks.App) {
+				appMock.On("CurrentEnvironment").Return(tc.currentName)
 
-		in := map[string]interface{}{
-			OptionApp:            appMock,
-			OptionEnvName:        aEnvName,
-			OptionModule:         aModuleName,
-			OptionComponentNames: aComponentNames,
-			OptionClientConfig:   aClientConfig,
-		}
+				aComponentNames := make([]string, 0)
+				aModuleName := "module"
+				aClientConfig := &client.Config{}
 
-		a, err := NewValidate(in)
-		require.NoError(t, err)
+				env := &app.EnvironmentSpec{}
+				appMock.On("Environment", "default").Return(env, nil)
 
-		a.discoveryFn = func(a app.App, clientConfig *client.Config, envName string) (discovery.DiscoveryInterface, error) {
-			assert.Equal(t, aEnvName, envName)
-			return &stubDiscovery{}, nil
-		}
+				in := map[string]interface{}{
+					OptionApp:            appMock,
+					OptionEnvName:        tc.envName,
+					OptionModule:         aModuleName,
+					OptionComponentNames: aComponentNames,
+					OptionClientConfig:   aClientConfig,
+				}
 
-		objects := []*unstructured.Unstructured{
-			{},
-		}
-		a.findObjectsFn = func(a app.App, envName string, componentNames []string) ([]*unstructured.Unstructured, error) {
-			assert.Equal(t, "default", envName)
-			assert.Equal(t, aComponentNames, componentNames)
+				a, err := NewValidate(in)
+				if tc.isSetupErr {
+					require.Error(t, err)
+					return
+				}
+				require.NoError(t, err)
 
-			return objects, nil
-		}
+				a.discoveryFn = func(a app.App, clientConfig *client.Config, envName string) (discovery.DiscoveryInterface, error) {
+					assert.Equal(t, "default", envName)
+					return &stubDiscovery{}, nil
+				}
 
-		a.validateObjectFn = func(d discovery.DiscoveryInterface, obj *unstructured.Unstructured) []error {
-			return make([]error, 0)
-		}
+				objects := []*unstructured.Unstructured{
+					{},
+				}
+				a.findObjectsFn = func(a app.App, envName string, componentNames []string) ([]*unstructured.Unstructured, error) {
+					assert.Equal(t, "default", envName)
+					assert.Equal(t, aComponentNames, componentNames)
 
-		err = a.Run()
-		require.NoError(t, err)
-	})
+					return objects, nil
+				}
+
+				a.validateObjectFn = func(d discovery.DiscoveryInterface, obj *unstructured.Unstructured) []error {
+					return make([]error, 0)
+				}
+
+				err = a.Run()
+				require.NoError(t, err)
+			})
+		})
+	}
 }
 
 type stubDiscovery struct{}

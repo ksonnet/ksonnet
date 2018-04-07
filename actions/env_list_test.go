@@ -59,7 +59,7 @@ func TestEnvList(t *testing.T) {
 			},
 			{
 				name:         "json output",
-				outputType:   EnvListOutputJSON,
+				outputType:   OutputJSON,
 				expectedFile: filepath.Join("env", "list", "output.json"),
 			},
 			{
