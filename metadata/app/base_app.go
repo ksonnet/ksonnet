@@ -46,6 +46,21 @@ func newBaseApp(fs afero.Fs, root string) *baseApp {
 	}
 }
 
+func (ba *baseApp) CurrentEnvironment() string {
+	currentPath := filepath.Join(ba.root, currentEnvName)
+	data, err := afero.ReadFile(ba.fs, currentPath)
+	if err != nil {
+		return ""
+	}
+
+	return string(data)
+}
+
+func (ba *baseApp) SetCurrentEnvironment(name string) error {
+	currentPath := filepath.Join(ba.root, currentEnvName)
+	return afero.WriteFile(ba.fs, currentPath, []byte(name), DefaultFilePermissions)
+}
+
 func (ba *baseApp) configPath() string {
 	return filepath.Join(ba.root, "app.yaml")
 }

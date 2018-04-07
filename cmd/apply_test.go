@@ -38,12 +38,6 @@ func Test_applyCmd(t *testing.T) {
 				actions.OptionClientConfig:   applyClientConfig,
 			},
 		},
-		{
-			name:   "with no env",
-			args:   []string{"apply"},
-			action: actionApply,
-			isErr:  true,
-		},
 	}
 
 	runTestCmd(t, cases)

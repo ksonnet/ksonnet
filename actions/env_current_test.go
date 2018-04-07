@@ -16,33 +16,43 @@
 package actions
 
 import (
-	"os"
+	"bytes"
 	"testing"
 
 	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
-	"github.com/ksonnet/ksonnet/pkg/cluster"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestShow(t *testing.T) {
+func TestEnvCurrent(t *testing.T) {
 	cases := []struct {
 		name        string
-		isSetupErr  bool
-		currentName string
 		envName     string
+		currentName string
+		unset       bool
+		output      string
+		isErr       bool
 	}{
 		{
-			name:    "with a supplied env",
+			name: "show current environment with no current environment",
+		},
+		{
+			name:        "show current environment with current environment set",
+			currentName: "default",
+			output:      "default",
+		},
+		{
+			name:    "set current",
 			envName: "default",
 		},
 		{
-			name:        "with a current env",
-			currentName: "default",
+			name:  "unset current",
+			unset: true,
 		},
 		{
-			name:       "without supplied or current env",
-			isSetupErr: true,
+			name:    "error if set and unset together",
+			unset:   true,
+			envName: "default",
+			isErr:   true,
 		},
 	}
 
@@ -50,50 +60,38 @@ func TestShow(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			withApp(t, func(appMock *amocks.App) {
 				appMock.On("CurrentEnvironment").Return(tc.currentName)
+				appMock.On("SetCurrentEnvironment", tc.envName).Return(nil)
 
 				in := map[string]interface{}{
-					OptionApp:            appMock,
-					OptionComponentNames: []string{},
-					OptionEnvName:        tc.envName,
-					OptionFormat:         "yaml",
+					OptionApp:     appMock,
+					OptionEnvName: tc.envName,
+					OptionUnset:   tc.unset,
 				}
 
-				expected := cluster.ShowConfig{
-					App:            appMock,
-					ComponentNames: []string{},
-					EnvName:        "default",
-					Format:         "yaml",
-					Out:            os.Stdout,
-				}
+				a, err := newEnvCurrent(in)
+				require.NoError(t, err)
 
-				runShowOpt := func(a *Show) {
-					a.runShowFn = func(config cluster.ShowConfig, opts ...cluster.ShowOpts) error {
-						assert.Equal(t, expected, config)
-						return nil
-					}
-				}
+				var buf bytes.Buffer
+				a.out = &buf
 
-				a, err := newShow(in, runShowOpt)
-				if tc.isSetupErr {
+				err = a.run()
+				if tc.isErr {
 					require.Error(t, err)
 					return
 				}
-				require.NoError(t, err)
-
-				err = a.run()
 				require.NoError(t, err)
 			})
 		})
 	}
 }
 
-func TestShow_invalid_input(t *testing.T) {
+func TestEnvCurrent_invalid_input(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		in := map[string]interface{}{
-			OptionClientConfig: "invalid",
+			OptionApp: "invalid",
 		}
 
-		_, err := newShow(in)
+		_, err := newEnvCurrent(in)
 		require.Error(t, err)
 	})
 }

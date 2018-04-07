@@ -36,10 +36,11 @@ const (
 var (
 	envClientConfig *client.Config
 	envShortDesc    = map[string]string{
-		"add":  "Add a new environment to a ksonnet application",
-		"list": "List all environments in a ksonnet application",
-		"rm":   "Delete an environment from a ksonnet application",
-		"set":  "Set environment-specific fields (name, namespace, server)",
+		"add":     "Add a new environment to a ksonnet application",
+		"current": "Sets the current environment",
+		"list":    "List all environments in a ksonnet application",
+		"rm":      "Delete an environment from a ksonnet application",
+		"set":     "Set environment-specific fields (name, namespace, server)",
 	}
 )
 

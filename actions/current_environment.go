@@ -13,29 +13,28 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package cmd
+package actions
 
-import (
-	"testing"
+import "github.com/pkg/errors"
 
-	"github.com/ksonnet/ksonnet/actions"
-)
+type environmentMetadata interface {
+	CurrentEnvironment() string
+}
 
-func Test_deleteCmd(t *testing.T) {
-	cases := []cmdTestCase{
-		{
-			name:   "with no options",
-			args:   []string{"delete", "default"},
-			action: actionDelete,
-			expected: map[string]interface{}{
-				actions.OptionApp:            nil,
-				actions.OptionEnvName:        "default",
-				actions.OptionComponentNames: make([]string, 0),
-				actions.OptionClientConfig:   deleteClientConfig,
-				actions.OptionGracePeriod:    int64(-1),
-			},
-		},
+type currentEnver interface {
+	setCurrentEnv(name string)
+}
+
+func setCurrentEnv(em environmentMetadata, ce currentEnver, ol *optionLoader) error {
+	envName := ol.loadOptionalString(OptionEnvName)
+	if envName == "" {
+		envName = em.CurrentEnvironment()
 	}
 
-	runTestCmd(t, cases)
+	if envName == "" {
+		return errors.Errorf("environment is not set; use `env list` to see available environments")
+	}
+
+	ce.setCurrentEnv(envName)
+	return nil
 }

@@ -16,8 +16,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
@@ -57,15 +55,16 @@ var deleteCmd = &cobra.Command{
 	Use:   "delete [env-name] [-c <component-name>]",
 	Short: deleteShortDesc,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("'delete' requires an environment name; use `env list` to see available environments\n\n%s", cmd.UsageString())
+		var envName string
+		if len(args) == 1 {
+			envName = args[0]
 		}
 
 		m := map[string]interface{}{
 			actions.OptionApp:            ka,
 			actions.OptionClientConfig:   deleteClientConfig,
 			actions.OptionComponentNames: viper.GetStringSlice(vDeleteComponent),
-			actions.OptionEnvName:        args[0],
+			actions.OptionEnvName:        envName,
 			actions.OptionGracePeriod:    viper.GetInt64(vDeleteGracePeriod),
 		}
 

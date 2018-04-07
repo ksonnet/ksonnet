@@ -38,6 +38,9 @@ const (
 
 	// LibDirName is the directory name for libraries.
 	LibDirName = "lib"
+
+	// currentEnvName is the file which selects the current environment.
+	currentEnvName = ".ks_environment"
 )
 
 var (
@@ -52,21 +55,41 @@ var (
 
 // App is a ksonnet application.
 type App interface {
+	// AddEnvironment adds an environment.
 	AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec, isOverride bool) error
+	// AddRegistry adds a registry.
 	AddRegistry(spec *RegistryRefSpec, isOverride bool) error
+	// CurrentEnvironment returns the current environment name or an empty string.
+	CurrentEnvironment() string
+	// Environment finds an environment by name.
 	Environment(name string) (*EnvironmentSpec, error)
+	// Environments returns all environments.
 	Environments() (EnvironmentSpecs, error)
+	// EnvironmentParams returns params for an environment.
 	EnvironmentParams(name string) (string, error)
+	// Fs is the app's afero Fs.
 	Fs() afero.Fs
+	// Init inits an environment.
 	Init() error
+	// LibPath returns the path of the lib for an environment.
 	LibPath(envName string) (string, error)
+	// Libraries returns all environments.
 	Libraries() (LibraryRefSpecs, error)
+	// Registries returns all registries.
 	Registries() (RegistryRefSpecs, error)
+	// RemoveEnvironment removes an environment from the main configuration or an override.
 	RemoveEnvironment(name string, override bool) error
+	// RenameEnvironment renames an environment in the main configuration or an override.
 	RenameEnvironment(from, to string, override bool) error
+	// Root returns the root path of the application.
 	Root() string
+	// SetCurrentEnvironment sets the current environment.
+	SetCurrentEnvironment(name string) error
+	// UpdateTargets sets the targets for an environment.
 	UpdateTargets(envName string, targets []string) error
+	// UpdateLib updates a library.
 	UpdateLib(name string, spec *LibraryRefSpec) error
+	// Upgrade upgrades an application to the current version.
 	Upgrade(dryRun bool) error
 }
 

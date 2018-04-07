@@ -72,7 +72,7 @@ func (el *EnvList) Run() error {
 		return errors.Errorf("unknown output format %q", el.outputType)
 	case OutputWide:
 		return el.outputWide()
-	case EnvListOutputJSON:
+	case OutputJSON:
 		return el.outputJSON()
 	}
 }

@@ -75,7 +75,7 @@ var _ = Describe("ks param", func() {
 			})
 		})
 
-		FContext("removing environment global", func() {
+		Context("removing environment global", func() {
 			BeforeEach(func() {
 				o := a.runKs("param", "set", "department", "engineering", "--env", "default")
 				assertExitStatus(o, 0)
@@ -142,7 +142,7 @@ var _ = Describe("ks param", func() {
 			})
 		})
 
-		FContext("setting environment global", func() {
+		Context("setting environment global", func() {
 			JustBeforeEach(func() {
 				o := a.runKs("param", "set", "department", "engineering", "--env", "default")
 				assertExitStatus(o, 0)

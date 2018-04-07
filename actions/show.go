@@ -57,7 +57,6 @@ func newShow(m map[string]interface{}, opts ...showOpt) (*Show, error) {
 	s := &Show{
 		app:            ol.loadApp(),
 		componentNames: ol.loadStringSlice(OptionComponentNames),
-		envName:        ol.loadString(OptionEnvName),
 		format:         ol.loadString(OptionFormat),
 
 		out:       os.Stdout,
@@ -70,6 +69,10 @@ func newShow(m map[string]interface{}, opts ...showOpt) (*Show, error) {
 
 	for _, opt := range opts {
 		opt(s)
+	}
+
+	if err := setCurrentEnv(s.app, s, ol); err != nil {
+		return nil, err
 	}
 
 	return s, nil
@@ -85,4 +88,8 @@ func (s *Show) run() error {
 	}
 
 	return s.runShowFn(config)
+}
+
+func (s *Show) setCurrentEnv(name string) {
+	s.envName = name
 }

@@ -26,36 +26,66 @@ import (
 )
 
 func TestDelete(t *testing.T) {
-	withApp(t, func(appMock *amocks.App) {
-		in := map[string]interface{}{
-			OptionApp:            appMock,
-			OptionClientConfig:   &client.Config{},
-			OptionComponentNames: []string{},
-			OptionEnvName:        "default",
-			OptionGracePeriod:    int64(3),
-		}
+	cases := []struct {
+		name        string
+		isSetupErr  bool
+		currentName string
+		envName     string
+	}{
+		{
+			name:    "with a supplied env",
+			envName: "default",
+		},
+		{
+			name:        "with a current env",
+			currentName: "default",
+		},
+		{
+			name:       "without supplied or current env",
+			isSetupErr: true,
+		},
+	}
 
-		expected := cluster.DeleteConfig{
-			App:            appMock,
-			ClientConfig:   &client.Config{},
-			ComponentNames: []string{},
-			EnvName:        "default",
-			GracePeriod:    3,
-		}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			withApp(t, func(appMock *amocks.App) {
+				appMock.On("CurrentEnvironment").Return(tc.currentName)
 
-		runDeleteOpt := func(a *Delete) {
-			a.runDeleteFn = func(config cluster.DeleteConfig, opts ...cluster.DeleteOpts) error {
-				assert.Equal(t, expected, config)
-				return nil
-			}
-		}
+				in := map[string]interface{}{
+					OptionApp:            appMock,
+					OptionClientConfig:   &client.Config{},
+					OptionComponentNames: []string{},
+					OptionEnvName:        tc.envName,
+					OptionGracePeriod:    int64(3),
+				}
 
-		a, err := newDelete(in, runDeleteOpt)
-		require.NoError(t, err)
+				expected := cluster.DeleteConfig{
+					App:            appMock,
+					ClientConfig:   &client.Config{},
+					ComponentNames: []string{},
+					EnvName:        "default",
+					GracePeriod:    3,
+				}
 
-		err = a.run()
-		require.NoError(t, err)
-	})
+				runDeleteOpt := func(a *Delete) {
+					a.runDeleteFn = func(config cluster.DeleteConfig, opts ...cluster.DeleteOpts) error {
+						assert.Equal(t, expected, config)
+						return nil
+					}
+				}
+
+				a, err := newDelete(in, runDeleteOpt)
+				if tc.isSetupErr {
+					require.Error(t, err)
+					return
+				}
+				require.NoError(t, err)
+
+				err = a.run()
+				require.NoError(t, err)
+			})
+		})
+	}
 }
 
 func TestDelete_invalid_input(t *testing.T) {

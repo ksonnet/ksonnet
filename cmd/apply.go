@@ -16,8 +16,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/ksonnet/ksonnet/actions"
 
 	"github.com/spf13/viper"
@@ -70,8 +68,9 @@ var applyCmd = &cobra.Command{
 	Use:   "apply <env-name> [-c <component-name>] [--dry-run]",
 	Short: applyShortDesc,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("'apply' requires an environment name; use `env list` to see available environments\n\n%s", cmd.UsageString())
+		var envName string
+		if len(args) == 1 {
+			envName = args[0]
 		}
 
 		m := map[string]interface{}{
@@ -80,7 +79,7 @@ var applyCmd = &cobra.Command{
 			actions.OptionComponentNames: viper.GetStringSlice(vApplyComponent),
 			actions.OptionCreate:         viper.GetBool(vApplyCreate),
 			actions.OptionDryRun:         viper.GetBool(vApplyDryRun),
-			actions.OptionEnvName:        args[0],
+			actions.OptionEnvName:        envName,
 			actions.OptionGcTag:          viper.GetString(vApplyGcTag),
 			actions.OptionSkipGc:         viper.GetBool(vApplySkipGc),
 		}

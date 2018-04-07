@@ -59,7 +59,6 @@ func newApply(m map[string]interface{}, opts ...applyOpt) (*Apply, error) {
 		componentNames: ol.loadStringSlice(OptionComponentNames),
 		create:         ol.loadBool(OptionCreate),
 		dryRun:         ol.loadBool(OptionDryRun),
-		envName:        ol.loadString(OptionEnvName),
 		gcTag:          ol.loadString(OptionGcTag),
 		skipGc:         ol.loadBool(OptionSkipGc),
 
@@ -72,6 +71,10 @@ func newApply(m map[string]interface{}, opts ...applyOpt) (*Apply, error) {
 
 	for _, opt := range opts {
 		opt(a)
+	}
+
+	if err := setCurrentEnv(a.app, a, ol); err != nil {
+		return nil, err
 	}
 
 	return a, nil
@@ -90,4 +93,8 @@ func (a *Apply) run() error {
 	}
 
 	return a.runApplyFn(config)
+}
+
+func (a *Apply) setCurrentEnv(name string) {
+	a.envName = name
 }

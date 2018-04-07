@@ -16,11 +16,60 @@
 package app
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func Test_baseapp_CurrentEnvironment(t *testing.T) {
+	cases := []struct {
+		name     string
+		init     func(*testing.T, afero.Fs)
+		expected string
+	}{
+		{
+			name: "without a current environment set",
+		},
+		{
+			name: "with a current environment set",
+			init: func(t *testing.T, fs afero.Fs) {
+				path := filepath.Join("/", currentEnvName)
+				err := afero.WriteFile(fs, path, []byte("default"), DefaultFilePermissions)
+				require.NoError(t, err)
+			},
+			expected: "default",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+			stageFile(t, fs, "app010_app.yaml", "/app.yaml")
+			ba := newBaseApp(fs, "/")
+
+			if tc.init != nil {
+				tc.init(t, fs)
+			}
+			got := ba.CurrentEnvironment()
+			require.Equal(t, tc.expected, got)
+		})
+	}
+}
+
+func Test_baseapp_SetCurrentEnvironment(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	stageFile(t, fs, "app010_app.yaml", "/app.yaml")
+	ba := newBaseApp(fs, "/")
+
+	err := ba.SetCurrentEnvironment("default")
+	require.NoError(t, err)
+
+	current := ba.CurrentEnvironment()
+	assert.Equal(t, "default", current)
+}
 
 func Test_baseApp_AddRegistry(t *testing.T) {
 	fs := afero.NewMemMapFs()

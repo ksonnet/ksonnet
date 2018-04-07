@@ -21,18 +21,26 @@ import (
 	"github.com/ksonnet/ksonnet/actions"
 )
 
-func Test_deleteCmd(t *testing.T) {
+func Test_envCurrentCmd(t *testing.T) {
 	cases := []cmdTestCase{
 		{
-			name:   "with no options",
-			args:   []string{"delete", "default"},
-			action: actionDelete,
+			name:   "in general",
+			args:   []string{"env", "current"},
+			action: actionEnvCurrent,
 			expected: map[string]interface{}{
-				actions.OptionApp:            nil,
-				actions.OptionEnvName:        "default",
-				actions.OptionComponentNames: make([]string, 0),
-				actions.OptionClientConfig:   deleteClientConfig,
-				actions.OptionGracePeriod:    int64(-1),
+				actions.OptionApp:     ka,
+				actions.OptionEnvName: "",
+				actions.OptionUnset:   false,
+			},
+		},
+		{
+			name:   "set current",
+			args:   []string{"env", "current", "--set", "default"},
+			action: actionEnvCurrent,
+			expected: map[string]interface{}{
+				actions.OptionApp:     ka,
+				actions.OptionEnvName: "default",
+				actions.OptionUnset:   false,
 			},
 		},
 	}

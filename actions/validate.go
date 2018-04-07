@@ -68,7 +68,6 @@ func NewValidate(m map[string]interface{}) (*Validate, error) {
 
 	v := &Validate{
 		app:            ol.loadApp(),
-		envName:        ol.loadString(OptionEnvName),
 		module:         ol.loadString(OptionModule),
 		componentNames: ol.loadStringSlice(OptionComponentNames),
 		clientConfig:   ol.loadClientConfig(),
@@ -81,6 +80,10 @@ func NewValidate(m map[string]interface{}) (*Validate, error) {
 
 	if ol.err != nil {
 		return nil, ol.err
+	}
+
+	if err := setCurrentEnv(v.app, v, ol); err != nil {
+		return nil, err
 	}
 
 	return v, nil
@@ -135,4 +138,8 @@ func validateObject(d discovery.DiscoveryInterface, obj *unstructured.Unstructur
 func findObjects(a app.App, envName string, componentNames []string) ([]*unstructured.Unstructured, error) {
 	p := pipeline.New(a, envName)
 	return p.Objects(componentNames)
+}
+
+func (v *Validate) setCurrentEnv(name string) {
+	v.envName = name
 }

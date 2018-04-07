@@ -29,6 +29,7 @@ const (
 	actionDelete
 	actionDiff
 	actionEnvAdd
+	actionEnvCurrent
 	actionEnvDescribe
 	actionEnvList
 	actionEnvRm
@@ -69,6 +70,7 @@ var (
 		actionDelete:        actions.RunDelete,
 		// actionDiff
 		actionEnvAdd:       actions.RunEnvAdd,
+		actionEnvCurrent:   actions.RunEnvCurrent,
 		actionEnvDescribe:  actions.RunEnvDescribe,
 		actionEnvList:      actions.RunEnvList,
 		actionEnvRm:        actions.RunEnvRm,

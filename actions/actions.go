@@ -86,6 +86,8 @@ const (
 	OptionSkipGc = "skip-gc"
 	// OptionSpecFlag is specFlag option. Used for setting k8s spec.
 	OptionSpecFlag = "spec-flag"
+	// OptionUnset is unset option.
+	OptionUnset = "unset"
 	// OptionURI is uri option. Used for setting registry URI.
 	OptionURI = "URI"
 	// OptionValue is value option.
@@ -97,8 +99,8 @@ const (
 const (
 	// OutputWide is wide output
 	OutputWide = "wide"
-	// EnvListOutputJSON is JSON output
-	EnvListOutputJSON = "json"
+	// OutputJSON is JSON output
+	OutputJSON = "json"
 )
 
 var (

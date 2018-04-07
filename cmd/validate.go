@@ -18,7 +18,6 @@ package cmd
 import (
 	"github.com/spf13/viper"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/ksonnet/ksonnet/actions"
@@ -48,13 +47,14 @@ var validateCmd = &cobra.Command{
 	Use:   "validate <env-name> [-c <component-name>]",
 	Short: valShortDesc,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return errors.Errorf("'validate' requires an environment name; use `env list` to see available environments\n\n%s", cmd.UsageString())
+		var envName string
+		if len(args) == 1 {
+			envName = args[0]
 		}
 
 		m := map[string]interface{}{
 			actions.OptionApp:            ka,
-			actions.OptionEnvName:        args[0],
+			actions.OptionEnvName:        envName,
 			actions.OptionModule:         "",
 			actions.OptionComponentNames: viper.GetStringSlice(vValidateComponent),
 			actions.OptionClientConfig:   validateClientConfig,

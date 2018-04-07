@@ -34,12 +34,6 @@ func Test_showCmd(t *testing.T) {
 				actions.OptionFormat:         "yaml",
 			},
 		},
-		{
-			name:   "with no env",
-			args:   []string{"show"},
-			action: actionShow,
-			isErr:  true,
-		},
 	}
 
 	runTestCmd(t, cases)

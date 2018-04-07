@@ -26,42 +26,72 @@ import (
 )
 
 func TestApply(t *testing.T) {
-	withApp(t, func(appMock *amocks.App) {
-		in := map[string]interface{}{
-			OptionApp:            appMock,
-			OptionClientConfig:   &client.Config{},
-			OptionComponentNames: []string{},
-			OptionCreate:         true,
-			OptionDryRun:         true,
-			OptionEnvName:        "default",
-			OptionGcTag:          "gc-tag",
-			OptionSkipGc:         true,
-		}
+	cases := []struct {
+		name        string
+		isSetupErr  bool
+		currentName string
+		envName     string
+	}{
+		{
+			name:    "with a supplied env",
+			envName: "default",
+		},
+		{
+			name:        "with a current env",
+			currentName: "default",
+		},
+		{
+			name:       "without supplied or current env",
+			isSetupErr: true,
+		},
+	}
 
-		expected := cluster.ApplyConfig{
-			App:            appMock,
-			ClientConfig:   &client.Config{},
-			ComponentNames: []string{},
-			Create:         true,
-			DryRun:         true,
-			EnvName:        "default",
-			GcTag:          "gc-tag",
-			SkipGc:         true,
-		}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			withApp(t, func(appMock *amocks.App) {
+				appMock.On("CurrentEnvironment").Return(tc.currentName)
 
-		runApplyOpt := func(a *Apply) {
-			a.runApplyFn = func(config cluster.ApplyConfig, opts ...cluster.ApplyOpts) error {
-				assert.Equal(t, expected, config)
-				return nil
-			}
-		}
+				in := map[string]interface{}{
+					OptionApp:            appMock,
+					OptionClientConfig:   &client.Config{},
+					OptionComponentNames: []string{},
+					OptionCreate:         true,
+					OptionDryRun:         true,
+					OptionEnvName:        tc.envName,
+					OptionGcTag:          "gc-tag",
+					OptionSkipGc:         true,
+				}
 
-		a, err := newApply(in, runApplyOpt)
-		require.NoError(t, err)
+				expected := cluster.ApplyConfig{
+					App:            appMock,
+					ClientConfig:   &client.Config{},
+					ComponentNames: []string{},
+					Create:         true,
+					DryRun:         true,
+					EnvName:        "default",
+					GcTag:          "gc-tag",
+					SkipGc:         true,
+				}
 
-		err = a.run()
-		require.NoError(t, err)
-	})
+				runApplyOpt := func(a *Apply) {
+					a.runApplyFn = func(config cluster.ApplyConfig, opts ...cluster.ApplyOpts) error {
+						assert.Equal(t, expected, config)
+						return nil
+					}
+				}
+
+				a, err := newApply(in, runApplyOpt)
+				if tc.isSetupErr {
+					require.Error(t, err)
+					return
+				}
+				require.NoError(t, err)
+
+				err = a.run()
+				require.NoError(t, err)
+			})
+		})
+	}
 }
 
 func TestApply_invalid_input(t *testing.T) {
