@@ -25,6 +25,7 @@ import (
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/pkg/params"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
@@ -167,6 +168,8 @@ func (m *FilesystemModule) ResolvedParams() (string, error) {
 
 // Params returns the params for a module.
 func (m *FilesystemModule) Params(envName string) ([]ModuleParameter, error) {
+	m.log().Debug("list module params")
+
 	components, err := m.Components()
 	if err != nil {
 		return nil, err
@@ -290,4 +293,8 @@ func (m *FilesystemModule) Components() ([]Component, error) {
 	}
 
 	return components, nil
+}
+
+func (m *FilesystemModule) log() *logrus.Entry {
+	return logrus.WithField("module-name", m.Name())
 }

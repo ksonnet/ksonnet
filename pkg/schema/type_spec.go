@@ -13,7 +13,7 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package component
+package schema
 
 import (
 	"strings"
@@ -24,17 +24,17 @@ import (
 
 // TypeSpec describes an object's type.
 type TypeSpec struct {
-	// kind is the kind for the object.
-	kind string
 	// APIVersion is the api version of the object.
-	apiVersion string
+	APIVersion string
+	// RawKind is the unformatted kind for the object.
+	RawKind string
 }
 
 // NewTypeSpec creates an instance of TypeSpec.
 func NewTypeSpec(apiVersion, kind string) (*TypeSpec, error) {
 	ts := &TypeSpec{
-		kind:       kind,
-		apiVersion: apiVersion,
+		RawKind:    kind,
+		APIVersion: apiVersion,
 	}
 
 	if err := ts.validate(); err != nil {
@@ -45,8 +45,8 @@ func NewTypeSpec(apiVersion, kind string) (*TypeSpec, error) {
 }
 
 // validate validates the TypeSpec.
-func (ts TypeSpec) validate() error {
-	if ts.kind == "" || ts.apiVersion == "" {
+func (ts *TypeSpec) validate() error {
+	if ts.RawKind == "" || ts.APIVersion == "" {
 		return errors.Errorf("document doesn't describe a kubernetes object: %#v", ts)
 	}
 
@@ -54,7 +54,7 @@ func (ts TypeSpec) validate() error {
 }
 
 // GVK returns the GVK descriptor for the TypeSpec.
-func (ts TypeSpec) GVK() GVK {
+func (ts *TypeSpec) GVK() GVK {
 	group := ts.Group()
 	version := ts.Version()
 	kind := ts.Kind()
@@ -63,8 +63,8 @@ func (ts TypeSpec) GVK() GVK {
 }
 
 // Group is the group as defined by the TypeSpec.
-func (ts TypeSpec) Group() []string {
-	parts := strings.Split(ts.apiVersion, "/")
+func (ts *TypeSpec) Group() []string {
+	parts := strings.Split(ts.APIVersion, "/")
 	if len(parts) == 1 {
 		return []string{"core"}
 	}
@@ -73,8 +73,8 @@ func (ts TypeSpec) Group() []string {
 }
 
 // Version is the version as defined by the TypeSpec.
-func (ts TypeSpec) Version() string {
-	parts := strings.Split(ts.apiVersion, "/")
+func (ts *TypeSpec) Version() string {
+	parts := strings.Split(ts.APIVersion, "/")
 	if len(parts) == 1 {
 		return parts[0]
 	}
@@ -82,7 +82,7 @@ func (ts TypeSpec) Version() string {
 	return parts[1]
 }
 
-// Kind is the kind as specified by the TypeSpec.
-func (ts TypeSpec) Kind() string {
-	return ksonnet.FormatKind(ts.kind)
+// Kind is the kind for the object.
+func (ts *TypeSpec) Kind() string {
+	return ksonnet.FormatKind(ts.RawKind)
 }

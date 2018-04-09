@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/schema"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
@@ -43,8 +44,8 @@ type Summary struct {
 }
 
 // GVK converts a summary to a group - version - kind.
-func (s *Summary) typeSpec() (*TypeSpec, error) {
-	return NewTypeSpec(s.APIVersion, s.Kind)
+func (s *Summary) typeSpec() (*schema.TypeSpec, error) {
+	return schema.NewTypeSpec(s.APIVersion, s.Kind)
 }
 
 // Component is a ksonnet Component interface.

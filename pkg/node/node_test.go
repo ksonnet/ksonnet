@@ -93,7 +93,7 @@ func TestNode_Search2(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			item, err := node.Search2(tc.path...)
+			item, err := node.Search(tc.path...)
 			if tc.isErr {
 				require.Error(t, err)
 			} else {

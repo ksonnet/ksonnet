@@ -13,7 +13,7 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package component
+package schema
 
 var (
 	// TODO: might need something in ksonnet lib to look this up

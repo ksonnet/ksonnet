@@ -65,6 +65,9 @@ vet:
 fmt:
 	$(GOFMT) -s -w $(shell $(GO) list -f '{{.Dir}}' $(GO_PACKAGES))
 
+generate:
+	$(GO) generate ./...
+
 clean:
 	$(RM) ./ks ./docs/cli-reference/ks*.md
 
