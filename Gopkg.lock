@@ -19,6 +19,14 @@
   version = "v9.8.1"
 
 [[projects]]
+  name = "github.com/GeertJohan/go.rice"
+  packages = [
+    ".",
+    "embedded"
+  ]
+  revision = "c02ca9a983da5807ddf7d796784928f5be4afd09"
+
+[[projects]]
   name = "github.com/PuerkitoBio/purell"
   packages = ["."]
   revision = "b938d81255b5473c57635324295cb0fe398c7a58"
@@ -46,6 +54,12 @@
   packages = ["md2man"]
   revision = "1d903dcb749992f3741d744c0f8376b4bd7eb3e1"
   version = "v1.0.7"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/daaku/go.zipexe"
+  packages = ["."]
+  revision = "a5fe2436ffcb3236e175e5149162b41cd28bd27d"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -249,6 +263,12 @@
   name = "github.com/juju/ratelimit"
   packages = ["."]
   revision = "59fac5042749a5afb9af70e813da1dd5474f0167"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/kardianos/osext"
+  packages = ["."]
+  revision = "ae77be60afb1dcacde03767a8c37337fad28ac14"
 
 [[projects]]
   name = "github.com/ksonnet/ksonnet-lib"
@@ -675,6 +695,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e693f795e1fe461827efc6e0d1a0a7e537142eae8440f0e0079d3dc01b4e9887"
+  inputs-digest = "94ae14fc6f06fe920766e3a94e71635c3071d4afa4a9013b81fc32d23b24d3b5"
   solver-name = "gps-cdcl"
   solver-version = 1
