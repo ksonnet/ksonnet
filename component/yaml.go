@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -28,15 +27,15 @@ import (
 	"strconv"
 	"strings"
 
-	jsonnet "github.com/google/go-jsonnet"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/pkg/params"
+	"github.com/ksonnet/ksonnet/pkg/schema"
 	jsonnetutil "github.com/ksonnet/ksonnet/pkg/util/jsonnet"
 	"github.com/ksonnet/ksonnet/pkg/util/k8s"
 	utilyaml "github.com/ksonnet/ksonnet/pkg/util/yaml"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
-	yaml "gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	amyaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -45,51 +44,6 @@ import (
 const (
 	paramsComponentRoot = "components"
 )
-
-var (
-	// ErrEmptyYAML is an empty body error.
-	ErrEmptyYAML = errors.New("body is empty")
-)
-
-// ImportYaml converts a reader containing YAML to a TypeSpec and Properties.
-func ImportYaml(r io.Reader) (*TypeSpec, Properties, error) {
-	b, err := ioutil.ReadAll(r)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if len(b) == 0 {
-		return nil, nil, ErrEmptyYAML
-	}
-
-	var m map[string]interface{}
-	if err = yaml.Unmarshal(b, &m); err != nil {
-		return nil, nil, err
-	}
-
-	props := Properties{}
-
-	var kind string
-	var apiVersion string
-
-	for k, v := range m {
-		switch k {
-		case "apiVersion":
-			apiVersion = v.(string)
-		case "kind":
-			kind = v.(string)
-		default:
-			props[k] = v
-		}
-	}
-
-	ts, err := NewTypeSpec(apiVersion, kind)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return ts, props, nil
-}
 
 // YAML represents a YAML component. Since JSON is a subset of YAML, it can handle JSON as well.
 type YAML struct {
@@ -128,18 +82,12 @@ func (y *YAML) Name(wantsNameSpaced bool) string {
 
 // Params returns params for a component.
 func (y *YAML) Params(envName string) ([]ModuleParameter, error) {
-	libPath, err := y.app.LibPath("default")
+	y.log().WithField("env-name", envName).Debug("getting component params")
+
+	ve, err := schema.ValueExtractorFactory()
 	if err != nil {
 		return nil, err
 	}
-
-	k8sPath := filepath.Join(libPath, "k8s.libsonnet")
-	obj, err := jsonnetutil.ImportFromFs(k8sPath, y.app.Fs())
-	if err != nil {
-		return nil, err
-	}
-
-	ve := NewValueExtractor(obj)
 
 	// find all the params for this component
 	// keys will look like `component-id`
@@ -165,6 +113,7 @@ func (y *YAML) Params(envName string) ([]ModuleParameter, error) {
 
 	var params []ModuleParameter
 	for componentName, componentValue := range props {
+		y.log().WithField("prop-name", componentName).Debug("searching for props")
 		matches := re.FindAllStringSubmatch(componentName, 1)
 		if len(matches) > 0 {
 			index := matches[0][1]
@@ -173,9 +122,9 @@ func (y *YAML) Params(envName string) ([]ModuleParameter, error) {
 				return nil, err
 			}
 
-			ts, props, err := ImportYaml(readers[i])
+			ts, props, err := schema.ImportYaml(readers[i])
 			if err != nil {
-				if err == ErrEmptyYAML {
+				if err == schema.ErrEmptyYAML {
 					continue
 				}
 				return nil, err
@@ -203,7 +152,7 @@ func (y *YAML) Params(envName string) ([]ModuleParameter, error) {
 	return params, nil
 }
 
-func isLeaf(path []string, key string, valueMap map[string]Values) (string, bool) {
+func isLeaf(path []string, key string, valueMap map[string]schema.Values) (string, bool) {
 	childPath := strings.Join(append(path, key), ".")
 	for _, v := range valueMap {
 		if strings.Join(v.Lookup, ".") == childPath {
@@ -214,7 +163,13 @@ func isLeaf(path []string, key string, valueMap map[string]Values) (string, bool
 	return "", false
 }
 
-func (y *YAML) paramValues(componentName, index string, valueMap map[string]Values, m map[string]interface{}, path []string) ([]ModuleParameter, error) {
+func (y *YAML) paramValues(componentName, index string, valueMap map[string]schema.Values, m map[string]interface{}, path []string) ([]ModuleParameter, error) {
+	y.log().WithFields(logrus.Fields{
+		"prop-name": componentName,
+		"value-map": fmt.Sprintf("%#v", valueMap),
+		"m":         fmt.Sprintf("%#v", m),
+		"path":      path,
+	}).Debug("finding param values")
 	var params []ModuleParameter
 
 	for k, v := range m {
@@ -231,7 +186,6 @@ func (y *YAML) paramValues(componentName, index string, valueMap map[string]Valu
 				}
 				params = append(params, p)
 			}
-
 		case map[string]interface{}:
 			if childPath, exists := isLeaf(path, k, valueMap); exists {
 				b, err := json.Marshal(&v)
@@ -273,6 +227,9 @@ func (y *YAML) paramValues(componentName, index string, valueMap map[string]Valu
 		}
 	}
 
+	if len(params) == 0 {
+		y.log().Debug("there are no params")
+	}
 	return params, nil
 }
 
@@ -343,6 +300,11 @@ func (y *YAML) readParams(envName string) (string, error) {
 		return y.readNamespaceParams()
 	}
 
+	libPath, err := y.app.LibPath(envName)
+	if err != nil {
+		return "", err
+	}
+
 	ns, err := GetModule(y.app, y.module)
 	if err != nil {
 		return "", err
@@ -360,7 +322,12 @@ func (y *YAML) readParams(envName string) (string, error) {
 
 	envParams := upgradeParams(envName, data)
 
-	vm := jsonnet.MakeVM()
+	vm := jsonnetutil.NewVM()
+	vm.JPaths = []string{
+		libPath,
+		filepath.Join(y.app.Root(), "environments", envName),
+		filepath.Join(y.app.Root(), "vendor"),
+	}
 	vm.ExtCode("__ksonnet/params", paramsStr)
 	return vm.EvaluateSnippet("snippet", string(envParams))
 }
@@ -473,9 +440,9 @@ func (y *YAML) Summarize() ([]Summary, error) {
 	}
 
 	for i, r := range readers {
-		ts, props, err := ImportYaml(r)
+		ts, props, err := schema.ImportYaml(r)
 		if err != nil {
-			if err == ErrEmptyYAML {
+			if err == schema.ErrEmptyYAML {
 				continue
 			}
 			return nil, err
@@ -490,8 +457,8 @@ func (y *YAML) Summarize() ([]Summary, error) {
 			ComponentName: y.Name(false),
 			IndexStr:      strconv.Itoa(i),
 			Type:          y.ext(),
-			APIVersion:    ts.apiVersion,
-			Kind:          ts.kind,
+			APIVersion:    ts.APIVersion,
+			Kind:          ts.RawKind,
 			Name:          name,
 		}
 		summaries = append(summaries, summary)
@@ -502,7 +469,13 @@ func (y *YAML) Summarize() ([]Summary, error) {
 
 func (y *YAML) ext() string {
 	return strings.TrimPrefix(filepath.Ext(y.source), ".")
+}
 
+func (y *YAML) log() *logrus.Entry {
+	return logrus.WithFields(logrus.Fields{
+		"component-name": y.Name(true),
+		"component-type": "YAML",
+	})
 }
 
 type paramPath struct {

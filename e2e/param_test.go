@@ -18,6 +18,8 @@
 package e2e
 
 import (
+	"path/filepath"
+
 	. "github.com/onsi/ginkgo"
 )
 
@@ -26,7 +28,6 @@ var _ = Describe("ks param", func() {
 
 	BeforeEach(func() {
 		a = e.initApp(nil)
-		a.generateDeployedService()
 
 	})
 
@@ -41,6 +42,8 @@ var _ = Describe("ks param", func() {
 		)
 
 		BeforeEach(func() {
+			a.generateDeployedService()
+
 			a.paramSet(component, local, localValue)
 			a.paramSet(component, env, envValue, "--env", envName)
 
@@ -94,31 +97,72 @@ var _ = Describe("ks param", func() {
 	})
 
 	Describe("list", func() {
-		Context("at the component level", func() {
-			It("lists the params for a namespace", func() {
-				o := a.runKs("param", "list")
-				assertExitStatus(o, 0)
-				assertOutput("param/list/output.txt", o.stdout)
+		var (
+			listOutput *output
+			listParams = []string{"param", "list", "-v"}
+		)
+
+		JustBeforeEach(func() {
+			listOutput = a.runKs(listParams...)
+		})
+
+		Describe("at the component level", func() {
+			Context("with jsonnet component params", func() {
+				BeforeEach(func() {
+					a.generateDeployedService()
+				})
+				It("should exit with 0", func() {
+					assertExitStatus(listOutput, 0)
+				})
+
+				It("lists the params for a module", func() {
+					assertOutput("param/list/output.txt", listOutput.stdout)
+				})
+			})
+
+			Context("with yaml component params", func() {
+				BeforeEach(func() {
+					deployment := filepath.Join(e.wd(), "testdata", "input", "import", "deployment.yaml")
+					o := a.runKs("import", "-f", deployment)
+					assertExitStatus(o, 0)
+
+					o = a.runKs("param", "set", "deployment", "metadata.labels", `{"hello": "world"}`)
+					assertExitStatus(o, 0)
+				})
+
+				It("should exit with 0", func() {
+					assertExitStatus(listOutput, 0)
+				})
+
+				It("should list the YAML params", func() {
+					assertOutput("param/list/yaml-params.txt", listOutput.stdout)
+				})
 			})
 		})
 
-		Context("at the environment level", func() {
-			It("lists the params for a namespace", func() {
+		Describe("at the environment level", func() {
+			BeforeEach(func() {
+				a.generateDeployedService()
+
 				a.paramSet("guestbook-ui", "replicas", "3", "--env", "default")
+				listParams = []string{"param", "list", "--env", "default"}
+			})
 
-				o := a.paramList()
-				assertExitStatus(o, 0)
-				assertOutput("param/list/output.txt", o.stdout)
+			It("should exit with 0", func() {
+				assertExitStatus(listOutput, 0)
+			})
 
-				o = a.runKs("param", "list", "--env", "default")
-				assertExitStatus(o, 0)
-				assertOutput("param/list/env.txt", o.stdout)
+			It("lists the params for a module", func() {
+				assertOutput("param/list/env.txt", listOutput.stdout)
 			})
 		})
 	})
 
 	Describe("set", func() {
-		Context("at the component level", func() {
+		BeforeEach(func() {
+			a.generateDeployedService()
+		})
+		Describe("at the component level", func() {
 			It("updates a parameter's value", func() {
 				o := a.runKs("param", "set", "guestbook-ui", "replicas", "3")
 				assertExitStatus(o, 0)

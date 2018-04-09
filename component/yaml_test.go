@@ -31,7 +31,6 @@ func TestYAML_Name(t *testing.T) {
 
 		test.StageFile(t, fs, "params-mixed.libsonnet", "/app/components/params.libsonnet")
 		test.StageFile(t, fs, "deployment.yaml", "/app/components/deployment.yaml")
-		test.StageFile(t, fs, "k8s.libsonnet", "/app/lib/v1.8.7/k8s.libsonnet")
 
 		y := NewYAML(a, "", "/app/components/deployment.yaml", "/app/components/params.libsonnet")
 
@@ -66,7 +65,6 @@ func TestYAML_Params(t *testing.T) {
 
 		test.StageFile(t, fs, "params-mixed.libsonnet", "/app/components/params.libsonnet")
 		test.StageFile(t, fs, "deployment.yaml", "/app/components/deployment.yaml")
-		test.StageFile(t, fs, "k8s.libsonnet", "/app/lib/v1.8.7/k8s.libsonnet")
 
 		y := NewYAML(a, "", "/app/components/deployment.yaml", "/app/components/params.libsonnet")
 		params, err := y.Params("")
@@ -90,7 +88,6 @@ func TestYAML_Params_literal(t *testing.T) {
 
 		test.StageFile(t, fs, "params-mixed.libsonnet", "/params.libsonnet")
 		test.StageFile(t, fs, "rbac.yaml", "/rbac.yaml")
-		test.StageFile(t, fs, "k8s.libsonnet", "/app/lib/v1.8.7/k8s.libsonnet")
 
 		y := NewYAML(a, "", "/rbac.yaml", "/params.libsonnet")
 		params, err := y.Params("")

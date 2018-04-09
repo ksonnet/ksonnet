@@ -72,43 +72,6 @@ func (j *Jsonnet) Name(wantsNameSpaced bool) string {
 	return path.Join(j.module, name)
 }
 
-// func (j *Jsonnet) vmImporter(envName string) (*jsonnet.MemoryImporter, error) {
-// 	libPath, err := j.app.LibPath(envName)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	readString := func(path string) (string, error) {
-// 		filename := filepath.Join(libPath, path)
-// 		var b []byte
-
-// 		b, err = afero.ReadFile(j.app.Fs(), filename)
-// 		if err != nil {
-// 			return "", err
-// 		}
-
-// 		return string(b), nil
-// 	}
-
-// 	dataK, err := readString("k.libsonnet")
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	dataK8s, err := readString("k8s.libsonnet")
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	importer := &jsonnet.MemoryImporter{
-// 		Data: map[string]string{
-// 			"k.libsonnet":   dataK,
-// 			"k8s.libsonnet": dataK8s,
-// 		},
-// 	}
-
-// 	return importer, nil
-// }
-
 func jsonWalk(obj interface{}) ([]interface{}, error) {
 	switch o := obj.(type) {
 	case map[string]interface{}:
@@ -255,6 +218,8 @@ func (j *Jsonnet) DeleteParam(path []string, options ParamOptions) error {
 
 // Params returns params for a component.
 func (j *Jsonnet) Params(envName string) ([]ModuleParameter, error) {
+	j.log().WithField("env-name", envName).Debug("getting component params")
+
 	paramsData, err := j.readParams(envName)
 	if err != nil {
 		return nil, err
@@ -364,4 +329,8 @@ func (j *Jsonnet) readNamespaceParams() (string, error) {
 
 func (j *Jsonnet) writeParams(src string) error {
 	return afero.WriteFile(j.app.Fs(), j.paramsPath, []byte(src), 0644)
+}
+
+func (j *Jsonnet) log() *log.Entry {
+	return log.WithField("component-name", j.Name(true))
 }

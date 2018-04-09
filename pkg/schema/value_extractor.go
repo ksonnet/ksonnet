@@ -13,15 +13,46 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package component
+package schema
 
 import (
 	"strings"
 
+	rice "github.com/GeertJohan/go.rice"
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
 	"github.com/ksonnet/ksonnet/pkg/node"
+	jsonnetutil "github.com/ksonnet/ksonnet/pkg/util/jsonnet"
 	"github.com/pkg/errors"
 )
+
+//go:generate rice embed-go
+
+var valueExtractor *ValueExtractor
+
+// ValueExtractorFactory returns a value extractor.
+func ValueExtractorFactory() (*ValueExtractor, error) {
+	if valueExtractor != nil {
+		return valueExtractor, nil
+	}
+
+	assetsBox, err := rice.FindBox("assets")
+	if err != nil {
+		return nil, err
+	}
+
+	source, err := assetsBox.String("k8s.libsonnet")
+	if err != nil {
+		return nil, err
+	}
+
+	obj, err := jsonnetutil.Parse("k8s.libsonnet", source)
+	if err != nil {
+		return nil, err
+	}
+
+	valueExtractor = NewValueExtractor(obj)
+	return valueExtractor, nil
+}
 
 // Values are values extracted from a manifest.
 type Values struct {
@@ -49,7 +80,7 @@ func (ve *ValueExtractor) Extract(gvk GVK, props Properties) (map[string]Values,
 
 	paths := props.Paths(gvk)
 	for _, path := range paths {
-		item, err := ve.object.Search2(path.Path...)
+		item, err := ve.object.Search(path.Path...)
 		if err != nil {
 			continue
 		}

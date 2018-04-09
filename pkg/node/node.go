@@ -70,8 +70,8 @@ func New(name string, obj *astext.Object) *Node {
 	}
 }
 
-// Search2 searches for a path in the node.
-func (n *Node) Search2(path ...string) (*Item, error) {
+// Search searches for a path in the node.
+func (n *Node) Search(path ...string) (*Item, error) {
 	sp := searchPath{path: path}
 	item, _, err := n.searchNode(n.obj, sp, make([]string, 0))
 	return item, err
