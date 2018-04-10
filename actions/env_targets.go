@@ -43,9 +43,9 @@ func NewEnvTargets(m map[string]interface{}) (*EnvTargets, error) {
 	ol := newOptionLoader(m)
 
 	et := &EnvTargets{
-		app:     ol.loadApp(),
-		envName: ol.loadString(OptionEnvName),
-		modules: ol.loadStringSlice(OptionModule),
+		app:     ol.LoadApp(),
+		envName: ol.LoadString(OptionEnvName),
+		modules: ol.LoadStringSlice(OptionModule),
 
 		cm: component.DefaultManager,
 	}

@@ -51,8 +51,8 @@ func NewPrototypeSearch(m map[string]interface{}) (*PrototypeSearch, error) {
 	ol := newOptionLoader(m)
 
 	ps := &PrototypeSearch{
-		app:   ol.loadApp(),
-		query: ol.loadString(OptionQuery),
+		app:   ol.LoadApp(),
+		query: ol.LoadString(OptionQuery),
 
 		out:           os.Stdout,
 		prototypesFn:  pkg.LoadPrototypes,

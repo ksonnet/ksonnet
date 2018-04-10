@@ -48,11 +48,11 @@ func NewRegistryAdd(m map[string]interface{}) (*RegistryAdd, error) {
 	ol := newOptionLoader(m)
 
 	ra := &RegistryAdd{
-		app:        ol.loadApp(),
-		name:       ol.loadString(OptionName),
-		uri:        ol.loadString(OptionURI),
-		version:    ol.loadString(OptionVersion),
-		isOverride: ol.loadBool(OptionOverride),
+		app:        ol.LoadApp(),
+		name:       ol.LoadString(OptionName),
+		uri:        ol.LoadString(OptionURI),
+		version:    ol.LoadString(OptionVersion),
+		isOverride: ol.LoadBool(OptionOverride),
 
 		registryAddFn: registry.Add,
 	}

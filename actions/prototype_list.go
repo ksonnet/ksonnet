@@ -48,7 +48,7 @@ func NewPrototypeList(m map[string]interface{}) (*PrototypeList, error) {
 	ol := newOptionLoader(m)
 
 	pl := &PrototypeList{
-		app: ol.loadApp(),
+		app: ol.LoadApp(),
 
 		out:          os.Stdout,
 		prototypesFn: pkg.LoadPrototypes,

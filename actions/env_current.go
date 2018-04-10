@@ -48,9 +48,9 @@ func newEnvCurrent(m map[string]interface{}) (*EnvCurrent, error) {
 	ol := newOptionLoader(m)
 
 	d := &EnvCurrent{
-		app:     ol.loadApp(),
-		envName: ol.loadOptionalString(OptionEnvName),
-		unset:   ol.loadBool(OptionUnset),
+		app:     ol.LoadApp(),
+		envName: ol.LoadOptionalString(OptionEnvName),
+		unset:   ol.LoadBool(OptionUnset),
 
 		out: os.Stdout,
 	}

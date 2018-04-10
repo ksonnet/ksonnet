@@ -67,10 +67,10 @@ func NewValidate(m map[string]interface{}) (*Validate, error) {
 	ol := newOptionLoader(m)
 
 	v := &Validate{
-		app:            ol.loadApp(),
-		module:         ol.loadString(OptionModule),
-		componentNames: ol.loadStringSlice(OptionComponentNames),
-		clientConfig:   ol.loadClientConfig(),
+		app:            ol.LoadApp(),
+		module:         ol.LoadString(OptionModule),
+		componentNames: ol.LoadStringSlice(OptionComponentNames),
+		clientConfig:   ol.LoadClientConfig(),
 
 		out:              os.Stdout,
 		discoveryFn:      loadDiscovery,

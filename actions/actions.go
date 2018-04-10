@@ -148,7 +148,7 @@ func newOptionLoader(m map[string]interface{}) *optionLoader {
 	}
 }
 
-func (o *optionLoader) loadFs(name string) afero.Fs {
+func (o *optionLoader) LoadFs(name string) afero.Fs {
 	i := o.load(name)
 	if i == nil {
 		return nil
@@ -163,7 +163,7 @@ func (o *optionLoader) loadFs(name string) afero.Fs {
 	return a
 }
 
-func (o *optionLoader) loadBool(name string) bool {
+func (o *optionLoader) LoadBool(name string) bool {
 	i := o.load(name)
 	if i == nil {
 		return false
@@ -178,7 +178,7 @@ func (o *optionLoader) loadBool(name string) bool {
 	return a
 }
 
-func (o *optionLoader) loadOptionalBool(name string) bool {
+func (o *optionLoader) LoadOptionalBool(name string) bool {
 	i := o.loadOptional(name)
 	if i == nil {
 		return false
@@ -192,7 +192,7 @@ func (o *optionLoader) loadOptionalBool(name string) bool {
 	return a
 }
 
-func (o *optionLoader) loadInt(name string) int {
+func (o *optionLoader) LoadInt(name string) int {
 	i := o.load(name)
 	if i == nil {
 		return 0
@@ -207,7 +207,7 @@ func (o *optionLoader) loadInt(name string) int {
 	return a
 }
 
-func (o *optionLoader) loadInt64(name string) int64 {
+func (o *optionLoader) LoadInt64(name string) int64 {
 	i := o.load(name)
 	if i == nil {
 		return 0
@@ -222,7 +222,7 @@ func (o *optionLoader) loadInt64(name string) int64 {
 	return a
 }
 
-func (o *optionLoader) loadOptionalInt(name string) int {
+func (o *optionLoader) LoadOptionalInt(name string) int {
 	i := o.loadOptional(name)
 	if i == nil {
 		return 0
@@ -236,7 +236,7 @@ func (o *optionLoader) loadOptionalInt(name string) int {
 	return a
 }
 
-func (o *optionLoader) loadString(name string) string {
+func (o *optionLoader) LoadString(name string) string {
 	i := o.load(name)
 	if i == nil {
 		return ""
@@ -251,7 +251,7 @@ func (o *optionLoader) loadString(name string) string {
 	return a
 }
 
-func (o *optionLoader) loadOptionalString(name string) string {
+func (o *optionLoader) LoadOptionalString(name string) string {
 	i := o.loadOptional(name)
 	if i == nil {
 		return ""
@@ -265,7 +265,7 @@ func (o *optionLoader) loadOptionalString(name string) string {
 	return a
 }
 
-func (o *optionLoader) loadStringSlice(name string) []string {
+func (o *optionLoader) LoadStringSlice(name string) []string {
 	i := o.load(name)
 	if i == nil {
 		return nil
@@ -280,7 +280,7 @@ func (o *optionLoader) loadStringSlice(name string) []string {
 	return a
 }
 
-func (o *optionLoader) loadClientConfig() *client.Config {
+func (o *optionLoader) LoadClientConfig() *client.Config {
 	i := o.load(OptionClientConfig)
 	if i == nil {
 		return nil
@@ -295,7 +295,7 @@ func (o *optionLoader) loadClientConfig() *client.Config {
 	return a
 }
 
-func (o *optionLoader) loadApp() app.App {
+func (o *optionLoader) LoadApp() app.App {
 	i := o.load(OptionApp)
 	if i == nil {
 		o.err = ErrNotInApp

@@ -46,8 +46,8 @@ func NewEnvDescribe(m map[string]interface{}) (*EnvDescribe, error) {
 	ol := newOptionLoader(m)
 
 	ed := &EnvDescribe{
-		app:     ol.loadApp(),
-		envName: ol.loadString(OptionEnvName),
+		app:     ol.LoadApp(),
+		envName: ol.LoadString(OptionEnvName),
 
 		out: os.Stdout,
 	}

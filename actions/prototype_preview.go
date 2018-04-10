@@ -56,9 +56,9 @@ func NewPrototypePreview(m map[string]interface{}) (*PrototypePreview, error) {
 	ol := newOptionLoader(m)
 
 	pp := &PrototypePreview{
-		app:   ol.loadApp(),
-		query: ol.loadString(OptionQuery),
-		args:  ol.loadStringSlice(OptionArguments),
+		app:   ol.LoadApp(),
+		query: ol.LoadString(OptionQuery),
+		args:  ol.LoadStringSlice(OptionArguments),
 
 		out:             os.Stdout,
 		appPrototypesFn: pkg.LoadPrototypes,

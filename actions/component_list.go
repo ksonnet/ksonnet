@@ -50,9 +50,9 @@ func NewComponentList(m map[string]interface{}) (*ComponentList, error) {
 	ol := newOptionLoader(m)
 
 	cl := &ComponentList{
-		app:    ol.loadApp(),
-		module: ol.loadString(OptionModule),
-		output: ol.loadString(OptionOutput),
+		app:    ol.LoadApp(),
+		module: ol.LoadString(OptionModule),
+		output: ol.LoadString(OptionOutput),
 
 		cm:  component.DefaultManager,
 		out: os.Stdout,

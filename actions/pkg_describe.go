@@ -49,8 +49,8 @@ func NewPkgDescribe(m map[string]interface{}) (*PkgDescribe, error) {
 	ol := newOptionLoader(m)
 
 	pd := &PkgDescribe{
-		app:     ol.loadApp(),
-		pkgName: ol.loadString(OptionPackageName),
+		app:     ol.LoadApp(),
+		pkgName: ol.LoadString(OptionPackageName),
 
 		out:            os.Stdout,
 		libPartFn:      pkg.Find,

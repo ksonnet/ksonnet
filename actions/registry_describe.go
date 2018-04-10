@@ -49,8 +49,8 @@ func NewRegistryDescribe(m map[string]interface{}) (*RegistryDescribe, error) {
 	ol := newOptionLoader(m)
 
 	rd := &RegistryDescribe{
-		app:  ol.loadApp(),
-		name: ol.loadString(OptionName),
+		app:  ol.LoadApp(),
+		name: ol.LoadString(OptionName),
 
 		out:                 os.Stdout,
 		fetchRegistrySpecFn: fetchRegistrySpec,

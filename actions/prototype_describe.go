@@ -50,8 +50,8 @@ func NewPrototypeDescribe(m map[string]interface{}) (*PrototypeDescribe, error) 
 	ol := newOptionLoader(m)
 
 	pd := &PrototypeDescribe{
-		app:   ol.loadApp(),
-		query: ol.loadString(OptionQuery),
+		app:   ol.LoadApp(),
+		query: ol.LoadString(OptionQuery),
 
 		out:             os.Stdout,
 		appPrototypesFn: pkg.LoadPrototypes,

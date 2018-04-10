@@ -57,10 +57,10 @@ func NewParamList(m map[string]interface{}) (*ParamList, error) {
 	ol := newOptionLoader(m)
 
 	pl := &ParamList{
-		app:           ol.loadApp(),
-		moduleName:    ol.loadOptionalString(OptionModule),
-		componentName: ol.loadOptionalString(OptionComponentName),
-		envName:       ol.loadOptionalString(OptionEnvName),
+		app:           ol.LoadApp(),
+		moduleName:    ol.LoadOptionalString(OptionModule),
+		componentName: ol.LoadOptionalString(OptionComponentName),
+		envName:       ol.LoadOptionalString(OptionEnvName),
 
 		out:             os.Stdout,
 		findModulesFn:   component.ModulesFromEnv,

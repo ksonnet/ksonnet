@@ -37,8 +37,8 @@ func newUpgrade(m map[string]interface{}) (*Upgrade, error) {
 	ol := newOptionLoader(m)
 
 	a := &Upgrade{
-		app:    ol.loadApp(),
-		dryRun: ol.loadBool(OptionDryRun),
+		app:    ol.LoadApp(),
+		dryRun: ol.LoadBool(OptionDryRun),
 	}
 
 	if ol.err != nil {

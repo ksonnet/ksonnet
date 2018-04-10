@@ -55,9 +55,9 @@ func newShow(m map[string]interface{}, opts ...showOpt) (*Show, error) {
 	ol := newOptionLoader(m)
 
 	s := &Show{
-		app:            ol.loadApp(),
-		componentNames: ol.loadStringSlice(OptionComponentNames),
-		format:         ol.loadString(OptionFormat),
+		app:            ol.LoadApp(),
+		componentNames: ol.LoadStringSlice(OptionComponentNames),
+		format:         ol.LoadString(OptionFormat),
 
 		out:       os.Stdout,
 		runShowFn: cluster.RunShow,

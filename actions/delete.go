@@ -51,10 +51,10 @@ func newDelete(m map[string]interface{}, opts ...deleteOpt) (*Delete, error) {
 	ol := newOptionLoader(m)
 
 	d := &Delete{
-		app:            ol.loadApp(),
-		clientConfig:   ol.loadClientConfig(),
-		componentNames: ol.loadStringSlice(OptionComponentNames),
-		gracePeriod:    ol.loadInt64(OptionGracePeriod),
+		app:            ol.LoadApp(),
+		clientConfig:   ol.LoadClientConfig(),
+		componentNames: ol.LoadStringSlice(OptionComponentNames),
+		gracePeriod:    ol.LoadInt64(OptionGracePeriod),
 
 		runDeleteFn: cluster.RunDelete,
 	}

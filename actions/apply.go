@@ -54,13 +54,13 @@ func newApply(m map[string]interface{}, opts ...applyOpt) (*Apply, error) {
 	ol := newOptionLoader(m)
 
 	a := &Apply{
-		app:            ol.loadApp(),
-		clientConfig:   ol.loadClientConfig(),
-		componentNames: ol.loadStringSlice(OptionComponentNames),
-		create:         ol.loadBool(OptionCreate),
-		dryRun:         ol.loadBool(OptionDryRun),
-		gcTag:          ol.loadString(OptionGcTag),
-		skipGc:         ol.loadBool(OptionSkipGc),
+		app:            ol.LoadApp(),
+		clientConfig:   ol.LoadClientConfig(),
+		componentNames: ol.LoadStringSlice(OptionComponentNames),
+		create:         ol.LoadBool(OptionCreate),
+		dryRun:         ol.LoadBool(OptionDryRun),
+		gcTag:          ol.LoadString(OptionGcTag),
+		skipGc:         ol.LoadBool(OptionSkipGc),
 
 		runApplyFn: cluster.RunApply,
 	}
