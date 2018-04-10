@@ -53,19 +53,61 @@ func Test_optionsLoader_loadApp(t *testing.T) {
 
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
-				ol := newOptionLoader(tc.m)
+				withOptionLoader(t, tc.m, func(a *mocks.App, ol *optionLoader) {
+					got := ol.loadApp()
+					if tc.isErr {
+						require.Error(t, ol.err)
+						return
+					}
 
-				got := ol.loadApp()
-				if tc.isErr {
-					require.Error(t, ol.err)
-					return
-				}
-
-				require.NoError(t, ol.err)
-				assert.Equal(t, a, got)
+					require.NoError(t, ol.err)
+					assert.Equal(t, a, got)
+				})
 			})
 		}
+	})
+}
 
+// func Test_optionsLoader_loadBool(t *testing.T) {
+// 	withApp(t, func(a *mocks.App) {
+// 		cases := []struct {
+// 			name        string
+// 			key         string
+// 			validCase   interface{}
+// 			invalidCase interface{}
+// 		}{
+// 			{
+// 				name:  "bool",
+// 				key: OptionGcTag,
+// 				validCase: true,
+// 				invalidCase: "invalid"
+// 			},
+// 		}
+
+// 		for _, tc := range cases {
+// 			t.Run(tc.name, func(t *testing.T) {
+// 				m := map[string]interface{
+// 					tc.key: tc.validCase,
+// 				}
+// 				ol := newOptionLoader(m)
+
+// 				got := ol.loadApp()
+// 				if tc.isErr {
+// 					require.Error(t, ol.err)
+// 					return
+// 				}
+
+// 				require.NoError(t, ol.err)
+// 				assert.Equal(t, a, got)
+// 			})
+// 		}
+// 	})
+// }
+
+func withOptionLoader(t *testing.T, m map[string]interface{}, fn func(*mocks.App, *optionLoader)) {
+	withApp(t, func(a *mocks.App) {
+		ol := newOptionLoader(m)
+		fn(a, ol)
 	})
 }
 
