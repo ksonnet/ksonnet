@@ -43,8 +43,8 @@ func NewModuleCreate(m map[string]interface{}) (*ModuleCreate, error) {
 	ol := newOptionLoader(m)
 
 	mc := &ModuleCreate{
-		app:    ol.loadApp(),
-		module: ol.loadString(OptionModule),
+		app:    ol.LoadApp(),
+		module: ol.LoadString(OptionModule),
 
 		cm: component.DefaultManager,
 	}

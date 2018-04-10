@@ -26,7 +26,7 @@ type currentEnver interface {
 }
 
 func setCurrentEnv(em environmentMetadata, ce currentEnver, ol *optionLoader) error {
-	envName := ol.loadOptionalString(OptionEnvName)
+	envName := ol.LoadOptionalString(OptionEnvName)
 	if envName == "" {
 		envName = em.CurrentEnvironment()
 	}

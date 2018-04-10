@@ -64,14 +64,14 @@ func NewInit(m map[string]interface{}) (*Init, error) {
 	ol := newOptionLoader(m)
 
 	i := &Init{
-		fs:                    ol.loadFs(OptionFs),
-		name:                  ol.loadString(OptionName),
-		rootPath:              ol.loadString(OptionRootPath),
-		envName:               ol.loadString(OptionEnvName),
-		k8sSpecFlag:           ol.loadString(OptionSpecFlag),
-		serverURI:             ol.loadOptionalString(OptionServer),
-		namespace:             ol.loadString(OptionNamespace),
-		skipDefaultRegistries: ol.loadBool(OptionSkipDefaultRegistries),
+		fs:                    ol.LoadFs(OptionFs),
+		name:                  ol.LoadString(OptionName),
+		rootPath:              ol.LoadString(OptionRootPath),
+		envName:               ol.LoadString(OptionEnvName),
+		k8sSpecFlag:           ol.LoadString(OptionSpecFlag),
+		serverURI:             ol.LoadOptionalString(OptionServer),
+		namespace:             ol.LoadString(OptionNamespace),
+		skipDefaultRegistries: ol.LoadBool(OptionSkipDefaultRegistries),
 
 		appInitFn:       appinit.Init,
 		appLoadFn:       app.Load,

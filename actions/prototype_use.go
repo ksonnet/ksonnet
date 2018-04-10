@@ -51,8 +51,8 @@ func NewPrototypeUse(m map[string]interface{}) (*PrototypeUse, error) {
 	ol := newOptionLoader(m)
 
 	pl := &PrototypeUse{
-		app:  ol.loadApp(),
-		args: ol.loadStringSlice(OptionArguments),
+		app:  ol.LoadApp(),
+		args: ol.LoadStringSlice(OptionArguments),
 
 		out:               os.Stdout,
 		prototypesFn:      pkg.LoadPrototypes,

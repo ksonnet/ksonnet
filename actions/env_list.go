@@ -48,8 +48,8 @@ func NewEnvList(m map[string]interface{}) (*EnvList, error) {
 	ol := newOptionLoader(m)
 
 	el := &EnvList{
-		app:        ol.loadApp(),
-		outputType: ol.loadOptionalString(OptionOutput),
+		app:        ol.LoadApp(),
+		outputType: ol.LoadOptionalString(OptionOutput),
 
 		out: os.Stdout,
 	}

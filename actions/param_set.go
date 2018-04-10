@@ -57,13 +57,13 @@ func NewParamSet(m map[string]interface{}) (*ParamSet, error) {
 	ol := newOptionLoader(m)
 
 	ps := &ParamSet{
-		app:      ol.loadApp(),
-		name:     ol.loadOptionalString(OptionName),
-		rawPath:  ol.loadString(OptionPath),
-		rawValue: ol.loadString(OptionValue),
-		global:   ol.loadOptionalBool(OptionGlobal),
-		envName:  ol.loadOptionalString(OptionEnvName),
-		index:    ol.loadOptionalInt(OptionIndex),
+		app:      ol.LoadApp(),
+		name:     ol.LoadOptionalString(OptionName),
+		rawPath:  ol.LoadString(OptionPath),
+		rawValue: ol.LoadString(OptionValue),
+		global:   ol.LoadOptionalBool(OptionGlobal),
+		envName:  ol.LoadOptionalString(OptionEnvName),
+		index:    ol.LoadOptionalInt(OptionIndex),
 
 		getModuleFn:    component.GetModule,
 		resolvePathFn:  component.ResolvePath,

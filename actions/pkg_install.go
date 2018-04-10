@@ -47,9 +47,9 @@ func NewPkgInstall(m map[string]interface{}) (*PkgInstall, error) {
 	ol := newOptionLoader(m)
 
 	nl := &PkgInstall{
-		app:        ol.loadApp(),
-		libName:    ol.loadString(OptionLibName),
-		customName: ol.loadString(OptionName),
+		app:        ol.LoadApp(),
+		libName:    ol.LoadString(OptionLibName),
+		customName: ol.LoadString(OptionName),
 
 		depCacherFn: registry.CacheDependency,
 	}

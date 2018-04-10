@@ -58,12 +58,12 @@ func NewParamDelete(m map[string]interface{}) (*ParamDelete, error) {
 	ol := newOptionLoader(m)
 
 	pd := &ParamDelete{
-		app:     ol.loadApp(),
-		name:    ol.loadOptionalString(OptionName),
-		rawPath: ol.loadString(OptionPath),
-		global:  ol.loadOptionalBool(OptionGlobal),
-		envName: ol.loadOptionalString(OptionEnvName),
-		index:   ol.loadOptionalInt(OptionIndex),
+		app:     ol.LoadApp(),
+		name:    ol.LoadOptionalString(OptionName),
+		rawPath: ol.LoadString(OptionPath),
+		global:  ol.LoadOptionalBool(OptionGlobal),
+		envName: ol.LoadOptionalString(OptionEnvName),
+		index:   ol.LoadOptionalInt(OptionIndex),
 
 		deleteEnvFn:       env.DeleteParam,
 		deleteEnvGlobalFn: env.UnsetGlobalParams,

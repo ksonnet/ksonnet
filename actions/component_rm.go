@@ -43,8 +43,8 @@ func NewComponentRm(m map[string]interface{}) (*ComponentRm, error) {
 	ol := newOptionLoader(m)
 
 	cr := &ComponentRm{
-		app:  ol.loadApp(),
-		name: ol.loadString(OptionComponentName),
+		app:  ol.LoadApp(),
+		name: ol.LoadString(OptionComponentName),
 
 		componentDeleteFn: component.Delete,
 	}

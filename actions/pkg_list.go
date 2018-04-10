@@ -53,7 +53,7 @@ func NewPkgList(m map[string]interface{}) (*PkgList, error) {
 	ol := newOptionLoader(m)
 
 	rl := &PkgList{
-		app: ol.loadApp(),
+		app: ol.LoadApp(),
 
 		registryListFn: registry.List,
 		out:            os.Stdout,

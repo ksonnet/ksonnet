@@ -48,8 +48,8 @@ func NewModuleList(m map[string]interface{}) (*ModuleList, error) {
 	ol := newOptionLoader(m)
 
 	nl := &ModuleList{
-		app:     ol.loadApp(),
-		envName: ol.loadString(OptionEnvName),
+		app:     ol.LoadApp(),
+		envName: ol.LoadString(OptionEnvName),
 
 		out: os.Stdout,
 		cm:  component.DefaultManager,

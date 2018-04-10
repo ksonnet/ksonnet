@@ -64,10 +64,10 @@ func NewEnvSet(m map[string]interface{}) (*EnvSet, error) {
 	ol := newOptionLoader(m)
 
 	es := &EnvSet{
-		app:       ol.loadApp(),
-		envName:   ol.loadString(OptionEnvName),
-		newName:   ol.loadOptionalString(OptionNewEnvName),
-		newNsName: ol.loadOptionalString(OptionNamespace),
+		app:       ol.LoadApp(),
+		envName:   ol.LoadString(OptionEnvName),
+		newName:   ol.LoadOptionalString(OptionNewEnvName),
+		newNsName: ol.LoadOptionalString(OptionNamespace),
 
 		envRenameFn: env.Rename,
 		updateEnvFn: updateEnv,

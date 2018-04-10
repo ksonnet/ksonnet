@@ -47,12 +47,12 @@ func NewEnvAdd(m map[string]interface{}) (*EnvAdd, error) {
 	ol := newOptionLoader(m)
 
 	ea := &EnvAdd{
-		app:         ol.loadApp(),
-		envName:     ol.loadString(OptionEnvName),
-		server:      ol.loadString(OptionServer),
-		namespace:   ol.loadString(OptionModule),
-		k8sSpecFlag: ol.loadString(OptionSpecFlag),
-		isOverride:  ol.loadBool(OptionOverride),
+		app:         ol.LoadApp(),
+		envName:     ol.LoadString(OptionEnvName),
+		server:      ol.LoadString(OptionServer),
+		namespace:   ol.LoadString(OptionModule),
+		k8sSpecFlag: ol.LoadString(OptionSpecFlag),
+		isOverride:  ol.LoadBool(OptionOverride),
 
 		envCreateFn: env.Create,
 	}

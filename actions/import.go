@@ -57,9 +57,9 @@ func NewImport(m map[string]interface{}) (*Import, error) {
 	ol := newOptionLoader(m)
 
 	i := &Import{
-		app:    ol.loadApp(),
-		module: ol.loadString(OptionModule),
-		path:   ol.loadString(OptionPath),
+		app:    ol.LoadApp(),
+		module: ol.LoadString(OptionModule),
+		path:   ol.LoadString(OptionPath),
 
 		cm: component.DefaultManager,
 	}

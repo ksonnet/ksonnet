@@ -16,57 +16,227 @@
 package actions
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"reflect"
 	"testing"
 
+	"github.com/ksonnet/ksonnet/client"
 	cmocks "github.com/ksonnet/ksonnet/component/mocks"
 	"github.com/ksonnet/ksonnet/metadata/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 	rmocks "github.com/ksonnet/ksonnet/pkg/registry/mocks"
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func Test_optionsLoader_loadApp(t *testing.T) {
-	withApp(t, func(a *mocks.App) {
-		cases := []struct {
-			name  string
-			m     map[string]interface{}
-			isErr bool
-		}{
-			{
-				name: "with app",
-				m: map[string]interface{}{
-					OptionApp: a,
-				},
-			},
-			{
-				name: "with invalid app",
-				m: map[string]interface{}{
-					OptionApp: "invalid",
-				},
-				isErr: true,
-			},
-		}
+func Test_optionLoader_types(t *testing.T) {
+	cases := []struct {
+		name    string
+		hasArg  bool
+		valid   interface{}
+		invalid interface{}
+		keyName string
+	}{
+		{
+			name:    "App",
+			valid:   &mocks.App{},
+			invalid: "invalid",
+			keyName: OptionApp,
+		},
+		{
+			name:    "Bool",
+			hasArg:  true,
+			valid:   true,
+			invalid: "invalid",
+			keyName: OptionSkipGc,
+		},
+		{
+			name:    "Fs",
+			hasArg:  true,
+			valid:   afero.NewMemMapFs(),
+			invalid: "invalid",
+			keyName: OptionFs,
+		},
+		{
+			name:    "Int",
+			hasArg:  true,
+			valid:   0,
+			invalid: "invalid",
+			keyName: OptionName,
+		},
+		{
+			name:    "Int64",
+			hasArg:  true,
+			valid:   int64(0),
+			invalid: "invalid",
+			keyName: OptionName,
+		},
+		{
+			name:    "String",
+			hasArg:  true,
+			valid:   "valid",
+			invalid: 0,
+			keyName: OptionName,
+		},
+		{
+			name:    "StringSlice",
+			hasArg:  true,
+			valid:   []string{},
+			invalid: "invalid",
+			keyName: OptionName,
+		},
+		{
+			name:    "ClientConfig",
+			valid:   &client.Config{},
+			invalid: "invalid",
+			keyName: OptionClientConfig,
+		},
+	}
 
-		for _, tc := range cases {
-			t.Run(tc.name, func(t *testing.T) {
-				ol := newOptionLoader(tc.m)
+	for _, tc := range cases {
+		methodName := fmt.Sprintf("Load%s", tc.name)
 
-				got := ol.loadApp()
-				if tc.isErr {
-					require.Error(t, ol.err)
-					return
-				}
+		t.Run(tc.name+" valid", func(t *testing.T) {
+			m := map[string]interface{}{
+				tc.keyName: tc.valid,
+			}
 
-				require.NoError(t, ol.err)
-				assert.Equal(t, a, got)
-			})
-		}
+			ol := newOptionLoader(m)
 
-	})
+			loader := reflect.ValueOf(ol).MethodByName(methodName)
+
+			callValues := make([]reflect.Value, 0)
+			if tc.hasArg {
+				callValues = append(callValues, reflect.ValueOf(tc.keyName))
+			}
+
+			values := loader.Call(callValues)
+			require.Len(t, values, 1)
+			require.EqualValues(t, tc.valid, values[0].Interface())
+		})
+
+		t.Run(tc.name+" invalid", func(t *testing.T) {
+			m := map[string]interface{}{
+				tc.keyName: tc.invalid,
+			}
+
+			ol := newOptionLoader(m)
+
+			loader := reflect.ValueOf(ol).MethodByName(methodName)
+
+			callValues := make([]reflect.Value, 0)
+			if tc.hasArg {
+				callValues = append(callValues, reflect.ValueOf(tc.keyName))
+			}
+
+			loader.Call(callValues)
+			require.Error(t, ol.err)
+		})
+
+		t.Run(tc.name+" previous error", func(t *testing.T) {
+			m := map[string]interface{}{
+				tc.keyName: tc.invalid,
+			}
+
+			ol := newOptionLoader(m)
+			ol.err = errors.New("error")
+
+			loader := reflect.ValueOf(ol).MethodByName(methodName)
+
+			callValues := make([]reflect.Value, 0)
+			if tc.hasArg {
+				callValues = append(callValues, reflect.ValueOf(tc.keyName))
+			}
+
+			loader.Call(callValues)
+			require.Error(t, ol.err)
+		})
+	}
+}
+
+func Test_optionLoader_optional_types(t *testing.T) {
+	cases := []struct {
+		name     string
+		valid    interface{}
+		invalid  interface{}
+		expected interface{}
+		keyName  string
+	}{
+		{
+			name:     "Bool",
+			valid:    true,
+			invalid:  "invalid",
+			expected: false,
+			keyName:  OptionApp,
+		},
+		{
+			name:     "Int",
+			valid:    9,
+			invalid:  "invalid",
+			expected: 0,
+			keyName:  OptionApp,
+		},
+		{
+			name:     "String",
+			valid:    "valid",
+			invalid:  9,
+			expected: "",
+			keyName:  OptionApp,
+		},
+	}
+
+	for _, tc := range cases {
+		methodName := fmt.Sprintf("LoadOptional%s", tc.name)
+
+		t.Run(tc.name+" valid", func(t *testing.T) {
+			m := map[string]interface{}{
+				tc.keyName: tc.valid,
+			}
+
+			ol := newOptionLoader(m)
+
+			loader := reflect.ValueOf(ol).MethodByName(methodName)
+
+			callValues := []reflect.Value{reflect.ValueOf(tc.keyName)}
+
+			values := loader.Call(callValues)
+			require.Len(t, values, 1)
+			require.EqualValues(t, tc.valid, values[0].Interface())
+		})
+
+		t.Run(tc.name+" invalid", func(t *testing.T) {
+			m := map[string]interface{}{
+				tc.keyName: tc.invalid,
+			}
+
+			ol := newOptionLoader(m)
+
+			loader := reflect.ValueOf(ol).MethodByName(methodName)
+
+			callValues := []reflect.Value{reflect.ValueOf(tc.keyName)}
+			values := loader.Call(callValues)
+			require.Len(t, values, 1)
+			require.EqualValues(t, tc.expected, values[0].Interface())
+		})
+
+		t.Run(tc.name+" previous error", func(t *testing.T) {
+			m := map[string]interface{}{
+				tc.keyName: tc.invalid,
+			}
+
+			ol := newOptionLoader(m)
+			ol.err = errors.New("error")
+
+			loader := reflect.ValueOf(ol).MethodByName(methodName)
+
+			callValues := []reflect.Value{reflect.ValueOf(tc.keyName)}
+			loader.Call(callValues)
+			require.Error(t, ol.err)
+		})
+	}
 }
 
 func withApp(t *testing.T, fn func(*mocks.App)) {

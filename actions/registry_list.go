@@ -47,7 +47,7 @@ func NewRegistryList(m map[string]interface{}) (*RegistryList, error) {
 	ol := newOptionLoader(m)
 
 	rl := &RegistryList{
-		app: ol.loadApp(),
+		app: ol.LoadApp(),
 
 		registryListFn: registry.List,
 		out:            os.Stdout,

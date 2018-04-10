@@ -46,9 +46,9 @@ func NewEnvRm(m map[string]interface{}) (*EnvRm, error) {
 	ol := newOptionLoader(m)
 
 	ea := &EnvRm{
-		app:        ol.loadApp(),
-		envName:    ol.loadString(OptionEnvName),
-		isOverride: ol.loadBool(OptionOverride),
+		app:        ol.LoadApp(),
+		envName:    ol.LoadString(OptionEnvName),
+		isOverride: ol.LoadBool(OptionOverride),
 
 		envDeleteFn: env.Delete,
 	}
