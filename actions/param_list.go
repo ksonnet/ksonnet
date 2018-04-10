@@ -25,6 +25,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+type findModulesFn func(a app.App, envName string) ([]component.Module, error)
+type findModuleFn func(a app.App, moduleName string) (component.Module, error)
+type findComponentFn func(a app.App, moduleName, componentName string) (component.Component, error)
+
 // RunParamList runs `param list`.
 func RunParamList(m map[string]interface{}) error {
 	pl, err := NewParamList(m)
@@ -38,11 +42,14 @@ func RunParamList(m map[string]interface{}) error {
 // ParamList lists parameters for a component.
 type ParamList struct {
 	app           app.App
-	module        string
+	moduleName    string
 	componentName string
 	envName       string
-	cm            component.Manager
-	out           io.Writer
+
+	out             io.Writer
+	findModulesFn   findModulesFn
+	findModuleFn    findModuleFn
+	findComponentFn findComponentFn
 }
 
 // NewParamList creates an instances of ParamList.
@@ -51,12 +58,14 @@ func NewParamList(m map[string]interface{}) (*ParamList, error) {
 
 	pl := &ParamList{
 		app:           ol.loadApp(),
-		module:        ol.loadString(OptionModule),
-		componentName: ol.loadString(OptionComponentName),
-		envName:       ol.loadString(OptionEnvName),
+		moduleName:    ol.loadOptionalString(OptionModule),
+		componentName: ol.loadOptionalString(OptionComponentName),
+		envName:       ol.loadOptionalString(OptionEnvName),
 
-		cm:  component.DefaultManager,
-		out: os.Stdout,
+		out:             os.Stdout,
+		findModulesFn:   component.ModulesFromEnv,
+		findModuleFn:    component.GetModule,
+		findComponentFn: component.LocateComponent,
 	}
 
 	if ol.err != nil {
@@ -68,9 +77,13 @@ func NewParamList(m map[string]interface{}) (*ParamList, error) {
 
 // Run runs the ParamList action.
 func (pl *ParamList) Run() error {
-	module, err := pl.cm.Module(pl.app, pl.module)
+	if pl.envName != "" {
+		return pl.handleEnvParams()
+	}
+
+	module, err := pl.findModuleFn(pl.app, pl.moduleName)
 	if err != nil {
-		return errors.Wrap(err, "could not find namespace")
+		return errors.Wrap(err, "could not find module")
 	}
 
 	params, err := pl.collectParams(module)
@@ -78,16 +91,31 @@ func (pl *ParamList) Run() error {
 		return err
 	}
 
-	table := table.New(pl.out)
+	return pl.print(params)
+}
 
-	table.SetHeader([]string{"COMPONENT", "INDEX", "PARAM", "VALUE"})
-	for _, data := range params {
-		table.Append([]string{data.Component, data.Index, data.Key, data.Value})
+func (pl *ParamList) handleEnvParams() error {
+	modules, err := pl.findModulesFn(pl.app, pl.envName)
+	if err != nil {
+		return err
 	}
 
-	table.Render()
+	var params []component.ModuleParameter
 
-	return nil
+	for _, module := range modules {
+		moduleParams, err := pl.collectParams(module)
+		if err != nil {
+			return err
+		}
+
+		if pl.moduleName != "" && module.Name() != pl.moduleName {
+			continue
+		}
+		params = append(params, moduleParams...)
+	}
+
+	return pl.print(params)
+
 }
 
 func (pl *ParamList) collectParams(module component.Module) ([]component.ModuleParameter, error) {
@@ -95,10 +123,21 @@ func (pl *ParamList) collectParams(module component.Module) ([]component.ModuleP
 		return module.Params(pl.envName)
 	}
 
-	c, err := pl.cm.Component(pl.app, pl.module, pl.componentName)
+	c, err := pl.findComponentFn(pl.app, pl.moduleName, pl.componentName)
 	if err != nil {
 		return nil, err
 	}
 
 	return c.Params(pl.envName)
+}
+
+func (pl *ParamList) print(params []component.ModuleParameter) error {
+	table := table.New(pl.out)
+
+	table.SetHeader([]string{"COMPONENT", "INDEX", "PARAM", "VALUE"})
+	for _, data := range params {
+		table.Append([]string{data.Component, data.Index, data.Key, data.Value})
+	}
+
+	return table.Render()
 }
