@@ -17,92 +17,123 @@ package actions
 
 import (
 	"bytes"
+	"path/filepath"
 	"testing"
 
 	"github.com/ksonnet/ksonnet/component"
 	cmocks "github.com/ksonnet/ksonnet/component/mocks"
+	"github.com/ksonnet/ksonnet/metadata/app"
 	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
-	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestParamList_with_component_name(t *testing.T) {
+func TestParamList(t *testing.T) {
+	moduleParams := []component.ModuleParameter{
+		{Component: "deployment", Index: "0", Key: "key", Value: `"value"`},
+	}
+
+	module := &cmocks.Module{}
+	module.On("Params", "envName").Return(moduleParams, nil)
+	module.On("Params", "").Return(moduleParams, nil)
+
+	c := &cmocks.Component{}
+	c.On("Params", "").Return(moduleParams, nil)
+
 	withApp(t, func(appMock *amocks.App) {
-		componentName := "deployment"
-		module := "ns"
-		envName := ""
-
-		ns := &cmocks.Module{}
-
-		c := &cmocks.Component{}
-
-		nsParams := []component.ModuleParameter{
-			{Component: "deployment", Index: "0", Key: "key", Value: `"value"`},
+		cases := []struct {
+			name            string
+			in              map[string]interface{}
+			findModulesFn   func(t *testing.T) findModulesFn
+			findModuleFn    func(t *testing.T) findModuleFn
+			findComponentFn func(t *testing.T) findComponentFn
+			outputFile      string
+		}{
+			{
+				name: "component name",
+				in: map[string]interface{}{
+					OptionApp:           appMock,
+					OptionComponentName: "deployment",
+					OptionModule:        "module",
+				},
+				findModuleFn: func(t *testing.T) findModuleFn {
+					return func(a app.App, moduleName string) (component.Module, error) {
+						assert.Equal(t, "module", moduleName)
+						return module, nil
+					}
+				},
+				findComponentFn: func(t *testing.T) findComponentFn {
+					return func(a app.App, moduleName, componentName string) (component.Component, error) {
+						assert.Equal(t, "module", moduleName)
+						assert.Equal(t, "deployment", componentName)
+						return c, nil
+					}
+				},
+				outputFile: filepath.Join("param", "list", "with_component.txt"),
+			},
+			{
+				name: "no component name",
+				in: map[string]interface{}{
+					OptionApp:    appMock,
+					OptionModule: "module",
+				},
+				findModuleFn: func(t *testing.T) findModuleFn {
+					return func(a app.App, moduleName string) (component.Module, error) {
+						assert.Equal(t, "module", moduleName)
+						return module, nil
+					}
+				},
+				findComponentFn: func(t *testing.T) findComponentFn {
+					return func(a app.App, moduleName, componentName string) (component.Component, error) {
+						assert.Equal(t, "module", moduleName)
+						assert.Equal(t, "deployment", componentName)
+						return c, nil
+					}
+				},
+				outputFile: filepath.Join("param", "list", "without_component.txt"),
+			},
+			{
+				name: "env",
+				in: map[string]interface{}{
+					OptionApp:     appMock,
+					OptionEnvName: "envName",
+				},
+				findModulesFn: func(t *testing.T) findModulesFn {
+					return func(a app.App, envName string) ([]component.Module, error) {
+						assert.Equal(t, "envName", envName)
+						return []component.Module{module}, nil
+					}
+				},
+				outputFile: filepath.Join("param", "list", "env.txt"),
+			},
 		}
-		c.On("Params", "").Return(nsParams, nil)
 
-		cm := &cmocks.Manager{}
-		cm.On("Module", mock.Anything, "ns").Return(ns, nil)
-		cm.On("Component", mock.Anything, "ns", "deployment").Return(c, nil)
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
 
-		in := map[string]interface{}{
-			OptionApp:           appMock,
-			OptionComponentName: componentName,
-			OptionModule:        module,
-			OptionEnvName:       envName,
+				a, err := NewParamList(tc.in)
+				require.NoError(t, err)
+
+				if tc.findModulesFn != nil {
+					a.findModulesFn = tc.findModulesFn(t)
+				}
+
+				if tc.findModuleFn != nil {
+					a.findModuleFn = tc.findModuleFn(t)
+				}
+
+				if tc.findComponentFn != nil {
+					a.findComponentFn = tc.findComponentFn(t)
+				}
+
+				var buf bytes.Buffer
+				a.out = &buf
+
+				err = a.Run()
+				require.NoError(t, err)
+
+				assertOutput(t, tc.outputFile, buf.String())
+			})
 		}
-
-		a, err := NewParamList(in)
-		require.NoError(t, err)
-
-		a.cm = cm
-
-		var buf bytes.Buffer
-		a.out = &buf
-
-		err = a.Run()
-		require.NoError(t, err)
-
-		assertOutput(t, "param_list/with_component.txt", buf.String())
-	})
-}
-
-func TestParamList_without_component_name(t *testing.T) {
-	withApp(t, func(appMock *amocks.App) {
-		componentName := ""
-		module := "ns"
-		envName := ""
-
-		nsParams := []component.ModuleParameter{
-			{Component: "deployment", Index: "0", Key: "key1", Value: `"value"`},
-			{Component: "deployment", Index: "0", Key: "key2", Value: `"value"`},
-		}
-
-		ns := &cmocks.Module{}
-
-		ns.On("Params", "").Return(nsParams, nil)
-
-		cm := &cmocks.Manager{}
-		cm.On("Module", mock.Anything, "ns").Return(ns, nil)
-
-		in := map[string]interface{}{
-			OptionApp:           appMock,
-			OptionComponentName: componentName,
-			OptionModule:        module,
-			OptionEnvName:       envName,
-		}
-
-		a, err := NewParamList(in)
-		require.NoError(t, err)
-
-		a.cm = cm
-
-		var buf bytes.Buffer
-		a.out = &buf
-
-		err = a.Run()
-		require.NoError(t, err)
-
-		assertOutput(t, "param_list/without_component.txt", buf.String())
 	})
 }

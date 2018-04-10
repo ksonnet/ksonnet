@@ -57,7 +57,7 @@ func (epa *EnvParamSet) Set(componentName, snippet string, p params.Params) (str
 	}
 
 	if err = epa.setParams(obj, componentName, p); err != nil {
-		return "", errors.Wrap(err, "delete entry")
+		return "", errors.Wrap(err, "set params")
 	}
 
 	// root node should be a local if not, return an error

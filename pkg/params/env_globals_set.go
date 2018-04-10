@@ -52,7 +52,7 @@ func (egs *EnvGlobalsSet) Set(snippet string, p params.Params) (string, error) {
 	}
 
 	if err = egs.setParams(obj, p); err != nil {
-		return "", errors.Wrap(err, "delete entry")
+		return "", errors.Wrap(err, "set global params")
 	}
 
 	// root node should be a local if not, return an error

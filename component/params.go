@@ -68,6 +68,10 @@ var (
 // NOTE: It warns when it makes a change. This serves as a temporary fix until
 // ksonnet generates the correct file.
 func upgradeParams(envName, in string) string {
-	logrus.Warnf("rewriting %q environment params to not use relative paths", envName)
-	return reParamSwap.ReplaceAllLiteralString(in, `std.extVar("__ksonnet/params")`)
+	if reParamSwap.MatchString(in) {
+		logrus.Warnf("rewriting %q environment params to not use relative paths", envName)
+		return reParamSwap.ReplaceAllLiteralString(in, `std.extVar("__ksonnet/params")`)
+	}
+
+	return in
 }
