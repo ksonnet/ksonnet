@@ -28,7 +28,8 @@ var prototypePreviewCmd = &cobra.Command{
 	DisableFlagParsing: true,
 	RunE: func(cmd *cobra.Command, rawArgs []string) error {
 		if len(rawArgs) == 1 && (rawArgs[0] == "--help" || rawArgs[0] == "-h") {
-			return cmd.Help()
+			cmd.Help()
+			return nil
 		}
 
 		if len(rawArgs) < 1 {
