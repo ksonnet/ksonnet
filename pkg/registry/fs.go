@@ -48,10 +48,6 @@ func NewFs(a app.App, registryRef *app.RegistryRefSpec) (*Fs, error) {
 		return nil, err
 	}
 
-	if u.Scheme != "file" {
-		return nil, errors.Errorf("unknown file protocol %q", u.Scheme)
-	}
-
 	fs.root = u.Path
 
 	return fs, nil
@@ -70,8 +66,8 @@ func (fs *Fs) Name() string {
 }
 
 // Protocol is the registry protocol.
-func (fs *Fs) Protocol() string {
-	return fs.spec.Protocol
+func (fs *Fs) Protocol() Protocol {
+	return Protocol(fs.spec.Protocol)
 }
 
 // URI is the registry URI.
@@ -86,13 +82,31 @@ func (fs *Fs) RegistrySpecDir() string {
 
 // RegistrySpecFilePath is the path for the registry.yaml
 func (fs *Fs) RegistrySpecFilePath() string {
+	logrus.WithFields(logrus.Fields{
+		"fs-registry-root": fs.root,
+	}).Debug("creating registry config file path")
+
 	return filepath.Join(fs.root, registryYAMLFile)
 }
 
 // FetchRegistrySpec fetches the registry spec.
 func (fs *Fs) FetchRegistrySpec() (*Spec, error) {
-	logrus.Debugf("fs: fetching fs registry spec %s", fs.RegistrySpecFilePath())
-	data, err := afero.ReadFile(fs.app.Fs(), fs.RegistrySpecFilePath())
+	logrus.WithFields(logrus.Fields{
+		"file-path": fs.RegistrySpecFilePath(),
+	}).Debug("fetching registry spec")
+
+	configPath := fs.RegistrySpecFilePath()
+	path := filepath.Join(fs.app.Root(), configPath)
+	if filepath.IsAbs(configPath) {
+		var err error
+		path, err = filepath.Rel(fs.app.Root(), configPath)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to create path from relative filesystem path")
+		}
+		path = filepath.Join(fs.app.Root(), path)
+	}
+
+	data, err := afero.ReadFile(fs.app.Fs(), path)
 	if err != nil {
 		return nil, err
 	}

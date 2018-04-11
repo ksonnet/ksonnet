@@ -120,7 +120,7 @@ func initIncubator(a app.App) (registry.Registry, error) {
 		a,
 		&app.RegistryRefSpec{
 			Name:     "incubator",
-			Protocol: registry.ProtocolGitHub,
+			Protocol: string(registry.ProtocolGitHub),
 			URI:      defaultIncubatorURI,
 		})
 }

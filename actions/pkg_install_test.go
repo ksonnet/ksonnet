@@ -56,7 +56,7 @@ func TestPkgInstall(t *testing.T) {
 
 		registries := app.RegistryRefSpecs{
 			"incubator": &app.RegistryRefSpec{
-				Protocol: registry.ProtocolFilesystem,
+				Protocol: string(registry.ProtocolFilesystem),
 				URI:      "file:///tmp",
 			},
 		}

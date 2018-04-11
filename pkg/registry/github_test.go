@@ -49,7 +49,7 @@ func makeGh(t *testing.T, u, sha1 string) (*GitHub, *mocks.GitHub) {
 
 	spec := &app.RegistryRefSpec{
 		Name:     "incubator",
-		Protocol: ProtocolGitHub,
+		Protocol: string(ProtocolGitHub),
 		URI:      "github.com/ksonnet/parts/tree/master/incubator",
 	}
 
@@ -211,7 +211,7 @@ func TestGithub_MakeRegistryRefSpec(t *testing.T) {
 
 	expected := &app.RegistryRefSpec{
 		Name:     "incubator",
-		Protocol: ProtocolGitHub,
+		Protocol: string(ProtocolGitHub),
 		URI:      "github.com/ksonnet/parts/tree/master/incubator",
 		GitVersion: &app.GitVersionSpec{
 			CommitSHA: "12345",

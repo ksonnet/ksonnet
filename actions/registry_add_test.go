@@ -34,7 +34,7 @@ func TestRegistryAdd(t *testing.T) {
 			uri         string
 			version     string
 			expectedURI string
-			protocol    string
+			protocol    registry.Protocol
 			isOverride  bool
 		}{
 			{
@@ -53,13 +53,19 @@ func TestRegistryAdd(t *testing.T) {
 			{
 				name:        "fs",
 				uri:         "/path",
-				expectedURI: "file:///path",
+				expectedURI: "/path",
+				protocol:    registry.ProtocolFilesystem,
+			},
+			{
+				name:        "fs with relative path",
+				uri:         "./path",
+				expectedURI: "./path",
 				protocol:    registry.ProtocolFilesystem,
 			},
 			{
 				name:        "fs with URL",
 				uri:         "file:///path",
-				expectedURI: "file:///path",
+				expectedURI: "/path",
 				protocol:    registry.ProtocolFilesystem,
 			},
 		}
@@ -77,7 +83,7 @@ func TestRegistryAdd(t *testing.T) {
 				a, err := NewRegistryAdd(in)
 				require.NoError(t, err)
 
-				a.registryAddFn = func(a app.App, name, protocol, uri, version string, isOverride bool) (*registry.Spec, error) {
+				a.registryAddFn = func(a app.App, protocol registry.Protocol, name, uri, version string, isOverride bool) (*registry.Spec, error) {
 					assert.Equal(t, "new", name)
 					assert.Equal(t, tc.protocol, protocol)
 					assert.Equal(t, tc.expectedURI, uri)

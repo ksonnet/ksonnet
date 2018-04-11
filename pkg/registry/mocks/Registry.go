@@ -94,14 +94,14 @@ func (_m *Registry) Name() string {
 }
 
 // Protocol provides a mock function with given fields:
-func (_m *Registry) Protocol() string {
+func (_m *Registry) Protocol() registry.Protocol {
 	ret := _m.Called()
 
-	var r0 string
-	if rf, ok := ret.Get(0).(func() string); ok {
+	var r0 registry.Protocol
+	if rf, ok := ret.Get(0).(func() registry.Protocol); ok {
 		r0 = rf()
 	} else {
-		r0 = ret.Get(0).(string)
+		r0 = ret.Get(0).(registry.Protocol)
 	}
 
 	return r0
