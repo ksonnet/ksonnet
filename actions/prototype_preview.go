@@ -92,6 +92,9 @@ func (pp *PrototypePreview) Run() error {
 
 	flags := bindPrototypeParams(p)
 	if err = flags.Parse(pp.args); err != nil {
+		if strings.Contains(err.Error(), "help request") {
+			return nil
+		}
 		return errors.Wrap(err, "parse preview args")
 	}
 

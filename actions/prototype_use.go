@@ -18,6 +18,7 @@ package actions
 import (
 	"io"
 	"os"
+	"strings"
 
 	"github.com/ksonnet/ksonnet/component"
 	"github.com/ksonnet/ksonnet/metadata/app"
@@ -89,6 +90,9 @@ func (pl *PrototypeUse) Run() error {
 
 	flags := bindPrototypeParams(p)
 	if err = flags.Parse(pl.args); err != nil {
+		if strings.Contains(err.Error(), "help requested") {
+			return nil
+		}
 		return errors.Wrap(err, "parse preview args")
 	}
 
