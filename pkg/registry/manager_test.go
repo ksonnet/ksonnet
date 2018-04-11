@@ -72,7 +72,7 @@ func Test_List(t *testing.T) {
 
 		specs := app.RegistryRefSpecs{
 			"incubator": &app.RegistryRefSpec{
-				Protocol: ProtocolGitHub,
+				Protocol: string(ProtocolGitHub),
 				URI:      "github.com/ksonnet/parts/tree/master/incubator",
 			},
 		}

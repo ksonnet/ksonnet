@@ -30,6 +30,13 @@ import (
 // TODO: create unit tests for this once mocks for this package are
 // worked out.
 func CacheDependency(a app.App, d pkg.Descriptor, customName string) error {
+	logger := log.WithFields(log.Fields{
+		"descriptor":  d,
+		"custom-name": customName,
+	})
+
+	logger.Debug("caching dependency")
+
 	libs, err := a.Libraries()
 	if err != nil {
 		return err

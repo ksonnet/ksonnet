@@ -115,8 +115,8 @@ func (gh *GitHub) Name() string {
 }
 
 // Protocol is the registry protocol.
-func (gh *GitHub) Protocol() string {
-	return gh.spec.Protocol
+func (gh *GitHub) Protocol() Protocol {
+	return Protocol(gh.spec.Protocol)
 }
 
 // URI is the registry URI.

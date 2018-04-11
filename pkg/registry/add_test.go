@@ -46,7 +46,7 @@ func TestAdd(t *testing.T) {
 	withApp(t, func(appMock *amocks.App, fs afero.Fs) {
 		expectedSpec := &app.RegistryRefSpec{
 			Name:     "new",
-			Protocol: ProtocolGitHub,
+			Protocol: string(ProtocolGitHub),
 			URI:      "github.com/foo/bar",
 			GitVersion: &app.GitVersionSpec{
 				CommitSHA: "40285d8a14f1ac5787e405e1023cf0c07f6aa28c",
@@ -73,7 +73,7 @@ func TestAdd(t *testing.T) {
 			return NewGitHub(a, registryRef, ghOpt)
 		}
 
-		spec, err := Add(appMock, "new", ProtocolGitHub, "github.com/foo/bar", "", true)
+		spec, err := Add(appMock, ProtocolGitHub, "new", "github.com/foo/bar", "", true)
 		require.NoError(t, err)
 
 		require.Equal(t, registrySpec, spec)

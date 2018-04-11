@@ -20,11 +20,18 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/parts"
 )
 
+// Protocol is the protocol for a registry.
+type Protocol string
+
+func (p Protocol) String() string {
+	return string(p)
+}
+
 const (
 	// ProtocolFilesystem is the protocol for file system based registries.
-	ProtocolFilesystem = "fs"
+	ProtocolFilesystem Protocol = "fs"
 	// ProtocolGitHub is a the protocol for GitHub based registries.
-	ProtocolGitHub = "github"
+	ProtocolGitHub Protocol = "github"
 
 	registryYAMLFile = "registry.yaml"
 	partsYAMLFile    = "parts.yaml"
@@ -45,7 +52,7 @@ type Registry interface {
 	ResolveLibrarySpec(libID, libRefSpec string) (*parts.Spec, error)
 	ResolveLibrary(libID, libAlias, version string, onFile ResolveFile, onDir ResolveDirectory) (*parts.Spec, *app.LibraryRefSpec, error)
 	Name() string
-	Protocol() string
+	Protocol() Protocol
 	URI() string
 	IsOverride() bool
 }

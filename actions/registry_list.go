@@ -81,7 +81,7 @@ func (rl *RegistryList) Run() error {
 		rows = append(rows, []string{
 			r.Name(),
 			override,
-			r.Protocol(),
+			r.Protocol().String(),
 			r.URI(),
 		})
 	}

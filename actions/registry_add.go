@@ -21,6 +21,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/pkg/registry"
+	"github.com/pkg/errors"
 )
 
 // RunRegistryAdd runs `registry add`
@@ -40,7 +41,7 @@ type RegistryAdd struct {
 	uri           string
 	version       string
 	isOverride    bool
-	registryAddFn func(a app.App, name, protocol, uri, version string, isOverride bool) (*registry.Spec, error)
+	registryAddFn func(a app.App, protocol registry.Protocol, name, uri, version string, isOverride bool) (*registry.Spec, error)
 }
 
 // NewRegistryAdd creates an instance of RegistryAdd.
@@ -66,24 +67,57 @@ func NewRegistryAdd(m map[string]interface{}) (*RegistryAdd, error) {
 
 // Run adds a registry.
 func (ra *RegistryAdd) Run() error {
-	uri, protocol := ra.protocol()
-	_, err := ra.registryAddFn(ra.app, ra.name, protocol, uri, ra.version, ra.isOverride)
+	rd, err := ra.protocol()
+	if err != nil {
+		return errors.Wrap(err, "detect registry protocol")
+	}
+
+	_, err = ra.registryAddFn(ra.app, rd.Protocol, ra.name, rd.URI, ra.version, ra.isOverride)
 	return err
 }
 
-func (ra *RegistryAdd) protocol() (string, string) {
-	if strings.HasPrefix(ra.uri, "file://") {
-		return ra.uri, registry.ProtocolFilesystem
-	}
+type registryDetails struct {
+	URI      string
+	Protocol registry.Protocol
+}
 
-	if strings.HasPrefix(ra.uri, "/") {
-		u := url.URL{
-			Scheme: "file",
-			Path:   ra.uri,
+func (ra *RegistryAdd) protocol() (registryDetails, error) {
+	if ra.isGitHub() {
+		rd := registryDetails{
+			URI:      ra.uri,
+			Protocol: registry.ProtocolGitHub,
 		}
 
-		return u.String(), registry.ProtocolFilesystem
+		return rd, nil
 	}
 
-	return ra.uri, registry.ProtocolGitHub
+	if strings.HasPrefix(ra.uri, "file://") {
+		u, err := url.Parse(ra.uri)
+		if err != nil {
+			return registryDetails{}, err
+		}
+
+		rd := registryDetails{
+			URI:      u.Path,
+			Protocol: registry.ProtocolFilesystem,
+		}
+
+		return rd, nil
+	}
+
+	if strings.HasPrefix(ra.uri, "/") || strings.HasPrefix(ra.uri, ".") {
+		rd := registryDetails{
+			URI:      ra.uri,
+			Protocol: registry.ProtocolFilesystem,
+		}
+
+		return rd, nil
+	}
+
+	return registryDetails{}, errors.Errorf("could not detect registry type for %s", ra.uri)
+}
+
+func (ra *RegistryAdd) isGitHub() bool {
+	return strings.HasPrefix(ra.uri, "github.com") ||
+		strings.HasPrefix(ra.uri, "https://github.com")
 }

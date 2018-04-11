@@ -83,7 +83,7 @@ func TestInit(t *testing.T) {
 						assert.Len(t, registries, 1)
 						r := registries[0]
 
-						assert.Equal(t, "github", r.Protocol())
+						assert.Equal(t, registry.ProtocolGitHub, r.Protocol())
 						assert.Equal(t, "github.com/ksonnet/parts/tree/master/incubator", r.URI())
 						assert.Equal(t, "incubator", r.Name())
 					} else {
@@ -99,7 +99,7 @@ func TestInit(t *testing.T) {
 
 				a.initIncubatorFn = func(a app.App) (registry.Registry, error) {
 					r := &rmocks.Registry{}
-					r.On("Protocol").Return("github")
+					r.On("Protocol").Return(registry.ProtocolGitHub)
 					r.On("URI").Return("github.com/ksonnet/parts/tree/master/incubator")
 					r.On("Name").Return("incubator")
 					return r, nil

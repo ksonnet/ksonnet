@@ -31,7 +31,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func withRFS(t *testing.T, fn func(*Fs, *mocks.App, afero.Fs)) {
+func withRFS(t *testing.T, relPath bool, fn func(*Fs, *mocks.App, afero.Fs)) {
+	uri := "/work/local"
+	if relPath {
+		uri = "../work/local"
+	}
+
 	fs := afero.NewMemMapFs()
 	appMock := &mocks.App{}
 	appMock.On("Fs").Return(fs)
@@ -40,8 +45,8 @@ func withRFS(t *testing.T, fn func(*Fs, *mocks.App, afero.Fs)) {
 
 	spec := &app.RegistryRefSpec{
 		Name:     "local",
-		Protocol: ProtocolFilesystem,
-		URI:      "file:///work/local",
+		Protocol: string(ProtocolFilesystem),
+		URI:      uri,
 	}
 
 	partRoot := filepath.Join("testdata", "part", "incubator")
@@ -75,60 +80,78 @@ func withRFS(t *testing.T, fn func(*Fs, *mocks.App, afero.Fs)) {
 }
 
 func TestFs_Name(t *testing.T) {
-	withRFS(t, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
+	withRFS(t, false, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
 		assert.Equal(t, "local", rfs.Name())
 	})
 }
 
 func TestFs_Protocol(t *testing.T) {
-	withRFS(t, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
+	withRFS(t, false, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
 		assert.Equal(t, ProtocolFilesystem, rfs.Protocol())
 	})
 }
 
 func TestFs_URI(t *testing.T) {
-	withRFS(t, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
-		assert.Equal(t, "file:///work/local", rfs.URI())
+	withRFS(t, false, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
+		assert.Equal(t, "/work/local", rfs.URI())
 	})
 }
 
 func TestFs_RegistrySpecDir(t *testing.T) {
-	withRFS(t, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
+	withRFS(t, false, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
 		assert.Equal(t, "/work/local", rfs.RegistrySpecDir())
 	})
 }
 
 func TestFs_RegistrySpecFilePath(t *testing.T) {
-	withRFS(t, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
+	withRFS(t, false, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
 		assert.Equal(t, "/work/local/registry.yaml", rfs.RegistrySpecFilePath())
 	})
 }
 
 func TestFs_FetchRegistrySpec(t *testing.T) {
-	withRFS(t, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
-		spec, err := rfs.FetchRegistrySpec()
-		require.NoError(t, err)
+	cases := []struct {
+		name    string
+		relPath bool
+	}{
+		{
+			name:    "relative path",
+			relPath: true,
+		},
+		{
+			name: "absolute path",
+		},
+	}
 
-		expected := &Spec{
-			APIVersion: "0.1.0",
-			Kind:       "ksonnet.io/registry",
-			Libraries: LibraryRefSpecs{
-				"apache": &LibraryRef{
-					Path: "apache",
-				},
-			},
-		}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			withRFS(t, tc.relPath, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
+				spec, err := rfs.FetchRegistrySpec()
+				require.NoError(t, err)
 
-		assert.Equal(t, expected, spec)
-	})
+				expected := &Spec{
+					APIVersion: "0.1.0",
+					Kind:       "ksonnet.io/registry",
+					Libraries: LibraryRefSpecs{
+						"apache": &LibraryRef{
+							Path: "apache",
+						},
+					},
+				}
+
+				assert.Equal(t, expected, spec)
+			})
+		})
+	}
+
 }
 
 func TestFs_MakeRegistryRefSpec(t *testing.T) {
-	withRFS(t, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
+	withRFS(t, false, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
 		expected := &app.RegistryRefSpec{
 			Name:     "local",
-			Protocol: ProtocolFilesystem,
-			URI:      "file:///work/local",
+			Protocol: string(ProtocolFilesystem),
+			URI:      "/work/local",
 		}
 		assert.Equal(t, expected, rfs.MakeRegistryRefSpec())
 
@@ -136,7 +159,7 @@ func TestFs_MakeRegistryRefSpec(t *testing.T) {
 }
 
 func TestFs_ResolveLibrarySpec(t *testing.T) {
-	withRFS(t, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
+	withRFS(t, false, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
 		spec, err := rfs.ResolveLibrarySpec("apache", "")
 		require.NoError(t, err)
 
@@ -176,7 +199,7 @@ func TestFs_ResolveLibrarySpec(t *testing.T) {
 }
 
 func TestFs_ResolveLibrary(t *testing.T) {
-	withRFS(t, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
+	withRFS(t, false, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
 		var files []string
 		onFile := func(relPath string, contents []byte) error {
 			files = append(files, relPath)
