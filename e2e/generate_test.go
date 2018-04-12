@@ -30,6 +30,18 @@ var _ = Describe("ks generate", func() {
 		a = e.initApp(nil)
 	})
 
+	FDescribe("with no arguments", func() {
+		var o *output
+
+		JustBeforeEach(func() {
+			o = a.runKs("generate")
+		})
+
+		It("returns an error", func() {
+			assertExitStatus(o, 1)
+		})
+	})
+
 	Context("deployed-service", func() {
 		It("generates a component using the prototype", func() {
 			o := a.runKs(
