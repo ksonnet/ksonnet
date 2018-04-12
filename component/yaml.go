@@ -96,7 +96,7 @@ func (y *YAML) Params(envName string) ([]ModuleParameter, error) {
 		return nil, err
 	}
 
-	props, err := params.ToMap("", paramsData, paramsComponentRoot)
+	componentParams, err := params.ToMap("", paramsData, paramsComponentRoot)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not find components")
 	}
@@ -112,9 +112,9 @@ func (y *YAML) Params(envName string) ([]ModuleParameter, error) {
 	}
 
 	var params []ModuleParameter
-	for componentName, componentValue := range props {
-		y.log().WithField("prop-name", componentName).Debug("searching for props")
-		matches := re.FindAllStringSubmatch(componentName, 1)
+	for paramName, paramValue := range componentParams {
+		y.log().WithField("prop-name", paramName).Debug("searching for props")
+		matches := re.FindAllStringSubmatch(paramName, 1)
 		if len(matches) > 0 {
 			index := matches[0][1]
 			i, err := strconv.Atoi(index)
@@ -135,12 +135,12 @@ func (y *YAML) Params(envName string) ([]ModuleParameter, error) {
 				return nil, err
 			}
 
-			m, ok := componentValue.(map[string]interface{})
+			paramMap, ok := paramValue.(map[string]interface{})
 			if !ok {
-				return nil, errors.Errorf("component value for %q was not a map", componentName)
+				return nil, errors.Errorf("component value for %q was not a map", paramName)
 			}
 
-			childParams, err := y.paramValues(y.Name(false), index, valueMap, m, nil)
+			childParams, err := y.paramValues(y.Name(false), index, valueMap, paramMap, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -163,16 +163,16 @@ func isLeaf(path []string, key string, valueMap map[string]schema.Values) (strin
 	return "", false
 }
 
-func (y *YAML) paramValues(componentName, index string, valueMap map[string]schema.Values, m map[string]interface{}, path []string) ([]ModuleParameter, error) {
+func (y *YAML) paramValues(componentName, index string, valueMap map[string]schema.Values, paramMap map[string]interface{}, path []string) ([]ModuleParameter, error) {
 	y.log().WithFields(logrus.Fields{
 		"prop-name": componentName,
 		"value-map": fmt.Sprintf("%#v", valueMap),
-		"m":         fmt.Sprintf("%#v", m),
+		"param-map": fmt.Sprintf("%#v", paramMap),
 		"path":      path,
 	}).Debug("finding param values")
 	var params []ModuleParameter
 
-	for k, v := range m {
+	for k, v := range paramMap {
 		var s string
 		switch t := v.(type) {
 		default:
@@ -205,6 +205,23 @@ func (y *YAML) paramValues(componentName, index string, valueMap map[string]sche
 				childParams, err := y.paramValues(componentName, index, valueMap, t, childPath)
 				if err != nil {
 					return nil, err
+				}
+
+				if len(childParams) == 0 {
+					b, err := json.Marshal(&v)
+					if err != nil {
+						return nil, err
+					}
+					s = string(b)
+
+					childParams = []ModuleParameter{
+						{
+							Component: componentName,
+							Index:     index,
+							Key:       strings.Join(childPath, "."),
+							Value:     s,
+						},
+					}
 				}
 
 				params = append(params, childParams...)

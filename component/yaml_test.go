@@ -106,6 +106,28 @@ func TestYAML_Params_literal(t *testing.T) {
 	})
 }
 
+func TestYAML_Params_extra_entries(t *testing.T) {
+	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+
+		test.StageFile(t, fs, "deployment.yaml", "/deployment.yaml")
+		test.StageFile(t, fs, "params-annotations.libsonnet", "/params.libsonnet")
+
+		y := NewYAML(a, "", "/deployment.yaml", "/params.libsonnet")
+		params, err := y.Params("")
+		require.NoError(t, err)
+
+		expected := []ModuleParameter{
+			{
+				Component: "deployment",
+				Index:     "0",
+				Key:       "metadata.annotations",
+				Value:     `{"size":"large"}`,
+			},
+		}
+		require.Equal(t, expected, params)
+	})
+}
+
 func TestYAML_Objects_no_params(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
 
@@ -265,6 +287,67 @@ func TestYAML_Objects_params_exist_with_entry(t *testing.T) {
 							"plural": "certificates",
 						},
 						"scope": "Namespaced",
+					},
+				},
+			},
+		}
+
+		require.Equal(t, expected, list)
+	})
+}
+
+func TestYAML_Objects_params_extra_entries(t *testing.T) {
+	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+
+		test.StageFile(t, fs, "deployment.yaml", "/deployment.yaml")
+		test.StageFile(t, fs, "params-annotations.libsonnet", "/params.libsonnet")
+
+		y := NewYAML(a, "", "/deployment.yaml", "/params.libsonnet")
+
+		list, err := y.Objects("", "")
+		require.NoError(t, err)
+
+		expected := []*unstructured.Unstructured{
+			{
+				Object: map[string]interface{}{
+					"apiVersion": "apps/v1beta2",
+					"kind":       "Deployment",
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							"size": "large",
+						},
+						"labels": map[string]interface{}{
+							"app": "nginx",
+						},
+						"name": "nginx-deployment",
+					},
+					"spec": map[string]interface{}{
+						"replicas": int64(3),
+						"selector": map[string]interface{}{
+							"matchLabels": map[string]interface{}{
+								"app": "nginx",
+							},
+						},
+						"template": map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"labels": map[string]interface{}{
+									"app": "nginx",
+								},
+							},
+							"spec": map[string]interface{}{
+								"containers": []interface{}{
+									map[string]interface{}{
+										"name":  "nginx",
+										"image": "nginx:1.7.9",
+										"ports": []interface{}{
+											map[string]interface{}{
+												"containerPort": int64(80),
+											},
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			},

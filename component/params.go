@@ -26,7 +26,7 @@ func applyGlobals(params string) (string, error) {
 	vm := jsonnet.NewVM()
 
 	vm.ExtCode("params", params)
-	return vm.EvaluateSnippet("snippet", snippetMapGlobal)
+	return vm.EvaluateSnippet("applyGlobals", snippetMapGlobal)
 }
 
 var snippetMapGlobal = `
@@ -48,7 +48,7 @@ func patchJSON(jsonObject, patch, patchName string) (string, error) {
 	vm.TLACode("patch", patch)
 	vm.TLAVar("patchName", patchName)
 
-	return vm.EvaluateSnippet("snippet", snippetMergeComponentPatch)
+	return vm.EvaluateSnippet("patchJSON", snippetMergeComponentPatch)
 }
 
 var snippetMergeComponentPatch = `

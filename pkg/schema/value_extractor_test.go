@@ -175,7 +175,8 @@ var (
 					Value:  "nginx-deployment"},
 				"apps.v1beta2.deployment.mixin.spec.replicas": Values{
 					Lookup: []string{"spec", "replicas"},
-					Setter: "apps.v1beta2.deployment.mixin.spec.withReplicas", Value: 3}},
+					Setter: "apps.v1beta2.deployment.mixin.spec.withReplicas",
+					Value:  3}},
 		},
 	}
 )
