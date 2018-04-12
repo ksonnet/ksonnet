@@ -81,6 +81,10 @@ func (pl *PrototypeUse) Run() error {
 		return err
 	}
 
+	if len(pl.args) == 0 {
+		return errors.New("prototype name was not supplied as an argument")
+	}
+
 	query := pl.args[0]
 
 	p, err := findUniquePrototype(query, prototypes)
