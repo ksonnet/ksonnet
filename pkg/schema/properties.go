@@ -155,7 +155,7 @@ func valueSearch(path []string, m map[interface{}]interface{}) (interface{}, err
 					return t, nil
 				}
 				return valueSearch(path[1:], t)
-			case string, int, []interface{}:
+			case string, bool, int, float64, []interface{}:
 				return t, nil
 			}
 		}

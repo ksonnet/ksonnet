@@ -97,6 +97,7 @@ func TestProperties_Paths(t *testing.T) {
 				{Path: append(deploymentBase, "spec", "selector", "matchLabels", "app")},
 				{Path: append(deploymentBase, "spec", "template", "metadata", "labels", "app")},
 				{Path: append(deploymentBase, "spec", "template", "spec", "containers")},
+				{Path: append(deploymentBase, "spec", "template", "spec", "hostNetwork")},
 			},
 		},
 		{
@@ -167,6 +168,11 @@ func TestProperties_Value(t *testing.T) {
 			name:     "object",
 			path:     []string{"metadata", "labels"},
 			expected: map[interface{}]interface{}(map[interface{}]interface{}{"app": "nginx"}),
+		},
+		{
+			name:     "bool",
+			path:     []string{"spec", "template", "spec", "hostNetwork"},
+			expected: false,
 		},
 	}
 
