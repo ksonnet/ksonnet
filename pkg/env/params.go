@@ -30,7 +30,10 @@ func SetGlobalParams(a app.App, envName string, p param.Params) error {
 		return err
 	}
 
-	path := envPath(a, envName, globalsFileName)
+	path, err := Path(a, envName, globalsFileName)
+	if err != nil {
+		return err
+	}
 
 	exists, err := afero.Exists(a.Fs(), path)
 	if err != nil {
@@ -70,7 +73,10 @@ func UnsetGlobalParams(a app.App, envName, paramName string) error {
 		return err
 	}
 
-	path := envPath(a, envName, globalsFileName)
+	path, err := Path(a, envName, globalsFileName)
+	if err != nil {
+		return err
+	}
 
 	exists, err := afero.Exists(a.Fs(), path)
 	if err != nil {
@@ -113,7 +119,10 @@ func SetParams(envName, component string, p param.Params, config SetParamsConfig
 		return err
 	}
 
-	path := envPath(config.App, envName, paramsFileName)
+	path, err := Path(config.App, envName, paramsFileName)
+	if err != nil {
+		return err
+	}
 
 	text, err := afero.ReadFile(config.App.Fs(), path)
 	if err != nil {
@@ -141,7 +150,10 @@ func DeleteParam(a app.App, envName, componentName, paramName string) error {
 		return err
 	}
 
-	path := envPath(a, envName, paramsFileName)
+	path, err := Path(a, envName, paramsFileName)
+	if err != nil {
+		return err
+	}
 
 	text, err := afero.ReadFile(a.Fs(), path)
 	if err != nil {
@@ -176,7 +188,10 @@ func GetParams(envName, module string, config GetParamsConfig) (map[string]param
 	}
 
 	// Get the environment specific params
-	envParamsPath := envPath(config.App, envName, paramsFileName)
+	envParamsPath, err := Path(config.App, envName, paramsFileName)
+	if err != nil {
+		return nil, err
+	}
 	envParamsText, err := afero.ReadFile(config.App.Fs(), envParamsPath)
 	if err != nil {
 		return nil, err

@@ -15,12 +15,77 @@
 
 package env
 
+import (
+	"path/filepath"
+
+	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/util/jsonnet"
+	"github.com/spf13/afero"
+)
+
 const (
 	// primary environment files.
 	envFileName     = "main.jsonnet"
 	paramsFileName  = "params.libsonnet"
 	globalsFileName = "globals.libsonnet"
 
-	// envRoot is the name for the environment root.
-	envRoot = "environments"
+	// envRootName is the name for the environment root.
+	envRootName = "environments"
 )
+
+// MainFile returns the contents of the environment's main source.
+func MainFile(a app.App, envName string) (string, error) {
+	path, err := Path(a, envName, envFileName)
+	if err != nil {
+		return "", err
+	}
+
+	snippet, err := afero.ReadFile(a.Fs(), path)
+	if err != nil {
+		return "", err
+	}
+
+	return string(snippet), nil
+}
+
+// Evaluate evaluates an environments.
+func Evaluate(a app.App, envName, components string) (string, error) {
+	libPath, err := a.LibPath(envName)
+	if err != nil {
+		return "", err
+	}
+
+	snippet, err := MainFile(a, envName)
+	if err != nil {
+		return "", err
+	}
+
+	vm := jsonnet.NewVM()
+	vm.JPaths = []string{
+		filepath.Join(a.Root(), envRootName),
+		libPath,
+	}
+	vm.ExtCode("__ksonnet/components", components)
+
+	return vm.EvaluateSnippet(envFileName, snippet)
+
+}
+
+func envRoot(a app.App, envName string) (string, error) {
+	envSpec, err := a.Environment(envName)
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(a.Root(), envRootName, envSpec.Path), nil
+
+}
+
+func Path(a app.App, envName string, path ...string) (string, error) {
+	base, err := envRoot(a, envName)
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(append([]string{base}, path...)...), nil
+}

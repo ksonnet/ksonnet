@@ -101,7 +101,7 @@ func (epa *EnvParamSet) setParams(obj *astext.Object, componentName string, p pa
 	}
 
 	for key := range p {
-		decoded, err := DecodeValue(p[key])
+		decoded, err := jsonnet.DecodeValue(p[key])
 		if err != nil {
 			return err
 		}

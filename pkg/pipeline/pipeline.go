@@ -17,17 +17,24 @@ package pipeline
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"path/filepath"
 	"regexp"
-	"strings"
 
+	"github.com/ksonnet/ksonnet/pkg/util/k8s"
+
+	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
+	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/printer"
 	"github.com/ksonnet/ksonnet/component"
 	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/env"
+	"github.com/ksonnet/ksonnet/pkg/params"
 	"github.com/ksonnet/ksonnet/pkg/util/jsonnet"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // OverrideManager overrides the component manager interface for a pipeline.
@@ -42,18 +49,24 @@ type Opt func(p *Pipeline)
 
 // Pipeline is the ks build pipeline.
 type Pipeline struct {
-	app     app.App
-	envName string
-	cm      component.Manager
+	app                 app.App
+	envName             string
+	cm                  component.Manager
+	buildObjectsFn      func(*Pipeline, []string) ([]*unstructured.Unstructured, error)
+	evaluateEnvFn       func(app.App, string, string) (string, error)
+	evaluateEnvParamsFn func(app.App, string, string, string) (string, error)
 }
 
 // New creates an instance of Pipeline.
 func New(ksApp app.App, envName string, opts ...Opt) *Pipeline {
 	logrus.Debugf("creating ks pipeline for environment %q", envName)
 	p := &Pipeline{
-		app:     ksApp,
-		envName: envName,
-		cm:      component.DefaultManager,
+		app:                 ksApp,
+		envName:             envName,
+		cm:                  component.DefaultManager,
+		buildObjectsFn:      buildObjects,
+		evaluateEnvFn:       env.Evaluate,
+		evaluateEnvParamsFn: params.EvaluateEnv,
 	}
 
 	for _, opt := range opts {
@@ -123,48 +136,88 @@ func (p *Pipeline) Components(filter []string) ([]component.Component, error) {
 
 // Objects converts components into Kubernetes objects.
 func (p *Pipeline) Objects(filter []string) ([]*unstructured.Unstructured, error) {
-	namespaces, err := p.Modules()
+	return p.buildObjectsFn(p, filter)
+}
+
+func (p *Pipeline) moduleObjects(module component.Module, filter []string) ([]*unstructured.Unstructured, error) {
+	doc := &astext.Object{}
+
+	object, componentMap, err := module.Render(p.envName, filter...)
 	if err != nil {
-		return nil, errors.Wrap(err, "get namespaces")
+		return nil, err
 	}
 
-	var names []string
-	for _, n := range namespaces {
-		names = append(names, n.Name())
+	doc.Fields = append(doc.Fields, object.Fields...)
+
+	var buf bytes.Buffer
+	if err = printer.Fprint(&buf, doc); err != nil {
+		return nil, err
 	}
 
-	logrus.Debugf("pipeline: build objects for namespaces: %s", strings.Join(names, ", "))
+	evaluated, err := p.evaluateEnvFn(p.app, p.envName, buf.String())
+	if err != nil {
+		return nil, err
+	}
 
-	objects := make([]*unstructured.Unstructured, 0)
-	for _, ns := range namespaces {
-		paramsStr, err := p.EnvParameters(ns.Name())
+	var m map[string]interface{}
+
+	if err = json.Unmarshal([]byte(evaluated), &m); err != nil {
+		return nil, err
+	}
+
+	// apply environment parameters
+	moduleParamData, err := module.ResolvedParams()
+	if err != nil {
+		return nil, err
+	}
+
+	envParamsPath, err := env.Path(p.app, p.envName, "params.libsonnet")
+	if err != nil {
+		return nil, err
+	}
+
+	envParamData, err := p.evaluateEnvParamsFn(p.app, envParamsPath, moduleParamData, p.envName)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := make([]runtime.Object, 0, len(m))
+
+	for k, v := range m {
+		data, err := json.Marshal(v)
 		if err != nil {
-			return nil, errors.Wrap(err, "create environment parameters")
+			return nil, err
 		}
 
-		components, err := p.Components(filter)
-		if err != nil {
-			return nil, errors.Wrapf(err, "find objects in namespace %s", ns.Name())
+		componentType, ok := componentMap[k]
+		if !ok {
+			// Items in a list won't end up in this map, so assume they are jsonnet.
+			componentType = "jsonnet"
 		}
 
-		names = make([]string, 0)
-		for _, c := range components {
-			names = append(names, c.Name(true))
-		}
+		var patched string
 
-		logrus.Debugf("pipeline: components for %s: %s", ns.Name(), strings.Join(names, ", "))
-
-		for i := range components {
-			o, err := components[i].Objects(paramsStr, p.envName)
+		switch componentType {
+		case "jsonnet":
+			patched, err = params.EvaluateComponentSnippet(p.app, string(data), envParamData, p.envName, false)
 			if err != nil {
-				return nil, errors.Wrapf(err, "find objects for %s in %s", components[i].Name(false), ns.Name())
+				return nil, errors.Wrap(err, "patch Jsonnet component")
 			}
-
-			objects = append(objects, o...)
+		case "yaml":
+			patched, err = params.PatchJSON(string(data), envParamData, k)
+			if err != nil {
+				return nil, errors.Wrap(err, "patch YAML/JSON component")
+			}
 		}
+
+		uns, _, err := unstructured.UnstructuredJSONScheme.Decode([]byte(patched), nil, nil)
+		if err != nil {
+			return nil, errors.Wrap(err, "decode unstructured")
+		}
+		ret = append(ret, uns)
 	}
 
-	return objects, nil
+	return k8s.FlattenToV1(ret)
 }
 
 // YAML converts components into YAML.
@@ -222,4 +275,30 @@ func stringInSlice(s string, sl []string) bool {
 	}
 
 	return false
+}
+
+func buildObjects(p *Pipeline, filter []string) ([]*unstructured.Unstructured, error) {
+	modules, err := p.Modules()
+	if err != nil {
+		return nil, errors.Wrap(err, "get modules")
+	}
+
+	var ret []*unstructured.Unstructured
+
+	for _, m := range modules {
+		logrus.WithFields(logrus.Fields{
+			"action":      "pipeline",
+			"module-name": m.Name(),
+		}).Debug("building objects")
+
+		objects, err := p.moduleObjects(m, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		ret = append(ret, objects...)
+	}
+
+	return ret, nil
+
 }

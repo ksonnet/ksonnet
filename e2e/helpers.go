@@ -57,6 +57,10 @@ func assertOutputContains(name, output string) {
 	ExpectWithOffset(1, output).To(ContainSubstring(string(b)))
 }
 
+func assertOutputContainsString(expected, output string) {
+	ExpectWithOffset(1, output).To(ContainSubstring(expected))
+}
+
 func assertExitStatus(o *output, status int) {
 	ExpectWithOffset(1, o.exitCode).To(Equal(status),
 		"expected exit status to be %d but was %d\nstdout:\n%s\nstderr:\n%s\nargs:%s\npath:%s",

@@ -52,8 +52,8 @@ var _ = Describe("ks delete", func() {
 		})
 
 		It("reports which resources it deleting", func() {
-			assertExitStatus(o, 0)
-			assertOutput("delete/output.txt", o.stderr)
+			assertOutputContainsString("Deleting services guestbook-ui", o.stderr)
+			assertOutputContainsString("Deleting deployments guestbook-ui", o.stderr)
 		})
 
 		It("deletes guestbook-ui service", func() {

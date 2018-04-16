@@ -16,14 +16,19 @@
 package component
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/google/go-jsonnet/ast"
+	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
+	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/printer"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/pkg/params"
+	"github.com/ksonnet/ksonnet/pkg/util/jsonnet"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -41,14 +46,14 @@ func moduleErrorMsg(format, module string) string {
 // Module is a component module
 type Module interface {
 	Components() ([]Component, error)
-	// TODO: is this needed?
+	DeleteParam(path []string) error
 	Dir() string
 	Name() string
 	Params(envName string) ([]ModuleParameter, error)
 	ParamsPath() string
+	Render(envName string, componentNames ...string) (*astext.Object, map[string]string, error)
 	ResolvedParams() (string, error)
 	SetParam(path []string, value interface{}) error
-	DeleteParam(path []string) error
 }
 
 // FilesystemModule is a component module that uses a filesystem for storage.
@@ -163,7 +168,76 @@ func (m *FilesystemModule) ResolvedParams() (string, error) {
 		return "", err
 	}
 
-	return applyGlobals(s)
+	object, err := jsonnet.Parse("params.libsonnet", s)
+	if err != nil {
+		return "", err
+	}
+
+	var componentsObject *astext.Object
+
+	for _, f := range object.Fields {
+		id, err := jsonnet.FieldID(f)
+		if err != nil {
+			return "", err
+		}
+
+		if id == "components" {
+			componentsObject = f.Expr2.(*astext.Object)
+		}
+	}
+
+	if componentsObject == nil {
+		return "", errors.New("could not find components object in params")
+	}
+
+	currentFields := make(map[string]bool)
+
+	for _, f := range componentsObject.Fields {
+		id, err := jsonnet.FieldID(f)
+		if err != nil {
+			return "", err
+		}
+
+		currentFields[id] = true
+	}
+
+	components, err := m.Components()
+	if err != nil {
+		return "", err
+	}
+
+	for _, c := range components {
+		summaries, err := c.Summarize()
+		if err != nil {
+			return "", err
+		}
+
+		for i := range summaries {
+			summary := summaries[i]
+			if summary.Type != "yaml" && summary.Type != "json" {
+				continue
+			}
+
+			name := fmt.Sprintf("%s-%d", summary.ComponentName, summary.Index)
+			if _, ok := currentFields[name]; !ok {
+				field, err := astext.CreateField(name)
+				if err != nil {
+					return "", err
+				}
+
+				field.Hide = ast.ObjectFieldInherit
+				field.Expr2 = &astext.Object{}
+				componentsObject.Fields = append(componentsObject.Fields, *field)
+			}
+		}
+	}
+
+	var buf bytes.Buffer
+	if err := printer.Fprint(&buf, object); err != nil {
+		return "", errors.Wrap(err, "could not update params")
+	}
+
+	return applyGlobals(buf.String())
 }
 
 // Params returns the params for a module.
@@ -293,6 +367,48 @@ func (m *FilesystemModule) Components() ([]Component, error) {
 	}
 
 	return components, nil
+}
+
+type renderedModule struct {
+	Components map[string]interface{} `json:"components"`
+}
+
+// Render converts components to JSON. If there are component names, only include
+// those components.
+func (m *FilesystemModule) Render(envName string, componentNames ...string) (*astext.Object, map[string]string, error) {
+	components, err := m.Components()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	doc := &astext.Object{
+		Fields: astext.ObjectFields{},
+	}
+
+	componentMap := make(map[string]string)
+
+	for _, c := range components {
+		m, err := c.ToMap(envName)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		for k, v := range m {
+			f, err := astext.CreateField(k)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			f.Hide = ast.ObjectFieldInherit
+
+			f.Expr2 = v
+			doc.Fields = append(doc.Fields, *f)
+		}
+
+		componentMap[c.Name(false)] = c.Type()
+	}
+
+	return doc, componentMap, nil
 }
 
 func (m *FilesystemModule) log() *logrus.Entry {

@@ -16,10 +16,9 @@
 package component
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -27,18 +26,16 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ghodss/yaml"
+	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/pkg/params"
 	"github.com/ksonnet/ksonnet/pkg/schema"
 	jsonnetutil "github.com/ksonnet/ksonnet/pkg/util/jsonnet"
-	"github.com/ksonnet/ksonnet/pkg/util/k8s"
 	utilyaml "github.com/ksonnet/ksonnet/pkg/util/yaml"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	amyaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
 const (
@@ -78,6 +75,11 @@ func (y *YAML) Name(wantsNameSpaced bool) string {
 	}
 
 	return path.Join(y.module, name)
+}
+
+// Type always returns "yaml".
+func (y *YAML) Type() string {
+	return "yaml"
 }
 
 // Params returns params for a component.
@@ -250,26 +252,6 @@ func (y *YAML) paramValues(componentName, index string, valueMap map[string]sche
 	return params, nil
 }
 
-// Objects converts YAML to a slice of apimachinery Unstructured objects. Params for a YAML
-// based component are keyed like, `name-id`, where `name` is the file name sans the extension,
-// and the id is the position within the file (starting at 0). Params are named this way
-// because a YAML file can contain more than one object.
-func (y *YAML) Objects(paramsStr, envName string) ([]*unstructured.Unstructured, error) {
-	if paramsStr == "" {
-		dir := filepath.Dir(y.source)
-		paramsFile := filepath.Join(dir, "params.libsonnet")
-
-		b, err := afero.ReadFile(y.app.Fs(), paramsFile)
-		if err != nil {
-			return nil, err
-		}
-
-		paramsStr = string(b)
-	}
-
-	return y.raw(paramsStr)
-}
-
 // SetParam set parameter for a component.
 func (y *YAML) SetParam(path []string, value interface{}, options ParamOptions) error {
 	entry := fmt.Sprintf("%s-%d", y.Name(false), options.Index)
@@ -362,20 +344,6 @@ func (y *YAML) writeParams(src string) error {
 	return afero.WriteFile(y.app.Fs(), y.paramsPath, []byte(src), 0644)
 }
 
-func (y *YAML) raw(paramsStr string) ([]*unstructured.Unstructured, error) {
-	objects, err := y.readObject(paramsStr)
-	if err != nil {
-		return nil, errors.Wrap(err, "read object")
-	}
-
-	list, err := k8s.FlattenToV1(objects)
-	if err != nil {
-		return nil, errors.Wrap(err, "flatten objects")
-	}
-
-	return list, nil
-}
-
 func (y *YAML) hasParams() (bool, error) {
 	dir := filepath.Dir(y.source)
 	paramsFile := filepath.Join(dir, "params.libsonnet")
@@ -400,50 +368,6 @@ func (y *YAML) hasParams() (bool, error) {
 	}
 
 	return true, nil
-}
-
-func (y *YAML) readObject(paramsStr string) ([]runtime.Object, error) {
-	f, err := y.app.Fs().Open(y.source)
-	if err != nil {
-		return nil, err
-	}
-
-	base := strings.TrimSuffix(filepath.Base(y.source), filepath.Ext(y.source))
-
-	decoder := amyaml.NewYAMLReader(bufio.NewReader(f))
-	ret := []runtime.Object{}
-	i := 0
-	for {
-		componentName := fmt.Sprintf("%s-%d", base, i)
-		i++
-		bytes, err := decoder.Read()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return nil, err
-		}
-		if len(bytes) == 0 {
-			continue
-		}
-		jsondata, err := amyaml.ToJSON(bytes)
-		if err != nil {
-			return nil, err
-		}
-
-		patched, err := patchJSON(string(jsondata), paramsStr, componentName)
-		if err != nil {
-			return nil, err
-		}
-
-		jsondata = []byte(patched)
-
-		obj, _, err := unstructured.UnstructuredJSONScheme.Decode(jsondata, nil, nil)
-		if err != nil {
-			return nil, err
-		}
-		ret = append(ret, obj)
-	}
-	return ret, nil
 }
 
 // Summarize generates a summary for a YAML component. For each manifest, it will
@@ -473,6 +397,7 @@ func (y *YAML) Summarize() ([]Summary, error) {
 		summary := Summary{
 			ComponentName: y.Name(false),
 			IndexStr:      strconv.Itoa(i),
+			Index:         i,
 			Type:          y.ext(),
 			APIVersion:    ts.APIVersion,
 			Kind:          ts.RawKind,
@@ -482,6 +407,57 @@ func (y *YAML) Summarize() ([]Summary, error) {
 	}
 
 	return summaries, nil
+}
+
+// ToMap converts a YAML component to a map of Jonnet objects.
+func (y *YAML) ToMap(envName string) (map[string]*astext.Object, error) {
+	readers, err := utilyaml.Decode(y.app.Fs(), y.source)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make(map[string]*astext.Object)
+
+	for i, r := range readers {
+		key := fmt.Sprintf("%s-%d", y.Name(false), i)
+		data, err := ioutil.ReadAll(r)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(data) == 0 {
+			continue
+		}
+
+		data, err = yaml.YAMLToJSON(data)
+		if err != nil {
+			return nil, err
+		}
+
+		componentName := fmt.Sprintf("%s-%d", y.Name(false), i)
+		patchedData, err := y.applyParams(componentName, string(data))
+		if err != nil {
+			return nil, err
+		}
+
+		o, err := jsonnetutil.Parse(y.source, patchedData)
+		if err != nil {
+			return nil, err
+		}
+
+		out[key] = o
+	}
+
+	return out, nil
+}
+
+func (y *YAML) applyParams(componentName, data string) (string, error) {
+	paramsData, err := afero.ReadFile(y.app.Fs(), y.paramsPath)
+	if err != nil {
+		return "", err
+	}
+
+	return params.PatchJSON(data, string(paramsData), componentName)
 }
 
 func (y *YAML) ext() string {

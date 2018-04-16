@@ -18,12 +18,10 @@ package component
 import (
 	"testing"
 
-	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/metadata/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/util/test"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func TestJsonnet_Name(t *testing.T) {
@@ -77,96 +75,6 @@ func TestJsonnet_Name(t *testing.T) {
 		}
 	})
 
-}
-
-func TestJsonnet_Objects(t *testing.T) {
-	withAppOsFs(t, "/app", func(a *mocks.App, fs afero.Fs) {
-		env := &app.EnvironmentSpec{
-			Destination: &app.EnvironmentDestinationSpec{
-				Namespace: "default",
-				Server:    "http://example.com",
-			},
-		}
-
-		a.On("Environment", "default").Return(env, nil)
-
-		files := []string{"guestbook-ui.jsonnet", "params.libsonnet"}
-		for _, file := range files {
-			test.StageFile(t, fs, "guestbook/"+file, "/app/components/"+file)
-		}
-		fs.Mkdir("/app/vendor", 0755)
-
-		files = []string{"k.libsonnet", "k8s.libsonnet"}
-		for _, file := range files {
-			test.StageFile(t, fs, "guestbook/"+file, "/app/lib/v1.8.7/"+file)
-		}
-
-		c := NewJsonnet(a, "", "/app/components/guestbook-ui.jsonnet", "/app/components/params.libsonnet")
-		c.useJsonnetMemoryImporter = true
-
-		paramsStr := testdata(t, "guestbook/params.libsonnet")
-
-		list, err := c.Objects(string(paramsStr), "default")
-		require.NoError(t, err)
-
-		expected := []*unstructured.Unstructured{
-			{
-				Object: map[string]interface{}{
-					"apiVersion": "v1",
-					"kind":       "Service",
-					"metadata": map[string]interface{}{
-						"name": "guiroot",
-					},
-					"spec": map[string]interface{}{
-						"ports": []interface{}{
-							map[string]interface{}{
-								"port":       int64(80),
-								"targetPort": int64(80),
-							},
-						},
-						"selector": map[string]interface{}{
-							"app": "guiroot",
-						},
-						"type": "ClusterIP",
-					},
-				},
-			},
-			{
-				Object: map[string]interface{}{
-					"apiVersion": "apps/v1beta1",
-					"kind":       "Deployment",
-					"metadata": map[string]interface{}{
-						"name": "guiroot",
-					},
-					"spec": map[string]interface{}{
-						"replicas": int64(1),
-						"template": map[string]interface{}{
-							"metadata": map[string]interface{}{
-								"labels": map[string]interface{}{
-									"app": "guiroot",
-								},
-							},
-							"spec": map[string]interface{}{
-								"containers": []interface{}{
-									map[string]interface{}{
-										"image": "gcr.io/heptio-images/ks-guestbook-demo:0.1",
-										"name":  "guiroot",
-										"ports": []interface{}{
-											map[string]interface{}{
-												"containerPort": int64(80),
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-
-		require.Equal(t, expected, list)
-	})
 }
 
 func TestJsonnet_Params(t *testing.T) {
