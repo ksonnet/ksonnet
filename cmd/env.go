@@ -41,6 +41,7 @@ var (
 		"list":    "List all environments in a ksonnet application",
 		"rm":      "Delete an environment from a ksonnet application",
 		"set":     "Set environment-specific fields (name, namespace, server)",
+		"update":  "Updates the libs for an environment",
 	}
 )
 
