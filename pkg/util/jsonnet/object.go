@@ -182,7 +182,7 @@ func ConvertObjectToMap(obj *astext.Object) (map[string]interface{}, error) {
 		switch t := obj.Fields[i].Expr2.(type) {
 		default:
 			return nil, errors.Errorf("unknown value type %T", t)
-		case *ast.LiteralString, *ast.LiteralBoolean, *ast.LiteralNumber:
+		case *ast.LiteralString, *ast.LiteralBoolean, *ast.LiteralNumber, *ast.LiteralNull:
 			v, err := nodeValue(t)
 			if err != nil {
 				return nil, err
@@ -218,6 +218,8 @@ func nodeValue(node ast.Node) (interface{}, error) {
 		return t.Value, nil
 	case *ast.LiteralNumber:
 		return DecodeValue(fmt.Sprint(t.Value))
+	case *ast.LiteralNull:
+		return nil, nil
 	}
 }
 
