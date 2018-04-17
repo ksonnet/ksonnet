@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -547,6 +548,8 @@ func (p *printer) addMethodSignature(method *ast.Function) {
 	p.writeString(")")
 }
 
+var reDotIndex = regexp.MustCompile(`^\w[A-Za-z0-9]*$`)
+
 func indexID(i *ast.Index) (string, error) {
 	if i == nil {
 		return "", errors.New("index is nil")
@@ -560,12 +563,22 @@ func indexID(i *ast.Index) (string, error) {
 			if t == nil {
 				return "", errors.New("string id is nil")
 			}
-			return fmt.Sprintf(".%s", t.Value), nil
+
+			id := t.Value
+			if reDotIndex.MatchString(id) {
+				return fmt.Sprintf(".%s", id), nil
+			}
+			return fmt.Sprintf(`["%s"]`, id), nil
 		case *ast.Var:
 			return fmt.Sprintf("[%s]", string(t.Id)), nil
 		}
 	} else if i.Id != nil {
-		return fmt.Sprintf(".%s", string(*i.Id)), nil
+		id := string(*i.Id)
+		if reDotIndex.MatchString(id) {
+			return fmt.Sprintf(".%s", id), nil
+		}
+		return fmt.Sprintf(`["%s"]`, id), nil
+
 	} else {
 		return "", errors.New("index and id can't both be blank")
 	}
