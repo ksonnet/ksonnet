@@ -127,6 +127,8 @@ func convertValueToNoder(val interface{}) (Noder, error) {
 		return NewInt(t), nil
 	case bool:
 		return NewBoolean(t), nil
+	case map[string]interface{}:
+		return ValueToNoder(t)
 	default:
 		return nil, errors.Errorf("unsupported type %T", t)
 	}
