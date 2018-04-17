@@ -27,6 +27,7 @@ import (
 	"github.com/ksonnet/ksonnet/client"
 	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
+	"github.com/ksonnet/ksonnet/pkg/pipeline"
 )
 
 const (
@@ -290,35 +291,6 @@ func initDiffRemoteCmd(fs afero.Fs, localEnv, remoteEnv, diffStrategy string, cm
 
 // expandEnvObjs finds and expands templates for an environment
 func expandEnvObjs(fs afero.Fs, cmd *cobra.Command, env string, manager metadata.Manager) ([]*unstructured.Unstructured, error) {
-	expander, err := newExpander(fs, cmd)
-	if err != nil {
-		return nil, err
-	}
-
-	envPath, vendorPath := manager.LibPaths()
-	libPath, mainPath, paramsPath, err := manager.EnvPaths(env)
-	if err != nil {
-		return nil, err
-	}
-	componentPaths, err := manager.ComponentPaths()
-	if err != nil {
-		return nil, err
-	}
-
-	baseObj, err := constructBaseObj(componentPaths, nil)
-	if err != nil {
-		return nil, err
-	}
-	params := importParams(string(paramsPath))
-	envSpec, err := importEnv(manager, env)
-	if err != nil {
-		return nil, err
-	}
-
-	expander.FlagJpath = append([]string{string(vendorPath), string(libPath), string(envPath)}, expander.FlagJpath...)
-	expander.ExtCodes = append([]string{baseObj, params, envSpec}, expander.ExtCodes...)
-
-	envFiles := []string{string(mainPath)}
-
-	return expander.Expand(envFiles)
+	p := pipeline.New(ka, env)
+	return p.Objects([]string{})
 }

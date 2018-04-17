@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
+	"github.com/google/go-jsonnet/ast"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/pkg/schema"
 
@@ -63,7 +63,7 @@ type Component interface {
 	Summarize() ([]Summary, error)
 	// ToMap converts a component to a map of Jsonnet objects. The map map key is
 	// the component name.
-	ToMap(envName string) (map[string]*astext.Object, error)
+	ToMap(envName string) (map[string]ast.Node, error)
 	// Type returns the type of component.
 	Type() string
 }

@@ -258,83 +258,14 @@ func (j *Jsonnet) Summarize() ([]Summary, error) {
 }
 
 // ToMap converts a Jsonnet component to a map of jsonnet objects.
-func (j *Jsonnet) ToMap(envName string) (map[string]*astext.Object, error) {
-	paramsStr, err := j.readParams("default")
+func (j *Jsonnet) ToMap(envName string) (map[string]ast.Node, error) {
+	n, err := jsonnet.ImportNodeFromFs(j.source, j.app.Fs())
 	if err != nil {
 		return nil, err
 	}
 
-	evaluated, err := params.EvaluateComponent(j.app, j.source, paramsStr, envName, j.useJsonnetMemoryImporter)
-	if err != nil {
-		return nil, err
-	}
-
-	object, err := jsonnet.Parse(j.source, evaluated)
-	if err != nil {
-		return nil, err
-	}
-
-	// check if object is a list
-
-	var kind string
-	var apiVersion string
-	var items *ast.Array
-
-	for _, f := range object.Fields {
-		id, err := jsonnet.FieldID(f)
-		if err != nil {
-			return nil, err
-		}
-
-		switch id {
-		case "kind":
-			s, err := stringValue(f.Expr2)
-			if err != nil {
-				return nil, err
-			}
-
-			kind = s
-		case "apiVersion":
-			s, err := stringValue(f.Expr2)
-			if err != nil {
-				return nil, err
-			}
-
-			apiVersion = s
-		case "items":
-			n, ok := f.Expr2.(*ast.Array)
-			if ok {
-				items = n
-			}
-		}
-	}
-
-	if kind == "List" && apiVersion == "v1" {
-		m := make(map[string]*astext.Object)
-
-		if items == nil {
-			return nil, errors.New("items was nil")
-		}
-
-		for _, e := range items.Elements {
-			object, ok := e.(*astext.Object)
-			if !ok {
-				return nil, errors.New("item was not an objects")
-			}
-
-			name, err := extractName(object)
-			if err != nil {
-				return nil, err
-			}
-
-			m[name] = object
-		}
-
-		return m, nil
-	}
-
-	return map[string]*astext.Object{
-		j.Name(false): object,
+	return map[string]ast.Node{
+		j.Name(false): n,
 	}, nil
 }
 

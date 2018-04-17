@@ -151,7 +151,7 @@ func TestPipeline_Objects(t *testing.T) {
 
 		serviceJSON, err := ioutil.ReadFile(filepath.Join("testdata", "components.json"))
 		require.NoError(t, err)
-		p.evaluateEnvFn = func(_ app.App, envName, input string) (string, error) {
+		p.evaluateEnvFn = func(_ app.App, envName, input, params string) (string, error) {
 			return string(serviceJSON), nil
 		}
 

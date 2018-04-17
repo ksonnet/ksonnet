@@ -33,7 +33,7 @@ func Import(filename string) (*astext.Object, error) {
 	return ImportFromFs(filename, importFs)
 }
 
-// ImportFromFs imports jsonnet from a path on an afero filesystem.
+// ImportFromFs imports jsonnet object from a path on an afero filesystem.
 func ImportFromFs(filename string, fs afero.Fs) (*astext.Object, error) {
 	if filename == "" {
 		return nil, errors.New("filename was blank")
@@ -45,7 +45,20 @@ func ImportFromFs(filename string, fs afero.Fs) (*astext.Object, error) {
 	}
 
 	return Parse(filename, string(b))
+}
 
+// ImportNodeFromFs imports jsonnet node from a path on an afero filesystem.
+func ImportNodeFromFs(filename string, fs afero.Fs) (ast.Node, error) {
+	if filename == "" {
+		return nil, errors.New("filename was blank")
+	}
+
+	b, err := afero.ReadFile(fs, filename)
+	if err != nil {
+		return nil, errors.Wrap(err, "read lib")
+	}
+
+	return ParseNode(filename, string(b))
 }
 
 // Parse converts a jsonnet snippet to AST Object.

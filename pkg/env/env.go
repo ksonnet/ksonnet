@@ -49,7 +49,7 @@ func MainFile(a app.App, envName string) (string, error) {
 }
 
 // Evaluate evaluates an environments.
-func Evaluate(a app.App, envName, components string) (string, error) {
+func Evaluate(a app.App, envName, components, paramsStr string) (string, error) {
 	libPath, err := a.LibPath(envName)
 	if err != nil {
 		return "", err
@@ -66,6 +66,7 @@ func Evaluate(a app.App, envName, components string) (string, error) {
 		libPath,
 	}
 	vm.ExtCode("__ksonnet/components", components)
+	vm.ExtCode("__ksonnet/params", paramsStr)
 
 	return vm.EvaluateSnippet(envFileName, snippet)
 

@@ -53,7 +53,7 @@ type Pipeline struct {
 	envName             string
 	cm                  component.Manager
 	buildObjectsFn      func(*Pipeline, []string) ([]*unstructured.Unstructured, error)
-	evaluateEnvFn       func(app.App, string, string) (string, error)
+	evaluateEnvFn       func(app.App, string, string, string) (string, error)
 	evaluateEnvParamsFn func(app.App, string, string, string) (string, error)
 }
 
@@ -149,22 +149,6 @@ func (p *Pipeline) moduleObjects(module component.Module, filter []string) ([]*u
 
 	doc.Fields = append(doc.Fields, object.Fields...)
 
-	var buf bytes.Buffer
-	if err = printer.Fprint(&buf, doc); err != nil {
-		return nil, err
-	}
-
-	evaluated, err := p.evaluateEnvFn(p.app, p.envName, buf.String())
-	if err != nil {
-		return nil, err
-	}
-
-	var m map[string]interface{}
-
-	if err = json.Unmarshal([]byte(evaluated), &m); err != nil {
-		return nil, err
-	}
-
 	// apply environment parameters
 	moduleParamData, err := module.ResolvedParams()
 	if err != nil {
@@ -178,6 +162,22 @@ func (p *Pipeline) moduleObjects(module component.Module, filter []string) ([]*u
 
 	envParamData, err := p.evaluateEnvParamsFn(p.app, envParamsPath, moduleParamData, p.envName)
 	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	if err = printer.Fprint(&buf, doc); err != nil {
+		return nil, err
+	}
+
+	evaluated, err := p.evaluateEnvFn(p.app, p.envName, buf.String(), envParamData)
+	if err != nil {
+		return nil, err
+	}
+
+	var m map[string]interface{}
+
+	if err = json.Unmarshal([]byte(evaluated), &m); err != nil {
 		return nil, err
 	}
 
