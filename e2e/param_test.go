@@ -96,6 +96,55 @@ var _ = Describe("ks param", func() {
 		})
 	})
 
+	Describe("diff", func() {
+		var extraOptions []string
+		var diffOutput *output
+
+		BeforeEach(func() {
+			a.generateDeployedService()
+
+			o := a.runKs("env", "add", "env1")
+			assertExitStatus(o, 0)
+
+			o = a.runKs("param", "set", "guestbook-ui", "replicas", "4", "--env", "env1")
+			assertExitStatus(o, 0)
+
+			o = a.runKs("env", "add", "env2")
+			assertExitStatus(o, 0)
+
+			o = a.runKs("param", "set", "guestbook-ui", "replicas", "3", "--env", "env2")
+			assertExitStatus(o, 0)
+		})
+
+		JustBeforeEach(func() {
+			options := append([]string{"param", "diff", "env1", "env2"}, extraOptions...)
+			diffOutput = a.runKs(options...)
+		})
+
+		It("runs successfully", func() {
+			assertExitStatus(diffOutput, 0)
+		})
+
+		It("lists the differences", func() {
+			assertOutput(filepath.Join("param", "diff", "output.txt"), diffOutput.stdout)
+		})
+
+		Context("with a component", func() {
+			BeforeEach(func() {
+				extraOptions = []string{"--component", "guestbook-ui"}
+			})
+
+			It("runs successfully", func() {
+				assertExitStatus(diffOutput, 0)
+			})
+
+			It("lists the differences", func() {
+				assertOutput(filepath.Join("param", "diff", "output.txt"), diffOutput.stdout)
+			})
+
+		})
+	})
+
 	Describe("list", func() {
 		var (
 			listOutput *output
