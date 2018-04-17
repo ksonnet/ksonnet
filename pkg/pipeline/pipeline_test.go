@@ -17,10 +17,10 @@ package pipeline
 
 import (
 	"io/ioutil"
+	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/mock"
-
+	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
 	"github.com/ksonnet/ksonnet/component"
 	cmocks "github.com/ksonnet/ksonnet/component/mocks"
 	"github.com/ksonnet/ksonnet/metadata/app"
@@ -113,24 +113,51 @@ func TestPipeline_Components_filtered(t *testing.T) {
 func TestPipeline_Objects(t *testing.T) {
 	withPipeline(t, func(p *Pipeline, m *cmocks.Manager, a *appmocks.App) {
 		u := []*unstructured.Unstructured{
-			{},
+			{
+				Object: map[string]interface{}{
+					"apiVersion": "v1",
+					"kind":       "Service",
+					"metadata": map[string]interface{}{
+						"name": "my-service",
+					},
+					"spec": map[string]interface{}{
+						"ports": []interface{}{
+							map[string]interface{}{
+								"port":       int64(80),
+								"protocol":   "TCP",
+								"targetPort": int64(80),
+							},
+						},
+					},
+				},
+			},
 		}
 
-		cpnt := &cmocks.Component{}
-		cpnt.On("Objects", mock.Anything, "default").Return(u, nil)
-		cpnt.On("Name", true).Return("name")
-		components := []component.Component{cpnt}
+		module := &cmocks.Module{}
+		module.On("Name").Return("")
+		object := &astext.Object{}
+		componentMap := map[string]string{"service": "yaml"}
+		module.On("Render", "default").Return(object, componentMap, nil)
+		module.On("ResolvedParams").Return("", nil)
 
-		ns := component.NewModule(p.app, "/")
-		namespaces := []component.Module{ns}
-		m.On("Modules", p.app, "default").Return(namespaces, nil)
-		m.On("Module", p.app, "/").Return(ns, nil)
-		m.On("NSResolveParams", ns).Return("", nil)
+		modules := []component.Module{module}
+		m.On("Modules", p.app, "default").Return(modules, nil)
+		m.On("Module", p.app, "/").Return(module, nil)
+		m.On("NSResolveParams", module).Return("", nil)
 		a.On("EnvironmentParams", "default").Return("{}", nil)
-		m.On("Components", ns).Return(components, nil)
 
 		env := &app.EnvironmentSpec{Path: "default"}
 		a.On("Environment", "default").Return(env, nil)
+
+		serviceJSON, err := ioutil.ReadFile(filepath.Join("testdata", "components.json"))
+		require.NoError(t, err)
+		p.evaluateEnvFn = func(_ app.App, envName, input string) (string, error) {
+			return string(serviceJSON), nil
+		}
+
+		p.evaluateEnvParamsFn = func(_ app.App, paramsPath, paramData, envName string) (string, error) {
+			return `{"components": {}}`, nil
+		}
 
 		got, err := p.Objects(nil)
 		require.NoError(t, err)
@@ -141,25 +168,30 @@ func TestPipeline_Objects(t *testing.T) {
 
 func TestPipeline_YAML(t *testing.T) {
 	withPipeline(t, func(p *Pipeline, m *cmocks.Manager, a *appmocks.App) {
-		u := []*unstructured.Unstructured{
-			{},
+		p.buildObjectsFn = func(_ *Pipeline, filter []string) ([]*unstructured.Unstructured, error) {
+			u := []*unstructured.Unstructured{
+				{
+					Object: map[string]interface{}{
+						"apiVersion": "v1",
+						"kind":       "Service",
+						"metadata": map[string]interface{}{
+							"name": "my-service",
+						},
+						"spec": map[string]interface{}{
+							"ports": []interface{}{
+								map[string]interface{}{
+									"port":       int64(80),
+									"protocol":   "TCP",
+									"targetPort": int64(80),
+								},
+							},
+						},
+					},
+				},
+			}
+
+			return u, nil
 		}
-
-		cpnt := &cmocks.Component{}
-		cpnt.On("Objects", mock.Anything, "default").Return(u, nil)
-		cpnt.On("Name", true).Return("name")
-		components := []component.Component{cpnt}
-
-		ns := component.NewModule(p.app, "/")
-		namespaces := []component.Module{ns}
-		m.On("Modules", p.app, "default").Return(namespaces, nil)
-		m.On("Module", p.app, "/").Return(ns, nil)
-		m.On("NSResolveParams", ns).Return("", nil)
-		a.On("EnvironmentParams", "default").Return("{}", nil)
-		m.On("Components", ns).Return(components, nil)
-
-		env := &app.EnvironmentSpec{Path: "default"}
-		a.On("Environment", "default").Return(env, nil)
 
 		r, err := p.YAML(nil)
 		require.NoError(t, err)
@@ -167,9 +199,10 @@ func TestPipeline_YAML(t *testing.T) {
 		got, err := ioutil.ReadAll(r)
 		require.NoError(t, err)
 
-		expected := "---\n{}\n"
+		expected, err := ioutil.ReadFile(filepath.Join("testdata", "service.yaml"))
+		require.NoError(t, err)
 
-		require.Equal(t, expected, string(got))
+		require.Equal(t, string(expected), string(got))
 	})
 }
 

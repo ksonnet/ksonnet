@@ -25,6 +25,7 @@ import (
 	extv1beta1 "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
 	"k8s.io/client-go/rest"
 
+	// used for integration tests
 	. "github.com/onsi/gomega"
 )
 

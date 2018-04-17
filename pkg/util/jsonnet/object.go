@@ -16,7 +16,10 @@
 package jsonnet
 
 import (
+	"encoding/json"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/google/go-jsonnet/ast"
@@ -132,6 +135,22 @@ func FindObject(object *astext.Object, path []string) (*astext.Object, error) {
 	return nil, errors.Errorf("path %s was not found", strings.Join(path, "."))
 }
 
+// HasField returns true if the object has a field.
+func HasField(object *astext.Object, name string) bool {
+	for _, f := range object.Fields {
+		id, err := FieldID(f)
+		if err != nil {
+			return false
+		}
+
+		if id == name {
+			return true
+		}
+	}
+
+	return false
+}
+
 // FieldID returns the id for an object field.
 func FieldID(field astext.ObjectField) (string, error) {
 	if field.Expr1 != nil {
@@ -148,4 +167,118 @@ func FieldID(field astext.ObjectField) (string, error) {
 	}
 
 	return string(*field.Id), nil
+}
+
+// ConvertObjectToMap converts an object to a map.
+func ConvertObjectToMap(obj *astext.Object) (map[string]interface{}, error) {
+	m := make(map[string]interface{})
+
+	for i := range obj.Fields {
+		id, err := FieldID(obj.Fields[i])
+		if err != nil {
+			return nil, err
+		}
+
+		switch t := obj.Fields[i].Expr2.(type) {
+		default:
+			return nil, errors.Errorf("unknown value type %T", t)
+		case *ast.LiteralString, *ast.LiteralBoolean, *ast.LiteralNumber:
+			v, err := nodeValue(t)
+			if err != nil {
+				return nil, err
+			}
+			m[id] = v
+		case *ast.Array:
+			array, err := arrayValues(t)
+			if err != nil {
+				return nil, err
+			}
+			m[id] = array
+		case *astext.Object:
+			child, err := ConvertObjectToMap(t)
+			if err != nil {
+				return nil, err
+			}
+
+			m[id] = child
+		}
+
+	}
+
+	return m, nil
+}
+
+func nodeValue(node ast.Node) (interface{}, error) {
+	switch t := node.(type) {
+	default:
+		return nil, errors.Errorf("unknown value type %T", t)
+	case *ast.LiteralString:
+		return t.Value, nil
+	case *ast.LiteralBoolean:
+		return t.Value, nil
+	case *ast.LiteralNumber:
+		return DecodeValue(fmt.Sprint(t.Value))
+	}
+}
+
+func arrayValues(array *ast.Array) ([]interface{}, error) {
+	out := make([]interface{}, 0)
+	for i := range array.Elements {
+		switch t := array.Elements[i].(type) {
+		default:
+			v, err := nodeValue(array.Elements[i])
+			if err != nil {
+				return nil, errors.Errorf("arrays can't contain %T", array.Elements[i])
+			}
+			out = append(out, v)
+		case *astext.Object:
+			child, err := ConvertObjectToMap(t)
+			if err != nil {
+				return nil, err
+			}
+
+			out = append(out, child)
+		}
+
+	}
+
+	return out, nil
+}
+
+var (
+	reFloat = regexp.MustCompile(`^[-+]?[0-9]*\.?[0-9]+$`)
+	reInt   = regexp.MustCompile(`^([+-]?[1-9]\d*|0)$`)
+	reArray = regexp.MustCompile(`^\[`)
+	reMap   = regexp.MustCompile(`^\{`)
+)
+
+// DecodeValue decodes a string to an interface value.
+// nolint: gocyclo
+func DecodeValue(s string) (interface{}, error) {
+	if s == "" {
+		return nil, errors.New("value was blank")
+	}
+
+	switch {
+	case reInt.MatchString(s):
+		return strconv.Atoi(s)
+	case reFloat.MatchString(s):
+		return strconv.ParseFloat(s, 64)
+	case strings.ToLower(s) == "true" || strings.ToLower(s) == "false":
+		return strconv.ParseBool(s)
+	case reArray.MatchString(s):
+		var array []interface{}
+		if err := json.Unmarshal([]byte(s), &array); err != nil {
+			return nil, errors.Errorf("array value is badly formatted: %s", s)
+		}
+		return array, nil
+	case reMap.MatchString(s):
+		var obj map[string]interface{}
+		if err := json.Unmarshal([]byte(s), &obj); err != nil {
+			return nil, errors.Errorf("map value is badly formatted: %s", s)
+		}
+		return obj, nil
+	default:
+		return s, nil
+	}
 }

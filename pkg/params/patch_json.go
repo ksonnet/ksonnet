@@ -13,24 +13,24 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package component
+package params
 
-import (
-	"io/ioutil"
-	"testing"
+import "github.com/ksonnet/ksonnet/pkg/util/jsonnet"
 
-	"github.com/stretchr/testify/require"
-)
+// PatchJSON patches components.
+func PatchJSON(jsonObject, patch, patchName string) (string, error) {
+	vm := jsonnet.NewVM()
+	vm.TLACode("target", jsonObject)
+	vm.TLACode("patch", patch)
+	vm.TLAVar("patchName", patchName)
 
-func Test_applyGlobals(t *testing.T) {
-	myParams, err := ioutil.ReadFile("testdata/params-global.libsonnet")
-	require.NoError(t, err)
-
-	got, err := applyGlobals(string(myParams))
-	require.NoError(t, err)
-
-	expected, err := ioutil.ReadFile("testdata/params-global-expected.json")
-	require.NoError(t, err)
-
-	require.Equal(t, string(expected), got)
+	return vm.EvaluateSnippet("patchJSON", snippetMergeComponentPatch)
 }
+
+var snippetMergeComponentPatch = `
+function(target, patch, patchName)
+	if std.objectHas(patch.components, patchName) then
+		std.mergePatch(target, patch.components[patchName])
+	else
+		target
+`

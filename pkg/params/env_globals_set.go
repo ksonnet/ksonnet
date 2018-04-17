@@ -66,7 +66,7 @@ func (egs *EnvGlobalsSet) Set(snippet string, p params.Params) (string, error) {
 
 func (egs *EnvGlobalsSet) setParams(obj *astext.Object, p params.Params) error {
 	for key := range p {
-		decoded, err := DecodeValue(p[key])
+		decoded, err := jsonnet.DecodeValue(p[key])
 		if err != nil {
 			return err
 		}

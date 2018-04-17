@@ -22,7 +22,7 @@ import (
 	"github.com/ksonnet/ksonnet/metadata/app"
 	mp "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/pkg/env"
-	"github.com/ksonnet/ksonnet/pkg/params"
+	"github.com/ksonnet/ksonnet/pkg/util/jsonnet"
 	"github.com/pkg/errors"
 )
 
@@ -84,7 +84,7 @@ func NewParamSet(m map[string]interface{}) (*ParamSet, error) {
 
 // Run runs the action.
 func (ps *ParamSet) Run() error {
-	value, err := params.DecodeValue(ps.rawValue)
+	value, err := jsonnet.DecodeValue(ps.rawValue)
 	if err != nil {
 		return errors.Wrap(err, "value is invalid")
 	}

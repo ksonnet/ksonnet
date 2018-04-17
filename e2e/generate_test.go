@@ -30,7 +30,7 @@ var _ = Describe("ks generate", func() {
 		a = e.initApp(nil)
 	})
 
-	FDescribe("with no arguments", func() {
+	Describe("with no arguments", func() {
 		var o *output
 
 		JustBeforeEach(func() {

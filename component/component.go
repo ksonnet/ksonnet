@@ -19,12 +19,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/pkg/schema"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // ParamOptions is options for parameters.
@@ -50,19 +50,22 @@ func (s *Summary) typeSpec() (*schema.TypeSpec, error) {
 
 // Component is a ksonnet Component interface.
 type Component interface {
-	// Name is the component name.
-	Name(wantsNamedSpaced bool) string
-	// Objects converts the component to a set of objects.
-	Objects(paramsStr, envName string) ([]*unstructured.Unstructured, error)
-	// SetParams sets a component paramaters.
-	SetParam(path []string, value interface{}, options ParamOptions) error
 	// DeleteParam deletes a component parameter.
 	DeleteParam(path []string, options ParamOptions) error
+	// Name is the component name.
+	Name(wantsNamedSpaced bool) string
 	// Params returns a list of all parameters for a component. If envName is a
 	// blank string, it will report the local parameters.
 	Params(envName string) ([]ModuleParameter, error)
+	// SetParams sets a component paramaters.
+	SetParam(path []string, value interface{}, options ParamOptions) error
 	// Summarize returns a summary of the component.
 	Summarize() ([]Summary, error)
+	// ToMap converts a component to a map of Jsonnet objects. The map map key is
+	// the component name.
+	ToMap(envName string) (map[string]*astext.Object, error)
+	// Type returns the type of component.
+	Type() string
 }
 
 const (

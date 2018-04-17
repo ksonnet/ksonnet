@@ -1,4 +1,4 @@
-// Copyright 2018 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,26 +13,26 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package env
+package params
 
 import (
+	"io/ioutil"
+	"path/filepath"
 	"testing"
 
-	"github.com/spf13/afero"
+	"github.com/ksonnet/ksonnet/pkg/util/test"
 	"github.com/stretchr/testify/require"
-
-	"github.com/ksonnet/ksonnet/metadata/app"
-	"github.com/ksonnet/ksonnet/metadata/app/mocks"
 )
 
-func TestRename(t *testing.T) {
-	withEnv(t, func(appMock *mocks.App, fs afero.Fs) {
-		appMock.On("RenameEnvironment", "env1", "env1-updated", false).Return(nil)
+func Test_PatchJSON(t *testing.T) {
+	jsonObject, err := ioutil.ReadFile(filepath.Join("testdata", "rbac-1.json"))
+	require.NoError(t, err)
 
-		envSpec := &app.EnvironmentSpec{Path: "env1-updated"}
-		appMock.On("Environment", "env1-updated").Return(envSpec, nil)
+	patch, err := ioutil.ReadFile(filepath.Join("testdata", "patch.json"))
+	require.NoError(t, err)
 
-		err := Rename(appMock, "env1", "env1-updated", false)
-		require.NoError(t, err)
-	})
+	got, err := PatchJSON(string(jsonObject), string(patch), "rbac-1")
+	require.NoError(t, err)
+
+	test.AssertOutput(t, "rbac-1-patched.json", got)
 }

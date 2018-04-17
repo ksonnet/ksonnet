@@ -17,11 +17,9 @@ package params
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/google/go-jsonnet/ast"
@@ -33,7 +31,7 @@ import (
 )
 
 var (
-	convertObjectToMapFn = convertObjectToMap
+	convertObjectToMapFn = jsonnetutil.ConvertObjectToMap
 	jsonnetFieldIDFn     = jsonnetutil.FieldID
 	jsonnetFindObjectFn  = jsonnetutil.FindObject
 	jsonnetParseFn       = jsonnetutil.Parse
@@ -168,102 +166,6 @@ var (
 	reArray = regexp.MustCompile(`^\[`)
 	reMap   = regexp.MustCompile(`^\{`)
 )
-
-// DecodeValue decodes a string to an interface value.
-// nolint: gocyclo
-func DecodeValue(s string) (interface{}, error) {
-	if s == "" {
-		return nil, errors.New("value was blank")
-	}
-
-	switch {
-	case reInt.MatchString(s):
-		return strconv.Atoi(s)
-	case reFloat.MatchString(s):
-		return strconv.ParseFloat(s, 64)
-	case strings.ToLower(s) == "true" || strings.ToLower(s) == "false":
-		return strconv.ParseBool(s)
-	case reArray.MatchString(s):
-		var array []interface{}
-		if err := json.Unmarshal([]byte(s), &array); err != nil {
-			return nil, errors.Errorf("array value is badly formatted: %s", s)
-		}
-		return array, nil
-	case reMap.MatchString(s):
-		var obj map[string]interface{}
-		if err := json.Unmarshal([]byte(s), &obj); err != nil {
-			return nil, errors.Errorf("map value is badly formatted: %s", s)
-		}
-		return obj, nil
-	default:
-		return s, nil
-	}
-}
-
-func convertObjectToMap(obj *astext.Object) (map[string]interface{}, error) {
-	m := make(map[string]interface{})
-
-	for i := range obj.Fields {
-		id, err := jsonnetFieldIDFn(obj.Fields[i])
-		if err != nil {
-			return nil, err
-		}
-
-		switch t := obj.Fields[i].Expr2.(type) {
-		default:
-			return nil, errors.Errorf("unknown value type %T", t)
-		case *ast.LiteralString, *ast.LiteralBoolean, *ast.LiteralNumber:
-			v, err := nodeValue(t)
-			if err != nil {
-				return nil, err
-			}
-			m[id] = v
-		case *ast.Array:
-			array, err := arrayValues(t)
-			if err != nil {
-				return nil, err
-			}
-			m[id] = array
-		case *astext.Object:
-			child, err := convertObjectToMap(t)
-			if err != nil {
-				return nil, err
-			}
-
-			m[id] = child
-		}
-
-	}
-
-	return m, nil
-}
-
-func nodeValue(node ast.Node) (interface{}, error) {
-	switch t := node.(type) {
-	default:
-		return nil, errors.Errorf("unknown value type %T", t)
-	case *ast.LiteralString:
-		return t.Value, nil
-	case *ast.LiteralBoolean:
-		return t.Value, nil
-	case *ast.LiteralNumber:
-		return DecodeValue(fmt.Sprint(t.Value))
-	}
-}
-
-func arrayValues(array *ast.Array) ([]interface{}, error) {
-	out := make([]interface{}, 0)
-	for i := range array.Elements {
-		v, err := nodeValue(array.Elements[i])
-		if err != nil {
-			return nil, errors.Errorf("arrays can't contain at %T", array.Elements[i])
-		}
-
-		out = append(out, v)
-	}
-
-	return out, nil
-}
 
 func mergeMaps(m1 map[string]interface{}, m2 map[string]interface{}, path []string) error {
 	for k := range m2 {

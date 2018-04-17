@@ -94,7 +94,10 @@ func (r *renamer) preflight() error {
 }
 
 func envExists(ksApp app.App, name string) (bool, error) {
-	path := envPath(ksApp, name, envFileName)
+	path, err := Path(ksApp, name, envFileName)
+	if err != nil {
+		return false, nil
+	}
 	return afero.Exists(ksApp.Fs(), path)
 }
 
@@ -111,14 +114,11 @@ func ensureEnvExists(a app.App, name string) error {
 	return nil
 }
 
-func envPath(ksApp app.App, name string, subPath ...string) string {
-	return filepath.Join(append([]string{ksApp.Root(), envRoot, name}, subPath...)...)
-}
-
 func cleanEmptyDirs(ksApp app.App) error {
 	log.Debug("Removing empty environment directories, if any")
-	envPath := filepath.Join(ksApp.Root(), envRoot)
-	return afero.Walk(ksApp.Fs(), envPath, func(path string, fi os.FileInfo, err error) error {
+	p := filepath.Join(ksApp.Root(), envRootName)
+
+	return afero.Walk(ksApp.Fs(), p, func(path string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}

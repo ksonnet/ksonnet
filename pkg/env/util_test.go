@@ -57,7 +57,7 @@ func withEnv(t *testing.T, fn func(*mocks.App, afero.Fs)) {
 	}
 
 	for _, dir := range dirs {
-		path := filepath.Join("/", envRoot, dir)
+		path := filepath.Join("/", envRootName, dir)
 		err = fs.MkdirAll(path, app.DefaultFolderPermissions)
 		require.NoError(t, err)
 
@@ -78,6 +78,9 @@ func withEnv(t *testing.T, fn func(*mocks.App, afero.Fs)) {
 	ksApp.On("Fs").Return(fs)
 	ksApp.On("Root").Return("/")
 	require.NoError(t, err)
+
+	envSpec := &app.EnvironmentSpec{Path: "env1"}
+	ksApp.On("Environment", "env1").Return(envSpec, nil)
 
 	fn(ksApp, fs)
 }

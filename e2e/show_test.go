@@ -51,5 +51,4 @@ var _ = Describe("ks show", func() {
 			assertOutput("show/output.txt", o.stdout)
 		})
 	})
-
 })

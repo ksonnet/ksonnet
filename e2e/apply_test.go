@@ -48,8 +48,8 @@ var _ = Describe("ks apply", func() {
 	})
 
 	It("reports which resources it creating", func() {
-		assertExitStatus(o, 0)
-		assertOutput("apply/output.txt", o.stderr)
+		assertOutputContainsString("Creating non-existent services guestbook-ui", o.stderr)
+		assertOutputContainsString("Creating non-existent deployments guestbook-ui", o.stderr)
 	})
 
 	It("creates a guestbook-ui service", func() {

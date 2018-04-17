@@ -46,7 +46,7 @@ func newDeleter(a app.App, name string, override bool) (*deleter, error) {
 }
 
 func (d *deleter) Delete() error {
-	envPath, err := filepath.Abs(filepath.Join(d.app.Root(), envRoot, d.name))
+	envPath, err := filepath.Abs(filepath.Join(d.app.Root(), envRootName, d.name))
 	if err != nil {
 		return err
 	}

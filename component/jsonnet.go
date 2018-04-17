@@ -24,15 +24,14 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/go-jsonnet/ast"
+	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/pkg/params"
 	"github.com/ksonnet/ksonnet/pkg/util/jsonnet"
-	"github.com/ksonnet/ksonnet/pkg/util/k8s"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // Jsonnet is a component base on jsonnet.
@@ -72,6 +71,11 @@ func (j *Jsonnet) Name(wantsNameSpaced bool) string {
 	return path.Join(j.module, name)
 }
 
+// Type always returns "jsonnet".
+func (j *Jsonnet) Type() string {
+	return "jsonnet"
+}
+
 func jsonWalk(obj interface{}) ([]interface{}, error) {
 	switch o := obj.(type) {
 	case map[string]interface{}:
@@ -102,11 +106,10 @@ func jsonWalk(obj interface{}) ([]interface{}, error) {
 	}
 }
 
-// Objects converts jsonnet to a slice of apimachinery unstructured objects.
-func (j *Jsonnet) Objects(paramsStr, envName string) ([]*unstructured.Unstructured, error) {
+func (j *Jsonnet) evaluate(paramsStr, envName string) (string, error) {
 	libPath, err := j.app.LibPath(envName)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	vm := jsonnet.NewVM()
@@ -123,7 +126,7 @@ func (j *Jsonnet) Objects(paramsStr, envName string) ([]*unstructured.Unstructur
 
 	envDetails, err := j.app.Environment(envName)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	dest := map[string]string{
@@ -133,47 +136,19 @@ func (j *Jsonnet) Objects(paramsStr, envName string) ([]*unstructured.Unstructur
 
 	marshalledDestination, err := json.Marshal(&dest)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	vm.ExtCode("__ksonnet/environments", string(marshalledDestination))
 
 	snippet, err := afero.ReadFile(j.app.Fs(), j.source)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	log.WithFields(log.Fields{
 		"component-name": j.Name(true),
 	}).Debugf("convert component to jsonnet")
-	evaluated, err := vm.EvaluateSnippet(j.source, string(snippet))
-	if err != nil {
-		return nil, err
-	}
-
-	var top interface{}
-	if err = json.Unmarshal([]byte(evaluated), &top); err != nil {
-		return nil, err
-	}
-
-	objects, err := jsonWalk(top)
-	if err != nil {
-		return nil, err
-	}
-
-	ret := make([]runtime.Object, 0, len(objects))
-	for _, object := range objects {
-		data, err := json.Marshal(object)
-		if err != nil {
-			return nil, err
-		}
-		uns, _, err := unstructured.UnstructuredJSONScheme.Decode(data, nil, nil)
-		if err != nil {
-			return nil, err
-		}
-		ret = append(ret, uns)
-	}
-
-	return k8s.FlattenToV1(ret)
+	return vm.EvaluateSnippet(j.source, string(snippet))
 }
 
 // SetParam set parameter for a component.
@@ -280,6 +255,130 @@ func (j *Jsonnet) Summarize() ([]Summary, error) {
 			Type:          "jsonnet",
 		},
 	}, nil
+}
+
+// ToMap converts a Jsonnet component to a map of jsonnet objects.
+func (j *Jsonnet) ToMap(envName string) (map[string]*astext.Object, error) {
+	paramsStr, err := j.readParams("default")
+	if err != nil {
+		return nil, err
+	}
+
+	evaluated, err := params.EvaluateComponent(j.app, j.source, paramsStr, envName, j.useJsonnetMemoryImporter)
+	if err != nil {
+		return nil, err
+	}
+
+	object, err := jsonnet.Parse(j.source, evaluated)
+	if err != nil {
+		return nil, err
+	}
+
+	// check if object is a list
+
+	var kind string
+	var apiVersion string
+	var items *ast.Array
+
+	for _, f := range object.Fields {
+		id, err := jsonnet.FieldID(f)
+		if err != nil {
+			return nil, err
+		}
+
+		switch id {
+		case "kind":
+			s, err := stringValue(f.Expr2)
+			if err != nil {
+				return nil, err
+			}
+
+			kind = s
+		case "apiVersion":
+			s, err := stringValue(f.Expr2)
+			if err != nil {
+				return nil, err
+			}
+
+			apiVersion = s
+		case "items":
+			n, ok := f.Expr2.(*ast.Array)
+			if ok {
+				items = n
+			}
+		}
+	}
+
+	if kind == "List" && apiVersion == "v1" {
+		m := make(map[string]*astext.Object)
+
+		if items == nil {
+			return nil, errors.New("items was nil")
+		}
+
+		for _, e := range items.Elements {
+			object, ok := e.(*astext.Object)
+			if !ok {
+				return nil, errors.New("item was not an objects")
+			}
+
+			name, err := extractName(object)
+			if err != nil {
+				return nil, err
+			}
+
+			m[name] = object
+		}
+
+		return m, nil
+	}
+
+	return map[string]*astext.Object{
+		j.Name(false): object,
+	}, nil
+}
+
+func stringValue(n ast.Node) (string, error) {
+	ls, ok := n.(*ast.LiteralString)
+	if !ok {
+		return "", errors.New("node was not a LiteralString")
+	}
+
+	return ls.Value, nil
+}
+
+func extractName(object *astext.Object) (string, error) {
+	m, err := jsonnet.ConvertObjectToMap(object)
+	if err != nil {
+		return "", err
+	}
+
+	var kind string
+	var name string
+
+	if o, ok := m["kind"]; ok {
+		if s, ok := o.(string); ok {
+			kind = s
+		}
+	}
+
+	if o, ok := m["metadata"]; ok {
+		if metadataField, ok := o.(map[string]interface{}); ok {
+			if s, ok := metadataField["name"].(string); ok {
+				name = s
+			}
+		}
+	}
+
+	if kind == "" {
+		return "", errors.New("object did not have kind")
+	}
+
+	if name == "" {
+		return "", errors.New("object did not have name")
+	}
+
+	return fmt.Sprintf("%s-%s", name, strings.ToLower(kind)), nil
 }
 
 func (j *Jsonnet) readParams(envName string) (string, error) {
