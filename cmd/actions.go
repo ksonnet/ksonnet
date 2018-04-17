@@ -35,6 +35,7 @@ const (
 	actionEnvRm
 	actionEnvSet
 	actionEnvTargets
+	actionEnvUpdate
 	actionImport
 	actionInit
 	actionModuleCreate
@@ -76,6 +77,7 @@ var (
 		actionEnvRm:             actions.RunEnvRm,
 		actionEnvSet:            actions.RunEnvSet,
 		actionEnvTargets:        actions.RunEnvTargets,
+		actionEnvUpdate:         actions.RunEnvUpdate,
 		actionImport:            actions.RunImport,
 		actionInit:              actions.RunInit,
 		actionModuleCreate:      actions.RunModuleCreate,

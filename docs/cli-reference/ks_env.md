@@ -83,4 +83,5 @@ ks env [flags]
 * [ks env rm](ks_env_rm.md)	 - Delete an environment from a ksonnet application
 * [ks env set](ks_env_set.md)	 - Set environment-specific fields (name, namespace, server)
 * [ks env targets](ks_env_targets.md)	 - targets
+* [ks env update](ks_env_update.md)	 - Updates the libs for an environment
 

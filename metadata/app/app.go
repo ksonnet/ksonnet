@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/ksonnet/ksonnet/metadata/lib"
+	"github.com/ksonnet/ksonnet/pkg/lib"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
