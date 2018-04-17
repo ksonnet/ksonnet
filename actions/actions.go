@@ -41,6 +41,10 @@ const (
 	OptionDryRun = "dry-run"
 	// OptionEnvName is envName option.
 	OptionEnvName = "env-name"
+	// OptionEnvName1 is envName1. Used for param diff.
+	OptionEnvName1 = "env-name-1"
+	// OptionEnvName2 is envName1. Used for param diff.
+	OptionEnvName2 = "env-name-2"
 	// OptionFormat is format option.
 	OptionFormat = "format"
 	// OptionFs is fs option.

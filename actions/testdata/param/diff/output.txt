@@ -1,0 +1,5 @@
+COMPONENT INDEX PARAM ENV1 ENV2
+========= ===== ===== ==== ====
+a               b     b1   b2
+c               c     c
+d               d          d

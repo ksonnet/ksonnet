@@ -160,6 +160,14 @@ type ModuleParameter struct {
 	Value     string
 }
 
+// IsSameType returns true if the other ModuleParams is the same type. The types
+// are the same if the component, index, and key match.
+func (mp *ModuleParameter) IsSameType(other ModuleParameter) bool {
+	return mp.Component == other.Component &&
+		mp.Index == other.Index &&
+		mp.Key == other.Key
+}
+
 // ResolvedParams resolves paramaters for a module. It returns a JSON encoded
 // string of component parameters.
 func (m *FilesystemModule) ResolvedParams() (string, error) {

@@ -17,38 +17,32 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/ksonnet/ksonnet/pkg/kubecfg"
+	"github.com/ksonnet/ksonnet/actions"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+const (
+	vParamDiffComponent = "param-diff-component"
 )
 
 var paramDiffCmd = &cobra.Command{
 	Use:   "diff <env1> <env2> [--component <component-name>]",
 	Short: paramShortDesc["diff"],
 	RunE: func(cmd *cobra.Command, args []string) error {
-		flags := cmd.Flags()
 		if len(args) != 2 {
 			return fmt.Errorf("'param diff' takes exactly two arguments: the respective names of the environments being diffed")
 		}
 
-		cwd, err := os.Getwd()
-		if err != nil {
-			return err
+		m := map[string]interface{}{
+			actions.OptionApp:           ka,
+			actions.OptionEnvName1:      args[0],
+			actions.OptionEnvName2:      args[1],
+			actions.OptionComponentName: viper.GetString(vParamDiffComponent),
 		}
 
-		env1 := args[0]
-		env2 := args[1]
-
-		component, err := flags.GetString(flagComponent)
-		if err != nil {
-			return err
-		}
-
-		c := kubecfg.NewParamDiffCmd(appFs, cwd, env1, env2, component)
-
-		// TODO: convert param diff to action
-		return c.Run(cmd.OutOrStdout())
+		return runAction(actionParamDiff, m)
 	},
 	Long: `
 The ` + "`diff`" + ` command pretty prints differences between the component parameters
@@ -78,5 +72,7 @@ func init() {
 
 	paramListCmd.PersistentFlags().String(flagEnv, "", "Specify environment to list parameters for")
 	paramListCmd.Flags().String(flagModule, "", "Specify module to list parameters for")
-	paramDiffCmd.PersistentFlags().String(flagComponent, "", "Specify the component to diff against")
+
+	paramDiffCmd.Flags().String(flagComponent, "", "Specify the component to diff against")
+	viper.BindPFlag(vParamDiffComponent, paramDiffCmd.Flags().Lookup(flagComponent))
 }

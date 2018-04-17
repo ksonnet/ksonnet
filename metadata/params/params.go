@@ -18,7 +18,6 @@ package params
 import (
 	"bytes"
 	"fmt"
-	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
@@ -59,7 +58,6 @@ func findComponentsObj(node ast.Node) (*ast.Object, error) {
 			if *f.Id == componentsID {
 				c, isObj := f.Expr2.(*ast.Object)
 				if !isObj {
-					debug.PrintStack()
 					return nil, errors.Errorf("expected components node type to be object, it was a a %T", f.Expr2)
 				}
 				return c, nil
