@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 
 	jsonnet "github.com/google/go-jsonnet"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -134,7 +135,7 @@ func jsonnetReader(fs afero.Fs, vm *jsonnet.VM, path string) ([]runtime.Object, 
 
 	jsonstr, err := vm.EvaluateSnippet(path, string(jsonnetBytes))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "evaluate snippet")
 	}
 
 	log.Debugf("jsonnet result is: %s", jsonstr)

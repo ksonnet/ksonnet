@@ -27,7 +27,7 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
-	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
+	"github.com/google/go-jsonnet/ast"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/pkg/params"
 	"github.com/ksonnet/ksonnet/pkg/schema"
@@ -410,13 +410,13 @@ func (y *YAML) Summarize() ([]Summary, error) {
 }
 
 // ToMap converts a YAML component to a map of Jonnet objects.
-func (y *YAML) ToMap(envName string) (map[string]*astext.Object, error) {
+func (y *YAML) ToMap(envName string) (map[string]ast.Node, error) {
 	readers, err := utilyaml.Decode(y.app.Fs(), y.source)
 	if err != nil {
 		return nil, err
 	}
 
-	out := make(map[string]*astext.Object)
+	out := make(map[string]ast.Node)
 
 	for i, r := range readers {
 		key := fmt.Sprintf("%s-%d", y.Name(false), i)
