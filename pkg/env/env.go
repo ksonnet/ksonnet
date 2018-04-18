@@ -48,7 +48,7 @@ func MainFile(a app.App, envName string) (string, error) {
 	return string(snippet), nil
 }
 
-// Evaluate evaluates an environments.
+// Evaluate evaluates an environment.
 func Evaluate(a app.App, envName, components, paramsStr string) (string, error) {
 	libPath, err := a.LibPath(envName)
 	if err != nil {
@@ -63,6 +63,7 @@ func Evaluate(a app.App, envName, components, paramsStr string) (string, error) 
 	vm := jsonnet.NewVM()
 	vm.JPaths = []string{
 		filepath.Join(a.Root(), envRootName),
+		filepath.Join(a.Root(), "vendor"),
 		libPath,
 	}
 	vm.ExtCode("__ksonnet/components", components)
