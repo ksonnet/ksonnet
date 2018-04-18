@@ -1,6 +1,6 @@
 # Change Log
 
-## [v0.9.1](https://github.com/ksonnet/ksonnet/tree/v0.9.1) (2017-03-08)
+## [v0.9.1](https://github.com/ksonnet/ksonnet/tree/v0.9.1) (2018-03-08)
 
 This patch focuses on fixes around usability bugs.
 
@@ -17,7 +17,7 @@ This patch focuses on fixes around usability bugs.
 - Fix formatting for param diff [\#344](https://github.com/ksonnet/ksonnet/pull/344) ([jessicayuen](https://github.com/jessicayuen))
 - Parse server version from GitVersion [\#343](https://github.com/ksonnet/ksonnet/pull/343) ([jessicayuen](https://github.com/jessicayuen))
 
-## [v0.9.0](https://github.com/ksonnet/ksonnet/tree/v0.9.0) (2017-03-05)
+## [v0.9.0](https://github.com/ksonnet/ksonnet/tree/v0.9.0) (2018-03-05)
 [Iteration Plan](https://github.com/ksonnet/ksonnet/issues/306)
 
 [Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.8.0...v0.9.0)
