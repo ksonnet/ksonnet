@@ -17,7 +17,9 @@ package actions
 
 import (
 	"bytes"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"mime"
 	"net/http"
 	"os"
@@ -27,7 +29,9 @@ import (
 
 	"github.com/ksonnet/ksonnet/component"
 	"github.com/ksonnet/ksonnet/metadata/app"
-	ksparam "github.com/ksonnet/ksonnet/metadata/params"
+	"github.com/ksonnet/ksonnet/metadata/params"
+	"github.com/ksonnet/ksonnet/pkg/schema"
+	utilyaml "github.com/ksonnet/ksonnet/pkg/util/yaml"
 	"github.com/ksonnet/ksonnet/prototype"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
@@ -48,7 +52,8 @@ type Import struct {
 	app    app.App
 	module string
 	path   string
-	cm     component.Manager
+
+	createComponentFn func(a app.App, name, text string, p params.Params, templateType prototype.TemplateType) (string, error)
 }
 
 // NewImport creates an instance of Import. `module` is the name of the component and
@@ -61,7 +66,7 @@ func NewImport(m map[string]interface{}) (*Import, error) {
 		module: ol.LoadString(OptionModule),
 		path:   ol.LoadString(OptionPath),
 
-		cm: component.DefaultManager,
+		createComponentFn: component.Create,
 	}
 
 	if ol.err != nil {
@@ -130,8 +135,8 @@ func extractFilename(resp *http.Response) (string, error) {
 	filename := resp.Request.URL.Path
 	cd := resp.Header.Get("Content-Disposition")
 	if cd != "" {
-		if _, params, err := mime.ParseMediaType(cd); err == nil {
-			filename = params["filename"]
+		if _, contentDisposition, err := mime.ParseMediaType(cd); err == nil {
+			filename = contentDisposition["filename"]
 		}
 	}
 
@@ -181,17 +186,87 @@ func (i *Import) handleLocal() error {
 }
 
 func (i *Import) importFile(fileName string) error {
-	var name bytes.Buffer
-	if i.module != "" {
-		name.WriteString(i.module + "/")
-	}
-
 	base := filepath.Base(fileName)
 	ext := filepath.Ext(base)
 
 	templateType, err := prototype.ParseTemplateType(strings.TrimPrefix(ext, "."))
 	if err != nil {
 		return errors.Wrap(err, "parse template type")
+	}
+
+	switch templateType {
+	default:
+		return errors.Errorf("unable to handle components of type %s", templateType)
+	case prototype.YAML:
+		return i.createYAML(fileName, base, ext)
+	case prototype.JSON, prototype.Jsonnet:
+		return i.createComponent(fileName, base, ext, templateType)
+	}
+}
+
+func (i *Import) createYAML(fileName, base, ext string) error {
+	readers, err := utilyaml.Decode(i.app.Fs(), fileName)
+	if err != nil {
+		return err
+	}
+
+	for _, r := range readers {
+		data, err := ioutil.ReadAll(r)
+		if err != nil {
+			return err
+		}
+
+		dataReader := bytes.NewReader(data)
+		ts, props, err := schema.ImportYaml(dataReader)
+		if err != nil {
+			if err == schema.ErrEmptyYAML {
+				continue
+			}
+			return err
+		}
+
+		val, err := props.Value([]string{"metadata", "name"})
+		if err != nil {
+			return err
+		}
+
+		name, ok := val.(string)
+		if !ok {
+			return errors.Errorf("unable to find metadata name of object in %s", fileName)
+		}
+
+		componentName := fmt.Sprintf("%s-%s", strings.ToLower(ts.Kind()), name)
+		if err = i.createComponentFromData(componentName, string(data), prototype.YAML); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (i *Import) createComponentFromData(name, data string, templateType prototype.TemplateType) error {
+	componentParams := params.Params{}
+
+	switch i.module {
+	case "":
+	case "/":
+		name = fmt.Sprintf("/%s", name)
+	default:
+		name = fmt.Sprintf("%s/%s", i.module, name)
+	}
+
+	_, err := i.createComponentFn(i.app, name, data, componentParams, templateType)
+	if err != nil {
+		return errors.Wrap(err, "create component")
+	}
+
+	return nil
+}
+
+func (i *Import) createComponent(fileName, base, ext string, templateType prototype.TemplateType) error {
+	var name bytes.Buffer
+	if i.module != "" {
+		name.WriteString(i.module + "/")
 	}
 
 	name.WriteString(strings.TrimSuffix(base, ext))
@@ -203,12 +278,13 @@ func (i *Import) importFile(fileName string) error {
 
 	sourcePath := filepath.Clean(name.String())
 
-	params := ksparam.Params{}
+	componentParams := params.Params{}
 
-	_, err = i.cm.CreateComponent(i.app, sourcePath, string(contents), params, templateType)
+	_, err = i.createComponentFn(i.app, sourcePath, string(contents), componentParams, templateType)
 	if err != nil {
 		return errors.Wrap(err, "create component")
 	}
 
 	return nil
+
 }

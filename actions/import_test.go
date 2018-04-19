@@ -16,6 +16,7 @@
 package actions
 
 import (
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -23,9 +24,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/mock"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 
-	cmocks "github.com/ksonnet/ksonnet/component/mocks"
+	"github.com/ksonnet/ksonnet/metadata/app"
 	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
 	"github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/prototype"
@@ -34,7 +36,11 @@ import (
 
 func TestImport_http(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		f, err := os.Open(filepath.Join("testdata", "import", "file.yaml"))
+		dataPath := filepath.Join("testdata", "import", "file.yaml")
+		serviceData, err := ioutil.ReadFile(dataPath)
+		require.NoError(t, err)
+
+		f, err := os.Open(dataPath)
 		require.NoError(t, err)
 
 		defer f.Close()
@@ -56,21 +62,27 @@ func TestImport_http(t *testing.T) {
 		a, err := NewImport(in)
 		require.NoError(t, err)
 
-		cm := &cmocks.Manager{}
-		cm.On("CreateComponent", mock.Anything, "/manifest", "",
-			params.Params{}, prototype.YAML).Return("/", nil)
+		a.createComponentFn = func(_ app.App, name, text string, p params.Params, templateType prototype.TemplateType) (string, error) {
+			assert.Equal(t, "/service-my-service", name)
+			assert.Equal(t, string(serviceData), text)
+			assert.Equal(t, params.Params{}, p)
+			assert.Equal(t, prototype.YAML, templateType)
 
-		a.cm = cm
+			return "/", nil
+		}
 
 		err = a.Run()
 		require.NoError(t, err)
 
-		cm.AssertExpectations(t)
 	})
 }
 
 func TestImport_file(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
+		dataPath := filepath.Join("testdata", "import", "file.yaml")
+		serviceData, err := ioutil.ReadFile(dataPath)
+		require.NoError(t, err)
+
 		module := "/"
 		path := "/file.yaml"
 
@@ -85,11 +97,14 @@ func TestImport_file(t *testing.T) {
 		a, err := NewImport(in)
 		require.NoError(t, err)
 
-		cm := &cmocks.Manager{}
-		cm.On("CreateComponent", mock.Anything, "/file", "",
-			params.Params{}, prototype.YAML).Return("/", nil)
+		a.createComponentFn = func(_ app.App, name, text string, p params.Params, templateType prototype.TemplateType) (string, error) {
+			assert.Equal(t, "/service-my-service", name)
+			assert.Equal(t, string(serviceData), text)
+			assert.Equal(t, params.Params{}, p)
+			assert.Equal(t, prototype.YAML, templateType)
 
-		a.cm = cm
+			return "/", nil
+		}
 
 		err = a.Run()
 		require.NoError(t, err)
@@ -98,6 +113,10 @@ func TestImport_file(t *testing.T) {
 
 func TestImport_directory(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
+		dataPath := filepath.Join("testdata", "import", "file.yaml")
+		serviceData, err := ioutil.ReadFile(dataPath)
+		require.NoError(t, err)
+
 		module := "/"
 		path := "/import"
 
@@ -112,11 +131,14 @@ func TestImport_directory(t *testing.T) {
 		a, err := NewImport(in)
 		require.NoError(t, err)
 
-		cm := &cmocks.Manager{}
-		cm.On("CreateComponent", mock.Anything, "/file", "",
-			params.Params{}, prototype.YAML).Return("/", nil)
+		a.createComponentFn = func(_ app.App, name, text string, p params.Params, templateType prototype.TemplateType) (string, error) {
+			assert.Equal(t, "/service-my-service", name)
+			assert.Equal(t, string(serviceData), text)
+			assert.Equal(t, params.Params{}, p)
+			assert.Equal(t, prototype.YAML, templateType)
 
-		a.cm = cm
+			return "/", nil
+		}
 
 		err = a.Run()
 		require.NoError(t, err)
@@ -136,6 +158,10 @@ func TestImport_invalid_file(t *testing.T) {
 
 		a, err := NewImport(in)
 		require.NoError(t, err)
+
+		a.createComponentFn = func(_ app.App, name, text string, p params.Params, templateType prototype.TemplateType) (string, error) {
+			return "", errors.New("invalid")
+		}
 
 		err = a.Run()
 		require.Error(t, err)
