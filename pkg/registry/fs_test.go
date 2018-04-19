@@ -253,19 +253,19 @@ func TestFs_ResolveLibrary(t *testing.T) {
 		assert.Equal(t, expectedLibRefSpec, libRefSpec)
 
 		expectedFiles := []string{
-			"local/apache/README.md",
-			"local/apache/apache.libsonnet",
-			"local/apache/examples/apache.jsonnet",
-			"local/apache/examples/generated.yaml",
-			"local/apache/parts.yaml",
-			"local/apache/prototypes/apache-simple.jsonnet",
+			"/apache/README.md",
+			"/apache/apache.libsonnet",
+			"/apache/examples/apache.jsonnet",
+			"/apache/examples/generated.yaml",
+			"/apache/parts.yaml",
+			"/apache/prototypes/apache-simple.jsonnet",
 		}
 		assert.Equal(t, expectedFiles, files)
 
 		expectedDirs := []string{
-			"local/apache",
-			"local/apache/examples",
-			"local/apache/prototypes",
+			"/apache",
+			"/apache/examples",
+			"/apache/prototypes",
 		}
 		assert.Equal(t, expectedDirs, directories)
 

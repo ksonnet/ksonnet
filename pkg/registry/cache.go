@@ -74,15 +74,20 @@ func CacheDependency(a app.App, d pkg.Descriptor, customName string) error {
 		customName,
 		d.Version,
 		func(relPath string, contents []byte) error {
-			files[filepath.Join(vendorPath, relPath)] = contents
+			var root string
+			root, err = r.CacheRoot(d.Registry, relPath)
+			if err != nil {
+				return err
+			}
+
+			files[filepath.Join(vendorPath, root)] = contents
 			return nil
 		},
 		func(relPath string) error {
-			directories = append(directories, filepath.Join(vendorPath, relPath))
 			return nil
 		})
 	if err != nil {
-		return err
+		return errors.Wrap(err, "resolve registry library")
 	}
 
 	// Add library to app specification, but wait to write it out until
@@ -91,13 +96,19 @@ func CacheDependency(a app.App, d pkg.Descriptor, customName string) error {
 
 	for _, dir := range directories {
 		if err = a.Fs().MkdirAll(dir, app.DefaultFolderPermissions); err != nil {
-			return err
+			return errors.Wrap(err, "unable to create directory")
 		}
 	}
 
 	for path, content := range files {
+		dir := filepath.Dir(path)
+
+		if err = a.Fs().MkdirAll(dir, app.DefaultFolderPermissions); err != nil {
+			return errors.Wrap(err, "unable to create directory")
+		}
+
 		if err = afero.WriteFile(a.Fs(), path, content, app.DefaultFilePermissions); err != nil {
-			return err
+			return errors.Wrap(err, "unable to create file")
 		}
 	}
 
