@@ -508,3 +508,48 @@ func Test_parseGitHubURI(t *testing.T) {
 		}
 	}
 }
+
+func GitHub_CacheRoot(t *testing.T) {
+	cases := []struct {
+		name     string
+		uri      string
+		expected string
+		isErr    bool
+	}{
+		{
+			name: "in the root",
+			uri:  "github.com/ksonnet/parts",
+		},
+		{
+			name:     "in a sub directory",
+			uri:      "github.com/ksonnet/parts/tree/master/incubator",
+			expected: "incubator",
+		},
+		{
+			name:     "deeply nested",
+			uri:      "github.com/ksonnet/parts/tree/master/incubator/deep",
+			expected: "incubator/deep",
+		},
+		{
+			name:  "invalid uri",
+			uri:   "invalid",
+			isErr: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			u := "github.com/ksonnet/parts/tree/master/incubator"
+			g, _ := makeGh(t, u, "12345")
+
+			root, err := g.CacheRoot("name", "parts.yaml")
+			if tc.isErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tc.expected, root)
+		})
+	}
+}

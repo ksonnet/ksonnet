@@ -458,3 +458,23 @@ func parseGitHubURI(uri string) (hd *hubDescriptor, err error) {
 		return
 	}
 }
+
+// CacheRoot returns the root for caching.
+func (gh *GitHub) CacheRoot(name, path string) (string, error) {
+	u, err := url.Parse("https://" + gh.URI())
+	if err != nil {
+		return "", errors.Errorf("unknown URL: %q", gh.URI())
+	}
+
+	var root string
+
+	parts := strings.Split(strings.TrimPrefix(u.Path, "/"), "/")
+	if len(parts) == 2 {
+	} else if len(parts) > 3 {
+		root = strings.Join(parts[4:], "/")
+	} else {
+		return "", errors.Errorf("unknown path %q", u.Path)
+	}
+
+	return filepath.Join(name, strings.TrimPrefix(path, root)), nil
+}

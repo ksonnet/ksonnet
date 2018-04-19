@@ -38,7 +38,7 @@ func Test_CacheDependency(t *testing.T) {
 			"incubator": &app.RegistryRefSpec{
 				Name:     "incubator",
 				Protocol: string(ProtocolFilesystem),
-				URI:      "file:///work/incubator",
+				URI:      "/work/incubator",
 			},
 		}
 		a.On("Registries").Return(registries, nil)

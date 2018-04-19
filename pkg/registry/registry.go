@@ -55,4 +55,5 @@ type Registry interface {
 	Protocol() Protocol
 	URI() string
 	IsOverride() bool
+	CacheRoot(name, relPath string) (string, error)
 }

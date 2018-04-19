@@ -137,7 +137,6 @@ func (fs *Fs) ResolveLibrary(partName, partAlias, libRefSpec string, onFile Reso
 	}
 
 	partRoot := filepath.Join(fs.RegistrySpecDir(), partName)
-	parentDir := filepath.Dir(fs.RegistrySpecDir())
 
 	partsSpec, err := fs.ResolveLibrarySpec(partName, libRefSpec)
 	if err != nil {
@@ -149,7 +148,7 @@ func (fs *Fs) ResolveLibrary(partName, partAlias, libRefSpec string, onFile Reso
 			return err
 		}
 
-		libPath := strings.TrimPrefix(path, parentDir+"/")
+		libPath := strings.TrimPrefix(path, fs.URI())
 		if fi.IsDir() {
 			return onDir(libPath)
 		}
@@ -171,5 +170,9 @@ func (fs *Fs) ResolveLibrary(partName, partAlias, libRefSpec string, onFile Reso
 	}
 
 	return partsSpec, refSpec, nil
+}
 
+// CacheRoot combines the path with the registry name.
+func (fs *Fs) CacheRoot(name, path string) (string, error) {
+	return filepath.Join(name, path), nil
 }

@@ -26,6 +26,27 @@ type Registry struct {
 	mock.Mock
 }
 
+// CacheRoot provides a mock function with given fields: name, relPath
+func (_m *Registry) CacheRoot(name string, relPath string) (string, error) {
+	ret := _m.Called(name, relPath)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string, string) string); ok {
+		r0 = rf(name, relPath)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(name, relPath)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // FetchRegistrySpec provides a mock function with given fields:
 func (_m *Registry) FetchRegistrySpec() (*registry.Spec, error) {
 	ret := _m.Called()
