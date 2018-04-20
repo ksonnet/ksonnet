@@ -20,7 +20,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/ghodss/yaml"
-	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
 )
 

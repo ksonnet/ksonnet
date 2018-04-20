@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

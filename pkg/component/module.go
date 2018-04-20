@@ -26,7 +26,7 @@ import (
 	"github.com/google/go-jsonnet/ast"
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/printer"
-	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/params"
 	"github.com/ksonnet/ksonnet/pkg/util/jsonnet"
 	"github.com/pkg/errors"

@@ -21,7 +21,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
 
-	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
+	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	cmocks "github.com/ksonnet/ksonnet/pkg/component/mocks"
 	"github.com/stretchr/testify/require"
 )

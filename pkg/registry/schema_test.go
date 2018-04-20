@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/blang/semver"
-	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/stretchr/testify/require"
 )
 

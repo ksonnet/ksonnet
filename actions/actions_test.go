@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/ksonnet/ksonnet/client"
-	"github.com/ksonnet/ksonnet/metadata/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/app/mocks"
 	cmocks "github.com/ksonnet/ksonnet/pkg/component/mocks"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 	rmocks "github.com/ksonnet/ksonnet/pkg/registry/mocks"

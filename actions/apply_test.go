@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/ksonnet/ksonnet/client"
-	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
+	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/cluster"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

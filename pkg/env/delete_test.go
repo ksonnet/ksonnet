@@ -18,7 +18,7 @@ package env
 import (
 	"testing"
 
-	"github.com/ksonnet/ksonnet/metadata/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )

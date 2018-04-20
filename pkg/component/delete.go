@@ -18,8 +18,8 @@ package component
 import (
 	"path/filepath"
 
-	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/params"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"

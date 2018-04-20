@@ -27,8 +27,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/metadata/params"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/component"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/ksonnet/ksonnet/pkg/schema"

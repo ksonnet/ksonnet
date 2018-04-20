@@ -20,8 +20,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/component"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/prototype"

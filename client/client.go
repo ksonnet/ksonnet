@@ -28,7 +28,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	str "github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/ksonnet/ksonnet/utils"
 	"github.com/pkg/errors"

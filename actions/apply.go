@@ -17,7 +17,7 @@ package actions
 
 import (
 	"github.com/ksonnet/ksonnet/client"
-	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/cluster"
 )
 

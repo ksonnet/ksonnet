@@ -18,9 +18,9 @@ package actions
 import (
 	"testing"
 
-	"github.com/ksonnet/ksonnet/metadata/app"
-	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
 	param "github.com/ksonnet/ksonnet/metadata/params"
+	"github.com/ksonnet/ksonnet/pkg/app"
+	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

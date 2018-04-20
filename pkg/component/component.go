@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	"github.com/google/go-jsonnet/ast"
-	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/schema"
 
 	"github.com/pkg/errors"

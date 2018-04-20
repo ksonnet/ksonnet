@@ -18,7 +18,7 @@ package appinit
 import (
 	"path/filepath"
 
-	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/component"
 	"github.com/ksonnet/ksonnet/pkg/env"
 	"github.com/ksonnet/ksonnet/pkg/registry"

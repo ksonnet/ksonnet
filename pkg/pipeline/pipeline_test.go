@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
-	"github.com/ksonnet/ksonnet/metadata/app"
-	appmocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/app"
+	appmocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/component"
 	cmocks "github.com/ksonnet/ksonnet/pkg/component/mocks"
 	"github.com/stretchr/testify/require"

@@ -18,8 +18,8 @@ package actions
 import (
 	"testing"
 
-	"github.com/ksonnet/ksonnet/metadata/app"
-	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/app"
+	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 	rmocks "github.com/ksonnet/ksonnet/pkg/registry/mocks"
 	"github.com/spf13/afero"

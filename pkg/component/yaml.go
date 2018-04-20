@@ -26,7 +26,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/google/go-jsonnet/ast"
-	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/params"
 	"github.com/ksonnet/ksonnet/pkg/schema"
 	jsonnetutil "github.com/ksonnet/ksonnet/pkg/util/jsonnet"

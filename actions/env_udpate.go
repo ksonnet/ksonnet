@@ -18,7 +18,7 @@ package actions
 import (
 	"fmt"
 
-	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/lib"
 )
 

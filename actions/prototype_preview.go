@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/ksonnet/ksonnet/metadata"
-	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/ksonnet/ksonnet/pkg/prototype/snippet"

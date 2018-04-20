@@ -19,7 +19,7 @@ import (
 	"bytes"
 	"testing"
 
-	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
+	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/component"
 	cmocks "github.com/ksonnet/ksonnet/pkg/component/mocks"
 	"github.com/stretchr/testify/mock"

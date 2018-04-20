@@ -26,7 +26,7 @@ import (
 
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/printer"
-	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/component"
 	"github.com/ksonnet/ksonnet/pkg/env"
 	"github.com/ksonnet/ksonnet/pkg/params"

@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ksonnet/ksonnet/metadata/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 
 	"github.com/spf13/afero"

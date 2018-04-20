@@ -23,8 +23,8 @@ import (
 	"testing"
 
 	"github.com/google/go-github/github"
-	"github.com/ksonnet/ksonnet/metadata/app"
-	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/app"
+	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/parts"
 	ghutil "github.com/ksonnet/ksonnet/pkg/util/github"
 	"github.com/ksonnet/ksonnet/pkg/util/github/mocks"

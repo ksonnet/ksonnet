@@ -18,7 +18,7 @@ package component
 import (
 	"testing"
 
-	"github.com/ksonnet/ksonnet/metadata/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/util/test"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"

@@ -18,8 +18,8 @@ package actions
 import (
 	"testing"
 
-	"github.com/ksonnet/ksonnet/metadata/app"
-	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/app"
+	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/component"
 	cmocks "github.com/ksonnet/ksonnet/pkg/component/mocks"
 	"github.com/stretchr/testify/assert"

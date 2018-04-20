@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/client"
-	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )

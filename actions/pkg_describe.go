@@ -20,7 +20,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 )

@@ -28,7 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/ksonnet/ksonnet/metadata"
-	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/env"
 	"github.com/ksonnet/ksonnet/pkg/pipeline"
 	"github.com/ksonnet/ksonnet/pkg/plugin"

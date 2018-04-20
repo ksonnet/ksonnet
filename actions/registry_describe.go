@@ -21,7 +21,7 @@ import (
 	"os"
 	"sort"
 
-	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/pkg/errors"
 )
