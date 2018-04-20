@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/ksonnet/ksonnet/metadata/app/mocks"
-	"github.com/ksonnet/ksonnet/prototype"
+	"github.com/ksonnet/ksonnet/pkg/prototype"
 
 	"github.com/spf13/afero"
 

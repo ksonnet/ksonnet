@@ -23,7 +23,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
-	"github.com/ksonnet/ksonnet/prototype"
+	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"

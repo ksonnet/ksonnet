@@ -22,8 +22,8 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
+	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/ksonnet/ksonnet/pkg/util/table"
-	"github.com/ksonnet/ksonnet/prototype"
 )
 
 // RunPrototypeList runs `prototype list`

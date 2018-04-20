@@ -22,9 +22,9 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/ksonnet/ksonnet/metadata"
-	"github.com/ksonnet/ksonnet/prototype"
-	"github.com/ksonnet/ksonnet/prototype/snippet"
-	"github.com/ksonnet/ksonnet/prototype/snippet/jsonnet"
+	"github.com/ksonnet/ksonnet/pkg/prototype"
+	"github.com/ksonnet/ksonnet/pkg/prototype/snippet"
+	"github.com/ksonnet/ksonnet/pkg/prototype/snippet/jsonnet"
 	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/spf13/cobra"
 )

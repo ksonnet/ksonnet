@@ -21,7 +21,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/metadata/app"
 	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
-	"github.com/ksonnet/ksonnet/prototype"
+	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/stretchr/testify/require"
 )
 

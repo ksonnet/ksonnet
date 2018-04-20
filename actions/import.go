@@ -30,9 +30,9 @@ import (
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/pkg/component"
+	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/ksonnet/ksonnet/pkg/schema"
 	utilyaml "github.com/ksonnet/ksonnet/pkg/util/yaml"
-	"github.com/ksonnet/ksonnet/prototype"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
