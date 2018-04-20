@@ -20,7 +20,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/ksonnet/ksonnet/actions"
+	"github.com/ksonnet/ksonnet/pkg/actions"
 	"github.com/spf13/cobra"
 )
 

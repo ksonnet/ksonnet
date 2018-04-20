@@ -18,7 +18,7 @@ package clicmd
 import (
 	"fmt"
 
-	"github.com/ksonnet/ksonnet/actions"
+	"github.com/ksonnet/ksonnet/pkg/actions"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

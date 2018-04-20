@@ -18,7 +18,7 @@ package clicmd
 import (
 	"testing"
 
-	"github.com/ksonnet/ksonnet/actions"
+	"github.com/ksonnet/ksonnet/pkg/actions"
 )
 
 func Test_paramDiffCmd(t *testing.T) {
