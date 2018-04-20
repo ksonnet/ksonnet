@@ -25,13 +25,13 @@ type Component struct {
 	mock.Mock
 }
 
-// DeleteParam provides a mock function with given fields: path, options
-func (_m *Component) DeleteParam(path []string, options component.ParamOptions) error {
-	ret := _m.Called(path, options)
+// DeleteParam provides a mock function with given fields: path
+func (_m *Component) DeleteParam(path []string) error {
+	ret := _m.Called(path)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func([]string, component.ParamOptions) error); ok {
-		r0 = rf(path, options)
+	if rf, ok := ret.Get(0).(func([]string) error); ok {
+		r0 = rf(path)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -76,13 +76,13 @@ func (_m *Component) Params(envName string) ([]component.ModuleParameter, error)
 	return r0, r1
 }
 
-// SetParam provides a mock function with given fields: path, value, options
-func (_m *Component) SetParam(path []string, value interface{}, options component.ParamOptions) error {
-	ret := _m.Called(path, value, options)
+// SetParam provides a mock function with given fields: path, value
+func (_m *Component) SetParam(path []string, value interface{}) error {
+	ret := _m.Called(path, value)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func([]string, interface{}, component.ParamOptions) error); ok {
-		r0 = rf(path, value, options)
+	if rf, ok := ret.Get(0).(func([]string, interface{}) error); ok {
+		r0 = rf(path, value)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -91,16 +91,14 @@ func (_m *Component) SetParam(path []string, value interface{}, options componen
 }
 
 // Summarize provides a mock function with given fields:
-func (_m *Component) Summarize() ([]component.Summary, error) {
+func (_m *Component) Summarize() (component.Summary, error) {
 	ret := _m.Called()
 
-	var r0 []component.Summary
-	if rf, ok := ret.Get(0).(func() []component.Summary); ok {
+	var r0 component.Summary
+	if rf, ok := ret.Get(0).(func() component.Summary); ok {
 		r0 = rf()
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]component.Summary)
-		}
+		r0 = ret.Get(0).(component.Summary)
 	}
 
 	var r1 error

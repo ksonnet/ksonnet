@@ -23,8 +23,7 @@ import (
 )
 
 var (
-	vParamSetEnv   = "param-set-env"
-	vParamSetIndex = "param-set-index"
+	vParamSetEnv = "param-set-env"
 )
 
 var paramSetCmd = &cobra.Command{
@@ -53,7 +52,6 @@ var paramSetCmd = &cobra.Command{
 			actions.OptionPath:    path,
 			actions.OptionValue:   value,
 			actions.OptionEnvName: viper.GetString(vParamSetEnv),
-			actions.OptionIndex:   viper.GetInt(vParamSetIndex),
 		}
 
 		return runAction(actionParamSet, m)
@@ -91,6 +89,4 @@ func init() {
 
 	paramSetCmd.Flags().String(flagEnv, "", "Specify environment to set parameters for")
 	viper.BindPFlag(vParamSetEnv, paramSetCmd.Flags().Lookup(flagEnv))
-	paramSetCmd.Flags().IntP(flagIndex, shortIndex, 0, "Index in manifest")
-	viper.BindPFlag(vParamSetIndex, paramSetCmd.Flags().Lookup(flagIndex))
 }

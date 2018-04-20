@@ -32,39 +32,12 @@ func TestParamDelete(t *testing.T) {
 		path := "replicas"
 
 		c := &cmocks.Component{}
-		c.On("DeleteParam", []string{"replicas"}, component.ParamOptions{}).Return(nil)
+		c.On("DeleteParam", []string{"replicas"}).Return(nil)
 
 		in := map[string]interface{}{
 			OptionApp:  appMock,
 			OptionName: componentName,
 			OptionPath: path,
-		}
-
-		a, err := NewParamDelete(in)
-		require.NoError(t, err)
-
-		a.resolvePathFn = func(app.App, string) (component.Module, component.Component, error) {
-			return nil, c, nil
-		}
-
-		err = a.Run()
-		require.NoError(t, err)
-	})
-}
-
-func TestParamDelete_index(t *testing.T) {
-	withApp(t, func(appMock *amocks.App) {
-		componentName := "deployment"
-		path := "replicas"
-
-		c := &cmocks.Component{}
-		c.On("DeleteParam", []string{"replicas"}, component.ParamOptions{Index: 1}).Return(nil)
-
-		in := map[string]interface{}{
-			OptionApp:   appMock,
-			OptionName:  componentName,
-			OptionPath:  path,
-			OptionIndex: 1,
 		}
 
 		a, err := NewParamDelete(in)

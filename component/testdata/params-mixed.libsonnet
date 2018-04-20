@@ -6,7 +6,7 @@
   components: {
     // Component-level parameters, defined initially from 'ks prototype use ...'
     // Each object below should correspond to a component in the components/ directory
-    "deployment-0": {
+    "deployment": {
       metadata: {
         labels: {
           label1: "label1",
@@ -14,7 +14,7 @@
         },
       },
     },
-    "rbac-1": {
+    "clusterrole-cert-manager": {
       metadata: {
         name: "cert-manager2",
       },

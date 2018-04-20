@@ -43,7 +43,6 @@ type ParamDelete struct {
 	app     app.App
 	name    string
 	rawPath string
-	index   int
 	global  bool
 	envName string
 
@@ -63,7 +62,6 @@ func NewParamDelete(m map[string]interface{}) (*ParamDelete, error) {
 		rawPath: ol.LoadString(OptionPath),
 		global:  ol.LoadOptionalBool(OptionGlobal),
 		envName: ol.LoadOptionalString(OptionEnvName),
-		index:   ol.LoadOptionalInt(OptionIndex),
 
 		deleteEnvFn:       env.DeleteParam,
 		deleteEnvGlobalFn: env.UnsetGlobalParams,
@@ -119,11 +117,7 @@ func (pd *ParamDelete) deleteLocal(path []string) error {
 		return errors.Wrap(err, "could not find component")
 	}
 
-	options := component.ParamOptions{
-		Index: pd.index,
-	}
-
-	if err := c.DeleteParam(path, options); err != nil {
+	if err := c.DeleteParam(path); err != nil {
 		return errors.Wrap(err, "delete param")
 	}
 

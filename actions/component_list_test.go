@@ -68,9 +68,7 @@ func TestComponentList_wide(t *testing.T) {
 		module := ""
 		output := "wide"
 
-		summary := []component.Summary{
-			{ComponentName: "deployment"},
-		}
+		summary := component.Summary{ComponentName: "deployment"}
 		c := &cmocks.Component{}
 		c.On("Summarize").Return(summary, nil)
 

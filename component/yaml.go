@@ -21,9 +21,7 @@ import (
 	"io/ioutil"
 	"path"
 	"path/filepath"
-	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/ghodss/yaml"
@@ -98,60 +96,25 @@ func (y *YAML) Params(envName string) ([]ModuleParameter, error) {
 		return nil, err
 	}
 
-	componentParams, err := params.ToMap("", paramsData, paramsComponentRoot)
+	componentParams, err := params.ToMap(y.Name(false), paramsData, paramsComponentRoot)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not find components")
 	}
 
-	re, err := regexp.Compile(fmt.Sprintf(`^%s-(\d+)$`, y.Name(false)))
+	ts, props, err := y.read()
 	if err != nil {
-		return nil, err
-	}
-
-	readers, err := utilyaml.Decode(y.app.Fs(), y.source)
-	if err != nil {
-		return nil, err
-	}
-
-	var params []ModuleParameter
-	for paramName, paramValue := range componentParams {
-		y.log().WithField("prop-name", paramName).Debug("searching for props")
-		matches := re.FindAllStringSubmatch(paramName, 1)
-		if len(matches) > 0 {
-			index := matches[0][1]
-			i, err := strconv.Atoi(index)
-			if err != nil {
-				return nil, err
-			}
-
-			ts, props, err := schema.ImportYaml(readers[i])
-			if err != nil {
-				if err == schema.ErrEmptyYAML {
-					continue
-				}
-				return nil, err
-			}
-
-			valueMap, err := ve.Extract(ts.GVK(), props)
-			if err != nil {
-				return nil, err
-			}
-
-			paramMap, ok := paramValue.(map[string]interface{})
-			if !ok {
-				return nil, errors.Errorf("component value for %q was not a map", paramName)
-			}
-
-			childParams, err := y.paramValues(y.Name(false), index, valueMap, paramMap, nil)
-			if err != nil {
-				return nil, err
-			}
-
-			params = append(params, childParams...)
+		if err == schema.ErrEmptyYAML {
+			return make([]ModuleParameter, 0), nil
 		}
+		return nil, err
 	}
 
-	return params, nil
+	valueMap, err := ve.Extract(ts.GVK(), props)
+	if err != nil {
+		return nil, err
+	}
+
+	return y.paramValues(y.Name(false), "", valueMap, componentParams, nil)
 }
 
 func isLeaf(path []string, key string, valueMap map[string]schema.Values) (string, bool) {
@@ -253,15 +216,14 @@ func (y *YAML) paramValues(componentName, index string, valueMap map[string]sche
 }
 
 // SetParam set parameter for a component.
-func (y *YAML) SetParam(path []string, value interface{}, options ParamOptions) error {
-	entry := fmt.Sprintf("%s-%d", y.Name(false), options.Index)
+func (y *YAML) SetParam(path []string, value interface{}) error {
 	// TODO: make this work with env params
 	paramsData, err := y.readParams("")
 	if err != nil {
 		return err
 	}
 
-	updatedParams, err := params.SetInObject(path, paramsData, entry, value, paramsComponentRoot)
+	updatedParams, err := params.SetInObject(path, paramsData, y.Name(false), value, paramsComponentRoot)
 	if err != nil {
 		return err
 	}
@@ -274,15 +236,14 @@ func (y *YAML) SetParam(path []string, value interface{}, options ParamOptions) 
 }
 
 // DeleteParam deletes a param.
-func (y *YAML) DeleteParam(path []string, options ParamOptions) error {
-	entry := fmt.Sprintf("%s-%d", y.Name(false), options.Index)
+func (y *YAML) DeleteParam(path []string) error {
 	// TODO: make this work with env params
 	paramsData, err := y.readParams("")
 	if err != nil {
 		return err
 	}
 
-	updatedParams, err := params.DeleteFromObject(path, paramsData, entry, paramsComponentRoot)
+	updatedParams, err := params.DeleteFromObject(path, paramsData, y.Name(false), paramsComponentRoot)
 	if err != nil {
 		return err
 	}
@@ -372,41 +333,27 @@ func (y *YAML) hasParams() (bool, error) {
 
 // Summarize generates a summary for a YAML component. For each manifest, it will
 // return a slice of summaries of resources described.
-func (y *YAML) Summarize() ([]Summary, error) {
-	var summaries []Summary
-
-	readers, err := utilyaml.Decode(y.app.Fs(), y.source)
+func (y *YAML) Summarize() (Summary, error) {
+	ts, props, err := y.read()
 	if err != nil {
-		return nil, err
+		if err == schema.ErrEmptyYAML {
+			return Summary{}, nil
+		}
+		return Summary{}, err
 	}
 
-	for i, r := range readers {
-		ts, props, err := schema.ImportYaml(r)
-		if err != nil {
-			if err == schema.ErrEmptyYAML {
-				continue
-			}
-			return nil, err
-		}
-
-		name, err := props.Name()
-		if err != nil {
-			return nil, err
-		}
-
-		summary := Summary{
-			ComponentName: y.Name(false),
-			IndexStr:      strconv.Itoa(i),
-			Index:         i,
-			Type:          y.ext(),
-			APIVersion:    ts.APIVersion,
-			Kind:          ts.RawKind,
-			Name:          name,
-		}
-		summaries = append(summaries, summary)
+	name, err := props.Name()
+	if err != nil {
+		return Summary{}, err
 	}
 
-	return summaries, nil
+	return Summary{
+		ComponentName: y.Name(false),
+		Type:          y.ext(),
+		APIVersion:    ts.APIVersion,
+		Kind:          ts.RawKind,
+		Name:          name,
+	}, nil
 }
 
 // ToMap converts a YAML component to a map of Jonnet objects.
@@ -469,6 +416,15 @@ func (y *YAML) log() *logrus.Entry {
 		"component-name": y.Name(true),
 		"component-type": "YAML",
 	})
+}
+
+func (y *YAML) read() (*schema.TypeSpec, schema.Properties, error) {
+	f, err := y.app.Fs().Open(y.source)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return schema.ImportYaml(f)
 }
 
 type paramPath struct {

@@ -29,7 +29,6 @@ const (
 	flagFilename              = "filename"
 	flagGcTag                 = "gc-tag"
 	flagGracePeriod           = "grace-period"
-	flagIndex                 = "index"
 	flagJpath                 = "jpath"
 	flagModule                = "module"
 	flagNamespace             = "namespace"
@@ -49,7 +48,6 @@ const (
 	shortComponent = "c"
 	shortFilename  = "f"
 	shortFormat    = "o"
-	shortIndex     = "i"
 	shortOutput    = "o"
 	shortOverride  = "o"
 )
