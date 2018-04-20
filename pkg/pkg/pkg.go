@@ -21,9 +21,9 @@ import (
 
 	"github.com/spf13/afero"
 
-	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/parts"
-	"github.com/ksonnet/ksonnet/prototype"
+	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/pkg/errors"
 )
 

@@ -17,16 +17,16 @@ package main
 
 import (
 	"log"
-        "os"
+	"os"
 
+	"github.com/ksonnet/ksonnet/pkg/clicmd"
 	"github.com/spf13/cobra/doc"
-	"github.com/ksonnet/ksonnet/cmd"
 )
 
 func main() {
 	outputDir := os.Args[1]
 
-        cmd := cmd.RootCmd
+	cmd := clicmd.RootCmd
 	// Remove auto-generated timestamps
 	cmd.DisableAutoGenTag = true
 

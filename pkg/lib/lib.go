@@ -24,7 +24,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 
-	"github.com/ksonnet/ksonnet/generator"
+	"github.com/ksonnet/ksonnet/pkg/util/kslib"
 )
 
 const (
@@ -80,7 +80,7 @@ func (m *Manager) GenerateLibData(useVersionPath bool) error {
 		return err
 	}
 
-	kl, err := generator.Ksonnet(b)
+	kl, err := kslib.Ksonnet(b)
 	if err != nil {
 		return err
 	}

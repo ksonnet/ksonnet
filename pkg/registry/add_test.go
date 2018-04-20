@@ -20,8 +20,8 @@ import (
 
 	"github.com/spf13/afero"
 
-	"github.com/ksonnet/ksonnet/metadata/app"
-	amocks "github.com/ksonnet/ksonnet/metadata/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/app"
+	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	ghutil "github.com/ksonnet/ksonnet/pkg/util/github"
 	"github.com/ksonnet/ksonnet/pkg/util/github/mocks"
 	"github.com/ksonnet/ksonnet/pkg/util/test"

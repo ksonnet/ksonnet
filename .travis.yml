@@ -66,26 +66,7 @@ before_install:
     export GO_LDFLAGS='-linkmode external -extldflags=-static'
   fi
 install:
-- go build -i -ldflags "$GO_LDFLAGS" .
-- |
-  if [ "$DO_INTEGRATION_TEST" = 1 ]; then
-    if ! which minikube; then
-      wget -O minikube \
-         https://storage.googleapis.com/minikube/releases/v0.21.0/minikube-$(go env GOOS)-$(go env GOARCH)
-      install -m 755 minikube $GOPATH/bin/minikube
-    fi
-    if ! which kubectl; then
-      wget https://storage.googleapis.com/kubernetes-release/release/$INT_KVERS/bin/$(go env GOOS)/$(go env GOARCH)/kubectl
-      install -m 755 kubectl $GOPATH/bin/kubectl
-    fi
-    mkdir -p $HOME/.kube
-    touch $HOME/.kube/config
-    sudo -E $GOPATH/bin/minikube start --vm-driver=none \
-      --extra-config apiserver.Authorization.Mode=RBAC \
-      --kubernetes-version $INT_KVERS
-
-    go get github.com/onsi/ginkgo/ginkgo
-  fi
+- go build -i -ldflags "$GO_LDFLAGS" ./cmd/ks
 script:
 - make VERSION="$VERSION" EXTRA_GO_FLAGS="$EXTRA_GO_FLAGS_TEST" test
 - make vet

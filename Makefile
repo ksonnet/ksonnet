@@ -40,13 +40,13 @@ INTEGRATION_TEST_FIXTURES = ./fixtures
 all: ks docs
 
 ks:
-	$(GO) build -o $(KS_BIN) $(GO_FLAGS) .
+	$(GO) build -o $(KS_BIN) $(GO_FLAGS) ./cmd/ks
 
 docs:
 	$(DOC_GEN_FILE)
 
 install:
-	$(GO) build -o $(GOPATH)/bin/ks $(GO_FLAGS) .
+	$(GO) build -o $(GOPATH)/bin/ks $(GO_FLAGS) ./cmd/ks
 
 test: gotest docstest
 

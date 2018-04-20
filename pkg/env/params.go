@@ -16,9 +16,9 @@
 package env
 
 import (
-	"github.com/ksonnet/ksonnet/component"
-	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
+	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/ksonnet/ksonnet/pkg/component"
 	"github.com/ksonnet/ksonnet/pkg/params"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"

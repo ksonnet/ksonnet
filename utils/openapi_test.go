@@ -51,7 +51,7 @@ func (s schemaFromFile) SwaggerSchema(gv schema.GroupVersion) (*swagger.ApiDecla
 }
 
 func TestValidate(t *testing.T) {
-	schemaReader := schemaFromFile{dir: filepath.FromSlash("../testdata"), fs: afero.NewOsFs()}
+	schemaReader := schemaFromFile{dir: filepath.FromSlash("testdata/"), fs: afero.NewOsFs()}
 	s, err := NewSwaggerSchemaFor(schemaReader, schema.GroupVersion{Version: "v1"})
 	if err != nil {
 		t.Fatalf("Error reading schema: %v", err)

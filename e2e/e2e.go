@@ -127,7 +127,7 @@ func (e *e2e) buildKs() {
 		"build",
 		"-o",
 		e.ksBin(),
-		`github.com/ksonnet/ksonnet`,
+		`github.com/ksonnet/ksonnet/cmd/ks`,
 	}
 
 	cmd := exec.Command("go", args...)
