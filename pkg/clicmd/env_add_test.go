@@ -1,4 +1,4 @@
-// Copyright 2017 The ksonnet authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,25 +13,30 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package main
+package clicmd
 
 import (
-	"log"
-	"os"
+	"testing"
 
-	"github.com/ksonnet/ksonnet/pkg/clicmd"
-	"github.com/spf13/cobra/doc"
+	"github.com/ksonnet/ksonnet/actions"
 )
 
-func main() {
-	outputDir := os.Args[1]
-
-	cmd := clicmd.RootCmd
-	// Remove auto-generated timestamps
-	cmd.DisableAutoGenTag = true
-
-	err := doc.GenMarkdownTree(cmd, outputDir)
-	if err != nil {
-		log.Fatal(err)
+func Test_envAddCmd(t *testing.T) {
+	cases := []cmdTestCase{
+		{
+			name:   "in general",
+			args:   []string{"env", "add", "prod", "--server", "http://example.com"},
+			action: actionEnvAdd,
+			expected: map[string]interface{}{
+				actions.OptionApp:      ka,
+				actions.OptionEnvName:  "prod",
+				actions.OptionModule:   "default",
+				actions.OptionOverride: false,
+				actions.OptionServer:   "http://example.com",
+				actions.OptionSpecFlag: "version:v1.7.0",
+			},
+		},
 	}
+
+	runTestCmd(t, cases)
 }

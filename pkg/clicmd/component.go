@@ -13,25 +13,26 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package main
+package clicmd
 
 import (
-	"log"
-	"os"
+	"fmt"
+	"strings"
 
-	"github.com/ksonnet/ksonnet/pkg/clicmd"
-	"github.com/spf13/cobra/doc"
+	"github.com/spf13/cobra"
 )
 
-func main() {
-	outputDir := os.Args[1]
+func init() {
+	RootCmd.AddCommand(componentCmd)
+}
 
-	cmd := clicmd.RootCmd
-	// Remove auto-generated timestamps
-	cmd.DisableAutoGenTag = true
-
-	err := doc.GenMarkdownTree(cmd, outputDir)
-	if err != nil {
-		log.Fatal(err)
-	}
+var componentCmd = &cobra.Command{
+	Use:   "component",
+	Short: "Manage ksonnet components",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 0 {
+			return fmt.Errorf("%s is not a valid subcommand\n\n%s", strings.Join(args, " "), cmd.UsageString())
+		}
+		return fmt.Errorf("Command 'component' requires a subcommand\n\n%s", cmd.UsageString())
+	},
 }

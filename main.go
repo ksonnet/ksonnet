@@ -20,7 +20,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/ksonnet/ksonnet/cmd"
+	"github.com/ksonnet/ksonnet/pkg/clicmd"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
 
@@ -29,10 +29,10 @@ var version = "(dev build)"
 var apimachineryVersion = ""
 
 func main() {
-	cmd.Version = version
-	cmd.APImachineryVersion = apimachineryVersion
+	clicmd.Version = version
+	clicmd.APImachineryVersion = apimachineryVersion
 
-	if err := cmd.RootCmd.Execute(); err != nil {
+	if err := clicmd.RootCmd.Execute(); err != nil {
 		// PersistentPreRunE may not have been run for early
 		// errors, like invalid command line flags.
 		logFmt := &log.TextFormatter{

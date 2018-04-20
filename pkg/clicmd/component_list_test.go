@@ -1,4 +1,4 @@
-// Copyright 2017 The ksonnet authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,25 +13,28 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package main
+package clicmd
 
 import (
-	"log"
-	"os"
+	"testing"
 
-	"github.com/ksonnet/ksonnet/pkg/clicmd"
-	"github.com/spf13/cobra/doc"
+	"github.com/ksonnet/ksonnet/actions"
 )
 
-func main() {
-	outputDir := os.Args[1]
+func Test_componentListCmd(t *testing.T) {
 
-	cmd := clicmd.RootCmd
-	// Remove auto-generated timestamps
-	cmd.DisableAutoGenTag = true
-
-	err := doc.GenMarkdownTree(cmd, outputDir)
-	if err != nil {
-		log.Fatal(err)
+	cases := []cmdTestCase{
+		{
+			name:   "in general",
+			args:   []string{"component", "list"},
+			action: actionComponentList,
+			expected: map[string]interface{}{
+				actions.OptionApp:    ka,
+				actions.OptionModule: "",
+				actions.OptionOutput: "",
+			},
+		},
 	}
+
+	runTestCmd(t, cases)
 }
