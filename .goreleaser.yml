@@ -1,6 +1,6 @@
 project_name: ks
 builds:
-  - main: .
+  - main: ./cmd/ks/main.go
     binary: ks
     ldflags: -X main.version={{.Version}}
     goos:
