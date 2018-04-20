@@ -31,7 +31,7 @@ import (
 	"github.com/ksonnet/ksonnet/metadata/app"
 	"github.com/ksonnet/ksonnet/pkg/env"
 	"github.com/ksonnet/ksonnet/pkg/pipeline"
-	"github.com/ksonnet/ksonnet/plugin"
+	"github.com/ksonnet/ksonnet/pkg/plugin"
 	str "github.com/ksonnet/ksonnet/strings"
 	"github.com/ksonnet/ksonnet/template"
 	"github.com/pkg/errors"
