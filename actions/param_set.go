@@ -42,7 +42,6 @@ type ParamSet struct {
 	name     string
 	rawPath  string
 	rawValue string
-	index    int
 	global   bool
 	envName  string
 
@@ -63,7 +62,6 @@ func NewParamSet(m map[string]interface{}) (*ParamSet, error) {
 		rawValue: ol.LoadString(OptionValue),
 		global:   ol.LoadOptionalBool(OptionGlobal),
 		envName:  ol.LoadOptionalString(OptionEnvName),
-		index:    ol.LoadOptionalInt(OptionIndex),
 
 		getModuleFn:    component.GetModule,
 		resolvePathFn:  component.ResolvePath,
@@ -124,10 +122,7 @@ func (ps *ParamSet) setLocal(path []string, value interface{}) error {
 		return errors.Wrap(err, "could not find component")
 	}
 
-	options := component.ParamOptions{
-		Index: ps.index,
-	}
-	if err := c.SetParam(path, value, options); err != nil {
+	if err := c.SetParam(path, value); err != nil {
 		return errors.Wrap(err, "set param")
 	}
 

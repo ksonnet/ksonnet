@@ -209,37 +209,6 @@ func (m *FilesystemModule) ResolvedParams() (string, error) {
 		currentFields[id] = true
 	}
 
-	components, err := m.Components()
-	if err != nil {
-		return "", err
-	}
-
-	for _, c := range components {
-		summaries, err := c.Summarize()
-		if err != nil {
-			return "", err
-		}
-
-		for i := range summaries {
-			summary := summaries[i]
-			if summary.Type != "yaml" && summary.Type != "json" {
-				continue
-			}
-
-			name := fmt.Sprintf("%s-%d", summary.ComponentName, summary.Index)
-			if _, ok := currentFields[name]; !ok {
-				field, err := astext.CreateField(name)
-				if err != nil {
-					return "", err
-				}
-
-				field.Hide = ast.ObjectFieldInherit
-				field.Expr2 = &astext.Object{}
-				componentsObject.Fields = append(componentsObject.Fields, *field)
-			}
-		}
-	}
-
 	var buf bytes.Buffer
 	if err := printer.Fprint(&buf, object); err != nil {
 		return "", errors.Wrap(err, "could not update params")

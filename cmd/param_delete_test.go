@@ -32,7 +32,6 @@ func Test_paramDeleteCmd(t *testing.T) {
 				actions.OptionName:    "component-name",
 				actions.OptionPath:    "param-name",
 				actions.OptionEnvName: "",
-				actions.OptionIndex:   0,
 			},
 		},
 		{
@@ -44,7 +43,6 @@ func Test_paramDeleteCmd(t *testing.T) {
 				actions.OptionName:    "",
 				actions.OptionPath:    "param-name",
 				actions.OptionEnvName: "default",
-				actions.OptionIndex:   0,
 			},
 		},
 	}

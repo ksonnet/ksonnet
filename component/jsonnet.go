@@ -152,7 +152,7 @@ func (j *Jsonnet) evaluate(paramsStr, envName string) (string, error) {
 }
 
 // SetParam set parameter for a component.
-func (j *Jsonnet) SetParam(path []string, value interface{}, options ParamOptions) error {
+func (j *Jsonnet) SetParam(path []string, value interface{}) error {
 	// TODO: make this work at the env level too
 	paramsData, err := j.readParams("")
 	if err != nil {
@@ -172,7 +172,7 @@ func (j *Jsonnet) SetParam(path []string, value interface{}, options ParamOption
 }
 
 // DeleteParam deletes a param.
-func (j *Jsonnet) DeleteParam(path []string, options ParamOptions) error {
+func (j *Jsonnet) DeleteParam(path []string) error {
 	// TODO: make this work at the env level too
 	paramsData, err := j.readParams("")
 	if err != nil {
@@ -247,13 +247,10 @@ func (j *Jsonnet) paramValue(v interface{}) (string, error) {
 }
 
 // Summarize creates a summary for the component.
-func (j *Jsonnet) Summarize() ([]Summary, error) {
-	return []Summary{
-		{
-			ComponentName: j.Name(false),
-			IndexStr:      "0",
-			Type:          "jsonnet",
-		},
+func (j *Jsonnet) Summarize() (Summary, error) {
+	return Summary{
+		ComponentName: j.Name(false),
+		Type:          "jsonnet",
 	}, nil
 }
 

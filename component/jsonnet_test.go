@@ -152,9 +152,7 @@ func TestJsonnet_Summarize(t *testing.T) {
 		got, err := c.Summarize()
 		require.NoError(t, err)
 
-		expected := []Summary{
-			{ComponentName: "guestbook-ui", IndexStr: "0", Type: "jsonnet"},
-		}
+		expected := Summary{ComponentName: "guestbook-ui", Type: "jsonnet"}
 
 		require.Equal(t, expected, got)
 	})
@@ -170,7 +168,7 @@ func TestJsonnet_SetParam(t *testing.T) {
 
 		c := NewJsonnet(a, "", "/app/components/guestbook-ui.jsonnet", "/app/components/params.libsonnet")
 
-		err := c.SetParam([]string{"replicas"}, 4, ParamOptions{})
+		err := c.SetParam([]string{"replicas"}, 4)
 		require.NoError(t, err)
 
 		b, err := afero.ReadFile(fs, "/app/components/params.libsonnet")
@@ -192,7 +190,7 @@ func TestJsonnet_DeleteParam(t *testing.T) {
 
 		c := NewJsonnet(a, "", "/app/components/guestbook-ui.jsonnet", "/app/components/params.libsonnet")
 
-		err := c.DeleteParam([]string{"replicas"}, ParamOptions{})
+		err := c.DeleteParam([]string{"replicas"})
 		require.NoError(t, err)
 
 		b, err := afero.ReadFile(fs, "/app/components/params.libsonnet")

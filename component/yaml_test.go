@@ -74,7 +74,6 @@ func TestYAML_Params(t *testing.T) {
 		param := params[0]
 		expected := ModuleParameter{
 			Component: "deployment",
-			Index:     "0",
 			Key:       "metadata.labels",
 			Value:     `{"label1":"label1","label2":"label2"}`,
 		}
@@ -86,9 +85,9 @@ func TestYAML_Params_literal(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
 
 		test.StageFile(t, fs, "params-mixed.libsonnet", "/params.libsonnet")
-		test.StageFile(t, fs, "rbac.yaml", "/rbac.yaml")
+		test.StageFile(t, fs, "clusterrole-cert-manager.yaml", "/clusterrole-cert-manager.yaml")
 
-		y := NewYAML(a, "", "/rbac.yaml", "/params.libsonnet")
+		y := NewYAML(a, "", "/clusterrole-cert-manager.yaml", "/params.libsonnet")
 		params, err := y.Params("")
 		require.NoError(t, err)
 
@@ -96,8 +95,7 @@ func TestYAML_Params_literal(t *testing.T) {
 
 		param := params[0]
 		expected := ModuleParameter{
-			Component: "rbac",
-			Index:     "1",
+			Component: "clusterrole-cert-manager",
 			Key:       "metadata.name",
 			Value:     "cert-manager2",
 		}
@@ -118,7 +116,6 @@ func TestYAML_Params_extra_entries(t *testing.T) {
 		expected := []ModuleParameter{
 			{
 				Component: "deployment",
-				Index:     "0",
 				Key:       "metadata.annotations",
 				Value:     `{"size":"large"}`,
 			},
@@ -135,7 +132,7 @@ func TestYAML_SetParam(t *testing.T) {
 
 		y := NewYAML(a, "", "/certificate-crd.yaml", "/params.libsonnet")
 
-		err := y.SetParam([]string{"spec", "version"}, "v2", ParamOptions{})
+		err := y.SetParam([]string{"spec", "version"}, "v2")
 		require.NoError(t, err)
 
 		b, err := afero.ReadFile(fs, "/params.libsonnet")
@@ -155,7 +152,7 @@ func TestYAML_DeleteParam(t *testing.T) {
 
 		y := NewYAML(a, "", "/certificate-crd.yaml", "/params.libsonnet")
 
-		err := y.DeleteParam([]string{"spec", "version"}, ParamOptions{})
+		err := y.DeleteParam([]string{"spec", "version"})
 		require.NoError(t, err)
 
 		b, err := afero.ReadFile(fs, "/params.libsonnet")
@@ -170,32 +167,20 @@ func TestYAML_DeleteParam(t *testing.T) {
 func TestYAML_Summarize(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
 
-		test.StageFile(t, fs, "rbac.yaml", "/components/rbac.yaml")
+		test.StageFile(t, fs, "clusterrole-cert-manager.yaml", "/components/clusterrole-cert-manager.yaml")
 		test.StageFile(t, fs, "params-no-entry.libsonnet", "/components/params.libsonnet")
 
-		y := NewYAML(a, "", "/components/rbac.yaml", "/components/params.libsonnet")
+		y := NewYAML(a, "", "/components/clusterrole-cert-manager.yaml", "/components/params.libsonnet")
 
 		list, err := y.Summarize()
 		require.NoError(t, err)
 
-		expected := []Summary{
-			{
-				ComponentName: "rbac",
-				IndexStr:      "0",
-				Type:          "yaml",
-				APIVersion:    "rbac.authorization.k8s.io/v1beta1",
-				Kind:          "ClusterRole",
-				Name:          "cert-manager",
-			},
-			{
-				ComponentName: "rbac",
-				IndexStr:      "1",
-				Index:         1,
-				Type:          "yaml",
-				APIVersion:    "rbac.authorization.k8s.io/v1beta1",
-				Kind:          "ClusterRoleBinding",
-				Name:          "cert-manager",
-			},
+		expected := Summary{
+			ComponentName: "clusterrole-cert-manager",
+			Type:          "yaml",
+			APIVersion:    "rbac.authorization.k8s.io/v1beta1",
+			Kind:          "ClusterRole",
+			Name:          "cert-manager",
 		}
 
 		require.Equal(t, expected, list)
@@ -213,41 +198,12 @@ func TestYAML_Summarize_json(t *testing.T) {
 		list, err := y.Summarize()
 		require.NoError(t, err)
 
-		expected := []Summary{
-			{
-				ComponentName: "certificate-crd",
-				IndexStr:      "0",
-				Type:          "json",
-				APIVersion:    "apiextensions.k8s.io/v1beta1",
-				Kind:          "CustomResourceDefinition",
-				Name:          "certificates_certmanager_k8s_io",
-			},
-		}
-
-		require.Equal(t, expected, list)
-	})
-}
-
-func TestYAML_Summarize_yaml_trailing_dashes(t *testing.T) {
-	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
-
-		test.StageFile(t, fs, "trailing-dash.yaml", "/components/certificate-crd.yaml")
-		test.StageFile(t, fs, "params-no-entry.libsonnet", "/components/params.libsonnet")
-
-		y := NewYAML(a, "", "/components/certificate-crd.yaml", "/components/params.libsonnet")
-
-		list, err := y.Summarize()
-		require.NoError(t, err)
-
-		expected := []Summary{
-			{
-				ComponentName: "certificate-crd",
-				IndexStr:      "0",
-				Type:          "yaml",
-				APIVersion:    "apiextensions.k8s.io/v1beta1",
-				Kind:          "CustomResourceDefinition",
-				Name:          "certificates_certmanager_k8s_io",
-			},
+		expected := Summary{
+			ComponentName: "certificate-crd",
+			Type:          "json",
+			APIVersion:    "apiextensions.k8s.io/v1beta1",
+			Kind:          "CustomResourceDefinition",
+			Name:          "certificates_certmanager_k8s_io",
 		}
 
 		require.Equal(t, expected, list)

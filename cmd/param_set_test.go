@@ -33,7 +33,6 @@ func Test_paramSetCmd(t *testing.T) {
 				actions.OptionPath:    "param-name",
 				actions.OptionValue:   "param-value",
 				actions.OptionEnvName: "",
-				actions.OptionIndex:   0,
 			},
 		},
 		{
@@ -46,7 +45,6 @@ func Test_paramSetCmd(t *testing.T) {
 				actions.OptionPath:    "param-name",
 				actions.OptionValue:   "param-value",
 				actions.OptionEnvName: "default",
-				actions.OptionIndex:   0,
 			},
 		},
 		{

@@ -23,8 +23,7 @@ import (
 )
 
 var (
-	vParamDeleteEnv   = "param-delete-env"
-	vParamDeleteIndex = "param-delete-index"
+	vParamDeleteEnv = "param-delete-env"
 )
 
 var paramDeleteCmd = &cobra.Command{
@@ -49,7 +48,6 @@ var paramDeleteCmd = &cobra.Command{
 			actions.OptionName:    name,
 			actions.OptionPath:    path,
 			actions.OptionEnvName: viper.GetString(vParamDeleteEnv),
-			actions.OptionIndex:   viper.GetInt(vParamDeleteIndex),
 		}
 
 		return runAction(actionParamDelete, m)
@@ -78,6 +76,4 @@ func init() {
 
 	paramDeleteCmd.Flags().String(flagEnv, "", "Specify environment to delete parameter from")
 	viper.BindPFlag(vParamDeleteEnv, paramDeleteCmd.Flags().Lookup(flagEnv))
-	paramDeleteCmd.Flags().IntP(flagIndex, shortIndex, 0, "Index in manifest")
-	viper.BindPFlag(vParamDeleteIndex, paramDeleteCmd.Flags().Lookup(flagIndex))
 }

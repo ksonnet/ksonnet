@@ -55,9 +55,6 @@ const (
 	OptionGlobal = "global"
 	// OptionGracePeriod is gracePeriod option.
 	OptionGracePeriod = "grace-period"
-	// OptionIndex is index option. Is used to target individual items in multi object
-	// components.
-	OptionIndex = "index"
 	// OptionLibName is libName.
 	OptionLibName = "lib-name"
 	// OptionName is name option.

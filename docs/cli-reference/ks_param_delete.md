@@ -36,7 +36,6 @@ ks param delete guestbook replicas --env=dev
 ```
       --env string   Specify environment to delete parameter from
   -h, --help         help for delete
-  -i, --index int    Index in manifest
 ```
 
 ### Options inherited from parent commands

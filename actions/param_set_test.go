@@ -33,42 +33,13 @@ func TestParamSet(t *testing.T) {
 		value := "3"
 
 		c := &cmocks.Component{}
-		c.On("SetParam", []string{"replicas"}, 3, component.ParamOptions{}).Return(nil)
+		c.On("SetParam", []string{"replicas"}, 3).Return(nil)
 
 		in := map[string]interface{}{
 			OptionApp:   appMock,
 			OptionName:  componentName,
 			OptionPath:  path,
 			OptionValue: value,
-		}
-
-		a, err := NewParamSet(in)
-		require.NoError(t, err)
-
-		a.resolvePathFn = func(app.App, string) (component.Module, component.Component, error) {
-			return nil, c, nil
-		}
-
-		err = a.Run()
-		require.NoError(t, err)
-	})
-}
-
-func TestParamSet_index(t *testing.T) {
-	withApp(t, func(appMock *amocks.App) {
-		componentName := "deployment"
-		path := "replicas"
-		value := "3"
-
-		c := &cmocks.Component{}
-		c.On("SetParam", []string{"replicas"}, 3, component.ParamOptions{Index: 1}).Return(nil)
-
-		in := map[string]interface{}{
-			OptionApp:   appMock,
-			OptionName:  componentName,
-			OptionPath:  path,
-			OptionValue: value,
-			OptionIndex: 1,
 		}
 
 		a, err := NewParamSet(in)

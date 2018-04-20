@@ -35,8 +35,6 @@ type ParamOptions struct {
 // Summary summarizes items found in components.
 type Summary struct {
 	ComponentName string
-	IndexStr      string
-	Index         int
 	Type          string
 	APIVersion    string
 	Kind          string
@@ -51,16 +49,16 @@ func (s *Summary) typeSpec() (*schema.TypeSpec, error) {
 // Component is a ksonnet Component interface.
 type Component interface {
 	// DeleteParam deletes a component parameter.
-	DeleteParam(path []string, options ParamOptions) error
+	DeleteParam(path []string) error
 	// Name is the component name.
 	Name(wantsNamedSpaced bool) string
 	// Params returns a list of all parameters for a component. If envName is a
 	// blank string, it will report the local parameters.
 	Params(envName string) ([]ModuleParameter, error)
 	// SetParams sets a component paramaters.
-	SetParam(path []string, value interface{}, options ParamOptions) error
+	SetParam(path []string, value interface{}) error
 	// Summarize returns a summary of the component.
-	Summarize() ([]Summary, error)
+	Summarize() (Summary, error)
 	// ToMap converts a component to a map of Jsonnet objects. The map map key is
 	// the component name.
 	ToMap(envName string) (map[string]ast.Node, error)

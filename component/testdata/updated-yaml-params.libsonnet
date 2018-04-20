@@ -2,7 +2,7 @@
   global: {
   },
   components: {
-    "certificate-crd-0": {
+    "certificate-crd": {
       spec: {
         version: "v2",
       },

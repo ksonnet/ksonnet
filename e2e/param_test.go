@@ -175,7 +175,7 @@ var _ = Describe("ks param", func() {
 					o := a.runKs("import", "-f", deployment)
 					assertExitStatus(o, 0)
 
-					o = a.runKs("param", "set", "deployment", "metadata.labels", `{"hello": "world"}`)
+					o = a.runKs("param", "set", "deployment-nginx-deployment", "metadata.labels", `{"hello": "world"}`)
 					assertExitStatus(o, 0)
 				})
 

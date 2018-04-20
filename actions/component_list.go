@@ -110,28 +110,24 @@ func (cl *ComponentList) listComponents(components []component.Component) {
 func (cl *ComponentList) listComponentsWide(components []component.Component) error {
 	var rows [][]string
 	for _, c := range components {
-		summaries, err := c.Summarize()
+		summary, err := c.Summarize()
 		if err != nil {
 			return err
 		}
 
-		for _, summary := range summaries {
-			row := []string{
-				summary.ComponentName,
-				summary.Type,
-				summary.IndexStr,
-				summary.APIVersion,
-				summary.Kind,
-				summary.Name,
-			}
-
-			rows = append(rows, row)
-
+		row := []string{
+			summary.ComponentName,
+			summary.Type,
+			summary.APIVersion,
+			summary.Kind,
+			summary.Name,
 		}
+
+		rows = append(rows, row)
 	}
 
 	table := table.New(cl.out)
-	table.SetHeader([]string{"component", "type", "index", "apiversion", "kind", "name"})
+	table.SetHeader([]string{"component", "type", "apiversion", "kind", "name"})
 	table.AppendBulk(rows)
 	table.Render()
 

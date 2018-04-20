@@ -134,9 +134,9 @@ func (pl *ParamList) collectParams(module component.Module) ([]component.ModuleP
 func (pl *ParamList) print(params []component.ModuleParameter) error {
 	table := table.New(pl.out)
 
-	table.SetHeader([]string{"COMPONENT", "INDEX", "PARAM", "VALUE"})
+	table.SetHeader([]string{"COMPONENT", "PARAM", "VALUE"})
 	for _, data := range params {
-		table.Append([]string{data.Component, data.Index, data.Key, data.Value})
+		table.Append([]string{data.Component, data.Key, data.Value})
 	}
 
 	return table.Render()
