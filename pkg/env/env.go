@@ -16,6 +16,7 @@
 package env
 
 import (
+	"encoding/json"
 	"path/filepath"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
@@ -66,11 +67,17 @@ func Evaluate(a app.App, envName, components, paramsStr string) (string, error) 
 		filepath.Join(a.Root(), "vendor"),
 		libPath,
 	}
+
+	envCode, err := environmentsCode(a, envName)
+	if err != nil {
+		return "", err
+	}
+
+	vm.ExtCode("__ksonnet/environments", envCode)
 	vm.ExtCode("__ksonnet/components", components)
 	vm.ExtCode("__ksonnet/params", paramsStr)
 
 	return vm.EvaluateSnippet(envFileName, snippet)
-
 }
 
 func envRoot(a app.App, envName string) (string, error) {
@@ -90,4 +97,23 @@ func Path(a app.App, envName string, path ...string) (string, error) {
 	}
 
 	return filepath.Join(append([]string{base}, path...)...), nil
+}
+
+func environmentsCode(a app.App, envName string) (string, error) {
+	envDetails, err := a.Environment(envName)
+	if err != nil {
+		return "", err
+	}
+
+	dest := map[string]string{
+		"server":    envDetails.Destination.Server,
+		"namespace": envDetails.Destination.Namespace,
+	}
+
+	marshalledDestination, err := json.Marshal(&dest)
+	if err != nil {
+		return "", err
+	}
+
+	return string(marshalledDestination), nil
 }
