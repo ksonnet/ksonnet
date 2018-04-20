@@ -25,7 +25,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/ksonnet/ksonnet/pkg/prototype/snippet"
 	"github.com/ksonnet/ksonnet/pkg/prototype/snippet/jsonnet"
-	str "github.com/ksonnet/ksonnet/strings"
+	str "github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/spf13/cobra"
 )
 

@@ -32,7 +32,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/env"
 	"github.com/ksonnet/ksonnet/pkg/pipeline"
 	"github.com/ksonnet/ksonnet/pkg/plugin"
-	str "github.com/ksonnet/ksonnet/strings"
+	str "github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/ksonnet/ksonnet/template"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"

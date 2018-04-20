@@ -27,7 +27,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/ksonnet/ksonnet/pkg/prototype/snippet"
 	"github.com/ksonnet/ksonnet/pkg/prototype/snippet/jsonnet"
-	strutil "github.com/ksonnet/ksonnet/strings"
+	strutil "github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 )

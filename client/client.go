@@ -29,7 +29,7 @@ import (
 	"time"
 
 	"github.com/ksonnet/ksonnet/metadata/app"
-	str "github.com/ksonnet/ksonnet/strings"
+	str "github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/ksonnet/ksonnet/utils"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
