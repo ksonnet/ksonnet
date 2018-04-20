@@ -17,7 +17,7 @@
 package mocks
 
 import app "github.com/ksonnet/ksonnet/metadata/app"
-import component "github.com/ksonnet/ksonnet/component"
+import "github.com/ksonnet/ksonnet/pkg/component"
 import mock "github.com/stretchr/testify/mock"
 import params "github.com/ksonnet/ksonnet/metadata/params"
 import prototype "github.com/ksonnet/ksonnet/prototype"

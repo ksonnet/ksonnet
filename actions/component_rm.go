@@ -16,8 +16,8 @@
 package actions
 
 import (
-	"github.com/ksonnet/ksonnet/component"
 	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/component"
 )
 
 // RunComponentRm runs `component list`

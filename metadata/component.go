@@ -19,9 +19,9 @@ import (
 	"os"
 	"path"
 
-	"github.com/ksonnet/ksonnet/component"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	param "github.com/ksonnet/ksonnet/metadata/params"
+	"github.com/ksonnet/ksonnet/pkg/component"
 	"github.com/ksonnet/ksonnet/prototype"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"

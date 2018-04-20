@@ -18,9 +18,9 @@ package actions
 import (
 	"strings"
 
-	"github.com/ksonnet/ksonnet/component"
 	"github.com/ksonnet/ksonnet/metadata/app"
 	mp "github.com/ksonnet/ksonnet/metadata/params"
+	"github.com/ksonnet/ksonnet/pkg/component"
 	"github.com/ksonnet/ksonnet/pkg/env"
 	"github.com/ksonnet/ksonnet/pkg/util/jsonnet"
 	"github.com/pkg/errors"

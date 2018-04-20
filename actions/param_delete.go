@@ -18,8 +18,8 @@ package actions
 import (
 	"strings"
 
-	"github.com/ksonnet/ksonnet/component"
 	"github.com/ksonnet/ksonnet/metadata/app"
+	"github.com/ksonnet/ksonnet/pkg/component"
 	"github.com/ksonnet/ksonnet/pkg/env"
 	"github.com/pkg/errors"
 )
