@@ -22,7 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/ksonnet/ksonnet/client"
+	"github.com/ksonnet/ksonnet/pkg/client"
 )
 
 var (

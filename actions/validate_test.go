@@ -20,9 +20,9 @@ import (
 
 	swagger "github.com/emicklei/go-restful-swagger12"
 	"github.com/googleapis/gnostic/OpenAPIv2"
-	"github.com/ksonnet/ksonnet/client"
 	"github.com/ksonnet/ksonnet/pkg/app"
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/client"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/ksonnet/ksonnet/client"
 	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/ksonnet/ksonnet/pkg/client"
 	"github.com/ksonnet/ksonnet/utils"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"

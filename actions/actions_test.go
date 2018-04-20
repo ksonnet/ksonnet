@@ -22,8 +22,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ksonnet/ksonnet/client"
 	"github.com/ksonnet/ksonnet/pkg/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/client"
 	cmocks "github.com/ksonnet/ksonnet/pkg/component/mocks"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 	rmocks "github.com/ksonnet/ksonnet/pkg/registry/mocks"

@@ -24,8 +24,8 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/ksonnet/ksonnet/client"
 	"github.com/ksonnet/ksonnet/metadata"
+	"github.com/ksonnet/ksonnet/pkg/client"
 	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 	"github.com/ksonnet/ksonnet/pkg/pipeline"
 )
