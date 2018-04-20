@@ -161,6 +161,9 @@ func (p *printer) print(n interface{}) {
 	case *ast.Import:
 		p.writeString("import ")
 		p.print(t.File)
+	case *ast.ImportStr:
+		p.writeString("importstr ")
+		p.print(t.File)
 	case *ast.Index:
 		p.handleIndex(t)
 	case *ast.Local:
