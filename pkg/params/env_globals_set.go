@@ -66,12 +66,28 @@ func (egs *EnvGlobalsSet) Set(snippet string, p params.Params) (string, error) {
 
 func (egs *EnvGlobalsSet) setParams(obj *astext.Object, p params.Params) error {
 	for key := range p {
-		decoded, err := jsonnet.DecodeValue(p[key])
-		if err != nil {
-			return err
+
+		v := p[key]
+		if p1, ok := v.(params.Params); ok {
+			// convert params to map[string]interface{} so nodemaker can deal with it.
+			m := make(map[string]interface{})
+			for k1, v1 := range p1 {
+				if s, ok := v1.(string); ok {
+					decoded, err := jsonnet.DecodeValue(s)
+					if err != nil {
+						return err
+					}
+
+					m[k1] = decoded
+				} else {
+					m[k1] = v1
+				}
+
+			}
+			v = m
 		}
 
-		value, err := nm.ValueToNoder(decoded)
+		value, err := nm.ValueToNoder(v)
 		if err != nil {
 			return err
 		}

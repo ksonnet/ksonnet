@@ -203,6 +203,7 @@ func (p *Pipeline) moduleObjects(module component.Module, filter []string) ([]*u
 			if err != nil {
 				return nil, errors.Wrap(err, "patch Jsonnet component")
 			}
+
 		case "yaml":
 			patched, err = params.PatchJSON(string(data), envParamData, k)
 			if err != nil {

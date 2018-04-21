@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 
@@ -32,7 +33,7 @@ func Test_Create(t *testing.T) {
 	cases := []struct {
 		name          string
 		isErr         bool
-		params        map[string]string
+		params        params.Params
 		templateType  prototype.TemplateType
 		componentDir  string
 		ns            string
@@ -40,7 +41,7 @@ func Test_Create(t *testing.T) {
 	}{
 		{
 			name: "jsonnet component",
-			params: map[string]string{
+			params: params.Params{
 				"name": "name",
 			},
 			templateType:  prototype.Jsonnet,
@@ -49,7 +50,7 @@ func Test_Create(t *testing.T) {
 		},
 		{
 			name: "yaml component",
-			params: map[string]string{
+			params: params.Params{
 				"name": "name",
 			},
 			templateType:  prototype.YAML,
@@ -58,7 +59,7 @@ func Test_Create(t *testing.T) {
 		},
 		{
 			name: "json component",
-			params: map[string]string{
+			params: params.Params{
 				"name": "name",
 			},
 			templateType:  prototype.JSON,
@@ -67,7 +68,7 @@ func Test_Create(t *testing.T) {
 		},
 		{
 			name: "invalid component",
-			params: map[string]string{
+			params: params.Params{
 				"name": "name",
 			},
 			templateType: prototype.TemplateType("unknown"),
@@ -75,7 +76,7 @@ func Test_Create(t *testing.T) {
 		},
 		{
 			name:          "nested/component",
-			params:        map[string]string{"name": "name"},
+			params:        params.Params{"name": "name"},
 			templateType:  prototype.Jsonnet,
 			componentName: "nested/component",
 			componentDir:  "/components/nested",

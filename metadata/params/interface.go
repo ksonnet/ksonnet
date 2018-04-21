@@ -17,6 +17,7 @@ package params
 
 import (
 	"bytes"
+	"strings"
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
@@ -26,7 +27,48 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Params map[string]string
+// Params are ksonnet params.
+type Params map[string]interface{}
+
+// StringValue retrieves the string value for a param.
+func (p Params) StringValue(key string) (string, error) {
+	v, ok := p[key]
+	if !ok {
+		return "", errors.Errorf("key %q does not exist", key)
+	}
+
+	s, ok := v.(string)
+	if !ok {
+		return "", errors.Errorf("key %q is not a string", key)
+	}
+
+	return s, nil
+}
+
+// FromPath converts a key and a value to a Param. The key can contain dots.
+func FromPath(key string, value interface{}, currentPath ...string) (Params, error) {
+
+	if currentPath == nil {
+		currentPath = strings.Split(key, ".")
+	}
+
+	if len(currentPath) == 1 {
+		m := map[string]interface{}{
+			currentPath[0]: value,
+		}
+		return m, nil
+	}
+
+	k, currentPath := currentPath[0], currentPath[1:]
+
+	child, err := FromPath("", value, currentPath...)
+	if err != nil {
+		return Params{}, err
+	}
+
+	p := Params{k: child}
+	return p, nil
+}
 
 // AppendComponent takes the following params
 //
