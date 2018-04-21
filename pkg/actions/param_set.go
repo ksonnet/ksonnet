@@ -143,8 +143,9 @@ func setEnv(ksApp app.App, envName, name, pName, value string) error {
 }
 
 func setGlobalEnv(ksApp app.App, envName, pName, value string) error {
-	p := mp.Params{
-		pName: value,
+	p, err := mp.FromPath(pName, value)
+	if err != nil {
+		return err
 	}
 
 	return env.SetGlobalParams(ksApp, envName, p)

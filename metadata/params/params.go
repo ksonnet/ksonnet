@@ -174,15 +174,18 @@ func writeParams(indent int, params Params) string {
 	var buffer bytes.Buffer
 	buffer.WriteString("\n")
 	for i, key := range keys {
-		param := params[key]
-		key := str.QuoteNonASCII(key)
+		param, err := params.StringValue(key)
+		if err != nil {
+			param = ""
+		}
+		key = str.QuoteNonASCII(key)
 
 		if strings.HasPrefix(param, "|||\n") {
 			// every line in a block string needs to be indented
 			lines := strings.Split(param, "\n")
 			buffer.WriteString(fmt.Sprintf("%s%s: %s\n", indentBuffer.String(), key, lines[0]))
-			for i := 1; i < len(lines)-1; i++ {
-				buffer.WriteString(fmt.Sprintf("  %s%s\n", indentBuffer.String(), lines[i]))
+			for j := 1; j < len(lines)-1; j++ {
+				buffer.WriteString(fmt.Sprintf("  %s%s\n", indentBuffer.String(), lines[j]))
 			}
 			buffer.WriteString(fmt.Sprintf("%s|||,", indentBuffer.String()))
 		} else {

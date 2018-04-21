@@ -129,19 +129,24 @@ func (pl *PrototypeUse) Run() error {
 		flags.Set("name", componentName)
 	}
 
-	params, err := getParameters(p, flags)
+	rawParams, err := getParameters(p, flags)
 	if err != nil {
 		return err
 	}
 
 	_, prototypeName := component.ExtractModuleComponent(pl.app, componentName)
 
-	text, err := expandPrototype(p, templateType, params, prototypeName)
+	text, err := expandPrototype(p, templateType, rawParams, prototypeName)
 	if err != nil {
 		return err
 	}
 
-	_, err = pl.createComponentFn(pl.app, componentName, text, params, templateType)
+	ps := param.Params{}
+	for k, v := range rawParams {
+		ps[k] = v
+	}
+
+	_, err = pl.createComponentFn(pl.app, componentName, text, ps, templateType)
 	if err != nil {
 		return errors.Wrap(err, "create component")
 	}

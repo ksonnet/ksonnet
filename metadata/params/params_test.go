@@ -25,6 +25,39 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestFromPath(t *testing.T) {
+	cases := []struct {
+		name     string
+		value    interface{}
+		expected Params
+	}{
+		{
+			name:  "key",
+			value: "value",
+			expected: Params{
+				"key": "value",
+			},
+		},
+		{
+			name:  "metadata.name",
+			value: "value",
+			expected: Params{
+				"metadata": Params{
+					"name": "value",
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			p, err := FromPath(tc.name, tc.value)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expected, p)
+		})
+	}
+}
+
 func TestAppendComponentParams(t *testing.T) {
 	tests := []struct {
 		componentName string
