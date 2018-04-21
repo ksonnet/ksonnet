@@ -214,7 +214,6 @@ func (j *Jsonnet) Params(envName string) ([]ModuleParameter, error) {
 		np := ModuleParameter{
 			Component: j.Name(false),
 			Key:       k,
-			Index:     "0",
 			Value:     vStr,
 		}
 
@@ -254,16 +253,14 @@ func (j *Jsonnet) Summarize() (Summary, error) {
 	}, nil
 }
 
-// ToMap converts a Jsonnet component to a map of jsonnet objects.
-func (j *Jsonnet) ToMap(envName string) (map[string]ast.Node, error) {
+// ToNode converts a Jsonnet component to a Jsonnet node.
+func (j *Jsonnet) ToNode(envName string) (string, ast.Node, error) {
 	n, err := jsonnet.ImportNodeFromFs(j.source, j.app.Fs())
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
-	return map[string]ast.Node{
-		j.Name(false): n,
-	}, nil
+	return j.Name(false), n, nil
 }
 
 func stringValue(n ast.Node) (string, error) {

@@ -93,43 +93,36 @@ func TestJsonnet_Params(t *testing.T) {
 		expected := []ModuleParameter{
 			{
 				Component: "guestbook-ui",
-				Index:     "0",
 				Key:       "containerPort",
 				Value:     "80",
 			},
 			{
 				Component: "guestbook-ui",
-				Index:     "0",
 				Key:       "image",
 				Value:     `"gcr.io/heptio-images/ks-guestbook-demo:0.1"`,
 			},
 			{
 				Component: "guestbook-ui",
-				Index:     "0",
 				Key:       "name",
 				Value:     `"guiroot"`,
 			},
 			{
 				Component: "guestbook-ui",
-				Index:     "0",
 				Key:       "obj",
 				Value:     `{"a":"b"}`,
 			},
 			{
 				Component: "guestbook-ui",
-				Index:     "0",
 				Key:       "replicas",
 				Value:     "1",
 			},
 			{
 				Component: "guestbook-ui",
-				Index:     "0",
 				Key:       "servicePort",
 				Value:     "80",
 			},
 			{
 				Component: "guestbook-ui",
-				Index:     "0",
 				Key:       "type",
 				Value:     `"ClusterIP"`,
 			},

@@ -59,9 +59,8 @@ type Component interface {
 	SetParam(path []string, value interface{}) error
 	// Summarize returns a summary of the component.
 	Summarize() (Summary, error)
-	// ToMap converts a component to a map of Jsonnet objects. The map map key is
-	// the component name.
-	ToMap(envName string) (map[string]ast.Node, error)
+	// ToNode converts a component to a Jsonnet node.
+	ToNode(envName string) (string, ast.Node, error)
 	// Type returns the type of component.
 	Type() string
 }
