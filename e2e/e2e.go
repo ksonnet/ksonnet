@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,7 +66,7 @@ func newE2e() *e2e {
 }
 
 func (e *e2e) createNamespace() string {
-	name := fmt.Sprintf("ks-e2e-%s", lowerRandString(6))
+	name := fmt.Sprintf("ks-e2e-%s", strings.LowerRand(6))
 
 	c, err := corev1.NewForConfig(e.restConfig)
 	Expect(err).ToNot(HaveOccurred())
@@ -138,7 +139,7 @@ func (e *e2e) buildKs() {
 }
 
 func (e *e2e) initApp(options *initOptions) app {
-	appID := randString(6)
+	appID := strings.Rand(6)
 	appDir := filepath.Join(e.root, appID)
 
 	opts := []string{

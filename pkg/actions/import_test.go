@@ -63,7 +63,7 @@ func TestImport_http(t *testing.T) {
 		require.NoError(t, err)
 
 		a.createComponentFn = func(_ app.App, name, text string, p params.Params, templateType prototype.TemplateType) (string, error) {
-			assert.Equal(t, "/service-my-service", name)
+			assert.Contains(t, name, "/service-my-service-")
 			assert.Equal(t, string(serviceData), text)
 			assert.Equal(t, params.Params{}, p)
 			assert.Equal(t, prototype.YAML, templateType)
@@ -98,7 +98,7 @@ func TestImport_file(t *testing.T) {
 		require.NoError(t, err)
 
 		a.createComponentFn = func(_ app.App, name, text string, p params.Params, templateType prototype.TemplateType) (string, error) {
-			assert.Equal(t, "/service-my-service", name)
+			assert.Contains(t, name, "/service-my-service-")
 			assert.Equal(t, string(serviceData), text)
 			assert.Equal(t, params.Params{}, p)
 			assert.Equal(t, prototype.YAML, templateType)
@@ -132,7 +132,7 @@ func TestImport_directory(t *testing.T) {
 		require.NoError(t, err)
 
 		a.createComponentFn = func(_ app.App, name, text string, p params.Params, templateType prototype.TemplateType) (string, error) {
-			assert.Equal(t, "/service-my-service", name)
+			assert.Contains(t, name, "/service-my-service-")
 			assert.Equal(t, string(serviceData), text)
 			assert.Equal(t, params.Params{}, p)
 			assert.Equal(t, prototype.YAML, templateType)
