@@ -18,7 +18,6 @@ package component
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"path"
 	"path/filepath"
 	"sort"
@@ -30,7 +29,6 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/params"
 	"github.com/ksonnet/ksonnet/pkg/schema"
 	jsonnetutil "github.com/ksonnet/ksonnet/pkg/util/jsonnet"
-	utilyaml "github.com/ksonnet/ksonnet/pkg/util/yaml"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -114,7 +112,7 @@ func (y *YAML) Params(envName string) ([]ModuleParameter, error) {
 		return nil, err
 	}
 
-	return y.paramValues(y.Name(false), "", valueMap, componentParams, nil)
+	return y.paramValues(y.Name(false), valueMap, componentParams, nil)
 }
 
 func isLeaf(path []string, key string, valueMap map[string]schema.Values) (string, bool) {
@@ -128,7 +126,7 @@ func isLeaf(path []string, key string, valueMap map[string]schema.Values) (strin
 	return "", false
 }
 
-func (y *YAML) paramValues(componentName, index string, valueMap map[string]schema.Values, paramMap map[string]interface{}, path []string) ([]ModuleParameter, error) {
+func (y *YAML) paramValues(componentName string, valueMap map[string]schema.Values, paramMap map[string]interface{}, path []string) ([]ModuleParameter, error) {
 	y.log().WithFields(logrus.Fields{
 		"prop-name": componentName,
 		"value-map": fmt.Sprintf("%#v", valueMap),
@@ -145,7 +143,6 @@ func (y *YAML) paramValues(componentName, index string, valueMap map[string]sche
 				s = fmt.Sprintf("%v", v)
 				p := ModuleParameter{
 					Component: componentName,
-					Index:     index,
 					Key:       childPath,
 					Value:     s,
 				}
@@ -160,14 +157,13 @@ func (y *YAML) paramValues(componentName, index string, valueMap map[string]sche
 				s = string(b)
 				p := ModuleParameter{
 					Component: componentName,
-					Index:     index,
 					Key:       childPath,
 					Value:     s,
 				}
 				params = append(params, p)
 			} else {
 				childPath := append(path, k)
-				childParams, err := y.paramValues(componentName, index, valueMap, t, childPath)
+				childParams, err := y.paramValues(componentName, valueMap, t, childPath)
 				if err != nil {
 					return nil, err
 				}
@@ -182,7 +178,6 @@ func (y *YAML) paramValues(componentName, index string, valueMap map[string]sche
 					childParams = []ModuleParameter{
 						{
 							Component: componentName,
-							Index:     index,
 							Key:       strings.Join(childPath, "."),
 							Value:     s,
 						},
@@ -200,7 +195,6 @@ func (y *YAML) paramValues(componentName, index string, valueMap map[string]sche
 				s = string(b)
 				p := ModuleParameter{
 					Component: componentName,
-					Index:     index,
 					Key:       childPath,
 					Value:     s,
 				}
@@ -356,46 +350,34 @@ func (y *YAML) Summarize() (Summary, error) {
 	}, nil
 }
 
-// ToMap converts a YAML component to a map of Jonnet objects.
-func (y *YAML) ToMap(envName string) (map[string]ast.Node, error) {
-	readers, err := utilyaml.Decode(y.app.Fs(), y.source)
+// ToNode converts a YAML component to a Jonnet node.
+func (y *YAML) ToNode(envName string) (string, ast.Node, error) {
+	key := y.Name(false)
+	data, err := afero.ReadFile(y.app.Fs(), y.source)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
-	out := make(map[string]ast.Node)
-
-	for i, r := range readers {
-		key := fmt.Sprintf("%s-%d", y.Name(false), i)
-		data, err := ioutil.ReadAll(r)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(data) == 0 {
-			continue
-		}
-
-		data, err = yaml.YAMLToJSON(data)
-		if err != nil {
-			return nil, err
-		}
-
-		componentName := fmt.Sprintf("%s-%d", y.Name(false), i)
-		patchedData, err := y.applyParams(componentName, string(data))
-		if err != nil {
-			return nil, err
-		}
-
-		o, err := jsonnetutil.Parse(y.source, patchedData)
-		if err != nil {
-			return nil, err
-		}
-
-		out[key] = o
+	if len(data) == 0 {
+		return "", nil, errors.New("object was empty")
 	}
 
-	return out, nil
+	data, err = yaml.YAMLToJSON(data)
+	if err != nil {
+		return "", nil, err
+	}
+
+	patchedData, err := y.applyParams(key, string(data))
+	if err != nil {
+		return "", nil, err
+	}
+
+	o, err := jsonnetutil.Parse(y.source, patchedData)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return key, o, nil
 }
 
 func (y *YAML) applyParams(componentName, data string) (string, error) {

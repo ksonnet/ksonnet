@@ -155,7 +155,6 @@ func (m *FilesystemModule) Dir() string {
 // ModuleParameter is a module parameter.
 type ModuleParameter struct {
 	Component string
-	Index     string
 	Key       string
 	Value     string
 }
@@ -164,7 +163,6 @@ type ModuleParameter struct {
 // are the same if the component, index, and key match.
 func (mp *ModuleParameter) IsSameType(other ModuleParameter) bool {
 	return mp.Component == other.Component &&
-		mp.Index == other.Index &&
 		mp.Key == other.Key
 }
 
@@ -365,22 +363,20 @@ func (m *FilesystemModule) Render(envName string, componentNames ...string) (*as
 	componentMap := make(map[string]string)
 
 	for _, c := range components {
-		m, err := c.ToMap(envName)
+		name, node, err := c.ToNode(envName)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		for k, v := range m {
-			f, err := astext.CreateField(k)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			f.Hide = ast.ObjectFieldInherit
-
-			f.Expr2 = v
-			doc.Fields = append(doc.Fields, *f)
+		f, err := astext.CreateField(name)
+		if err != nil {
+			return nil, nil, err
 		}
+
+		f.Hide = ast.ObjectFieldInherit
+
+		f.Expr2 = node
+		doc.Fields = append(doc.Fields, *f)
 
 		componentMap[c.Name(false)] = c.Type()
 	}

@@ -30,7 +30,7 @@ import (
 
 func TestParamList(t *testing.T) {
 	moduleParams := []component.ModuleParameter{
-		{Component: "deployment", Index: "0", Key: "key", Value: `"value"`},
+		{Component: "deployment", Key: "key", Value: `"value"`},
 	}
 
 	module := &cmocks.Module{}

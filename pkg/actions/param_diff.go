@@ -95,7 +95,7 @@ func (pd *ParamDiff) checkDiff(env1, env2 []component.ModuleParameter) [][]strin
 		}
 		for _, mp2 := range env2 {
 			if mp1.IsSameType(mp2) && mp1.Value != mp2.Value {
-				rows = append(rows, []string{mp1.Component, mp1.Index, mp1.Key, mp1.Value, mp2.Value})
+				rows = append(rows, []string{mp1.Component, mp1.Key, mp1.Value, mp2.Value})
 			}
 		}
 	}
@@ -119,7 +119,7 @@ func (pd *ParamDiff) checkMissing(env1, env2 []component.ModuleParameter) [][]st
 		}
 
 		if !found {
-			rows = append(rows, []string{mp1.Component, mp1.Index, mp1.Key, mp1.Value})
+			rows = append(rows, []string{mp1.Component, mp1.Key, mp1.Value})
 		}
 	}
 
@@ -135,7 +135,7 @@ func (pd *ParamDiff) checkMissing(env1, env2 []component.ModuleParameter) [][]st
 		}
 
 		if !found {
-			rows = append(rows, []string{mp1.Component, mp1.Index, mp1.Key, "", mp1.Value})
+			rows = append(rows, []string{mp1.Component, mp1.Key, "", mp1.Value})
 		}
 	}
 
@@ -164,7 +164,7 @@ func (pd *ParamDiff) moduleParams(envName string) ([]component.ModuleParameter, 
 func (pd *ParamDiff) print(rows [][]string) error {
 	table := table.New(pd.out)
 
-	table.SetHeader([]string{"COMPONENT", "INDEX", "PARAM", "ENV1", "ENV2"})
+	table.SetHeader([]string{"COMPONENT", "PARAM", "ENV1", "ENV2"})
 	table.AppendBulk(rows)
 
 	return table.Render()

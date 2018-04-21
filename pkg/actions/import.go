@@ -32,6 +32,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/component"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/ksonnet/ksonnet/pkg/schema"
+	utilstrings "github.com/ksonnet/ksonnet/pkg/util/strings"
 	utilyaml "github.com/ksonnet/ksonnet/pkg/util/yaml"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
@@ -235,7 +236,7 @@ func (i *Import) createYAML(fileName, base, ext string) error {
 			return errors.Errorf("unable to find metadata name of object in %s", fileName)
 		}
 
-		componentName := fmt.Sprintf("%s-%s", strings.ToLower(ts.Kind()), name)
+		componentName := fmt.Sprintf("%s-%s-%s", strings.ToLower(ts.Kind()), name, utilstrings.LowerRand(5))
 		if err = i.createComponentFromData(componentName, string(data), prototype.YAML); err != nil {
 			return err
 		}

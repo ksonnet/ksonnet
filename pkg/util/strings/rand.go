@@ -1,4 +1,4 @@
-// Copyright 2018 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,7 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package e2e
+package strings
 
 import (
 	"math/rand"
@@ -30,7 +30,8 @@ const (
 
 var randSrc = rand.NewSource(time.Now().UnixNano())
 
-func randString(n int) string {
+// Rand generates a random string of lower and upper case letters n characters long.
+func Rand(n int) string {
 	b := make([]byte, n)
 	for i, cache, remain := n-1, randSrc.Int63(), letterIdxMax; i >= 0; {
 		if remain == 0 {
@@ -47,7 +48,8 @@ func randString(n int) string {
 	return string(b)
 }
 
-func lowerRandString(n int) string {
+// LowerRand generates a random string of lower case letters n characters long.
+func LowerRand(n int) string {
 	b := make([]byte, n)
 	for i, cache, remain := n-1, randSrc.Int63(), letterIdxMax; i >= 0; {
 		if remain == 0 {
