@@ -115,13 +115,13 @@ func (p *Pipeline) EnvParameters(module string) (string, error) {
 
 // Components returns the components that belong to this pipeline.
 func (p *Pipeline) Components(filter []string) ([]component.Component, error) {
-	namespaces, err := p.Modules()
+	modules, err := p.Modules()
 	if err != nil {
 		return nil, err
 	}
 
 	components := make([]component.Component, 0)
-	for _, ns := range namespaces {
+	for _, ns := range modules {
 		members, err := p.cm.Components(ns)
 		if err != nil {
 			return nil, err
@@ -184,6 +184,12 @@ func (p *Pipeline) moduleObjects(module component.Module, filter []string) ([]*u
 	ret := make([]runtime.Object, 0, len(m))
 
 	for k, v := range m {
+		if len(filter) != 0 {
+			if !stringInSlice(k, filter) {
+				continue
+			}
+		}
+
 		data, err := json.Marshal(v)
 		if err != nil {
 			return nil, err
