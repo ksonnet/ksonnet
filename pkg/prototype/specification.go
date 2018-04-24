@@ -282,7 +282,7 @@ const (
 // ParseTemplateType attempts to parse a string as a `TemplateType`.
 func ParseTemplateType(t string) (TemplateType, error) {
 	switch strings.ToLower(t) {
-	case "yaml":
+	case "yaml", "yml":
 		return YAML, nil
 	case "json":
 		return JSON, nil
