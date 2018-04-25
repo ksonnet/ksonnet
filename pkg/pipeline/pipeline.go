@@ -106,9 +106,10 @@ func (p *Pipeline) EnvParameters(module string) (string, error) {
 	}
 
 	vm := jsonnet.NewVM()
-	vm.JPaths = []string{
+	vm.AddJPath(
 		env.MakePath(p.app.Root()),
-		filepath.Join(p.app.Root(), "vendor")}
+		filepath.Join(p.app.Root(), "vendor"),
+	)
 	vm.ExtCode("__ksonnet/params", paramsStr)
 	return vm.EvaluateSnippet("snippet", string(envParams))
 }
@@ -170,6 +171,7 @@ func (p *Pipeline) moduleObjects(module component.Module, filter []string) ([]*u
 		return nil, err
 	}
 
+	// evaluate module with jsonnet.
 	evaluated, err := p.evaluateEnvFn(p.app, p.envName, buf.String(), envParamData)
 	if err != nil {
 		return nil, err

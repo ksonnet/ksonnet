@@ -45,6 +45,10 @@ const (
 	OptionEnvName1 = "env-name-1"
 	// OptionEnvName2 is envName1. Used for param diff.
 	OptionEnvName2 = "env-name-2"
+	// OptionExtVarFiles is jsonnet ext var files.
+	OptionExtVarFiles = "ext-vars-files"
+	// OptionExtVars is jsonnet ext vars.
+	OptionExtVars = "ext-vars"
 	// OptionFormat is format option.
 	OptionFormat = "format"
 	// OptionFs is fs option.
@@ -55,6 +59,8 @@ const (
 	OptionGlobal = "global"
 	// OptionGracePeriod is gracePeriod option.
 	OptionGracePeriod = "grace-period"
+	// OptionJPaths is jsonnet paths.
+	OptionJPaths = "jpaths"
 	// OptionLibName is libName.
 	OptionLibName = "lib-name"
 	// OptionName is name option.
@@ -87,6 +93,10 @@ const (
 	OptionSkipGc = "skip-gc"
 	// OptionSpecFlag is specFlag option. Used for setting k8s spec.
 	OptionSpecFlag = "spec-flag"
+	// OptionTlaVarFiles is jsonnet tla var files.
+	OptionTlaVarFiles = "tla-var-files"
+	// OptionTlaVars is jsonnet tla vars.
+	OptionTlaVars = "tla-vars"
 	// OptionUnset is unset option.
 	OptionUnset = "unset"
 	// OptionURI is uri option. Used for setting registry URI.

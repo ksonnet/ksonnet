@@ -35,14 +35,14 @@ type VMOpt func(*VM)
 
 // VM is a ksonnet wrapper for the jsonnet VM.
 type VM struct {
-	// JPaths are jsonnet library paths
-	JPaths []string
 	// UseMemoryImporter forces the vm to use a memory importer rather than the
 	// file import.
 	UseMemoryImporter bool
 	Fs                afero.Fs
 
+	jPaths   []string
 	extCodes map[string]string
+	extVars  map[string]string
 	tlaCodes map[string]string
 	tlaVars  map[string]string
 
@@ -53,8 +53,9 @@ type VM struct {
 // NewVM creates an instance of VM.
 func NewVM(opts ...VMOpt) *VM {
 	vm := &VM{
-		JPaths:   make([]string, 0),
+		jPaths:   make([]string, 0),
 		extCodes: make(map[string]string),
+		extVars:  make(map[string]string),
 		tlaCodes: make(map[string]string),
 		tlaVars:  make(map[string]string),
 
@@ -69,17 +70,27 @@ func NewVM(opts ...VMOpt) *VM {
 	return vm
 }
 
-// ExtCode sets ExtCode for the jsonnet VM.
+// AddJPath adds JPaths to the jsonnet VM.
+func (vm *VM) AddJPath(paths ...string) {
+	vm.jPaths = append(vm.jPaths, paths...)
+}
+
+// ExtCode adds ExtCode to the jsonnet VM.
 func (vm *VM) ExtCode(key, value string) {
 	vm.extCodes[key] = value
 }
 
-// TLACode sets TLACode for the jsonnet VM.
+// ExtVar adds ExtVar to the jsonnet VM.
+func (vm *VM) ExtVar(key, value string) {
+	vm.extVars[key] = value
+}
+
+// TLACode adds TLACode to the jsonnet VM.
 func (vm *VM) TLACode(key, value string) {
 	vm.tlaCodes[key] = value
 }
 
-// TLAVar sets TLAVar for the jsonnet VM.
+// TLAVar adds TLAVar to the jsonnet VM.
 func (vm *VM) TLAVar(key, value string) {
 	vm.tlaVars[key] = value
 }
@@ -93,7 +104,7 @@ func (vm *VM) EvaluateSnippet(name, snippet string) (string, error) {
 	now := time.Now()
 
 	fields := logrus.Fields{
-		"jPaths":  strings.Join(vm.JPaths, ", "),
+		"jPaths":  strings.Join(vm.jPaths, ", "),
 		"name":    name,
 		"snippet": snippet,
 	}
@@ -109,6 +120,12 @@ func (vm *VM) EvaluateSnippet(name, snippet string) (string, error) {
 	for k, v := range vm.extCodes {
 		jvm.ExtCode(k, v)
 		key := fmt.Sprintf("extCode#%s", k)
+		fields[key] = v
+	}
+
+	for k, v := range vm.extVars {
+		jvm.ExtVar(k, v)
+		key := fmt.Sprintf("extVar#%s", k)
 		fields[key] = v
 	}
 
@@ -135,7 +152,7 @@ func (vm *VM) EvaluateSnippet(name, snippet string) (string, error) {
 func (vm *VM) createImporter() (jsonnet.Importer, error) {
 	if !vm.UseMemoryImporter {
 		return &jsonnet.FileImporter{
-			JPaths: vm.JPaths,
+			JPaths: vm.jPaths,
 		}, nil
 	}
 
@@ -147,7 +164,7 @@ func (vm *VM) createImporter() (jsonnet.Importer, error) {
 		Data: make(map[string]string),
 	}
 
-	for _, jPath := range vm.JPaths {
+	for _, jPath := range vm.jPaths {
 		fis, err := afero.ReadDir(vm.Fs, jPath)
 		if err != nil {
 			return nil, err

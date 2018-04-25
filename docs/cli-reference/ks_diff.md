@@ -66,16 +66,14 @@ ks diff dev -c redis
 ### Options
 
 ```
-  -c, --component stringSlice         Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)
-      --diff-strategy string          Diff strategy, all or subset. (default "all")
-  -V, --ext-str stringSlice           Values of external variables
-      --ext-str-file stringSlice      Read external variable from a file
-  -h, --help                          help for diff
-  -J, --jpath stringSlice             Additional jsonnet library search path
-      --resolve-images string         Change implementation of resolveImage native function. One of: noop, registry (default "noop")
-      --resolve-images-error string   Action when resolveImage fails. One of ignore,warn,error (default "warn")
-  -A, --tla-str stringSlice           Values of top level arguments
-      --tla-str-file stringSlice      Read top level argument from a file
+  -c, --component stringSlice      Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)
+      --diff-strategy string       Diff strategy, all or subset. (default "all")
+  -V, --ext-str stringSlice        Values of external variables
+      --ext-str-file stringSlice   Read external variable from a file
+  -h, --help                       help for diff
+  -J, --jpath stringSlice          Additional jsonnet library search path
+  -A, --tla-str stringSlice        Values of top level arguments
+      --tla-str-file stringSlice   Read top level argument from a file
 ```
 
 ### Options inherited from parent commands

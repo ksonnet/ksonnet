@@ -35,6 +35,9 @@ import (
 )
 
 const (
+	// TypeYAML is a YAML component.
+	TypeYAML = "yaml"
+
 	paramsComponentRoot = "components"
 )
 
@@ -75,7 +78,7 @@ func (y *YAML) Name(wantsNameSpaced bool) string {
 
 // Type always returns "yaml".
 func (y *YAML) Type() string {
-	return "yaml"
+	return TypeYAML
 }
 
 // Params returns params for a component.
@@ -88,7 +91,6 @@ func (y *YAML) Params(envName string) ([]ModuleParameter, error) {
 	}
 
 	// find all the params for this component
-	// keys will look like `component-id`
 	paramsData, err := y.readParams(envName)
 	if err != nil {
 		return nil, err
@@ -211,8 +213,7 @@ func (y *YAML) paramValues(componentName string, valueMap map[string]schema.Valu
 
 // SetParam set parameter for a component.
 func (y *YAML) SetParam(path []string, value interface{}) error {
-	// TODO: make this work with env params
-	paramsData, err := y.readParams("")
+	paramsData, err := y.readModuleParams()
 	if err != nil {
 		return err
 	}
@@ -231,8 +232,7 @@ func (y *YAML) SetParam(path []string, value interface{}) error {
 
 // DeleteParam deletes a param.
 func (y *YAML) DeleteParam(path []string) error {
-	// TODO: make this work with env params
-	paramsData, err := y.readParams("")
+	paramsData, err := y.readModuleParams()
 	if err != nil {
 		return err
 	}
@@ -251,42 +251,13 @@ func (y *YAML) DeleteParam(path []string) error {
 
 func (y *YAML) readParams(envName string) (string, error) {
 	if envName == "" {
-		return y.readNamespaceParams()
+		return y.readModuleParams()
 	}
 
-	libPath, err := y.app.LibPath(envName)
-	if err != nil {
-		return "", err
-	}
-
-	ns, err := GetModule(y.app, y.module)
-	if err != nil {
-		return "", err
-	}
-
-	paramsStr, err := ns.ResolvedParams()
-	if err != nil {
-		return "", err
-	}
-
-	data, err := y.app.EnvironmentParams(envName)
-	if err != nil {
-		return "", err
-	}
-
-	envParams := upgradeParams(envName, data)
-
-	vm := jsonnetutil.NewVM()
-	vm.JPaths = []string{
-		libPath,
-		filepath.Join(y.app.Root(), "environments", envName),
-		filepath.Join(y.app.Root(), "vendor"),
-	}
-	vm.ExtCode("__ksonnet/params", paramsStr)
-	return vm.EvaluateSnippet("snippet", string(envParams))
+	return envParams(y.app, y.module, envName)
 }
 
-func (y *YAML) readNamespaceParams() (string, error) {
+func (y *YAML) readModuleParams() (string, error) {
 	b, err := afero.ReadFile(y.app.Fs(), y.paramsPath)
 	if err != nil {
 		return "", err
@@ -297,32 +268,6 @@ func (y *YAML) readNamespaceParams() (string, error) {
 
 func (y *YAML) writeParams(src string) error {
 	return afero.WriteFile(y.app.Fs(), y.paramsPath, []byte(src), 0644)
-}
-
-func (y *YAML) hasParams() (bool, error) {
-	dir := filepath.Dir(y.source)
-	paramsFile := filepath.Join(dir, "params.libsonnet")
-
-	exists, err := afero.Exists(y.app.Fs(), paramsFile)
-	if err != nil || !exists {
-		return false, nil
-	}
-
-	paramsObj, err := jsonnetutil.ImportFromFs(paramsFile, y.app.Fs())
-	if err != nil {
-		return false, errors.Wrap(err, "import params")
-	}
-
-	componentPath := []string{
-		paramsComponentRoot,
-		fmt.Sprintf("%s-0", y.Name(false)),
-	}
-	_, err = jsonnetutil.FindObject(paramsObj, componentPath)
-	if err != nil {
-		return false, nil
-	}
-
-	return true, nil
 }
 
 // Summarize generates a summary for a YAML component. For each manifest, it will

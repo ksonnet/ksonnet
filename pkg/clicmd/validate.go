@@ -16,6 +16,7 @@
 package clicmd
 
 import (
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
@@ -36,7 +37,7 @@ var (
 func init() {
 	RootCmd.AddCommand(validateCmd)
 	addEnvCmdFlags(validateCmd)
-	bindJsonnetFlags(validateCmd)
+	bindJsonnetFlags(validateCmd, "validate")
 	validateClientConfig = client.NewDefaultClientConfig()
 	validateClientConfig.BindClientGoFlags(validateCmd)
 
@@ -60,11 +61,15 @@ var validateCmd = &cobra.Command{
 			actions.OptionClientConfig:   validateClientConfig,
 		}
 
+		if err := extractJsonnetFlags("validate"); err != nil {
+			return errors.Wrap(err, "handle jsonnet flags")
+		}
+
 		return runAction(actionValidate, m)
 	},
 	Long: `
 The ` + "`validate`" + ` command checks that an application or file is compliant with the
-server API's Kubernetes specification. Note that this command actually communicates
+server APIs Kubernetes specification. Note that this command actually communicates
 *with* the server for the specified ` + "`<env-name>`" + `, so it only works if your
 $KUBECONFIG specifies a valid kubeconfig file.
 

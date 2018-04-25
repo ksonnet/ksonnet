@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-jsonnet/ast"
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/schema"
+	jsonnetutil "github.com/ksonnet/ksonnet/pkg/util/jsonnet"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
@@ -158,4 +159,42 @@ func MakePaths(a app.App, env string) ([]string, error) {
 	}
 
 	return cpl.Locate()
+}
+
+func envParams(a app.App, moduleName, envName string) (string, error) {
+	libPath, err := a.LibPath(envName)
+	if err != nil {
+		return "", err
+	}
+
+	ns, err := GetModule(a, moduleName)
+	if err != nil {
+		return "", err
+	}
+
+	paramsStr, err := ns.ResolvedParams()
+	if err != nil {
+		return "", err
+	}
+
+	data, err := a.EnvironmentParams(envName)
+	if err != nil {
+		return "", err
+	}
+
+	env, err := a.Environment(envName)
+	if err != nil {
+		return "", err
+	}
+
+	envParams := upgradeParams(envName, data)
+
+	vm := jsonnetutil.NewVM()
+	vm.AddJPath(
+		libPath,
+		env.MakePath(a.Root()),
+		filepath.Join(a.Root(), "vendor"),
+	)
+	vm.ExtCode("__ksonnet/params", paramsStr)
+	return vm.EvaluateSnippet("snippet", string(envParams))
 }

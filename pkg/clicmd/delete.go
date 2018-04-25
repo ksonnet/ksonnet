@@ -16,12 +16,11 @@
 package clicmd
 
 import (
-	"github.com/spf13/viper"
-
-	"github.com/spf13/cobra"
-
 	"github.com/ksonnet/ksonnet/pkg/actions"
 	"github.com/ksonnet/ksonnet/pkg/client"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const (
@@ -42,7 +41,7 @@ func init() {
 
 	deleteClientConfig = client.NewDefaultClientConfig()
 	deleteClientConfig.BindClientGoFlags(deleteCmd)
-	bindJsonnetFlags(deleteCmd)
+	bindJsonnetFlags(deleteCmd, "delete")
 
 	deleteCmd.Flags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
 	viper.BindPFlag(vDeleteComponent, deleteCmd.Flags().Lookup(flagComponent))
@@ -66,6 +65,10 @@ var deleteCmd = &cobra.Command{
 			actions.OptionComponentNames: viper.GetStringSlice(vDeleteComponent),
 			actions.OptionEnvName:        envName,
 			actions.OptionGracePeriod:    viper.GetInt64(vDeleteGracePeriod),
+		}
+
+		if err := extractJsonnetFlags("delete"); err != nil {
+			return errors.Wrap(err, "handle jsonnet flags")
 		}
 
 		return runAction(actionDelete, m)
