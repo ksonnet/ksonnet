@@ -247,6 +247,8 @@ func (p *printer) print(n interface{}) {
 		p.writeString("self")
 	case *ast.Var:
 		p.writeString(string(t.Id))
+	case *ast.LiteralNull:
+		p.writeString("null")
 	}
 }
 
