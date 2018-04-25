@@ -25,13 +25,17 @@ import (
 	"strings"
 
 	"github.com/google/go-jsonnet/ast"
-	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/params"
 	"github.com/ksonnet/ksonnet/pkg/util/jsonnet"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
+)
+
+const (
+	// TypeJsonnet is a Jsonnet component.
+	TypeJsonnet = "jsonnet"
 )
 
 // Jsonnet is a component base on jsonnet.
@@ -73,88 +77,12 @@ func (j *Jsonnet) Name(wantsNameSpaced bool) string {
 
 // Type always returns "jsonnet".
 func (j *Jsonnet) Type() string {
-	return "jsonnet"
-}
-
-func jsonWalk(obj interface{}) ([]interface{}, error) {
-	switch o := obj.(type) {
-	case map[string]interface{}:
-		if o["kind"] != nil && o["apiVersion"] != nil {
-			return []interface{}{o}, nil
-		}
-		ret := []interface{}{}
-		for _, v := range o {
-			children, err := jsonWalk(v)
-			if err != nil {
-				return nil, err
-			}
-			ret = append(ret, children...)
-		}
-		return ret, nil
-	case []interface{}:
-		ret := make([]interface{}, 0, len(o))
-		for _, v := range o {
-			children, err := jsonWalk(v)
-			if err != nil {
-				return nil, err
-			}
-			ret = append(ret, children...)
-		}
-		return ret, nil
-	default:
-		return nil, fmt.Errorf("Unexpected object structure: %T", o)
-	}
-}
-
-func (j *Jsonnet) evaluate(paramsStr, envName string) (string, error) {
-	libPath, err := j.app.LibPath(envName)
-	if err != nil {
-		return "", err
-	}
-
-	vm := jsonnet.NewVM()
-	if j.useJsonnetMemoryImporter {
-		vm.Fs = j.app.Fs()
-		vm.UseMemoryImporter = true
-	}
-
-	vm.JPaths = []string{
-		libPath,
-		filepath.Join(j.app.Root(), "vendor"),
-	}
-	vm.ExtCode("__ksonnet/params", paramsStr)
-
-	envDetails, err := j.app.Environment(envName)
-	if err != nil {
-		return "", err
-	}
-
-	dest := map[string]string{
-		"server":    envDetails.Destination.Server,
-		"namespace": envDetails.Destination.Namespace,
-	}
-
-	marshalledDestination, err := json.Marshal(&dest)
-	if err != nil {
-		return "", err
-	}
-	vm.ExtCode("__ksonnet/environments", string(marshalledDestination))
-
-	snippet, err := afero.ReadFile(j.app.Fs(), j.source)
-	if err != nil {
-		return "", err
-	}
-
-	log.WithFields(log.Fields{
-		"component-name": j.Name(true),
-	}).Debugf("convert component to jsonnet")
-	return vm.EvaluateSnippet(j.source, string(snippet))
+	return TypeJsonnet
 }
 
 // SetParam set parameter for a component.
 func (j *Jsonnet) SetParam(path []string, value interface{}) error {
-	// TODO: make this work at the env level too
-	paramsData, err := j.readParams("")
+	paramsData, err := j.readModuleParams()
 	if err != nil {
 		return err
 	}
@@ -173,8 +101,7 @@ func (j *Jsonnet) SetParam(path []string, value interface{}) error {
 
 // DeleteParam deletes a param.
 func (j *Jsonnet) DeleteParam(path []string) error {
-	// TODO: make this work at the env level too
-	paramsData, err := j.readParams("")
+	paramsData, err := j.readModuleParams()
 	if err != nil {
 		return err
 	}
@@ -263,86 +190,15 @@ func (j *Jsonnet) ToNode(envName string) (string, ast.Node, error) {
 	return j.Name(false), n, nil
 }
 
-func stringValue(n ast.Node) (string, error) {
-	ls, ok := n.(*ast.LiteralString)
-	if !ok {
-		return "", errors.New("node was not a LiteralString")
-	}
-
-	return ls.Value, nil
-}
-
-func extractName(object *astext.Object) (string, error) {
-	m, err := jsonnet.ConvertObjectToMap(object)
-	if err != nil {
-		return "", err
-	}
-
-	var kind string
-	var name string
-
-	if o, ok := m["kind"]; ok {
-		if s, ok := o.(string); ok {
-			kind = s
-		}
-	}
-
-	if o, ok := m["metadata"]; ok {
-		if metadataField, ok := o.(map[string]interface{}); ok {
-			if s, ok := metadataField["name"].(string); ok {
-				name = s
-			}
-		}
-	}
-
-	if kind == "" {
-		return "", errors.New("object did not have kind")
-	}
-
-	if name == "" {
-		return "", errors.New("object did not have name")
-	}
-
-	return fmt.Sprintf("%s-%s", name, strings.ToLower(kind)), nil
-}
-
 func (j *Jsonnet) readParams(envName string) (string, error) {
 	if envName == "" {
-		return j.readNamespaceParams()
+		return j.readModuleParams()
 	}
 
-	ns, err := GetModule(j.app, j.module)
-	if err != nil {
-		return "", err
-	}
-
-	paramsStr, err := ns.ResolvedParams()
-	if err != nil {
-		return "", err
-	}
-
-	data, err := j.app.EnvironmentParams(envName)
-	if err != nil {
-		return "", err
-	}
-
-	envParams := upgradeParams(envName, data)
-
-	env, err := j.app.Environment(envName)
-	if err != nil {
-		return "", err
-	}
-
-	vm := jsonnet.NewVM()
-	vm.JPaths = []string{
-		env.MakePath(j.app.Root()),
-		filepath.Join(j.app.Root(), "vendor"),
-	}
-	vm.ExtCode("__ksonnet/params", paramsStr)
-	return vm.EvaluateSnippet("snippet", string(envParams))
+	return envParams(j.app, j.module, envName)
 }
 
-func (j *Jsonnet) readNamespaceParams() (string, error) {
+func (j *Jsonnet) readModuleParams() (string, error) {
 	b, err := afero.ReadFile(j.app.Fs(), j.paramsPath)
 	if err != nil {
 		return "", err

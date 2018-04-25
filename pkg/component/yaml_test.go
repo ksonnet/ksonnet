@@ -19,11 +19,26 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
+
 	"github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/util/test"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestYAML_Type(t *testing.T) {
+	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+
+		test.StageFile(t, fs, "params-mixed.libsonnet", "/app/components/params.libsonnet")
+		test.StageFile(t, fs, "deployment.yaml", "/app/components/deployment.yaml")
+
+		y := NewYAML(a, "", "/app/components/deployment.yaml", "/app/components/params.libsonnet")
+
+		require.Equal(t, TypeYAML, y.Type())
+	})
+}
 
 func TestYAML_Name(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
@@ -240,4 +255,49 @@ func testdata(t *testing.T, name string) []byte {
 	b, err := ioutil.ReadFile("testdata/" + name)
 	require.NoError(t, err, "read testdata %s", name)
 	return b
+}
+
+func TestYAML_ToNode(t *testing.T) {
+	type fields struct {
+		paramsPath    string
+		componentPath string
+	}
+	type args struct {
+		envName string
+	}
+	tests := []struct {
+		name     string
+		fields   fields
+		args     args
+		nodeName string
+		wantErr  bool
+	}{
+		{
+			name: "in general",
+			fields: fields{
+				paramsPath:    "params-mixed.libsonnet",
+				componentPath: "deployment.yaml",
+			},
+			nodeName: "deployment",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+				test.StageFile(t, fs, tt.fields.paramsPath, "/app/components/params.libsonnet")
+				test.StageFile(t, fs, tt.fields.componentPath, "/app/components/deployment.yaml")
+
+				y := NewYAML(a, "", "/app/components/deployment.yaml", "/app/components/params.libsonnet")
+
+				nodeName, node, err := y.ToNode(tt.args.envName)
+				if tt.wantErr {
+					require.Error(t, err)
+					return
+				}
+
+				assert.Equal(t, tt.nodeName, nodeName, "node name was not expected")
+				assert.IsType(t, &astext.Object{}, node)
+			})
+		})
+	}
 }

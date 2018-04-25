@@ -21,6 +21,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/util/jsonnet"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
@@ -33,10 +34,10 @@ func EvaluateEnv(a app.App, sourcePath, paramsStr, envName string) (string, erro
 
 	vm := jsonnet.NewVM()
 
-	vm.JPaths = []string{
+	vm.AddJPath(
 		libPath,
 		filepath.Join(a.Root(), "vendor"),
-	}
+	)
 	vm.ExtCode("__ksonnet/params", paramsStr)
 
 	snippet, err := afero.ReadFile(a.Fs(), sourcePath)
@@ -47,18 +48,11 @@ func EvaluateEnv(a app.App, sourcePath, paramsStr, envName string) (string, erro
 	return vm.EvaluateSnippet(sourcePath, string(snippet))
 }
 
-// EvaluateComponent evaluates a component with jsonnet using a path.
-func EvaluateComponent(a app.App, sourcePath, paramsStr, envName string, useMemoryImporter bool) (string, error) {
-	snippet, err := afero.ReadFile(a.Fs(), sourcePath)
-	if err != nil {
-		return "", err
-	}
-
-	return EvaluateComponentSnippet(a, string(snippet), paramsStr, envName, useMemoryImporter)
-}
-
 // EvaluateComponentSnippet evaluates a component with jsonnet using a snippet.
 func EvaluateComponentSnippet(a app.App, snippet, paramsStr, envName string, useMemoryImporter bool) (string, error) {
+	logrus.WithFields(logrus.Fields{
+		"env-name": envName,
+	}).Debug("evaluate component params")
 	libPath, err := a.LibPath(envName)
 	if err != nil {
 		return "", err
@@ -70,10 +64,10 @@ func EvaluateComponentSnippet(a app.App, snippet, paramsStr, envName string, use
 		vm.UseMemoryImporter = true
 	}
 
-	vm.JPaths = []string{
+	vm.AddJPath(
 		libPath,
 		filepath.Join(a.Root(), "vendor"),
-	}
+	)
 	vm.ExtCode("__ksonnet/params", paramsStr)
 
 	envDetails, err := a.Environment(envName)
@@ -90,6 +84,7 @@ func EvaluateComponentSnippet(a app.App, snippet, paramsStr, envName string, use
 	if err != nil {
 		return "", err
 	}
+
 	vm.ExtCode("__ksonnet/environments", string(marshalledDestination))
 
 	return vm.EvaluateSnippet("snippet", snippet)

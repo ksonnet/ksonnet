@@ -17,6 +17,7 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -34,7 +35,7 @@ const (
 func init() {
 	RootCmd.AddCommand(showCmd)
 
-	bindJsonnetFlags(showCmd)
+	bindJsonnetFlags(showCmd, "show")
 
 	showCmd.Flags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
 	viper.BindPFlag(vShowComponent, showCmd.Flags().Lookup(flagComponent))
@@ -89,6 +90,10 @@ ks show dev -c redis -c nginx-server
 			actions.OptionComponentNames: viper.GetStringSlice(vShowComponent),
 			actions.OptionEnvName:        envName,
 			actions.OptionFormat:         viper.GetString(vShowFormat),
+		}
+
+		if err := extractJsonnetFlags("show"); err != nil {
+			return errors.Wrap(err, "handle jsonnet flags")
 		}
 
 		return runAction(actionShow, m)

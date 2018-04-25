@@ -34,6 +34,49 @@ const (
 	envRootName = "environments"
 )
 
+var (
+	componentJPaths  = make([]string, 0)
+	componentExtVars = make(map[string]string)
+	componentTlaVars = make(map[string]string)
+)
+
+// AddJPaths adds paths to JPath for a component evaluation.
+func AddJPaths(paths ...string) {
+	componentJPaths = append(componentJPaths, paths...)
+}
+
+// AddExtVar adds an ext var to a component evaluation.
+func AddExtVar(key, value string) {
+	componentExtVars[key] = value
+}
+
+// AddExtVarFile adds an ext var from a file to component evaluation.
+func AddExtVarFile(a app.App, key, filePath string) error {
+	data, err := afero.ReadFile(a.Fs(), filePath)
+	if err != nil {
+		return err
+	}
+
+	componentExtVars[key] = string(data)
+	return nil
+}
+
+// AddTlaVar adds a tla var to a component evaluation.
+func AddTlaVar(key, value string) {
+	componentTlaVars[key] = value
+}
+
+// AddTlaVarFile adds a tla var from a file to component evaluation.
+func AddTlaVarFile(a app.App, key, filePath string) error {
+	data, err := afero.ReadFile(a.Fs(), filePath)
+	if err != nil {
+		return err
+	}
+
+	componentTlaVars[key] = string(data)
+	return nil
+}
+
 // MainFile returns the contents of the environment's main source.
 func MainFile(a app.App, envName string) (string, error) {
 	path, err := Path(a, envName, envFileName)
@@ -62,19 +105,28 @@ func Evaluate(a app.App, envName, components, paramsStr string) (string, error) 
 	}
 
 	vm := jsonnet.NewVM()
-	vm.JPaths = []string{
+	vm.AddJPath(componentJPaths...)
+	vm.AddJPath(
 		filepath.Join(a.Root(), envRootName),
 		filepath.Join(a.Root(), "vendor"),
 		libPath,
-	}
+	)
 
 	envCode, err := environmentsCode(a, envName)
 	if err != nil {
 		return "", err
 	}
 
+	for k, v := range componentExtVars {
+		vm.ExtVar(k, v)
+	}
+
+	for k, v := range componentTlaVars {
+		vm.TLAVar(k, v)
+	}
+
 	vm.ExtCode("__ksonnet/environments", envCode)
-	vm.ExtCode("__ksonnet/components", components)
+	vm.ExtCode(ComponentsExtCodeKey, components)
 	vm.ExtCode("__ksonnet/params", paramsStr)
 
 	return vm.EvaluateSnippet(envFileName, snippet)

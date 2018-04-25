@@ -37,7 +37,7 @@ const (
 
 func init() {
 	addEnvCmdFlags(diffCmd)
-	bindJsonnetFlags(diffCmd)
+	bindJsonnetFlags(diffCmd, "diff")
 	diffCmd.PersistentFlags().String(flagDiffStrategy, "all", "Diff strategy, all or subset.")
 	RootCmd.AddCommand(diffCmd)
 }

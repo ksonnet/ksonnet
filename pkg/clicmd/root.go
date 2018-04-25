@@ -53,16 +53,6 @@ func init() {
 	RootCmd.PersistentFlags().Set("logtostderr", "true")
 }
 
-func bindJsonnetFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringSliceP(flagJpath, "J", nil, "Additional jsonnet library search path")
-	cmd.PersistentFlags().StringSliceP(flagExtVar, "V", nil, "Values of external variables")
-	cmd.PersistentFlags().StringSlice(flagExtVarFile, nil, "Read external variable from a file")
-	cmd.PersistentFlags().StringSliceP(flagTlaVar, "A", nil, "Values of top level arguments")
-	cmd.PersistentFlags().StringSlice(flagTlaVarFile, nil, "Read top level argument from a file")
-	cmd.PersistentFlags().String(flagResolver, "noop", "Change implementation of resolveImage native function. One of: noop, registry")
-	cmd.PersistentFlags().String(flagResolvFail, "warn", "Action when resolveImage fails. One of ignore,warn,error")
-}
-
 // RootCmd is the root of cobra subcommand tree
 var RootCmd = &cobra.Command{
 	Use:   "ks",

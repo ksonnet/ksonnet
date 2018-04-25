@@ -17,12 +17,10 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
-
-	"github.com/spf13/viper"
-
-	"github.com/spf13/cobra"
-
 	"github.com/ksonnet/ksonnet/pkg/client"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -46,7 +44,7 @@ func init() {
 
 	applyClientConfig = client.NewDefaultClientConfig()
 	applyClientConfig.BindClientGoFlags(applyCmd)
-	bindJsonnetFlags(applyCmd)
+	bindJsonnetFlags(applyCmd, "apply")
 
 	applyCmd.Flags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
 	viper.BindPFlag(vApplyComponent, applyCmd.Flags().Lookup(flagComponent))
@@ -82,6 +80,10 @@ var applyCmd = &cobra.Command{
 			actions.OptionEnvName:        envName,
 			actions.OptionGcTag:          viper.GetString(vApplyGcTag),
 			actions.OptionSkipGc:         viper.GetBool(vApplySkipGc),
+		}
+
+		if err := extractJsonnetFlags("apply"); err != nil {
+			return errors.Wrap(err, "handle jsonnet flags")
 		}
 
 		return runAction(actionApply, m)

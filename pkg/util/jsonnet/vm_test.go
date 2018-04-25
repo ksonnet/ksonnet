@@ -89,11 +89,12 @@ func TestVM_EvaluateSnippet_memory_importer(t *testing.T) {
 	vm := NewVM(stubVMOpt(), stubVMEvalOpt(fn))
 	vm.UseMemoryImporter = true
 	vm.Fs = fs
-	vm.JPaths = []string{"/lib"}
+	vm.AddJPath("/lib")
 
 	vm.TLAVar("key", "value")
 	vm.TLACode("key", "value")
 	vm.ExtCode("key", "value")
+	vm.ExtVar("key", "value")
 
 	out, err := vm.EvaluateSnippet("snippet", "code")
 	require.NoError(t, err)

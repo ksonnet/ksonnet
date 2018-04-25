@@ -84,8 +84,6 @@ ks apply dev -c guestbook-ui -c nginx-depl --create false
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
-      --resolve-images string          Change implementation of resolveImage native function. One of: noop, registry (default "noop")
-      --resolve-images-error string    Action when resolveImage fails. One of ignore,warn,error (default "warn")
       --server string                  The address and port of the Kubernetes API server
       --skip-gc                        Option to skip garbage collection, even with --gc-tag specified
   -A, --tla-str stringSlice            Values of top level arguments

@@ -16,6 +16,7 @@
 package component
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/ksonnet/ksonnet/pkg/app/mocks"
@@ -23,6 +24,16 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
+
+func TestJsonnet_Type(t *testing.T) {
+	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+		test.StageFile(t, fs, filepath.FromSlash("guestbook/guestbook-ui.jsonnet"), filepath.FromSlash("/app/components/guestbook-ui.jsonnet"))
+		test.StageFile(t, fs, filepath.FromSlash("guestbook/params.libsonnet"), filepath.FromSlash("/app/components/params.libsonnet"))
+
+		j := NewJsonnet(a, "", "/app/components/guestbook-ui.jsonnet", "/app/components/params.libsonnet")
+		require.Equal(t, TypeJsonnet, j.Type())
+	})
+}
 
 func TestJsonnet_Name(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
