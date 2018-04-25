@@ -307,8 +307,8 @@ func visitLocalBind(node ast.LocalBind, imports *[]ast.Import) error {
 }
 
 var (
-	reParam = regexp.MustCompile(`(?s)import\s+(\/\/.*?)?'param:\/\/(\w+)'`)
-	reEnv   = regexp.MustCompile(`(?s)import\s+(\/\/.*?)?'env:\/\/(\w+)'`)
+	reParam = regexp.MustCompile(`(?s)import\s+(\/\/.*?)?['"]param:\/\/(\w+)['"]`)
+	reEnv   = regexp.MustCompile(`(?s)import\s+(\/\/.*?)?['"]env:\/\/(\w+)['"]`)
 )
 
 // replace converts all parameters in the passed Jsonnet of form
