@@ -33,10 +33,6 @@
   revision = "7524189396c68dc4b04d53852f9edc00f816b123"
 
 [[constraint]]
-  name = "github.com/fatih/color"
-  revision = "5df930a27be2502f99b292b7cc09ebad4d0891f4"
-
-[[constraint]]
   name = "github.com/ghodss/yaml"
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
 
