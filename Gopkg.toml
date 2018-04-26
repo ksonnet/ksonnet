@@ -50,7 +50,7 @@
 
 [[constraint]]
   name = "github.com/ksonnet/ksonnet-lib"
-  version = "v0.1.1"
+  version = "v0.1.2"
 
 [[constraint]]
   name = "github.com/mattn/go-isatty"

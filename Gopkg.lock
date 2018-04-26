@@ -277,7 +277,7 @@
     "ksonnet-gen/printer"
   ]
   revision = "cd6bc29c939b79f8e3acdd289356b8fbebf09c50"
-  version = "v0.1.1"
+  version = "v0.1.2"
 
 [[projects]]
   name = "github.com/magiconair/properties"
@@ -683,6 +683,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "52b150f1b6dc5cb0b070e3161194ab302ed6a524834e6dd5177a4c40b64c63bb"
+  inputs-digest = "066e8e0e2eb8273f1f1249c55430ee212d20b3ebe5db9b7070d7e61cf2e61524"
   solver-name = "gps-cdcl"
   solver-version = 1
