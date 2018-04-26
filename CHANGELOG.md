@@ -1,5 +1,174 @@
 # Change Log
 
+## [v0.10.0](https://github.com/ksonnet/ksonnet/tree/v0.10.0) (2018-04-26)
+[Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.9.0...v0.10.0)
+
+ksonnet 0.10.0 introduces the following new features:
+
+* support for YAML/JSON components
+* global environment parameters
+* use Jsonnet AST for all Jsonnet transformations
+* filesystem based registries
+* upgrade jsonnet to 0.10
+* registry and environment overrides
+* many bug fixes and usability improvements
+
+**Closed issues:**
+
+- Iteration plan for release 0.10 [\#360](https://github.com/ksonnet/ksonnet/issues/360)
+- Public Git Repository Setup [\#352](https://github.com/ksonnet/ksonnet/issues/352)
+- Generate registry scaffolding [\#234](https://github.com/ksonnet/ksonnet/issues/234)
+- ks disk-based registry can't generate prototype [\#480](https://github.com/ksonnet/ksonnet/issues/480)
+- param::import is broken in alpha version [\#475](https://github.com/ksonnet/ksonnet/issues/475)
+- ks apply --component not working on 0.10.0-alpha.2 or 0.10.0-alpha.3 [\#472](https://github.com/ksonnet/ksonnet/issues/472)
+- ks param set does not seem to work for yaml components [\#468](https://github.com/ksonnet/ksonnet/issues/468)
+- ks import doesn't take namespace into account [\#467](https://github.com/ksonnet/ksonnet/issues/467)
+- X.509 certificate issue when executing ks init [\#436](https://github.com/ksonnet/ksonnet/issues/436)
+- Move `main.go` to `cmd/ks` [\#112](https://github.com/ksonnet/ksonnet/issues/112)
+
+**Merged pull requests:**
+
+- Adding initial override documentation [\#487](https://github.com/ksonnet/ksonnet/pull/487) ([bryanl](https://github.com/bryanl))
+- Adding initial registry document [\#486](https://github.com/ksonnet/ksonnet/pull/486) ([bryanl](https://github.com/bryanl))
+- updating ksonnet-lib to v0.1.0 [\#485](https://github.com/ksonnet/ksonnet/pull/485) ([bryanl](https://github.com/bryanl))
+- Removing index columns from e2e tests [\#484](https://github.com/ksonnet/ksonnet/pull/484) ([bryanl](https://github.com/bryanl))
+- edit ksonnet license info so that GitHub recognizes it [\#483](https://github.com/ksonnet/ksonnet/pull/483) ([eirinikos](https://github.com/eirinikos))
+- Rework jsonnet external vars [\#482](https://github.com/ksonnet/ksonnet/pull/482) ([bryanl](https://github.com/bryanl))
+- Update printer for jsonnet nulls [\#481](https://github.com/ksonnet/ksonnet/pull/481) ([bryanl](https://github.com/bryanl))
+- Support double quoted params in prototypes [\#479](https://github.com/ksonnet/ksonnet/pull/479) ([bryanl](https://github.com/bryanl))
+- .yml is a valid YAML file extension [\#477](https://github.com/ksonnet/ksonnet/pull/477) ([bryanl](https://github.com/bryanl))
+- Cleaning up travis build [\#474](https://github.com/ksonnet/ksonnet/pull/474) ([bryanl](https://github.com/bryanl))
+- bug: filter components [\#473](https://github.com/ksonnet/ksonnet/pull/473) ([bryanl](https://github.com/bryanl))
+- Allow setting nested global env vars from cli [\#471](https://github.com/ksonnet/ksonnet/pull/471) ([bryanl](https://github.com/bryanl))
+- Add random id to YAML imported objects [\#469](https://github.com/ksonnet/ksonnet/pull/469) ([bryanl](https://github.com/bryanl))
+
+## [v0.10.0-alpha.3](https://github.com/ksonnet/ksonnet/tree/v0.10.0-alpha.3) (2018-04-20)
+[Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.10.0-alpha.2...v0.10.0-alpha.3)
+
+**Fixed bugs:**
+
+- Support GitHub registries with contents in the root path. [\#459](https://github.com/ksonnet/ksonnet/issues/459)
+
+**Closed issues:**
+
+- ksonnet version 0.10.0-alpha.2 unable to import libsonnet files [\#464](https://github.com/ksonnet/ksonnet/issues/464)
+- Cannot use importstr: ERROR find objects: output: unknown node type: \(\*ast.ImportStr\) [\#461](https://github.com/ksonnet/ksonnet/issues/461)
+- update ksonnet libs [\#454](https://github.com/ksonnet/ksonnet/issues/454)
+- ks param set command is not able to set array or map. [\#448](https://github.com/ksonnet/ksonnet/issues/448)
+- ks param list command shows error if components/params.libsonnet has null or array. [\#447](https://github.com/ksonnet/ksonnet/issues/447)
+- ks import -f some-component.yaml does not set component index in components/params.libsonnet [\#437](https://github.com/ksonnet/ksonnet/issues/437)
+- Regression from 0.9.1: Getting "ERROR Unauthorized" when using --token parameter in 0.9.2 [\#430](https://github.com/ksonnet/ksonnet/issues/430)
+
+**Merged pull requests:**
+
+- Reorganize layout [\#466](https://github.com/ksonnet/ksonnet/pull/466) ([bryanl](https://github.com/bryanl))
+- Supply proper codes for building env jsonnet [\#465](https://github.com/ksonnet/ksonnet/pull/465) ([bryanl](https://github.com/bryanl))
+- Updating ksonnet-lib printer to handle importstr [\#463](https://github.com/ksonnet/ksonnet/pull/463) ([bryanl](https://github.com/bryanl))
+- When importing YAML, extract objects into separate component files [\#462](https://github.com/ksonnet/ksonnet/pull/462) ([bryanl](https://github.com/bryanl))
+- Generate proper vendor paths for gh registry with in root [\#460](https://github.com/ksonnet/ksonnet/pull/460) ([bryanl](https://github.com/bryanl))
+- evaluator is missing ksonnet vendor path [\#458](https://github.com/ksonnet/ksonnet/pull/458) ([bryanl](https://github.com/bryanl))
+- Fixed year 2017 -\> 2018 [\#456](https://github.com/ksonnet/ksonnet/pull/456) ([uthark](https://github.com/uthark))
+- Add env update command [\#455](https://github.com/ksonnet/ksonnet/pull/455) ([bryanl](https://github.com/bryanl))
+- Handle null as a value [\#453](https://github.com/ksonnet/ksonnet/pull/453) ([bryanl](https://github.com/bryanl))
+
+## [v0.10.0-alpha.2](https://github.com/ksonnet/ksonnet/tree/v0.10.0-alpha.2) (2018-04-17)
+[Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.10.0-alpha.1...v0.10.0-alpha.2)
+
+**Fixed bugs:**
+
+- Drop-in YAML components with parameters [\#426](https://github.com/ksonnet/ksonnet/issues/426)
+
+**Closed issues:**
+
+- ksonnet 1.10 no longer uses environments/env/main.jsonnet [\#446](https://github.com/ksonnet/ksonnet/issues/446)
+- ks diff local:prod local:dev: RUNTIME ERROR: max stack frames exceeded [\#445](https://github.com/ksonnet/ksonnet/issues/445)
+- `ks generate` panics "runtime error: index out of range" instead of printing usage [\#441](https://github.com/ksonnet/ksonnet/issues/441)
+- `ks param list`: ERROR retrieve values for mixin.spec.template.spec.hostNetwork: can't handle type bool [\#438](https://github.com/ksonnet/ksonnet/issues/438)
+- `ks generate prototype --help` should be a thing [\#120](https://github.com/ksonnet/ksonnet/issues/120)
+
+**Merged pull requests:**
+
+- Set maps in arrays from cli [\#452](https://github.com/ksonnet/ksonnet/pull/452) ([bryanl](https://github.com/bryanl))
+- Convert diff to use pipline [\#451](https://github.com/ksonnet/ksonnet/pull/451) ([bryanl](https://github.com/bryanl))
+- Ensure param diff works with all component types [\#450](https://github.com/ksonnet/ksonnet/pull/450) ([bryanl](https://github.com/bryanl))
+- Use main.jsonnet for rendering components [\#449](https://github.com/ksonnet/ksonnet/pull/449) ([bryanl](https://github.com/bryanl))
+- Support bool for object values in YAML [\#444](https://github.com/ksonnet/ksonnet/pull/444) ([bryanl](https://github.com/bryanl))
+- Don't panic when runing `ks generate` with no args [\#443](https://github.com/ksonnet/ksonnet/pull/443) ([bryanl](https://github.com/bryanl))
+- Merge in new YAML params [\#442](https://github.com/ksonnet/ksonnet/pull/442) ([bryanl](https://github.com/bryanl))
+- Fixing broken link in docs and also typos [\#439](https://github.com/ksonnet/ksonnet/pull/439) ([Maerville](https://github.com/Maerville))
+- Add help when generating or previewing prototypes [\#435](https://github.com/ksonnet/ksonnet/pull/435) ([bryanl](https://github.com/bryanl))
+- FS registry can handle relative paths [\#434](https://github.com/ksonnet/ksonnet/pull/434) ([bryanl](https://github.com/bryanl))
+
+## [v0.10.0-alpha.1](https://github.com/ksonnet/ksonnet/tree/v0.10.0-alpha.1) (2018-04-10)
+[Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.9.2...v0.10.0-alpha.1)
+
+**Implemented enhancements:**
+
+- Generated environment parameters can't assume component parameters path [\#354](https://github.com/ksonnet/ksonnet/issues/354)
+- Upgrade to client-go version 6 [\#297](https://github.com/ksonnet/ksonnet/issues/297)
+- Support local folders for registries [\#232](https://github.com/ksonnet/ksonnet/issues/232)
+- Load test data as fixtures [\#168](https://github.com/ksonnet/ksonnet/issues/168)
+- Document or provide better error messages for breaking ks changes [\#155](https://github.com/ksonnet/ksonnet/issues/155)
+- Consider naming the default environment after the initialized context [\#82](https://github.com/ksonnet/ksonnet/issues/82)
+- Move `constructBaseObj` out of root.go [\#72](https://github.com/ksonnet/ksonnet/issues/72)
+- Autogenerate .gitignore file \(e.g. for libs or hidden files\) [\#55](https://github.com/ksonnet/ksonnet/issues/55)
+
+**Fixed bugs:**
+
+- Misleading kubeconfig log message  [\#287](https://github.com/ksonnet/ksonnet/issues/287)
+- Consolidate type checking between params and prototypes [\#44](https://github.com/ksonnet/ksonnet/issues/44)
+
+**Closed issues:**
+
+- In-cluster API access [\#431](https://github.com/ksonnet/ksonnet/issues/431)
+- inception server not working [\#429](https://github.com/ksonnet/ksonnet/issues/429)
+- Question: import not available kubeflow/core/all.libsonnet and other problems with master [\#420](https://github.com/ksonnet/ksonnet/issues/420)
+- ks pkg install does not install the correct branch set in the registry [\#398](https://github.com/ksonnet/ksonnet/issues/398)
+- 1.9 & 1.10 support? [\#394](https://github.com/ksonnet/ksonnet/issues/394)
+- `ks -v` should print an equivalent `jsonnet` command line string  [\#378](https://github.com/ksonnet/ksonnet/issues/378)
+- Proposal: Create `ks param unset` command for "unsetting" params [\#325](https://github.com/ksonnet/ksonnet/issues/325)
+- use /swagger.json from apiserver for api-spec [\#264](https://github.com/ksonnet/ksonnet/issues/264)
+- Update VSCode extension to work better with the new `ks`-generated files [\#224](https://github.com/ksonnet/ksonnet/issues/224)
+- Implement `ks install` [\#217](https://github.com/ksonnet/ksonnet/issues/217)
+- Increase test coverage [\#216](https://github.com/ksonnet/ksonnet/issues/216)
+- Should be able to be used offline [\#204](https://github.com/ksonnet/ksonnet/issues/204)
+- Add bash completion [\#124](https://github.com/ksonnet/ksonnet/issues/124)
+- Consolidate `expandEnvObjs` and `expandEnvCmdObjs` into one function [\#70](https://github.com/ksonnet/ksonnet/issues/70)
+- Move core logic of new commands \(`dep` and `registry`\) to pkg kubecfg [\#65](https://github.com/ksonnet/ksonnet/issues/65)
+
+**Merged pull requests:**
+
+- Action option tests [\#433](https://github.com/ksonnet/ksonnet/pull/433) ([bryanl](https://github.com/bryanl))
+- bug: param list with env [\#432](https://github.com/ksonnet/ksonnet/pull/432) ([bryanl](https://github.com/bryanl))
+- listing params for yaml components works for more cases [\#428](https://github.com/ksonnet/ksonnet/pull/428) ([bryanl](https://github.com/bryanl))
+- add .ks\_environment to generated gitignore [\#425](https://github.com/ksonnet/ksonnet/pull/425) ([bryanl](https://github.com/bryanl))
+- Add `ks env current` command [\#424](https://github.com/ksonnet/ksonnet/pull/424) ([bryanl](https://github.com/bryanl))
+- Add JSON output to `env list` [\#423](https://github.com/ksonnet/ksonnet/pull/423) ([bryanl](https://github.com/bryanl))
+- import component from a http URL [\#422](https://github.com/ksonnet/ksonnet/pull/422) ([bryanl](https://github.com/bryanl))
+- Support global env parameters [\#421](https://github.com/ksonnet/ksonnet/pull/421) ([bryanl](https://github.com/bryanl))
+- Add e2e for built in prototypes [\#417](https://github.com/ksonnet/ksonnet/pull/417) ([bryanl](https://github.com/bryanl))
+- Print location of kubeconfig [\#416](https://github.com/ksonnet/ksonnet/pull/416) ([bryanl](https://github.com/bryanl))
+- Update `show` to ksonnet action [\#415](https://github.com/ksonnet/ksonnet/pull/415) ([bryanl](https://github.com/bryanl))
+- Update delete action [\#414](https://github.com/ksonnet/ksonnet/pull/414) ([bryanl](https://github.com/bryanl))
+- Print more stack frames on infinite loops [\#413](https://github.com/ksonnet/ksonnet/pull/413) ([redbaron](https://github.com/redbaron))
+- generate env params with ext var to support modules [\#412](https://github.com/ksonnet/ksonnet/pull/412) ([bryanl](https://github.com/bryanl))
+- Param unset [\#411](https://github.com/ksonnet/ksonnet/pull/411) ([bryanl](https://github.com/bryanl))
+- Override default env name [\#410](https://github.com/ksonnet/ksonnet/pull/410) ([bryanl](https://github.com/bryanl))
+- ignore app override by default [\#409](https://github.com/ksonnet/ksonnet/pull/409) ([bryanl](https://github.com/bryanl))
+- Handle YAML components which end with `--` [\#408](https://github.com/ksonnet/ksonnet/pull/408) ([bryanl](https://github.com/bryanl))
+- Rename component namespaces to modules [\#407](https://github.com/ksonnet/ksonnet/pull/407) ([bryanl](https://github.com/bryanl))
+- Allow for regeneration of lib and registry cache [\#406](https://github.com/ksonnet/ksonnet/pull/406) ([bryanl](https://github.com/bryanl))
+- Allow user to skip inclusion of default registries [\#405](https://github.com/ksonnet/ksonnet/pull/405) ([bryanl](https://github.com/bryanl))
+- remove stringsAppendToPath [\#404](https://github.com/ksonnet/ksonnet/pull/404) ([bryanl](https://github.com/bryanl))
+- moved env to pkg/env [\#403](https://github.com/ksonnet/ksonnet/pull/403) ([bryanl](https://github.com/bryanl))
+- update actions to use action args [\#402](https://github.com/ksonnet/ksonnet/pull/402) ([bryanl](https://github.com/bryanl))
+- Reworks apply action [\#401](https://github.com/ksonnet/ksonnet/pull/401) ([bryanl](https://github.com/bryanl))
+- Create plumbing for cluster based e2e tests [\#399](https://github.com/ksonnet/ksonnet/pull/399) ([bryanl](https://github.com/bryanl))
+- Action validate [\#397](https://github.com/ksonnet/ksonnet/pull/397) ([bryanl](https://github.com/bryanl))
+- introduce method to test cmd flags [\#395](https://github.com/ksonnet/ksonnet/pull/395) ([bryanl](https://github.com/bryanl))
+- removing need for github access for registry tests [\#393](https://github.com/ksonnet/ksonnet/pull/393) ([bryanl](https://github.com/bryanl))
+- use provided tls configuration if possible when fetching api spec [\#392](https://github.com/ksonnet/ksonnet/pull/392) ([bryanl](https://github.com/bryanl))
+
 ## [v0.9.1](https://github.com/ksonnet/ksonnet/tree/v0.9.1) (2018-03-08)
 
 This patch focuses on fixes around usability bugs.
