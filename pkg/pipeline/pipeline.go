@@ -18,7 +18,6 @@ package pipeline
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"path/filepath"
 	"regexp"
@@ -222,7 +221,6 @@ func (p *Pipeline) moduleObjects(module component.Module, filter []string) ([]*u
 
 		uns, _, err := unstructured.UnstructuredJSONScheme.Decode([]byte(patched), nil, nil)
 		if err != nil {
-			fmt.Println(patched)
 			return nil, errors.Wrap(err, "decode unstructured")
 		}
 		ret = append(ret, uns)
