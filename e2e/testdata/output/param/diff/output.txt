@@ -1,3 +1,3 @@
-COMPONENT    INDEX PARAM    ENV1 ENV2
-=========    ===== =====    ==== ====
-guestbook-ui 0     replicas 4    3
+COMPONENT    PARAM    ENV1 ENV2
+=========    =====    ==== ====
+guestbook-ui replicas 4    3
