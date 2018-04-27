@@ -112,6 +112,12 @@ func (p *printer) writeString(s string) {
 	}
 }
 
+func (p *printer) writeStringNoIndent(s string) {
+	for _, b := range []byte(s) {
+		p.output = append(p.output, b)
+	}
+}
+
 // printer prints a node.
 // nolint: gocyclo
 func (p *printer) print(n interface{}) {
@@ -158,6 +164,8 @@ func (p *printer) print(n interface{}) {
 		p.print(t.Right)
 	case *ast.Conditional:
 		p.handleConditional(t)
+	case *ast.Dollar:
+		p.writeString("$")
 	case *ast.Function:
 		p.writeString("function")
 		p.addMethodSignature(t)
@@ -242,6 +250,11 @@ func (p *printer) print(n interface{}) {
 			p.writeString(strconv.Quote(t.Value))
 		case ast.StringSingle:
 			p.writeString(fmt.Sprintf("'%s'", t.Value))
+		case ast.StringBlock:
+			p.writeString("|||")
+			p.writeByte(newline, 1)
+			p.writeString(t.Value)
+			p.writeStringNoIndent("\n|||")
 		}
 
 	case *ast.LiteralNumber:
@@ -254,6 +267,9 @@ func (p *printer) print(n interface{}) {
 		p.writeString(string(t.Id))
 	case *ast.LiteralNull:
 		p.writeString("null")
+	case *ast.SuperIndex:
+		p.writeString("super.")
+		p.writeString(string(*t.Id))
 	}
 }
 
@@ -585,6 +601,9 @@ func indexID(i *ast.Index) (string, error) {
 		switch t := i.Index.(type) {
 		default:
 			return "", errors.Errorf("can't handle index type %T", t)
+		case *ast.LiteralNumber:
+			id := t.OriginalString
+			return fmt.Sprintf(`[%s]`, id), nil
 		case *ast.LiteralString:
 			if t == nil {
 				return "", errors.New("string id is nil")
