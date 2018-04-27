@@ -1,5 +1,9 @@
 # Change Log
 
+## [v0.10.1](https://github.com/ksonnet/ksonnet/tree/v0.10.1) (2018-04-27)
+
+ksonnet 0.10.1 fixes issues with evaluating components
+
 ## [v0.10.0](https://github.com/ksonnet/ksonnet/tree/v0.10.0) (2018-04-26)
 [Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.9.0...v0.10.0)
 
