@@ -99,6 +99,11 @@ func Evaluate(a app.App, envName, components, paramsStr string) (string, error) 
 		return "", err
 	}
 
+	appEnv, err := a.Environment(envName)
+	if err != nil {
+		return "", err
+	}
+
 	snippet, err := MainFile(a, envName)
 	if err != nil {
 		return "", err
@@ -108,6 +113,7 @@ func Evaluate(a app.App, envName, components, paramsStr string) (string, error) 
 	vm.AddJPath(componentJPaths...)
 	vm.AddJPath(
 		filepath.Join(a.Root(), envRootName),
+		filepath.Join(a.Root(), envRootName, appEnv.Path),
 		filepath.Join(a.Root(), "vendor"),
 		libPath,
 	)
