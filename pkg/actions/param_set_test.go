@@ -54,6 +54,35 @@ func TestParamSet(t *testing.T) {
 	})
 }
 
+func TestParamSet_asString(t *testing.T) {
+	withApp(t, func(appMock *amocks.App) {
+		componentName := "deployment"
+		path := "label"
+		value := "3"
+
+		c := &cmocks.Component{}
+		c.On("SetParam", []string{"label"}, "3").Return(nil)
+
+		in := map[string]interface{}{
+			OptionApp:      appMock,
+			OptionName:     componentName,
+			OptionPath:     path,
+			OptionValue:    value,
+			OptionAsString: true,
+		}
+
+		a, err := NewParamSet(in)
+		require.NoError(t, err)
+
+		a.resolvePathFn = func(app.App, string) (component.Module, component.Component, error) {
+			return nil, c, nil
+		}
+
+		err = a.Run()
+		require.NoError(t, err)
+	})
+}
+
 func TestParamSet_global(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		module := "/"

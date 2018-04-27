@@ -23,7 +23,8 @@ import (
 )
 
 var (
-	vParamSetEnv = "param-set-env"
+	vParamSetEnv      = "param-set-env"
+	vParamSetAsString = "param-set-as-string"
 )
 
 var paramSetCmd = &cobra.Command{
@@ -47,11 +48,12 @@ var paramSetCmd = &cobra.Command{
 		}
 
 		m := map[string]interface{}{
-			actions.OptionApp:     ka,
-			actions.OptionName:    name,
-			actions.OptionPath:    path,
-			actions.OptionValue:   value,
-			actions.OptionEnvName: viper.GetString(vParamSetEnv),
+			actions.OptionApp:      ka,
+			actions.OptionName:     name,
+			actions.OptionPath:     path,
+			actions.OptionValue:    value,
+			actions.OptionEnvName:  viper.GetString(vParamSetEnv),
+			actions.OptionAsString: viper.GetBool(vParamSetAsString),
 		}
 
 		return runAction(actionParamSet, m)
@@ -89,4 +91,7 @@ func init() {
 
 	paramSetCmd.Flags().String(flagEnv, "", "Specify environment to set parameters for")
 	viper.BindPFlag(vParamSetEnv, paramSetCmd.Flags().Lookup(flagEnv))
+
+	paramSetCmd.Flags().Bool(flagAsString, false, "Force value to be interpreted as string")
+	viper.BindPFlag(vParamSetAsString, paramSetCmd.Flags().Lookup(flagAsString))
 }

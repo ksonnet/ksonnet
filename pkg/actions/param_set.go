@@ -44,6 +44,7 @@ type ParamSet struct {
 	rawValue string
 	global   bool
 	envName  string
+	asString bool
 
 	getModuleFn    getModuleFn
 	resolvePathFn  func(a app.App, path string) (component.Module, component.Component, error)
@@ -62,6 +63,7 @@ func NewParamSet(m map[string]interface{}) (*ParamSet, error) {
 		rawValue: ol.LoadString(OptionValue),
 		global:   ol.LoadOptionalBool(OptionGlobal),
 		envName:  ol.LoadOptionalString(OptionEnvName),
+		asString: ol.LoadOptionalBool(OptionAsString),
 
 		getModuleFn:    component.GetModule,
 		resolvePathFn:  component.ResolvePath,
@@ -82,9 +84,16 @@ func NewParamSet(m map[string]interface{}) (*ParamSet, error) {
 
 // Run runs the action.
 func (ps *ParamSet) Run() error {
-	value, err := jsonnet.DecodeValue(ps.rawValue)
-	if err != nil {
-		return errors.Wrap(err, "value is invalid")
+	var value interface{}
+	var err error
+
+	if ps.asString {
+		value = ps.rawValue
+	} else {
+		value, err = jsonnet.DecodeValue(ps.rawValue)
+		if err != nil {
+			return errors.Wrap(err, "value is invalid")
+		}
 	}
 
 	if ps.envName != "" {
