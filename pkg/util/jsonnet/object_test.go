@@ -242,6 +242,11 @@ func TestDecodeValue(t *testing.T) {
 			expected: 0,
 		},
 		{
+			name:     "00",
+			val:      "00",
+			expected: "00",
+		},
+		{
 			name:     "bool true",
 			val:      "True",
 			expected: true,

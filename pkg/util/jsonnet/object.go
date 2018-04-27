@@ -248,8 +248,8 @@ func arrayValues(array *ast.Array) ([]interface{}, error) {
 }
 
 var (
-	reFloat = regexp.MustCompile(`^[-+]?[0-9]*\.?[0-9]+$`)
-	reInt   = regexp.MustCompile(`^([+-]?[1-9]\d*|0)$`)
+	reFloat = regexp.MustCompile(`^[-+]?(0|[1-9]\d+)(\.[0-9]+)*$`)
+	reInt   = regexp.MustCompile(`^([+-]?[1-9]\d*|0{1})$`)
 	reArray = regexp.MustCompile(`^\[`)
 	reMap   = regexp.MustCompile(`^\{`)
 )
