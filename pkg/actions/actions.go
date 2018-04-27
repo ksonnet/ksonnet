@@ -29,6 +29,8 @@ const (
 	OptionApp = "app"
 	// OptionArguments is arguments option. Used for passing arguments to prototypes.
 	OptionArguments = "arguments"
+	// OptionAsString is asString. Used for setting values as strings.
+	OptionAsString = "as-string"
 	// OptionClientConfig is clientConfig option.
 	OptionClientConfig = "client-config"
 	// OptionComponentName is a componentName option.

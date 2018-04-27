@@ -19,6 +19,7 @@ const (
 	// For use in the commands (e.g., diff, apply, delete) that require either an
 	// environment or the -f flag.
 	flagAPISpec               = "api-spec"
+	flagAsString              = "as-string"
 	flagComponent             = "component"
 	flagCreate                = "create"
 	flagDir                   = "dir"

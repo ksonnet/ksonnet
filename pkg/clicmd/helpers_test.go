@@ -22,11 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func runCmd(args ...string) error {
-	RootCmd.SetArgs(args)
-	return RootCmd.Execute()
-}
-
 func withCmd(id initName, override actionFn, fn func()) {
 	if override != nil {
 		ogFn := actionFns[id]
@@ -63,8 +58,9 @@ func runTestCmd(t *testing.T, cases []cmdTestCase) {
 			s := stubCmdOverride{}
 
 			withCmd(tc.action, s.override, func() {
+				RootCmd.SetArgs(tc.args)
 
-				err := runCmd(tc.args...)
+				err := RootCmd.Execute()
 				if tc.isErr {
 					require.Error(t, err)
 					return
