@@ -126,6 +126,10 @@ func (cl *ComponentList) listComponentsWide(components []component.Component) er
 		rows = append(rows, row)
 	}
 
+	sort.Slice(rows, func(i, j int) bool {
+		return rows[i][0] < rows[j][0]
+	})
+
 	table := table.New(cl.out)
 	table.SetHeader([]string{"component", "type", "apiversion", "kind", "name"})
 	table.AppendBulk(rows)
