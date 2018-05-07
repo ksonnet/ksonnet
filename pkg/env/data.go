@@ -24,7 +24,8 @@ const (
 
 // DefaultOverrideData generates the contents for an environment's `main.jsonnet`.
 var DefaultOverrideData = []byte(`local base = import "base.libsonnet";
-local k = import "k.libsonnet";
+// uncomment if you reference ksonnet-lib
+// local k = import "k.libsonnet";
 
 base + {
   // Insert user-specified overrides here. For example if a component is named \"nginx-deployment\", you might have something like:\n")
