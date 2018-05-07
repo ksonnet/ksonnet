@@ -1,3 +1,4 @@
 COMPONENT  TYPE APIVERSION KIND NAME
 =========  ==== ========== ==== ====
 deployment
+ingress

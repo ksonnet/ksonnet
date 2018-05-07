@@ -18,9 +18,12 @@
 package e2e
 
 import (
+	"bytes"
 	"path/filepath"
 
+	"github.com/ksonnet/ksonnet/pkg/util/table"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ks param", func() {
@@ -170,12 +173,16 @@ var _ = Describe("ks param", func() {
 			})
 
 			Context("with yaml component params", func() {
+				var name string
+
 				BeforeEach(func() {
 					deployment := filepath.Join(e.wd(), "testdata", "input", "import", "deployment.yaml")
 					o := a.runKs("import", "-f", deployment)
 					assertExitStatus(o, 0)
 
-					o = a.runKs("param", "set", "deployment-nginx-deployment", "metadata.labels", `{"hello": "world"}`)
+					name = a.findComponent("deployment")
+
+					o = a.runKs("param", "set", name, "metadata.labels", `{"hello": "world"}`)
 					assertExitStatus(o, 0)
 				})
 
@@ -184,7 +191,14 @@ var _ = Describe("ks param", func() {
 				})
 
 				It("should list the YAML params", func() {
-					assertOutput("param/list/yaml-params.txt", listOutput.stdout)
+					var buf bytes.Buffer
+					t := table.New(&buf)
+					t.SetHeader([]string{"component", "param", "value"})
+					t.Append([]string{name, "metadata.labels", `{"hello":"world"}`})
+					Expect(t.Render()).NotTo(HaveOccurred())
+
+					o := a.paramList()
+					Expect(o.stdout).To(Equal(buf.String()))
 				})
 			})
 		})

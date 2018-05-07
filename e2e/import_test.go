@@ -18,46 +18,87 @@
 package e2e
 
 import (
+	"bytes"
 	"path/filepath"
 
+	"github.com/ksonnet/ksonnet/pkg/util/table"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ks import", func() {
-	var a app
+	var (
+		a          app
+		importPath string
+		isErr      bool
+		o          *output
+	)
 
 	BeforeEach(func() {
 		a = e.initApp(nil)
 		a.generateDeployedService()
+		isErr = false
+	})
+
+	JustBeforeEach(func() {
+		o = a.runKs("import", "-f", importPath)
+		if isErr {
+			assertExitStatus(o, 1)
+			return
+		}
+
+		assertExitStatus(o, 0)
 	})
 
 	Context("directory", func() {
+		BeforeEach(func() {
+			importPath = filepath.Join(e.wd(), "testdata", "input", "import")
+		})
+
 		It("imports the files in the directory", func() {
-			path := filepath.Join(e.wd(), "testdata", "input", "import")
-			o := a.runKs("import", "-f", path)
-			assertExitStatus(o, 0)
+			names := a.componentNames()
+
+			var buf bytes.Buffer
+			t := table.New(&buf)
+			t.SetHeader([]string{"component"})
+			for _, name := range names {
+				t.Append([]string{name})
+			}
+			Expect(t.Render()).NotTo(HaveOccurred())
 
 			o = a.componentList()
-			assertOutput("import/output.txt", o.stdout)
+			Expect(o.stdout).To(Equal(buf.String()))
 		})
 	})
 
 	Context("file", func() {
+		BeforeEach(func() {
+			importPath = filepath.Join(e.wd(), "testdata", "input", "import", "deployment.yaml")
+		})
+
 		It("imports the file", func() {
-			path := filepath.Join(e.wd(), "testdata", "input", "import", "deployment.yaml")
-			o := a.runKs("import", "-f", path)
-			assertExitStatus(o, 0)
+			names := a.componentNames()
+
+			var buf bytes.Buffer
+			t := table.New(&buf)
+			t.SetHeader([]string{"component"})
+			for _, name := range names {
+				t.Append([]string{name})
+			}
+			Expect(t.Render()).NotTo(HaveOccurred())
 
 			o = a.componentList()
-			assertOutput("import/output.txt", o.stdout)
+			Expect(o.stdout).To(Equal(buf.String()))
 		})
 	})
 
 	Context("invalid path", func() {
+		BeforeEach(func() {
+			importPath = filepath.Join(e.wd(), "testdata", "input", "import", "invalid.yaml")
+			isErr = true
+		})
+
 		It("returns an error", func() {
-			path := filepath.Join(e.wd(), "testdata", "input", "import", "invalid.yaml")
-			o := a.runKs("import", "-f", path)
-			assertExitStatus(o, 1)
 			assertOutputContains("import/invalid.txt", o.stderr)
 		})
 	})

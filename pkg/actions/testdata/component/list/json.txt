@@ -1,0 +1,1 @@
+[{"component_name":"ingress"},{"component_name":"deployment"}]

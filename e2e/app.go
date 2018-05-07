@@ -16,7 +16,14 @@
 package e2e
 
 import (
+	"encoding/json"
 	"path/filepath"
+	"strings"
+
+	"github.com/ksonnet/ksonnet/pkg/component"
+
+	// gomega matchers
+	. "github.com/onsi/gomega"
 )
 
 type app struct {
@@ -28,8 +35,8 @@ func (a *app) runKs(args ...string) *output {
 	return a.e2e.ksInApp(a.dir, args...)
 }
 
-func (a *app) componentList() *output {
-	o := a.runKs("component", "list")
+func (a *app) componentList(opts ...string) *output {
+	o := a.runKs(append([]string{"component", "list"}, opts...)...)
 	assertExitStatus(o, 0)
 
 	return o
@@ -129,4 +136,35 @@ func (a *app) generateDeployedService() {
 
 	params := filepath.Join(appDir, "components", "params.libsonnet")
 	assertContents("generate/params.libsonnet", params)
+}
+
+func (a *app) findComponent(prefix string) string {
+	o := a.componentList("-o", "json")
+	var summaries []component.Summary
+	err := json.Unmarshal([]byte(o.stdout), &summaries)
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+
+	var name string
+	for _, summary := range summaries {
+		if strings.HasPrefix(summary.ComponentName, "deployment") {
+			name = summary.ComponentName
+		}
+	}
+
+	ExpectWithOffset(1, name).ToNot(BeEmpty())
+	return name
+}
+
+func (a *app) componentNames() []string {
+	o := a.componentList("-o", "json")
+	var summaries []component.Summary
+	err := json.Unmarshal([]byte(o.stdout), &summaries)
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+
+	var out []string
+	for _, summary := range summaries {
+		out = append(out, summary.ComponentName)
+	}
+
+	return out
 }

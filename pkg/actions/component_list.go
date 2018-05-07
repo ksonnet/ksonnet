@@ -16,6 +16,7 @@
 package actions
 
 import (
+	"encoding/json"
 	"io"
 	"os"
 	"sort"
@@ -83,9 +84,9 @@ func (cl *ComponentList) Run() error {
 	case "":
 		cl.listComponents(components)
 	case "wide":
-		if err := cl.listComponentsWide(components); err != nil {
-			return err
-		}
+		return cl.listComponentsWide(components)
+	case "json":
+		return cl.listComponentsJSON(components)
 	}
 
 	return nil
@@ -126,10 +127,28 @@ func (cl *ComponentList) listComponentsWide(components []component.Component) er
 		rows = append(rows, row)
 	}
 
+	sort.Slice(rows, func(i, j int) bool {
+		return rows[i][0] < rows[j][0]
+	})
+
 	table := table.New(cl.out)
 	table.SetHeader([]string{"component", "type", "apiversion", "kind", "name"})
 	table.AppendBulk(rows)
 	table.Render()
 
 	return nil
+}
+
+func (cl *ComponentList) listComponentsJSON(components []component.Component) error {
+	var summaries []component.Summary
+	for _, c := range components {
+		s, err := c.Summarize()
+		if err != nil {
+			return errors.Wrapf(err, "get summary for %s", c.Name(true))
+		}
+
+		summaries = append(summaries, s)
+	}
+
+	return json.NewEncoder(cl.out).Encode(summaries)
 }

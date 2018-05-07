@@ -63,16 +63,62 @@ func TestComponentList(t *testing.T) {
 	})
 }
 
+func TestComponentList_json(t *testing.T) {
+	withApp(t, func(appMock *amocks.App) {
+		module := ""
+		output := "json"
+
+		summary1 := component.Summary{ComponentName: "ingress"}
+		c1 := &cmocks.Component{}
+		c1.On("Summarize").Return(summary1, nil)
+
+		summary2 := component.Summary{ComponentName: "deployment"}
+		c2 := &cmocks.Component{}
+		c2.On("Summarize").Return(summary2, nil)
+
+		cs := []component.Component{c1, c2}
+
+		ns := &cmocks.Module{}
+		ns.On("Components").Return(cs, nil)
+
+		cm := &cmocks.Manager{}
+		cm.On("Module", mock.Anything, "").Return(ns, nil)
+
+		in := map[string]interface{}{
+			OptionApp:    appMock,
+			OptionModule: module,
+			OptionOutput: output,
+		}
+
+		a, err := NewComponentList(in)
+		require.NoError(t, err)
+
+		a.cm = cm
+
+		var buf bytes.Buffer
+		a.out = &buf
+
+		err = a.Run()
+		require.NoError(t, err)
+
+		assertOutput(t, "component/list/json.txt", buf.String())
+	})
+}
+
 func TestComponentList_wide(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		module := ""
 		output := "wide"
 
-		summary := component.Summary{ComponentName: "deployment"}
-		c := &cmocks.Component{}
-		c.On("Summarize").Return(summary, nil)
+		summary1 := component.Summary{ComponentName: "ingress"}
+		c1 := &cmocks.Component{}
+		c1.On("Summarize").Return(summary1, nil)
 
-		cs := []component.Component{c}
+		summary2 := component.Summary{ComponentName: "deployment"}
+		c2 := &cmocks.Component{}
+		c2.On("Summarize").Return(summary2, nil)
+
+		cs := []component.Component{c1, c2}
 
 		ns := &cmocks.Module{}
 		ns.On("Components").Return(cs, nil)
