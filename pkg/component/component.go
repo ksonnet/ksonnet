@@ -35,11 +35,11 @@ type ParamOptions struct {
 
 // Summary summarizes items found in components.
 type Summary struct {
-	ComponentName string
-	Type          string
-	APIVersion    string
-	Kind          string
-	Name          string
+	ComponentName string `json:"component_name,omitempty"`
+	Type          string `json:"type,omitempty"`
+	APIVersion    string `json:"api_version,omitempty"`
+	Kind          string `json:"kind,omitempty"`
+	Name          string `json:"name,omitempty"`
 }
 
 // GVK converts a summary to a group - version - kind.

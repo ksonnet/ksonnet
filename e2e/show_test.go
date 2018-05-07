@@ -25,7 +25,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("ks show", func() {
+var _ = PDescribe("ks show", func() {
 	var a app
 
 	BeforeEach(func() {
