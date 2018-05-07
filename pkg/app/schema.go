@@ -289,7 +289,7 @@ type EnvironmentDestinationSpec struct {
 type LibraryRefSpec struct {
 	Name       string          `json:"name"`
 	Registry   string          `json:"registry"`
-	GitVersion *GitVersionSpec `json:"gitVersion"`
+	GitVersion *GitVersionSpec `json:"gitVersion,omitempty"`
 }
 
 // GitVersionSpec is the specification for a Registry's Git Version.
