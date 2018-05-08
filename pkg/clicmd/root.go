@@ -30,12 +30,12 @@ import (
 	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/env"
+	"github.com/ksonnet/ksonnet/pkg/log"
 	"github.com/ksonnet/ksonnet/pkg/pipeline"
 	"github.com/ksonnet/ksonnet/pkg/plugin"
 	str "github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/ksonnet/ksonnet/template"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
@@ -68,21 +68,13 @@ application configuration to remote clusters.
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		goflag.CommandLine.Parse([]string{})
 		flags := cmd.Flags()
-		out := cmd.OutOrStderr()
-		log.SetOutput(out)
-
-		logFmt := &log.TextFormatter{
-			DisableTimestamp:       true,
-			DisableLevelTruncation: true,
-			QuoteEmptyFields:       true,
-		}
-		log.SetFormatter(logFmt)
 
 		verbosity, err := flags.GetCount(flagVerbose)
 		if err != nil {
 			return err
 		}
-		log.SetLevel(logLevel(verbosity))
+
+		log.Init(verbosity, cmd.OutOrStderr())
 
 		wd, err := os.Getwd()
 		if err != nil {
@@ -153,15 +145,6 @@ func runPlugin(p plugin.Plugin, args []string) error {
 
 	cmd := p.BuildRunCmd(env, args)
 	return cmd.Run()
-}
-
-func logLevel(verbosity int) log.Level {
-	switch verbosity {
-	case 0:
-		return log.InfoLevel
-	default:
-		return log.DebugLevel
-	}
 }
 
 func newExpander(fs afero.Fs, cmd *cobra.Command) (*template.Expander, error) {
@@ -256,11 +239,6 @@ func newCmdObjExpander(c cmdObjExpanderConfig) *cmdObjExpander {
 
 // Expands expands the templates.
 func (te *cmdObjExpander) Expand() ([]*unstructured.Unstructured, error) {
-	// expander, err := te.templateExpanderFn(te.config.fs, te.config.cmd)
-	// if err != nil {
-	// 	return nil, errors.Wrap(err, "template expander")
-	// }
-
 	manager, err := metadata.Find(te.config.cwd)
 	if err != nil {
 		return nil, errors.Wrap(err, "find metadata")

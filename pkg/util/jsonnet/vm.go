@@ -27,6 +27,7 @@ import (
 
 	"github.com/google/go-jsonnet"
 	"github.com/google/go-jsonnet/ast"
+	"github.com/ksonnet/ksonnet/pkg/log"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -110,9 +111,12 @@ func (vm *VM) EvaluateSnippet(name, snippet string) (string, error) {
 	now := time.Now()
 
 	fields := logrus.Fields{
-		"jPaths":  strings.Join(vm.jPaths, ", "),
-		"name":    name,
-		"snippet": snippet,
+		"jPaths": strings.Join(vm.jPaths, ", "),
+		"name":   name,
+	}
+
+	if log.VerbosityLevel >= 2 {
+		fields["snippet"] = snippet
 	}
 
 	jvm := jsonnet.MakeVM()
@@ -126,26 +130,34 @@ func (vm *VM) EvaluateSnippet(name, snippet string) (string, error) {
 
 	for k, v := range vm.extCodes {
 		jvm.ExtCode(k, v)
-		key := fmt.Sprintf("extCode#%s", k)
-		fields[key] = v
+		if log.VerbosityLevel >= 2 {
+			key := fmt.Sprintf("extCode#%s", k)
+			fields[key] = v
+		}
 	}
 
 	for k, v := range vm.extVars {
 		jvm.ExtVar(k, v)
-		key := fmt.Sprintf("extVar#%s", k)
-		fields[key] = v
+		if log.VerbosityLevel >= 2 {
+			key := fmt.Sprintf("extVar#%s", k)
+			fields[key] = v
+		}
 	}
 
 	for k, v := range vm.tlaCodes {
 		jvm.TLACode(k, v)
-		key := fmt.Sprintf("tlaCode#%s", k)
-		fields[key] = v
+		if log.VerbosityLevel >= 2 {
+			key := fmt.Sprintf("tlaCode#%s", k)
+			fields[key] = v
+		}
 	}
 
 	for k, v := range vm.tlaVars {
 		jvm.TLAVar(k, v)
-		key := fmt.Sprintf("tlaVar#%s", k)
-		fields[key] = v
+		if log.VerbosityLevel >= 2 {
+			key := fmt.Sprintf("tlaVar#%s", k)
+			fields[key] = v
+		}
 	}
 
 	defer func() {
