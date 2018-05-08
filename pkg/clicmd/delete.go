@@ -39,7 +39,7 @@ var (
 func init() {
 	RootCmd.AddCommand(deleteCmd)
 
-	deleteClientConfig = client.NewDefaultClientConfig()
+	deleteClientConfig = client.NewDefaultClientConfig(ka)
 	deleteClientConfig.BindClientGoFlags(deleteCmd)
 	bindJsonnetFlags(deleteCmd, "delete")
 

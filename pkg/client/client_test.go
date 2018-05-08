@@ -16,101 +16,61 @@
 package client
 
 import (
-	"crypto/x509"
-	"encoding/pem"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
-	"os"
 	"testing"
 
+	swagger "github.com/emicklei/go-restful-swagger12"
+	"github.com/googleapis/gnostic/OpenAPIv2"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/version"
+	"k8s.io/client-go/discovery"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 func TestConfig_GetAPISpec(t *testing.T) {
-	b, err := ioutil.ReadFile("testdata/swagger.json")
-	require.NoError(t, err)
-
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, string(b))
-	})
-
-	ts := httptest.NewServer(handler)
-	defer ts.Close()
-
-	tsTLS := httptest.NewTLSServer(handler)
-	defer tsTLS.Close()
-
-	tmpfile, err := ioutil.TempFile("", "")
-	require.NoError(t, err)
-	defer os.Remove(tmpfile.Name())
-
-	certPEM := buildPEM(tsTLS.Certificate())
-
-	_, err = tmpfile.Write(certPEM)
-	require.NoError(t, err)
-
-	err = tmpfile.Close()
-	require.NoError(t, err)
-
 	cases := []struct {
 		name      string
-		serverURL string
-		expected  string
-		caData    []byte
-		caFile    string
+		version   string
+		disc      discovery.DiscoveryInterface
+		createErr error
 	}{
 		{
-			name:      "invalid server URL",
-			serverURL: "http://+++",
-			expected:  defaultVersion,
+			name:    "in general",
+			version: "version:v1.9.3",
+			disc:    &fakeDiscovery{},
 		},
 		{
-			name:      "with a server",
-			serverURL: ts.URL,
-			expected:  "version:v1.9.3",
+			name:      "unable to create discovery client",
+			version:   "version:v1.8.0",
+			createErr: errors.New("failed"),
 		},
 		{
-			name:      "TLS with file cert",
-			serverURL: tsTLS.URL,
-			expected:  "version:v1.9.3",
-			caFile:    tmpfile.Name(),
-		},
-		{
-			name:      "TLS with data cert",
-			serverURL: tsTLS.URL,
-			expected:  "version:v1.9.3",
-			caData:    certPEM,
+			name:    "retrieve open api schema error",
+			version: "version:v1.8.0",
+			disc:    &fakeDiscovery{withOpenAPISchemaError: true},
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			c := Config{
-				Config: &clientConfig{
-					caFile: tc.caFile,
-					caData: tc.caData,
+				Config: &clientConfig{},
+				discoveryClient: func() (discovery.DiscoveryInterface, error) {
+					return tc.disc, tc.createErr
 				},
 			}
-			got := c.GetAPISpec(tc.serverURL)
-			require.Equal(t, tc.expected, got)
+			got := c.GetAPISpec()
+			require.Equal(t, tc.version, got)
 		})
 	}
-}
 
-func buildPEM(cert *x509.Certificate) []byte {
-	b := &pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw}
-	return pem.EncodeToMemory(b)
 }
 
 type clientConfig struct {
-	caFile string
-	caData []byte
 }
 
 var _ clientcmd.ClientConfig = (*clientConfig)(nil)
@@ -120,12 +80,7 @@ func (c *clientConfig) RawConfig() (clientcmdapi.Config, error) {
 }
 
 func (c *clientConfig) ClientConfig() (*restclient.Config, error) {
-	rc := &restclient.Config{
-		TLSClientConfig: restclient.TLSClientConfig{
-			CAData: c.caData,
-			CAFile: c.caFile,
-		},
-	}
+	rc := &restclient.Config{}
 
 	return rc, nil
 }
@@ -138,4 +93,54 @@ func (c *clientConfig) ConfigAccess() clientcmd.ConfigAccess {
 	var ca clientcmd.ConfigAccess
 
 	return ca
+}
+
+type fakeDiscovery struct {
+	withOpenAPISchemaError bool
+}
+
+var _ discovery.DiscoveryInterface = (*fakeDiscovery)(nil)
+
+func (c *fakeDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *fakeDiscovery) ServerResources() ([]*metav1.APIResourceList, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *fakeDiscovery) ServerPreferredResources() ([]*metav1.APIResourceList, error) {
+	return nil, nil
+}
+
+func (c *fakeDiscovery) ServerPreferredNamespacedResources() ([]*metav1.APIResourceList, error) {
+	return nil, nil
+}
+
+func (c *fakeDiscovery) ServerGroups() (*metav1.APIGroupList, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *fakeDiscovery) ServerVersion() (*version.Info, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *fakeDiscovery) OpenAPISchema() (*openapi_v2.Document, error) {
+	if c.withOpenAPISchemaError {
+		return nil, errors.New("schema error")
+	}
+
+	return &openapi_v2.Document{
+		Info: &openapi_v2.Info{
+			Version: "v1.9.3",
+		},
+	}, nil
+}
+
+func (c *fakeDiscovery) SwaggerSchema(version schema.GroupVersion) (*swagger.ApiDeclaration, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *fakeDiscovery) RESTClient() restclient.Interface {
+	return nil
 }

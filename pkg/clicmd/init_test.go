@@ -45,7 +45,7 @@ func Test_initCmd(t *testing.T) {
 				actions.OptionEnvName:               "env-name",
 				actions.OptionRootPath:              root,
 				actions.OptionServer:                "http://127.0.0.1",
-				actions.OptionSpecFlag:              "version:v1.7.0",
+				actions.OptionSpecFlag:              "version:v1.8.0",
 				actions.OptionNamespace:             "new-namespace",
 				actions.OptionSkipDefaultRegistries: false,
 			},

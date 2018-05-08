@@ -38,7 +38,7 @@ func init() {
 	RootCmd.AddCommand(validateCmd)
 	addEnvCmdFlags(validateCmd)
 	bindJsonnetFlags(validateCmd, "validate")
-	validateClientConfig = client.NewDefaultClientConfig()
+	validateClientConfig = client.NewDefaultClientConfig(ka)
 	validateClientConfig.BindClientGoFlags(validateCmd)
 
 	viper.BindPFlag(vValidateComponent, validateCmd.Flag(flagComponent))

@@ -42,7 +42,7 @@ const (
 func init() {
 	RootCmd.AddCommand(applyCmd)
 
-	applyClientConfig = client.NewDefaultClientConfig()
+	applyClientConfig = client.NewDefaultClientConfig(ka)
 	applyClientConfig.BindClientGoFlags(applyCmd)
 	bindJsonnetFlags(applyCmd, "apply")
 
