@@ -16,15 +16,21 @@
 package jsonnet
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/google/go-jsonnet"
+	"github.com/google/go-jsonnet/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
+	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 type makeVMFn func() *jsonnet.VM
@@ -111,6 +117,7 @@ func (vm *VM) EvaluateSnippet(name, snippet string) (string, error) {
 
 	jvm := jsonnet.MakeVM()
 	jvm.ErrorFormatter.SetMaxStackTraceSize(40)
+	registerNativeFuncs(jvm)
 	importer, err := vm.createImporter()
 	if err != nil {
 		return "", errors.Wrap(err, "create jsonnet importer")
@@ -196,4 +203,87 @@ func (vm *VM) readString(path string) (string, error) {
 	}
 
 	return string(b), nil
+}
+
+func registerNativeFuncs(vm *jsonnet.VM) {
+	// NOTE: jsonnet native functions can only pass primitive
+	// types, so some functions json-encode the arg.  These
+	// "*FromJson" functions will be replaced by regular native
+	// version when jsonnet is able to support this.
+
+	vm.NativeFunction(
+		&jsonnet.NativeFunction{
+			Name:   "parseJson",
+			Params: ast.Identifiers{"json"},
+			Func:   parseJSON,
+		})
+
+	vm.NativeFunction(
+		&jsonnet.NativeFunction{
+			Name:   "parseYaml",
+			Params: ast.Identifiers{"yaml"},
+			Func:   parseYAML,
+		})
+
+	vm.NativeFunction(
+		&jsonnet.NativeFunction{
+			Name:   "escapeStringRegex",
+			Params: ast.Identifiers{"str"},
+			Func:   escapeStringRegex,
+		})
+
+	vm.NativeFunction(
+		&jsonnet.NativeFunction{
+			Name:   "regexMatch",
+			Params: ast.Identifiers{"regex", "string"},
+			Func:   regexMatch,
+		})
+
+	vm.NativeFunction(
+		&jsonnet.NativeFunction{
+			Name:   "regexSubst",
+			Params: ast.Identifiers{"regex", "src", "repl"},
+			Func:   regexSubst,
+		})
+}
+
+func regexSubst(data []interface{}) (interface{}, error) {
+	regex, src, repl := data[0].(string), data[1].(string), data[2].(string)
+
+	r, err := regexp.Compile(regex)
+	if err != nil {
+		return "", err
+	}
+	return r.ReplaceAllString(src, repl), nil
+}
+
+func regexMatch(s []interface{}) (interface{}, error) {
+	return regexp.MatchString(s[0].(string), s[1].(string))
+}
+
+func escapeStringRegex(s []interface{}) (interface{}, error) {
+	return regexp.QuoteMeta(s[0].(string)), nil
+}
+
+func parseYAML(dataString []interface{}) (interface{}, error) {
+	data := []byte(dataString[0].(string))
+	ret := []interface{}{}
+	d := yaml.NewYAMLToJSONDecoder(bytes.NewReader(data))
+	for {
+		var doc interface{}
+		if err := d.Decode(&doc); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, err
+		}
+		ret = append(ret, doc)
+	}
+	return ret, nil
+}
+
+func parseJSON(dataString []interface{}) (res interface{}, err error) {
+	data := []byte(dataString[0].(string))
+	err = json.Unmarshal(data, &res)
+	return
 }
