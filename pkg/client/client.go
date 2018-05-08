@@ -16,17 +16,9 @@
 package client
 
 import (
-	"crypto/tls"
-	"crypto/x509"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 	"os"
-	"path"
 	"reflect"
-	"time"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	str "github.com/ksonnet/ksonnet/pkg/util/strings"
@@ -40,7 +32,7 @@ import (
 )
 
 const (
-	defaultVersion = "version:v1.7.0"
+	defaultVersion = "version:v1.8.0"
 )
 
 // Config is a wrapper around client-go's ClientConfig
@@ -49,122 +41,65 @@ type Config struct {
 	LoadingRules *clientcmd.ClientConfigLoadingRules
 
 	Config clientcmd.ClientConfig
+
+	discoveryClient func() (discovery.DiscoveryInterface, error)
+}
+
+func defaultDiscoveryClient(config clientcmd.ClientConfig) func() (discovery.DiscoveryInterface, error) {
+	return func() (discovery.DiscoveryInterface, error) {
+
+		c, err := config.ClientConfig()
+		if err != nil {
+			return nil, errors.Wrap(err, "retrive client config")
+		}
+
+		return discovery.NewDiscoveryClientForConfig(c)
+	}
 }
 
 // NewClientConfig initializes a new client.Config with the provided loading rules and overrides.
 func NewClientConfig(a app.App, overrides clientcmd.ConfigOverrides, loadingRules clientcmd.ClientConfigLoadingRules) *Config {
 	config := clientcmd.NewInteractiveDeferredLoadingClientConfig(&loadingRules, &overrides, os.Stdin)
 	return &Config{
-		Overrides:    &overrides,
-		LoadingRules: &loadingRules,
-		Config:       config,
+		Overrides:       &overrides,
+		LoadingRules:    &loadingRules,
+		Config:          config,
+		discoveryClient: defaultDiscoveryClient(config),
 	}
 }
 
 // NewDefaultClientConfig initializes a new ClientConfig with default loading rules and no overrides.
-func NewDefaultClientConfig() *Config {
+func NewDefaultClientConfig(a app.App) *Config {
 	overrides := clientcmd.ConfigOverrides{}
 	loadingRules := *clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-	config := clientcmd.NewInteractiveDeferredLoadingClientConfig(&loadingRules, &overrides, os.Stdin)
 
-	return &Config{
-		Overrides:    &overrides,
-		LoadingRules: &loadingRules,
-		Config:       config,
-	}
+	return NewClientConfig(a, overrides, loadingRules)
 }
 
 // InitClient initializes a new ClientConfig given the specified environment
 // spec and returns the ClientPool, DiscoveryInterface, and namespace.
 func InitClient(a app.App, env string) (dynamic.ClientPool, discovery.DiscoveryInterface, string, error) {
-	clientConfig := NewDefaultClientConfig()
+	clientConfig := NewDefaultClientConfig(a)
 	return clientConfig.RestClient(a, &env)
 }
 
-// GetAPISpec reads the kubernetes API version from this client's swagger.json.
-// We anticipate the swagger.json to be located at <server>/swagger.json.
-// If no swagger is found, or we are unable to authenticate to the server, we
-// will default to version:v1.7.0.
-func (c *Config) GetAPISpec(server string) string {
-	type Info struct {
-		Version string `json:"version"`
-	}
-
-	type Spec struct {
-		Info Info `json:"info"`
-	}
-
-	u, err := url.Parse(server)
-	u.Path = path.Join(u.Path, "swagger.json")
-	url := u.String()
-
-	client := http.Client{
-		Timeout: time.Second * 2,
-	}
-
-	restConfig, err := c.Config.ClientConfig()
+// GetAPISpec reads the kubernetes API version from this client's Open API schema.
+// If there is an error retrieving the schema, return the default version.
+func (c *Config) GetAPISpec() string {
+	dc, err := c.discoveryClient()
 	if err != nil {
-		log.Debugf("Failed to retrieve REST config:\n%v", err)
-	}
-
-	if len(restConfig.TLSClientConfig.CAData) > 0 {
-		log.Info("Configuring TLS (from data) for retrieving cluster swagger.json")
-		client.Transport = buildTransportFromData(restConfig.TLSClientConfig.CAData)
-	}
-
-	if restConfig.TLSClientConfig.CAFile != "" {
-		log.Info("Configuring TLS (from file) for retrieving cluster swagger.json")
-		transport, err := buildTransportFromFile(restConfig.TLSClientConfig.CAFile)
-		if err != nil {
-			log.Debugf("Failed to read CA file: %v", err)
-			return defaultVersion
-		}
-
-		client.Transport = transport
-	}
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		log.Debugf("Failed to create request at %s\n%s", url, err.Error())
+		log.WithError(err).Debug("Failed to create discovery client")
 		return defaultVersion
 	}
 
-	res, err := client.Do(req)
+	openAPIDoc, err := dc.OpenAPISchema()
 	if err != nil {
-		log.Debugf("Failed to open swagger at %s\n%s", url, err.Error())
+		log.WithError(err).Debug("Failed to retrieve OpenAPI schema")
 		return defaultVersion
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Debugf("Failed to read swagger at %s\n%s", url, err.Error())
-		return defaultVersion
-	}
-
-	spec := Spec{}
-	err = json.Unmarshal(body, &spec)
-	if err != nil {
-		log.Debugf("Failed to parse swagger at %s\n%s", url, err.Error())
-		return defaultVersion
-	}
-
-	return fmt.Sprintf("version:%s", spec.Info.Version)
-}
-
-func buildTransportFromData(data []byte) *http.Transport {
-	tlsConfig := &tls.Config{RootCAs: x509.NewCertPool()}
-	tlsConfig.RootCAs.AppendCertsFromPEM(data)
-	return &http.Transport{TLSClientConfig: tlsConfig}
-}
-
-func buildTransportFromFile(file string) (*http.Transport, error) {
-	data, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to ready CA file")
-	}
-
-	return buildTransportFromData(data), nil
+	return fmt.Sprintf("version:%s", openAPIDoc.Info.Version)
 }
 
 // Namespace returns the namespace for the provided ClientConfig.

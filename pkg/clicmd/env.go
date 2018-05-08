@@ -47,7 +47,7 @@ var (
 
 func init() {
 	RootCmd.AddCommand(envCmd)
-	envClientConfig = client.NewDefaultClientConfig()
+	envClientConfig = client.NewDefaultClientConfig(ka)
 	envClientConfig.BindClientGoFlags(envCmd)
 
 	envCmd.AddCommand(envAddCmd)

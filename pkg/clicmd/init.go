@@ -43,7 +43,7 @@ var (
 
 func init() {
 	RootCmd.AddCommand(initCmd)
-	initClientConfig = client.NewDefaultClientConfig()
+	initClientConfig = client.NewDefaultClientConfig(ka)
 	initClientConfig.BindClientGoFlags(initCmd)
 
 	initCmd.Flags().String(flagDir, "", "Ksonnet application directory")
@@ -90,7 +90,7 @@ var initCmd = &cobra.Command{
 
 		specFlag := viper.GetString(vInitAPISpec)
 		if specFlag == "" {
-			specFlag = initClientConfig.GetAPISpec(server)
+			specFlag = initClientConfig.GetAPISpec()
 		}
 
 		m := map[string]interface{}{

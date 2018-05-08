@@ -51,7 +51,7 @@ var envAddCmd = &cobra.Command{
 			return err
 		}
 		if specFlag == "" {
-			specFlag = envClientConfig.GetAPISpec(server)
+			specFlag = envClientConfig.GetAPISpec()
 		}
 
 		isOverride := viper.GetBool(vEnvAddOverride)
