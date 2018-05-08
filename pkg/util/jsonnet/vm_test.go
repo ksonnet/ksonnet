@@ -101,3 +101,203 @@ func TestVM_EvaluateSnippet_memory_importer(t *testing.T) {
 
 	require.Equal(t, "evaluated", out)
 }
+
+func Test_regexSubst(t *testing.T) {
+	cases := []struct {
+		name     string
+		in       []interface{}
+		expected string
+		isErr    bool
+	}{
+		{
+			name: "valid regex",
+			in: []interface{}{
+				"ee",
+				"tree",
+				"oll",
+			},
+			expected: "troll",
+		},
+		{
+			name: "invalid regex",
+			in: []interface{}{
+				"[",
+				"tree",
+				"oll",
+			},
+			isErr: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := regexSubst(tc.in)
+			if tc.isErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			s, ok := out.(string)
+			require.True(t, ok)
+
+			require.Equal(t, tc.expected, s)
+		})
+	}
+}
+
+func Test_regexMatch(t *testing.T) {
+	in := []interface{}{"ee", "tree"}
+	out, err := regexMatch(in)
+	require.NoError(t, err)
+
+	tf, ok := out.(bool)
+	require.True(t, ok)
+	require.True(t, tf)
+}
+
+func Test_escapeStringRegex(t *testing.T) {
+	in := []interface{}{"[foo]"}
+	out, err := escapeStringRegex(in)
+	require.NoError(t, err)
+
+	s, ok := out.(string)
+	require.True(t, ok)
+
+	require.Equal(t, `\[foo\]`, s)
+}
+
+func Test_parseYAML(t *testing.T) {
+	cases := []struct {
+		name     string
+		in       []interface{}
+		expected interface{}
+		isErr    bool
+	}{
+		{
+			name: "valid yaml",
+			in:   []interface{}{"---\nfoo: bar"},
+			expected: []interface{}{
+				map[string]interface{}{
+					"foo": "bar",
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := parseYAML(tc.in)
+			if tc.isErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			require.Equal(t, tc.expected, out)
+		})
+	}
+}
+
+func Test_parseJSON(t *testing.T) {
+	cases := []struct {
+		name     string
+		in       []interface{}
+		expected interface{}
+		isErr    bool
+	}{
+		{
+			name: "valid JSON",
+			in:   []interface{}{`{ "foo": "bar" }`},
+			expected: map[string]interface{}{
+				"foo": "bar",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := parseJSON(tc.in)
+			if tc.isErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			require.Equal(t, tc.expected, out)
+		})
+	}
+}
+
+func TestParseJson(t *testing.T) {
+	vm := NewVM()
+
+	_, err := vm.EvaluateSnippet("failtest", `std.native("parseJson")("barf{")`)
+	require.Error(t, err)
+
+	x, err := vm.EvaluateSnippet("test", `std.native("parseJson")("null")`)
+	require.NoError(t, err)
+	assert.Equal(t, "null\n", x)
+
+	x, err = vm.EvaluateSnippet("test", `
+    local a = std.native("parseJson")('{"foo": 3, "bar": 4}');
+    a.foo + a.bar`)
+	require.NoError(t, err)
+	assert.Equal(t, "7\n", x)
+}
+
+func TestParseYaml(t *testing.T) {
+	vm := NewVM()
+
+	_, err := vm.EvaluateSnippet("failtest", `std.native("parseYaml")("[barf")`)
+	require.Error(t, err)
+
+	x, err := vm.EvaluateSnippet("test", `std.native("parseYaml")("")`)
+	require.NoError(t, err)
+	assert.Equal(t, "[ ]\n", x)
+
+	x, err = vm.EvaluateSnippet("test", `
+    local a = std.native("parseYaml")("foo:\n- 3\n- 4\n")[0];
+    a.foo[0] + a.foo[1]`)
+	require.NoError(t, err)
+	assert.Equal(t, "7\n", x)
+
+	x, err = vm.EvaluateSnippet("test", `
+    local a = std.native("parseYaml")("---\nhello\n---\nworld");
+    a[0] + a[1]`)
+	require.NoError(t, err)
+	assert.Equal(t, "\"helloworld\"\n", x)
+}
+
+func Test_regexMatch_fun(t *testing.T) {
+	vm := NewVM()
+
+	_, err := vm.EvaluateSnippet("failtest", `std.native("regexMatch")("[f", "foo")`)
+	require.Error(t, err)
+
+	x, err := vm.EvaluateSnippet("test", `std.native("regexMatch")("foo.*", "seafood")`)
+	require.NoError(t, err)
+	assert.Equal(t, "true\n", x)
+
+	x, err = vm.EvaluateSnippet("test", `std.native("regexMatch")("bar.*", "seafood")`)
+	require.NoError(t, err)
+	assert.Equal(t, "false\n", x)
+}
+
+func TestRegexSubst(t *testing.T) {
+	vm := NewVM()
+
+	_, err := vm.EvaluateSnippet("failtest", `std.native("regexSubst")("[f",s "foo", "bar")`)
+	require.Error(t, err)
+
+	x, err := vm.EvaluateSnippet("test", `std.native("regexSubst")("a(x*)b", "-ab-axxb-", "T")`)
+	require.NoError(t, err)
+	assert.Equal(t, "\"-T-T-\"\n", x)
+
+	x, err = vm.EvaluateSnippet("test", `std.native("regexSubst")("a(x*)b", "-ab-axxb-", "${1}W")`)
+	require.NoError(t, err)
+	assert.Equal(t, "\"-W-xxW-\"\n", x)
+}
