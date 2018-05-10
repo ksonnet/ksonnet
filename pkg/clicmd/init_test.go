@@ -37,6 +37,7 @@ func Test_initCmd(t *testing.T) {
 				"--namespace", "new-namespace",
 				"--server", "http://127.0.0.1",
 				"--env", "env-name",
+				"--api-spec", "version:v1.8.0",
 			},
 			action: actionInit,
 			expected: map[string]interface{}{

@@ -4,16 +4,16 @@ local envParams = params + {
   components+: {
     guestbook+: {
       name: "guestbook-dev",
-      replicas: params.global.replicas,
+      replicas: params.global.replicas
     },
     component+: {
-      name: "new-component",
-    },
-  },
+      name: "new-component"
+    }
+  }
 };
 
 {
   components: {
-    [x]: envParams.components[x] + globals, for x in std.objectFields(envParams.components)
-  },
+    [x]: envParams.components[x] + globals for x in std.objectFields(envParams.components)
+  }
 }

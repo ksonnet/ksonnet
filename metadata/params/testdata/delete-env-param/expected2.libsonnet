@@ -1,10 +1,9 @@
-local params = {
-};
+local params = {};
 
 params {
   components+: {
     foo+: {
-      replicas: 1,
-    },
-  },
+      replicas: 1
+    }
+  }
 }
