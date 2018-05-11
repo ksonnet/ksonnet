@@ -296,6 +296,11 @@ func TestDecodeValue(t *testing.T) {
 			},
 		},
 		{
+			name:     "semantic version",
+			val:      "0.0.1",
+			expected: "0.0.1",
+		},
+		{
 			name:     "string",
 			val:      "foo",
 			expected: "foo",

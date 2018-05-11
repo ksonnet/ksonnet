@@ -265,7 +265,11 @@ func DecodeValue(s string) (interface{}, error) {
 	case reInt.MatchString(s):
 		return strconv.Atoi(s)
 	case reFloat.MatchString(s):
-		return strconv.ParseFloat(s, 64)
+		fStr, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			return s, nil
+		}
+		return fStr, nil
 	case strings.ToLower(s) == "true" || strings.ToLower(s) == "false":
 		return strconv.ParseBool(s)
 	case reArray.MatchString(s):
