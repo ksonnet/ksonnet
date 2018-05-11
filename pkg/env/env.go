@@ -118,6 +118,15 @@ func Evaluate(a app.App, envName, components, paramsStr string) (string, error) 
 		libPath,
 	)
 
+	if len(appEnv.Targets) == 0 {
+		vm.AddJPath(filepath.Join(a.Root(), "components"))
+	} else {
+		for _, moduleName := range appEnv.Targets {
+			path := filepath.Join(append([]string{a.Root(), "components"}, moduleName)...)
+			vm.AddJPath(path)
+		}
+	}
+
 	envCode, err := environmentsCode(a, envName)
 	if err != nil {
 		return "", err
