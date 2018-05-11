@@ -1,3 +1,1 @@
-{
-  group: "dev",
-}
+{group: "dev"}

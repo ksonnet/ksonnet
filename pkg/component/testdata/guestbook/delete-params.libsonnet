@@ -1,6 +1,5 @@
 {
-  global: {
-  },
+  global: {},
   components: {
     // Component-level parameters, defined initially from 'ks prototype use ...'
     // Each object below should correspond to a component in the components/ directory
@@ -9,10 +8,10 @@
       image: "gcr.io/heptio-images/ks-guestbook-demo:0.1",
       name: "guiroot",
       obj: {
-        a: "b",
+        a: "b"
       },
       servicePort: 80,
-      type: "ClusterIP",
-    },
-  },
+      type: "ClusterIP"
+    }
+  }
 }

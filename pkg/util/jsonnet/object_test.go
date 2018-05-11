@@ -51,7 +51,7 @@ func TestSet(t *testing.T) {
 			name:       "update existing field",
 			updatePath: []string{"a", "b", "c"},
 			update:     nm.NewInt(9).Node(),
-			expected:   "{\n  a:: {\n    b:: {\n      c:: 9,\n    },\n  },\n}",
+			expected:   "{\n  a:: {\n    b:: {\n      c:: 9\n    }\n  }\n}",
 		},
 		{
 			name:       "set map",
@@ -63,7 +63,7 @@ func TestSet(t *testing.T) {
 			name:       "set new field",
 			updatePath: []string{"a", "e"},
 			update:     nm.NewInt(9).Node(),
-			expected:   "{\n  a:: {\n    b:: {\n      c:: \"value\",\n    },\n    e: 9,\n  },\n}",
+			expected:   "{\n  a:: {\n    b:: {\n      c:: \"value\"\n    },\n    e: 9\n  }\n}",
 		},
 		{
 			name:       "set object field to non object",

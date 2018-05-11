@@ -5,7 +5,7 @@ params + {
     guestbook+: {
       name: "guestbook-dev",
       replicas: params.global.replicas,
-      containerPort: 8080,
-    },
-  },
+      containerPort: 8080
+    }
+  }
 }
