@@ -1,5 +1,18 @@
 # Change Log
 
+## [v0.10.2](https://github.com/ksonnet/ksonnet/tree/v0.10.2) (2018-5-11)
+
+ksonnet 0.10.2 is a bug fix release
+
+* gracefully recover when setting parameters from the command line
+* add module paths to jsonnet path when evaluating components
+* support all Jsonnet language functions
+* adds option to reduce verbosity of debug logging
+* re-enable native functions for Jsonnet vm
+* list components in alphabetical order
+* disable ksonnet-lib import in environments unless explicitly required
+* omit library gitVersion if it is null
+
 ## [v0.10.1](https://github.com/ksonnet/ksonnet/tree/v0.10.1) (2018-04-27)
 
 ksonnet 0.10.1 fixes issues with evaluating components
