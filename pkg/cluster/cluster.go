@@ -22,7 +22,6 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/client"
 	"github.com/ksonnet/ksonnet/pkg/pipeline"
 	"github.com/ksonnet/ksonnet/utils"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -68,15 +67,6 @@ type findObjectsFn func(a app.App, envName string,
 func loadDiscovery(a app.App, clientConfig *client.Config, envName string) (discovery.DiscoveryInterface, error) {
 	_, d, _, err := clientConfig.RestClient(a, &envName)
 	return d, err
-}
-
-func validateObject(d discovery.DiscoveryInterface, obj *unstructured.Unstructured) []error {
-	schema, err := utils.NewSwaggerSchemaFor(d, obj.GroupVersionKind().GroupVersion())
-	if err != nil {
-		return []error{errors.Wrap(err, "unable to retrieve schema")}
-	}
-
-	return schema.Validate(obj)
 }
 
 func findObjects(a app.App, envName string, componentNames []string) ([]*unstructured.Unstructured, error) {

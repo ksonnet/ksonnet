@@ -97,7 +97,7 @@ func TestValidate(t *testing.T) {
 					return objects, nil
 				}
 
-				a.validateObjectFn = func(d discovery.DiscoveryInterface, obj *unstructured.Unstructured) []error {
+				a.validateObjectFn = func(a app.App, obj *unstructured.Unstructured, envName string) []error {
 					return make([]error, 0)
 				}
 
