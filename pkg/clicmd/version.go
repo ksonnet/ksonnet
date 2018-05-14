@@ -20,7 +20,6 @@ import (
 
 	jsonnet "github.com/google/go-jsonnet"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/pkg/version"
 )
 
 func init() {
@@ -38,14 +37,9 @@ var versionCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		out := cmd.OutOrStdout()
 
-		clientGoVersion := fmt.Sprintf("%s.%s", version.Get().Major, version.Get().Minor)
-		if APImachineryVersion != "" {
-			clientGoVersion += fmt.Sprintf("-%s", APImachineryVersion)
-		}
-
 		fmt.Fprintln(out, "ksonnet version:", Version)
 		fmt.Fprintln(out, "jsonnet version:", jsonnet.Version())
-		fmt.Fprintln(out, "client-go version:", clientGoVersion)
+		fmt.Fprintln(out, "client-go version:", APImachineryVersion)
 	},
 	Long: `
 The ` + "`version`" + ` command prints out version info about the current ksonnet CLI,
