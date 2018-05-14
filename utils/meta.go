@@ -130,16 +130,6 @@ func (v ServerVersion) String() string {
 	return fmt.Sprintf("%d.%d", v.Major, v.Minor)
 }
 
-// SetMetaDataAnnotation sets an annotation value
-func SetMetaDataAnnotation(obj metav1.Object, key, value string) {
-	a := obj.GetAnnotations()
-	if a == nil {
-		a = make(map[string]string)
-	}
-	a[key] = value
-	obj.SetAnnotations(a)
-}
-
 // ResourceNameFor returns a lowercase plural form of a type, for
 // human messages.  Returns lowercased kind if discovery lookup fails.
 func ResourceNameFor(disco discovery.ServerResourcesInterface, o runtime.Object) string {

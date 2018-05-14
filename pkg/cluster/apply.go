@@ -37,6 +37,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
+const (
+	annotationManaged  = "ksonnet.io/managed"
+	labelDeployManager = "app.kubernetes.io/deploy-manager"
+
+	appKsonnet = "ksonnet"
+)
+
 var (
 	ignoredFields = []string{
 		"apiVersion",
@@ -133,7 +140,7 @@ func (a *Apply) handleObject(co clientOpts, obj *unstructured.Unstructured) (str
 	}
 
 	if a.GcTag != "" {
-		utils.SetMetaDataAnnotation(obj, AnnotationGcTag, a.GcTag)
+		SetMetaDataAnnotation(obj, AnnotationGcTag, a.GcTag)
 	}
 
 	desc := fmt.Sprintf("%s %s", a.objectInfo.ResourceName(co.discovery, obj), utils.FqName(obj))
@@ -213,7 +220,8 @@ func tagManaged(obj *unstructured.Unstructured) error {
 		return err
 	}
 
-	utils.SetMetaDataAnnotation(obj, "ksonnet.io/managed", string(b))
+	SetMetaDataLabel(obj, labelDeployManager, appKsonnet)
+	SetMetaDataAnnotation(obj, annotationManaged, string(b))
 	return nil
 }
 
