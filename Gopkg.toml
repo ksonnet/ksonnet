@@ -102,16 +102,25 @@
 
 [[constraint]]
   name = "k8s.io/api"
-  branch = "release-1.8"
+  branch = "release-1.10"
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  branch = "release-1.8"
+  branch = "release-1.10"
 
 [[constraint]]
   name = "k8s.io/client-go"
-  version = "5.0.0"
+  version = "7.0.0"
 
 [[constraint]]
   name = "github.com/GeertJohan/go.rice"
   revision = "c02ca9a983da5807ddf7d796784928f5be4afd09"
+
+[[override]]
+  name = "github.com/go-openapi/spec"
+  revision = "bcff419492eeeb01f76e77d2ebc714dc97b607f5"
+
+[[constraint]]
+  name = "github.com/go-openapi/validate"
+  source = "github.com/heptio/validate"
+  branch = "support-int-or-string"

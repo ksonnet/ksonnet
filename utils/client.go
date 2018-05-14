@@ -16,6 +16,7 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -108,22 +109,7 @@ func (c *memcachedDiscoveryClient) ServerVersion() (*version.Info, error) {
 }
 
 func (c *memcachedDiscoveryClient) SwaggerSchema(version schema.GroupVersion) (*swagger.ApiDeclaration, error) {
-	key := version.String()
-
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
-	if c.schemas[key] != nil {
-		return c.schemas[key], nil
-	}
-
-	schema, err := c.cl.SwaggerSchema(version)
-	if err != nil {
-		return nil, err
-	}
-
-	c.schemas[key] = schema
-	return schema, nil
+	return nil, errors.New("not implemented")
 }
 
 func (c *memcachedDiscoveryClient) OpenAPISchema() (*openapi_v2.Document, error) {

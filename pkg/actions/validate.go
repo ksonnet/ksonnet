@@ -22,6 +22,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
+	"github.com/ksonnet/ksonnet/pkg/openapi"
 	"github.com/ksonnet/ksonnet/pkg/pipeline"
 	"github.com/ksonnet/ksonnet/utils"
 	"github.com/pkg/errors"
@@ -42,8 +43,10 @@ func RunValidate(m map[string]interface{}) error {
 
 type discoveryFn func(a app.App, clientConfig *client.Config, envName string) (discovery.DiscoveryInterface, error)
 
-type validateObjectFn func(d discovery.DiscoveryInterface,
-	obj *unstructured.Unstructured) []error
+type validateObjectFn func(
+	a app.App,
+	obj *unstructured.Unstructured,
+	envName string) []error
 
 type findObjectsFn func(a app.App, envName string,
 	componentNames []string) ([]*unstructured.Unstructured, error)
@@ -68,13 +71,14 @@ func NewValidate(m map[string]interface{}) (*Validate, error) {
 
 	v := &Validate{
 		app:            ol.LoadApp(),
+		envName:        ol.LoadString(OptionEnvName),
 		module:         ol.LoadString(OptionModule),
 		componentNames: ol.LoadStringSlice(OptionComponentNames),
 		clientConfig:   ol.LoadClientConfig(),
 
 		out:              os.Stdout,
 		discoveryFn:      loadDiscovery,
-		validateObjectFn: validateObject,
+		validateObjectFn: openapi.ValidateAgainstSchema,
 		findObjectsFn:    findObjects,
 	}
 
@@ -107,7 +111,7 @@ func (v *Validate) Run() error {
 		desc := fmt.Sprintf("%s %s", utils.ResourceNameFor(disc, obj), utils.FqName(obj))
 		log.Info("Validating ", desc)
 
-		errs := v.validateObjectFn(disc, obj)
+		errs := v.validateObjectFn(v.app, obj, v.envName)
 		for _, err := range errs {
 			log.Errorf("Error in %s: %v", desc, err)
 			hasError = true
@@ -124,15 +128,6 @@ func (v *Validate) Run() error {
 func loadDiscovery(a app.App, clientConfig *client.Config, envName string) (discovery.DiscoveryInterface, error) {
 	_, d, _, err := clientConfig.RestClient(a, &envName)
 	return d, err
-}
-
-func validateObject(d discovery.DiscoveryInterface, obj *unstructured.Unstructured) []error {
-	schema, err := utils.NewSwaggerSchemaFor(d, obj.GroupVersionKind().GroupVersion())
-	if err != nil {
-		return []error{errors.Wrap(err, "unable to retrieve schema")}
-	}
-
-	return schema.Validate(obj)
 }
 
 func findObjects(a app.App, envName string, componentNames []string) ([]*unstructured.Unstructured, error) {
