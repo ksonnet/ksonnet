@@ -1,0 +1,96 @@
+{
+    "apiVersion": "extensions/v1beta1",
+    "kind": "Deployment",
+    "metadata": {
+        "annotations": {
+            "deployment.kubernetes.io/revision": "1",
+            "ksonnet.io/managed": "{\"pristine\":\"H4sIAAAAAAAA/1yPT2sCMRDF7/0Y7xz/3UpupXrwoBSUQhGR2d3BDu5mQjIWRfLdSxSK9BB45DG/+c0NFOWTUxYN8OCLcag5T35mDRvN4HCS0MFjzrHX68DB4DCwUUdG8DcEGhgex7MkVUNxyJHb2iSOvbSU4WcOxkPsybgWz+M9NdznmijGZ84TqNVgJIFTht/dIAMd7yvbNBadfHM00dH9N09OeXQ8c7ZG9TTqeFA/Hdcz/mk6RE324P3hPzQZ/Ou07B0yt+ckdn3XYHyxuwZFaqQXE34Idx38DuvF9vA2Xy3XcNh8bQ7b5WqBfSmlvvLyCwAA//8BAAD//32D4qNkAQAA\"}"
+        },
+        "creationTimestamp": "2018-05-16T21:37:47Z",
+        "generation": 2,
+        "labels": {
+            "app.kubernetes.io/deploy-manager": "ksonnet"
+        },
+        "name": "guiroot",
+        "namespace": "default",
+        "resourceVersion": "785655",
+        "selfLink": "/apis/extensions/v1beta1/namespaces/default/deployments/guiroot",
+        "uid": "601e0d3c-5951-11e8-8d02-025000000001"
+    },
+    "spec": {
+        "progressDeadlineSeconds": 600,
+        "replicas": 1,
+        "revisionHistoryLimit": 2,
+        "selector": {
+            "matchLabels": {
+                "app": "guiroot"
+            }
+        },
+        "strategy": {
+            "rollingUpdate": {
+                "maxSurge": "25%",
+                "maxUnavailable": "25%"
+            },
+            "type": "RollingUpdate"
+        },
+        "template": {
+            "metadata": {
+                "creationTimestamp": null,
+                "labels": {
+                    "app": "guiroot"
+                }
+            },
+            "spec": {
+                "containers": [{
+                    "image": "gcr.io/heptio-images/ks-guestbook-demo:0.1",
+                    "imagePullPolicy": "IfNotPresent",
+                    "name": "guiroot",
+                    "ports": [{
+                        "containerPort": 80,
+                        "protocol": "TCP"
+                    }],
+                    "resources": {},
+                    "securityContext": {
+                        "capabilities": {
+                            "add": [
+                                "NET_ADMIN",
+                                "SYS_TIME"
+                            ]
+                        }
+                    },
+                    "terminationMessagePath": "/dev/termination-log",
+                    "terminationMessagePolicy": "File"
+                }],
+                "dnsPolicy": "ClusterFirst",
+                "restartPolicy": "Always",
+                "schedulerName": "default-scheduler",
+                "securityContext": {},
+                "terminationGracePeriodSeconds": 30
+            }
+        }
+    },
+    "status": {
+        "availableReplicas": 1,
+        "conditions": [{
+                "lastTransitionTime": "2018-05-16T21:37:48Z",
+                "lastUpdateTime": "2018-05-16T21:37:48Z",
+                "message": "Deployment has minimum availability.",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "lastTransitionTime": "2018-05-16T21:37:47Z",
+                "lastUpdateTime": "2018-05-16T21:37:48Z",
+                "message": "ReplicaSet \"guiroot-56cc5d6496\" has successfully progressed.",
+                "reason": "NewReplicaSetAvailable",
+                "status": "True",
+                "type": "Progressing"
+            }
+        ],
+        "observedGeneration": 2,
+        "readyReplicas": 1,
+        "replicas": 1,
+        "updatedReplicas": 1
+    }
+}

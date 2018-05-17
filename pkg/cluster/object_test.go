@@ -16,6 +16,9 @@
 package cluster
 
 import (
+	"encoding/json"
+	"io/ioutil"
+	"path/filepath"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -218,4 +221,57 @@ func (fri *fakeResourceInfo) Err() error {
 
 func (fri *fakeResourceInfo) Infos() ([]*resource.Info, error) {
 	return fri.infos, fri.infosErr
+}
+
+func TestRebuildObject(t *testing.T) {
+	inputPath := filepath.ToSlash("testdata/deployment.json")
+	b, err := ioutil.ReadFile(inputPath)
+	require.NoError(t, err)
+
+	m := make(map[string]interface{})
+	err = json.Unmarshal(b, &m)
+	require.NoError(t, err)
+
+	got, err := RebuildObject(m)
+	require.NoError(t, err)
+
+	expected := map[string]interface{}{
+		"apiVersion": "extensions/v1beta1",
+		"kind":       "Deployment",
+		"metadata": map[string]interface{}{
+			"name": "guiroot",
+		},
+		"spec": map[string]interface{}{
+			"replicas": float64(1),
+			"template": map[string]interface{}{
+				"metadata": map[string]interface{}{
+					"labels": map[string]interface{}{
+						"app": "guiroot",
+					},
+				},
+				"spec": map[string]interface{}{
+					"containers": []interface{}{
+						map[string]interface{}{
+							"name":  "guiroot",
+							"image": "gcr.io/heptio-images/ks-guestbook-demo:0.1",
+							"ports": []interface{}{
+								map[string]interface{}{
+									"containerPort": float64(80),
+								},
+							},
+							"securityContext": map[string]interface{}{
+								"capabilities": map[string]interface{}{
+									"add": []interface{}{
+										"NET_ADMIN", "SYS_TIME",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	require.Equal(t, expected, got)
 }

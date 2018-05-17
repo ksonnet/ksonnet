@@ -39,67 +39,8 @@ func Test_tagManaged(t *testing.T) {
 	managed, ok := annotations["ksonnet.io/managed"].(string)
 	require.True(t, ok)
 
-	expected := "[\"$['metadata']['annotations']['ksonnet.io/dummy']\",\"$['metadata']['name']\",\"$['spec']['replicas']\",\"$['spec']['template']['metadata']['labels']['app']\",\"$['spec']['template']['spec']['containers'][?(@.name==\\\"guiroot\\\")]\"]"
+	expected := "{\"pristine\":\"H4sIAAAAAAAA/1yPzWrsMAyF9/cxzjrzk93F6z5AV92UWSiJSE1iSdhKYQh+9+IMlNCV8RH6vqMdZPGDc4kqCCCzcvvuB3bq0WGJMiHgjW3VZ2JxdEjsNJETwg4SUSePKqV9l6Ii7Neot2lL6YmA11s7CCVGwLzFrOotKcZj28psaxypIPQdnJOt5NwGZ9NKA6+HhMzOnBNoVHGKwrkgfO6IieZDOebW6IvNo16OtNyWcpk3Lj6oLpeJk4b7tV38p2YH0+wv3i/+XbMj/L/XR33UWuu/HwAAAP//AQAA///Dx6kERQEAAA==\"}"
 	require.Equal(t, expected, managed)
-}
-
-func Test_objectPaths(t *testing.T) {
-	got := objectPaths(genObject())
-
-	expected := []objectPath{
-		{
-			path: []string{"apiVersion"},
-		},
-		{
-			path: []string{"kind"},
-		},
-		{
-			path: []string{"metadata", "annotations", "ksonnet.io/dummy"},
-		},
-		{
-			path: []string{"metadata", "name"},
-		},
-		{
-			path: []string{"spec", "replicas"},
-		},
-		{
-			path: []string{"spec", "template", "metadata", "labels", "app"},
-		},
-		{
-			path: []string{"spec", "template", "spec", "containers"},
-			childNames: []string{
-				"guiroot",
-			},
-		},
-	}
-
-	require.Equal(t, expected, got)
-}
-
-func Test_convertToJSONPath(t *testing.T) {
-	cases := []struct {
-		name     string
-		path     []string
-		expected string
-	}{
-		{
-			name:     "simple",
-			path:     []string{"foo", "bar"},
-			expected: "$['foo']['bar']",
-		},
-		{
-			name:     "with selector",
-			path:     []string{"foo", "bar", `?(@.name=='name')`},
-			expected: "$['foo']['bar'][?(@.name=='name')]",
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := convertToJSONPath(tc.path)
-			require.Equal(t, tc.expected, got)
-		})
-	}
 }
 
 func genObject() map[string]interface{} {
