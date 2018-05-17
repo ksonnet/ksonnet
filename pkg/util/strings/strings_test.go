@@ -110,3 +110,32 @@ func TestNormalizeURL(t *testing.T) {
 		require.EqualValues(t, test.expected, normalized)
 	}
 }
+
+func Test_InSlice(t *testing.T) {
+	cases := []struct {
+		name     string
+		s        string
+		sl       []string
+		expected bool
+	}{
+		{
+			name:     "in slice",
+			s:        "a",
+			sl:       []string{"a", "b", "c"},
+			expected: true,
+		},
+		{
+			name:     "not in slice",
+			s:        "a",
+			sl:       []string{"d", "b", "c"},
+			expected: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := InSlice(tc.s, tc.sl)
+			require.Equal(t, tc.expected, got)
+		})
+	}
+}

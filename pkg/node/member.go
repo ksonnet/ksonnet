@@ -17,9 +17,10 @@ package node
 
 import (
 	"fmt"
-	"strings"
+	gostrings "strings"
 
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
+	"github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/pkg/errors"
 )
 
@@ -45,17 +46,17 @@ func FindMembers(obj *astext.Object) (Members, error) {
 
 		id := string(*of.Id)
 
-		if of.Method != nil && !strings.HasPrefix(id, "__") && !strings.HasPrefix(id, "mixin") {
+		if of.Method != nil && !gostrings.HasPrefix(id, "__") && !gostrings.HasPrefix(id, "mixin") {
 			om.Functions = append(om.Functions, id)
 			continue
 		}
 
-		if _, ok := of.Expr2.(*astext.Object); ok && !strings.HasPrefix(id, "__") {
+		if _, ok := of.Expr2.(*astext.Object); ok && !gostrings.HasPrefix(id, "__") {
 			om.Fields = append(om.Fields, id)
 			continue
 		}
 
-		if strings.HasSuffix(id, "Type") {
+		if gostrings.HasSuffix(id, "Type") {
 			om.Types = append(om.Types, id)
 			continue
 		}
@@ -67,16 +68,16 @@ func FindMembers(obj *astext.Object) (Members, error) {
 func (om *Members) FindFunction(name string) (string, error) {
 	var hasSetter, hasSetterMixin, hasType bool
 
-	name2 := strings.Title(name)
+	name2 := gostrings.Title(name)
 
 	for _, id := range om.Functions {
-		if fn := fmt.Sprintf("with%s", name2); fn == id && stringInSlice(fn, om.Functions) {
+		if fn := fmt.Sprintf("with%s", name2); fn == id && strings.InSlice(fn, om.Functions) {
 			hasSetter = true
 		}
-		if fn := fmt.Sprintf("with%sMixin", name2); fn == id && stringInSlice(fn, om.Functions) {
+		if fn := fmt.Sprintf("with%sMixin", name2); fn == id && strings.InSlice(fn, om.Functions) {
 			hasSetterMixin = true
 		}
-		if t := fmt.Sprintf("%sType", name); t == id && stringInSlice(t, om.Types) {
+		if t := fmt.Sprintf("%sType", name); t == id && strings.InSlice(t, om.Types) {
 			hasType = true
 		}
 	}
@@ -92,14 +93,4 @@ func (om *Members) FindFunction(name string) (string, error) {
 	}
 
 	return "", errors.Errorf("could not find function %s", name)
-}
-
-func stringInSlice(s string, sl []string) bool {
-	for i := range sl {
-		if sl[i] == s {
-			return true
-		}
-	}
-
-	return false
 }

@@ -20,8 +20,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/ksonnet/ksonnet/pkg/actions"
 	"github.com/ksonnet/ksonnet/pkg/clicmd"
-	"github.com/ksonnet/ksonnet/pkg/kubecfg"
 )
 
 // Version is overridden using `-X main.version` during release builds
@@ -45,7 +45,7 @@ func main() {
 		log.Error(err.Error())
 
 		switch err {
-		case kubecfg.ErrDiffFound:
+		case actions.ErrDiffFound:
 			os.Exit(10)
 		default:
 			os.Exit(1)

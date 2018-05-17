@@ -23,6 +23,7 @@ import (
 	"regexp"
 
 	"github.com/ksonnet/ksonnet/pkg/util/k8s"
+	"github.com/ksonnet/ksonnet/pkg/util/strings"
 
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/printer"
@@ -187,7 +188,7 @@ func (p *Pipeline) moduleObjects(module component.Module, filter []string) ([]*u
 
 	for k, v := range m {
 		if len(filter) != 0 {
-			if !stringInSlice(k, filter) {
+			if !strings.InSlice(k, filter) {
 				continue
 			}
 		}
@@ -251,7 +252,7 @@ func filterComponents(filter []string, components []component.Component) []compo
 
 	var out []component.Component
 	for _, c := range components {
-		if stringInSlice(c.Name(true), filter) {
+		if strings.InSlice(c.Name(true), filter) {
 			out = append(out, c)
 		}
 	}
@@ -274,16 +275,6 @@ func upgradeParams(envName, in string) string {
 	}
 
 	return in
-}
-
-func stringInSlice(s string, sl []string) bool {
-	for i := range sl {
-		if sl[i] == s {
-			return true
-		}
-	}
-
-	return false
 }
 
 func buildObjects(p *Pipeline, filter []string) ([]*unstructured.Unstructured, error) {

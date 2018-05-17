@@ -142,3 +142,11 @@ required = ["k8s.io/kubernetes/pkg/kubectl/cmd/util"]
 [[override]]
   name = "github.com/docker/docker"
   revision = "04864cb3cb526ddeee70dc6e17a6c7802ef91a0b"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/shazow/go-diff"
+
+[[constraint]]
+  name = "github.com/fatih/color"
+  version = "1.5.0"

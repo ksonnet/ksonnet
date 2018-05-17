@@ -65,11 +65,11 @@ type actionFn func(map[string]interface{}) error
 
 var (
 	actionFns = map[initName]actionFn{
-		actionApply:         actions.RunApply,
-		actionComponentList: actions.RunComponentList,
-		actionComponentRm:   actions.RunComponentRm,
-		actionDelete:        actions.RunDelete,
-		// actionDiff
+		actionApply:             actions.RunApply,
+		actionComponentList:     actions.RunComponentList,
+		actionComponentRm:       actions.RunComponentRm,
+		actionDelete:            actions.RunDelete,
+		actionDiff:              actions.RunDiff,
 		actionEnvAdd:            actions.RunEnvAdd,
 		actionEnvCurrent:        actions.RunEnvCurrent,
 		actionEnvDescribe:       actions.RunEnvDescribe,

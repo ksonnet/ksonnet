@@ -65,6 +65,7 @@ func DefaultResourceInfo(namespace string, config clientcmd.ClientConfig) *resou
 		Do()
 }
 
+// ResourceInfo holds information about cluster resources.
 type ResourceInfo interface {
 	Err() error
 	Infos() ([]*resource.Info, error)
@@ -124,4 +125,24 @@ func RebuildObject(m map[string]interface{}) (map[string]interface{}, error) {
 	}
 
 	return mm.DecodePristine()
+}
+
+// CollectObjects collects objects in a cluster namespace.
+func CollectObjects(namespace string, config clientcmd.ClientConfig) ([]*unstructured.Unstructured, error) {
+	res := DefaultResourceInfo(namespace, config)
+	objects, err := ManagedObjects(res)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, obj := range objects {
+		m, err := RebuildObject(obj.Object)
+		if err != nil {
+			return nil, err
+		}
+
+		obj.Object = m
+	}
+
+	return objects, nil
 }

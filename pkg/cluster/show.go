@@ -78,8 +78,28 @@ func (s *Show) Show() error {
 }
 
 func (s *Show) showYAML(apiObjects []*unstructured.Unstructured) error {
+	return ShowYAML(s.Out, apiObjects)
+}
+
+func (s *Show) showJSON(apiObjects []*unstructured.Unstructured) error {
+	enc := json.NewEncoder(s.Out)
+	enc.SetIndent("", "  ")
 	for _, obj := range apiObjects {
-		fmt.Fprintln(s.Out, "---")
+		// TODO: this is not valid framing for JSON
+		if len(apiObjects) > 1 {
+			fmt.Fprintln(s.Out, "---")
+		}
+		if err := enc.Encode(obj); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func ShowYAML(out io.Writer, apiObjects []*unstructured.Unstructured) error {
+	for _, obj := range apiObjects {
+		fmt.Fprintln(out, "---")
 		// Go via json because we need
 		// to trigger the custom scheme
 		// encoding.
@@ -95,23 +115,7 @@ func (s *Show) showYAML(apiObjects []*unstructured.Unstructured) error {
 		if err != nil {
 			return err
 		}
-		s.Out.Write(buf)
-	}
-
-	return nil
-}
-
-func (s *Show) showJSON(apiObjects []*unstructured.Unstructured) error {
-	enc := json.NewEncoder(s.Out)
-	enc.SetIndent("", "  ")
-	for _, obj := range apiObjects {
-		// TODO: this is not valid framing for JSON
-		if len(apiObjects) > 1 {
-			fmt.Fprintln(s.Out, "---")
-		}
-		if err := enc.Encode(obj); err != nil {
-			return err
-		}
+		out.Write(buf)
 	}
 
 	return nil

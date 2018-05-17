@@ -1,4 +1,4 @@
-// Copyright 2017 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,19 +13,28 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package kubecfg
+package clicmd
 
 import (
-	"os"
+	"testing"
 
-	"github.com/ksonnet/ksonnet/metadata"
+	"github.com/ksonnet/ksonnet/pkg/actions"
 )
 
-func manager() (metadata.Manager, error) {
-	appDir, err := os.Getwd()
-	if err != nil {
-		return nil, err
+func Test_diffCmd(t *testing.T) {
+	cases := []cmdTestCase{
+		{
+			name:   "diff two environments",
+			args:   []string{"diff", "env1", "env2"},
+			action: actionDiff,
+			expected: map[string]interface{}{
+				actions.OptionApp:          nil,
+				actions.OptionClientConfig: diffClientConfig,
+				actions.OptionSrc1:         "env1",
+				actions.OptionSrc2:         "env2",
+			},
+		},
 	}
 
-	return metadata.Find(appDir)
+	runTestCmd(t, cases)
 }
