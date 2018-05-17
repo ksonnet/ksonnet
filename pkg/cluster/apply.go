@@ -17,10 +17,11 @@ package cluster
 
 import (
 	"bytes"
+	"compress/gzip"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
@@ -44,12 +45,48 @@ const (
 	appKsonnet = "ksonnet"
 )
 
-var (
-	ignoredFields = []string{
-		"apiVersion",
-		"kind",
+type managedMetadata struct {
+	Pristine string `json:"pristine,omitempty"`
+}
+
+func (mm *managedMetadata) EncodePristine(m map[string]interface{}) error {
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	if err := json.NewEncoder(gz).Encode(m); err != nil {
+		return err
 	}
-)
+	if err := gz.Flush(); err != nil {
+		return err
+	}
+	if err := gz.Close(); err != nil {
+		return err
+	}
+
+	mm.Pristine = base64.StdEncoding.EncodeToString(buf.Bytes())
+	return nil
+}
+
+func (mm *managedMetadata) DecodePristine() (map[string]interface{}, error) {
+	b, err := base64.StdEncoding.DecodeString(mm.Pristine)
+	if err != nil {
+		return nil, err
+	}
+
+	r := bytes.NewReader(b)
+
+	zr, err := gzip.NewReader(r)
+	if err != nil {
+		return nil, err
+	}
+	defer zr.Close()
+
+	var m map[string]interface{}
+	if err := json.NewDecoder(zr).Decode(&m); err != nil {
+		return nil, err
+	}
+
+	return m, nil
+}
 
 // ApplyConfig is configuration for Apply.
 type ApplyConfig struct {
@@ -189,103 +226,20 @@ func tagManaged(obj *unstructured.Unstructured) error {
 		return errors.New("object is nil")
 	}
 
-	var filteredPaths []string
-	for _, op := range objectPaths(obj.Object) {
-		p2 := strings.Join(op.path, ".")
-
-		var found bool
-		for _, ip := range ignoredFields {
-			if p2 == ip {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			if len(op.childNames) > 0 {
-				for _, name := range op.childNames {
-					p := append(op.path, fmt.Sprintf(`?(@.name=="%s")`, name))
-					filteredPaths = append(filteredPaths, convertToJSONPath(p))
-				}
-
-				continue
-			}
-
-			filteredPaths = append(filteredPaths, convertToJSONPath(op.path))
-		}
+	mm := &managedMetadata{}
+	if err := mm.EncodePristine(obj.Object); err != nil {
+		return err
 	}
 
-	b, err := json.Marshal(filteredPaths)
+	mmEncoded, err := json.Marshal(mm)
 	if err != nil {
 		return err
 	}
 
 	SetMetaDataLabel(obj, labelDeployManager, appKsonnet)
-	SetMetaDataAnnotation(obj, annotationManaged, string(b))
+	SetMetaDataAnnotation(obj, annotationManaged, string(mmEncoded))
+
 	return nil
-}
-
-type objectPath struct {
-	path       []string
-	childNames []string
-}
-
-func objectPaths(m map[string]interface{}) []objectPath {
-	out := make([]objectPath, 0)
-
-	for k, v := range m {
-		switch t := v.(type) {
-		default:
-			op := objectPath{}
-			op.path = []string{k}
-			out = append(out, op)
-		case map[string]interface{}:
-			for _, child := range objectPaths(t) {
-				op := objectPath{
-					childNames: child.childNames,
-				}
-				op.path = append([]string{k}, child.path...)
-				out = append(out, op)
-			}
-		case []interface{}:
-			op := objectPath{}
-			op.path = []string{k}
-
-			for _, element := range t {
-				if childMap, ok := element.(map[string]interface{}); ok {
-					if name, ok := childMap["name"].(string); ok {
-						op.childNames = append(op.childNames, name)
-					}
-				}
-			}
-
-			out = append(out, op)
-		}
-	}
-
-	sort.Slice(out, func(i, j int) bool {
-		i1 := strings.Join(out[i].path, ".")
-		j1 := strings.Join(out[j].path, ".")
-
-		return i1 < j1
-	})
-
-	return out
-}
-
-func convertToJSONPath(in []string) string {
-	var out bytes.Buffer
-	out.WriteString("$")
-
-	for _, s := range in {
-		if strings.HasPrefix(s, "?") {
-			out.WriteString(fmt.Sprintf(`[%s]`, s))
-			continue
-		}
-		out.WriteString(fmt.Sprintf(`['%s']`, s))
-	}
-
-	return out.String()
 }
 
 func (a *Apply) runGc(co clientOpts, seenUids sets.String) error {

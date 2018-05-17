@@ -16,6 +16,8 @@
 package cluster
 
 import (
+	"encoding/json"
+
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -98,4 +100,28 @@ func ManagedObjects(r ResourceInfo) ([]*unstructured.Unstructured, error) {
 	}
 
 	return objects, nil
+}
+
+// RebuildObject rebuilds the ksonnet generated object from an object on
+// the cluster.
+func RebuildObject(m map[string]interface{}) (map[string]interface{}, error) {
+	metadata, ok := m["metadata"].(map[string]interface{})
+	if !ok {
+		return nil, errors.New("metadata not found")
+	}
+	annotations, ok := metadata["annotations"].(map[string]interface{})
+	if !ok {
+		return nil, errors.New("metadata annotations not found")
+	}
+	descriptor, ok := annotations[annotationManaged].(string)
+	if !ok {
+		return m, nil
+	}
+
+	var mm managedMetadata
+	if err := json.Unmarshal([]byte(descriptor), &mm); err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return mm.DecodePristine()
 }
