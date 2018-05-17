@@ -25,6 +25,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
+	restclient "k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/kubernetes/pkg/kubectl/resource"
 )
 
@@ -274,4 +277,32 @@ func TestRebuildObject(t *testing.T) {
 	}
 
 	require.Equal(t, expected, got)
+}
+
+func TestDefaultResourceInfo(t *testing.T) {
+	fcc := &fakeClientConfig{}
+	res := DefaultResourceInfo("default", fcc)
+
+	// NOTE: yes this errors.
+	require.Error(t, res.Err())
+}
+
+type fakeClientConfig struct{}
+
+var _ clientcmd.ClientConfig = (*fakeClientConfig)(nil)
+
+func (fcc *fakeClientConfig) RawConfig() (clientcmdapi.Config, error) {
+	return clientcmdapi.Config{}, nil
+}
+
+func (fcc *fakeClientConfig) ClientConfig() (*restclient.Config, error) {
+	return &restclient.Config{}, nil
+}
+
+func (fcc *fakeClientConfig) Namespace() (string, bool, error) {
+	return "default", false, nil
+}
+
+func (fcc *fakeClientConfig) ConfigAccess() clientcmd.ConfigAccess {
+	return nil
 }

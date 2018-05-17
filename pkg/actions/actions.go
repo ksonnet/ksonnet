@@ -95,6 +95,10 @@ const (
 	OptionSkipGc = "skip-gc"
 	// OptionSpecFlag is specFlag option. Used for setting k8s spec.
 	OptionSpecFlag = "spec-flag"
+	// OptionSrc1 is src1 option.
+	OptionSrc1 = "src-1"
+	// OptionSrc2 is src2 option.
+	OptionSrc2 = "src-2"
 	// OptionTlaVarFiles is jsonnet tla var files.
 	OptionTlaVarFiles = "tla-var-files"
 	// OptionTlaVars is jsonnet tla vars.

@@ -181,6 +181,12 @@
   revision = "44e46d280b43ec1531bb25252440e34f1b800b65"
 
 [[projects]]
+  name = "github.com/fatih/color"
+  packages = ["."]
+  revision = "570b54cabe6b8eb0bc2dfce68d964677d63b5260"
+  version = "v1.5.0"
+
+[[projects]]
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
   revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
@@ -435,6 +441,12 @@
   revision = "32fa128f234d041f196a9f3e0fea5ac9772c08e1"
 
 [[projects]]
+  name = "github.com/mattn/go-colorable"
+  packages = ["."]
+  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
+  version = "v0.0.9"
+
+[[projects]]
   name = "github.com/mattn/go-isatty"
   packages = ["."]
   revision = "fc9e8d8ef48496124e79ae0df75490096eccf6fe"
@@ -594,6 +606,15 @@
   name = "github.com/sergi/go-diff"
   packages = ["diffmatchpatch"]
   revision = "1744e2970ca51c86172c8190fadad617561ed6e7"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/shazow/go-diff"
+  packages = [
+    ".",
+    "difflib"
+  ]
+  revision = "b6b7b6733b8c9589e2452df9345ddaf75badd0db"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -1256,6 +1277,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4f2dbea9b6e67d245ebe99506a294b342a0fb31aba0a9a8f20a37fc6a40a0f5a"
+  inputs-digest = "88071086ef49da55458e92c4c7152174773c045e206be1e5040385c304fc3239"
   solver-name = "gps-cdcl"
   solver-version = 1

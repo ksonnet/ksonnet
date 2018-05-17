@@ -17,9 +17,10 @@ package node
 
 import (
 	"fmt"
-	"strings"
+	gostrings "strings"
 
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
+	"github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/pkg/errors"
 )
 
@@ -52,7 +53,7 @@ func (sp *searchPath) descendant() searchPath {
 }
 
 func (sp *searchPath) String() string {
-	return strings.Join(sp.path, ".")
+	return gostrings.Join(sp.path, ".")
 }
 
 // Node represents a node by name.
@@ -89,10 +90,10 @@ func (n *Node) searchNode(obj *astext.Object, sp searchPath, breadcrumbs []strin
 
 	if sp.len() == 1 {
 		switch {
-		case stringInSlice(sp.head(), members.Fields):
+		case strings.InSlice(sp.head(), members.Fields):
 			path := append(breadcrumbs, sp.head())
 			return &Item{Type: ItemTypeObject, Path: path}, nil, nil
-		case stringInSlice("mixin", members.Fields):
+		case strings.InSlice("mixin", members.Fields):
 			return n.findChild(obj, sp, "mixin", breadcrumbs)
 		default:
 			fnName, err := members.FindFunction(sp.head())
@@ -101,15 +102,15 @@ func (n *Node) searchNode(obj *astext.Object, sp searchPath, breadcrumbs []strin
 			}
 
 			path := append(breadcrumbs, sp.head())
-			name := fmt.Sprintf("%s.%s", strings.Join(breadcrumbs, "."), fnName)
+			name := fmt.Sprintf("%s.%s", gostrings.Join(breadcrumbs, "."), fnName)
 			return &Item{Type: ItemTypeSetter, Name: name, Path: path}, nil, nil
 		}
 	}
 
 	switch {
-	case stringInSlice(sp.head(), members.Fields):
+	case strings.InSlice(sp.head(), members.Fields):
 		return n.findChild(obj, sp.descendant(), sp.head(), breadcrumbs)
-	case stringInSlice("mixin", members.Fields):
+	case strings.InSlice("mixin", members.Fields):
 		return n.findChild(obj, sp, "mixin", breadcrumbs)
 	}
 

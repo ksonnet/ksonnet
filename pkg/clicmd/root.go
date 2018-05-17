@@ -16,26 +16,14 @@
 package clicmd
 
 import (
-	"bytes"
-	"encoding/json"
 	goflag "flag"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
-	"strings"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/app"
-	"github.com/ksonnet/ksonnet/pkg/env"
 	"github.com/ksonnet/ksonnet/pkg/log"
-	"github.com/ksonnet/ksonnet/pkg/pipeline"
 	"github.com/ksonnet/ksonnet/pkg/plugin"
-	str "github.com/ksonnet/ksonnet/pkg/util/strings"
-	"github.com/ksonnet/ksonnet/template"
-	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
@@ -147,61 +135,6 @@ func runPlugin(p plugin.Plugin, args []string) error {
 	return cmd.Run()
 }
 
-func newExpander(fs afero.Fs, cmd *cobra.Command) (*template.Expander, error) {
-	flags := cmd.Flags()
-	spec := template.NewExpander(fs)
-	var err error
-
-	spec.EnvJPath = filepath.SplitList(os.Getenv("KUBECFG_JPATH"))
-
-	spec.FlagJpath, err = flags.GetStringSlice(flagJpath)
-	if err != nil {
-		return nil, err
-	}
-
-	spec.ExtVars, err = flags.GetStringSlice(flagExtVar)
-	if err != nil {
-		return nil, err
-	}
-
-	spec.ExtVarFiles, err = flags.GetStringSlice(flagExtVarFile)
-	if err != nil {
-		return nil, err
-	}
-
-	spec.TlaVars, err = flags.GetStringSlice(flagTlaVar)
-	if err != nil {
-		return nil, err
-	}
-
-	spec.TlaVarFiles, err = flags.GetStringSlice(flagTlaVarFile)
-	if err != nil {
-		return nil, err
-	}
-
-	spec.Resolver, err = flags.GetString(flagResolver)
-	if err != nil {
-		return nil, err
-	}
-	spec.FailAction, err = flags.GetString(flagResolvFail)
-	if err != nil {
-		return nil, err
-	}
-
-	return &spec, nil
-}
-
-// For debugging
-func dumpJSON(v interface{}) string {
-	buf := bytes.NewBuffer(nil)
-	enc := json.NewEncoder(buf)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(v); err != nil {
-		return err.Error()
-	}
-	return string(buf.Bytes())
-}
-
 // addEnvCmdFlags adds the flags that are common to the family of commands
 // whose form is `[<env>|-f <file-name>]`, e.g., `apply` and `delete`.
 func addEnvCmdFlags(cmd *cobra.Command) {
@@ -214,146 +147,6 @@ type cmdObjExpanderConfig struct {
 	env        string
 	components []string
 	cwd        string
-}
-
-// cmdObjExpander finds and expands templates for the family of commands of
-// the form `[<env>|-f <file-name>]`, e.g., `apply` and `delete`. That is, if
-// the user passes a list of files, we will expand all templates in those files,
-// while if a user passes an environment name, we will expand all component
-// files using that environment.
-type cmdObjExpander struct {
-	config             cmdObjExpanderConfig
-	templateExpanderFn func(afero.Fs, *cobra.Command) (*template.Expander, error)
-}
-
-func newCmdObjExpander(c cmdObjExpanderConfig) *cmdObjExpander {
-	if c.fs == nil {
-		c.fs = appFs
-	}
-
-	return &cmdObjExpander{
-		config:             c,
-		templateExpanderFn: newExpander,
-	}
-}
-
-// Expands expands the templates.
-func (te *cmdObjExpander) Expand() ([]*unstructured.Unstructured, error) {
-	manager, err := metadata.Find(te.config.cwd)
-	if err != nil {
-		return nil, errors.Wrap(err, "find metadata")
-	}
-
-	ksApp, err := manager.App()
-	if err != nil {
-		return nil, err
-	}
-
-	p := pipeline.New(ksApp, te.config.env)
-	return p.Objects(te.config.components)
-}
-
-// constructBaseObj constructs the base Jsonnet object that represents k-v
-// pairs of component name -> component imports. For example,
-//
-//   {
-//      foo: import "components/foo.jsonnet"
-//      "foo-bar": import "components/foo-bar.jsonnet"
-//   }
-func constructBaseObj(componentPaths, componentNames []string) (string, error) {
-	// IMPLEMENTATION NOTE: If one or more `componentNames` exist, it is
-	// sufficient to simply omit every name that does not appear in the list. This
-	// is because we know every field of the base object will contain _only_ an
-	// `import` node (see example object in the function-heading comment). This
-	// would not be true in cases where one field can reference another field; in
-	// this case, one would need to generate the entire object, and filter that.
-	//
-	// Hence, a word of caution: if the base object ever becomes more complex, you
-	// will need to change the way this function performs filtering, as it will
-	// lead to very confusing bugs.
-
-	shouldFilter := len(componentNames) > 0
-	filter := map[string]string{}
-	for _, name := range componentNames {
-		filter[name] = ""
-	}
-
-	// Add every component we know about to the base object.
-	var obj bytes.Buffer
-	obj.WriteString("{\n")
-	for _, p := range componentPaths {
-		ext := path.Ext(p)
-		componentName := strings.TrimSuffix(path.Base(p), ext)
-
-		// Filter! If the filter has more than 1 element and the component name is
-		// not in the filter, skip.
-		if _, exists := filter[componentName]; shouldFilter && !exists {
-			continue
-		} else if shouldFilter && exists {
-			delete(filter, componentName)
-		}
-
-		// Generate import statement.
-		var importExpr string
-		switch ext {
-		case ".jsonnet":
-			importExpr = fmt.Sprintf(`import "%s"`, p)
-
-		// TODO: Pull in YAML and JSON when we build the base object.
-		//
-		// case ".yaml", ".yml":
-		// 	importExpr = fmt.Sprintf(`util.parseYaml("%s")`, p)
-		// case ".json":
-		// 	importExpr = fmt.Sprintf(`util.parseJson("%s")`, p)
-		default:
-			continue
-		}
-
-		// Emit object field. Sanitize the name to guarantee we generate valid
-		// Jsonnet.
-		componentName = str.QuoteNonASCII(componentName)
-		fmt.Fprintf(&obj, "  %s: %s,\n", componentName, importExpr)
-	}
-
-	// Check that we found all the components the user asked for.
-	if shouldFilter && len(filter) != 0 {
-		names := []string{}
-		for name := range filter {
-			names = append(names, "'"+name+"'")
-		}
-		return "", fmt.Errorf("Failed to filter components; the following components don't exist: [ %s ]", strings.Join(names, ","))
-	}
-
-	// Terminate object.
-	fmt.Fprintf(&obj, "}\n")
-
-	// Emit `base.libsonnet`.
-	return fmt.Sprintf("%s=%s", metadata.ComponentsExtCodeKey, obj.String()), nil
-}
-
-func importParams(path string) string {
-	return fmt.Sprintf(`%s=import "%s"`, metadata.ParamsExtCodeKey, path)
-}
-
-func importEnv(manager metadata.Manager, envName string) (string, error) {
-	app, err := manager.App()
-	if err != nil {
-		return "", err
-	}
-
-	spec, err := app.Environment(envName)
-	if err != nil {
-		return "", fmt.Errorf("Environment '%s' does not exist in app.yaml", envName)
-	}
-
-	destination := env.NewDestination(spec.Destination.Server, spec.Destination.Namespace)
-
-	marshalled, err := json.Marshal(&destination)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf(`%s=%s`, metadata.EnvExtCodeKey, string(marshalled)), nil
 }
 
 func appRoot() (string, error) {

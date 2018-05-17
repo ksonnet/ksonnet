@@ -50,3 +50,14 @@ func QuoteNonASCII(s string) string {
 func NormalizeURL(s string) (string, error) {
 	return purell.NormalizeURLString(s, purell.FlagsUsuallySafeGreedy)
 }
+
+// InSlice returns true if the string is in the slice.
+func InSlice(s string, sl []string) bool {
+	for i := range sl {
+		if sl[i] == s {
+			return true
+		}
+	}
+
+	return false
+}
