@@ -603,12 +603,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/sergi/go-diff"
-  packages = ["diffmatchpatch"]
-  revision = "1744e2970ca51c86172c8190fadad617561ed6e7"
-
-[[projects]]
-  branch = "master"
   name = "github.com/shazow/go-diff"
   packages = [
     ".",
@@ -673,20 +667,6 @@
     "require"
   ]
   revision = "f6abca593680b2315d2075e0f5e2a9751e3f431a"
-
-[[projects]]
-  name = "github.com/yudai/gojsondiff"
-  packages = [
-    ".",
-    "formatter"
-  ]
-  revision = "9209d1532c51cabe0439993586a71c207b09a0ac"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/yudai/golcs"
-  packages = ["."]
-  revision = "ecda9a501e8220fae3b4b600c3db4b0ba22cfc68"
 
 [[projects]]
   name = "golang.org/x/crypto"
@@ -1277,6 +1257,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "88071086ef49da55458e92c4c7152174773c045e206be1e5040385c304fc3239"
+  inputs-digest = "1f55255d5e4cb5cc4628c008b28a11b317e4ac1a4f987ce50ce1c19a65de7e4a"
   solver-name = "gps-cdcl"
   solver-version = 1

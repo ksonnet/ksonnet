@@ -52,7 +52,6 @@ application configuration to remote clusters.
 ----
 `,
 	SilenceErrors: true,
-	SilenceUsage:  true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		goflag.CommandLine.Parse([]string{})
 		flags := cmd.Flags()
@@ -139,14 +138,6 @@ func runPlugin(p plugin.Plugin, args []string) error {
 // whose form is `[<env>|-f <file-name>]`, e.g., `apply` and `delete`.
 func addEnvCmdFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
-}
-
-type cmdObjExpanderConfig struct {
-	fs         afero.Fs
-	cmd        *cobra.Command
-	env        string
-	components []string
-	cwd        string
 }
 
 func appRoot() (string, error) {

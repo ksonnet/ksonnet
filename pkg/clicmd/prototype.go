@@ -19,13 +19,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/spf13/pflag"
-
-	"github.com/ksonnet/ksonnet/metadata"
-	"github.com/ksonnet/ksonnet/pkg/prototype"
-	"github.com/ksonnet/ksonnet/pkg/prototype/snippet"
-	"github.com/ksonnet/ksonnet/pkg/prototype/snippet/jsonnet"
-	str "github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/spf13/cobra"
 )
 
@@ -66,77 +59,4 @@ for your use case.
 
 ----
 `,
-}
-
-func bindPrototypeFlags(cmd *cobra.Command, proto *prototype.SpecificationSchema) {
-	for _, param := range proto.RequiredParams() {
-		cmd.PersistentFlags().String(param.Name, "", param.Description)
-	}
-
-	for _, param := range proto.OptionalParams() {
-		cmd.PersistentFlags().String(param.Name, *param.Default, param.Description)
-	}
-}
-
-func expandPrototype(proto *prototype.SpecificationSchema, templateType prototype.TemplateType, params map[string]string, componentName string) (string, error) {
-	template, err := proto.Template.Body(templateType)
-	if err != nil {
-		return "", err
-	}
-	if templateType == prototype.Jsonnet {
-		componentsText := "components." + componentName
-		if !str.IsASCIIIdentifier(componentName) {
-			componentsText = fmt.Sprintf(`components["%s"]`, componentName)
-		}
-		template = append([]string{
-			`local env = std.extVar("` + metadata.EnvExtCodeKey + `");`,
-			`local params = std.extVar("` + metadata.ParamsExtCodeKey + `").` + componentsText + ";"},
-			template...)
-		return jsonnet.Parse(componentName, strings.Join(template, "\n"))
-	}
-
-	tm := snippet.Parse(strings.Join(template, "\n"))
-	return tm.Evaluate(params)
-}
-
-func getParameters(proto *prototype.SpecificationSchema, flags *pflag.FlagSet) (map[string]string, error) {
-	missingReqd := prototype.ParamSchemas{}
-	values := map[string]string{}
-	for _, param := range proto.RequiredParams() {
-		val, err := flags.GetString(param.Name)
-		if err != nil {
-			return nil, err
-		} else if val == "" {
-			missingReqd = append(missingReqd, param)
-		} else if _, ok := values[param.Name]; ok {
-			return nil, fmt.Errorf("Prototype '%s' has multiple parameters with name '%s'", proto.Name, param.Name)
-		}
-
-		quoted, err := param.Quote(val)
-		if err != nil {
-			return nil, err
-		}
-		values[param.Name] = quoted
-	}
-
-	if len(missingReqd) > 0 {
-		return nil, fmt.Errorf("Failed to instantiate prototype '%s'. The following required parameters are missing:\n%s", proto.Name, missingReqd.PrettyString(""))
-	}
-
-	for _, param := range proto.OptionalParams() {
-		val, err := flags.GetString(param.Name)
-		if err != nil {
-			return nil, err
-		} else if _, ok := values[param.Name]; ok {
-			return nil, fmt.Errorf("Prototype '%s' has multiple parameters with name '%s'", proto.Name, param.Name)
-		}
-
-		quoted, err := param.Quote(val)
-		if err != nil {
-			return nil, err
-		}
-		values[param.Name] = quoted
-	}
-
-	return values, nil
 }
