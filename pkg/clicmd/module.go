@@ -20,8 +20,8 @@ import "github.com/spf13/cobra"
 // moduleCmd represents the module command
 var moduleCmd = &cobra.Command{
 	Use:   "module",
-	Short: "module",
-	Long:  `module`,
+	Short: "Manage ksonnet modules",
+	Long:  `Manage ksonnet modules`,
 }
 
 func init() {

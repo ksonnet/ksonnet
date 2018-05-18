@@ -25,7 +25,7 @@ func Test_envAddCmd(t *testing.T) {
 	cases := []cmdTestCase{
 		{
 			name:   "in general",
-			args:   []string{"env", "add", "prod", "--server", "http://example.com"},
+			args:   []string{"env", "add", "prod", "--server", "http://example.com", "--api-spec", "version:v1.9.5"},
 			action: actionEnvAdd,
 			expected: map[string]interface{}{
 				actions.OptionApp:      ka,
@@ -33,7 +33,7 @@ func Test_envAddCmd(t *testing.T) {
 				actions.OptionModule:   "default",
 				actions.OptionOverride: false,
 				actions.OptionServer:   "http://example.com",
-				actions.OptionSpecFlag: "version:v1.7.0",
+				actions.OptionSpecFlag: "version:v1.9.5",
 			},
 		},
 	}

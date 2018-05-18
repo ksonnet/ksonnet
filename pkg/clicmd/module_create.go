@@ -24,8 +24,8 @@ import (
 // moduleCreateCmd creates a ns create command.
 var moduleCreateCmd = &cobra.Command{
 	Use:   "create <name>",
-	Short: "create",
-	Long:  `create`,
+	Short: "Create a module",
+	Long:  `Create a module`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return errors.New("module create <module name>")

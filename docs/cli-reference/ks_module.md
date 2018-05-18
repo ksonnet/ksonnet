@@ -1,10 +1,10 @@
 ## ks module
 
-module
+Manage ksonnet modules
 
 ### Synopsis
 
-module
+Manage ksonnet modules
 
 ### Options
 
@@ -21,6 +21,6 @@ module
 ### SEE ALSO
 
 * [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
-* [ks module create](ks_module_create.md)	 - create
-* [ks module list](ks_module_list.md)	 - list
+* [ks module create](ks_module_create.md)	 - Create a module
+* [ks module list](ks_module_list.md)	 - List modules
 

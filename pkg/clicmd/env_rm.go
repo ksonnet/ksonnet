@@ -53,9 +53,9 @@ need to use the ` + "`ks delete`" + ` command.
 
 ### Related Commands
 
-* ` + "`ks env list` " + `— ` + protoShortDesc["list"] + `
-* ` + "`ks env add` " + `— ` + protoShortDesc["add"] + `
-* ` + "`ks env set` " + `— ` + protoShortDesc["set"] + `
+* ` + "`ks env list` " + `— ` + envShortDesc["list"] + `
+* ` + "`ks env add` " + `— ` + envShortDesc["add"] + `
+* ` + "`ks env set` " + `— ` + envShortDesc["set"] + `
 * ` + "`ks delete` " + `— ` + `Delete all the app components running in an environment (cluster)` + `
 
 ### Syntax

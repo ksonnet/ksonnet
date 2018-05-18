@@ -24,7 +24,7 @@ import (
 // envDescribeCmd represents the env describe command
 var envDescribeCmd = &cobra.Command{
 	Use:   "describe <env>",
-	Short: "describe",
+	Short: "Describe an environment",
 	Long:  `describe`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
