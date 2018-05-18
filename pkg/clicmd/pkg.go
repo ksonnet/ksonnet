@@ -32,8 +32,6 @@ var pkgShortDesc = map[string]string{
 	"list":     "List all packages known (downloaded or not) for the current ksonnet app",
 }
 
-var errInvalidSpec = fmt.Errorf("Command 'pkg install' requires a single argument of the form <registry>/<library>@<version>")
-
 func init() {
 	RootCmd.AddCommand(pkgCmd)
 }
@@ -73,15 +71,4 @@ See the annotated file tree below, as an example:
 		}
 		return fmt.Errorf("Command 'pkg' requires a subcommand\n\n%s", cmd.UsageString())
 	},
-}
-
-func parsePkgSpec(spec string) (registry, libID string, err error) {
-	split := strings.SplitN(spec, "/", 2)
-	if len(split) < 2 {
-		return "", "", errInvalidSpec
-	}
-	registry = split[0]
-	// Strip off the trailing `@version`.
-	libID = strings.SplitN(split[1], "@", 2)[0]
-	return
 }

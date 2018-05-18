@@ -140,14 +140,6 @@ func addEnvCmdFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
 }
 
-type cmdObjExpanderConfig struct {
-	fs         afero.Fs
-	cmd        *cobra.Command
-	env        string
-	components []string
-	cwd        string
-}
-
 func appRoot() (string, error) {
 	return os.Getwd()
 }

@@ -13,34 +13,13 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package clicmd
+package ksonnet
 
-import (
-	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
+const (
+	// ComponentsExtCodeKey is the ExtCode key for component imports
+	ComponentsExtCodeKey = "__ksonnet/components"
+	// EnvExtCodeKey is the ExtCode key for importing environment metadata
+	EnvExtCodeKey = "__ksonnet/environments"
+	// ParamsExtCodeKey is the ExtCode key for importing component parameters
+	ParamsExtCodeKey = "__ksonnet/params"
 )
-
-// moduleCreateCmd creates a ns create command.
-var moduleCreateCmd = &cobra.Command{
-	Use:   "create <name>",
-	Short: "create",
-	Long:  `create`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return errors.New("module create <module name>")
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:    ka,
-			actions.OptionModule: args[0],
-		}
-
-		return runAction(actionModuleCreate, m)
-	},
-}
-
-func init() {
-	moduleCmd.AddCommand(moduleCreateCmd)
-
-}

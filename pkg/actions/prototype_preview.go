@@ -21,8 +21,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ksonnet/ksonnet/metadata"
 	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/ksonnet/ksonnet/pkg/ksonnet"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/ksonnet/ksonnet/pkg/prototype/snippet"
@@ -183,8 +183,8 @@ func expandPrototype(proto *prototype.SpecificationSchema, templateType prototyp
 			componentsText = fmt.Sprintf(`components["%s"]`, componentName)
 		}
 		template = append([]string{
-			`local env = std.extVar("` + metadata.EnvExtCodeKey + `");`,
-			`local params = std.extVar("` + metadata.ParamsExtCodeKey + `").` + componentsText + ";"},
+			`local env = std.extVar("` + ksonnet.EnvExtCodeKey + `");`,
+			`local params = std.extVar("` + ksonnet.ParamsExtCodeKey + `").` + componentsText + ";"},
 			template...)
 		return jsonnet.Parse(componentName, strings.Join(template, "\n"))
 	}
