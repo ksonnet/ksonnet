@@ -52,7 +52,6 @@ application configuration to remote clusters.
 ----
 `,
 	SilenceErrors: true,
-	SilenceUsage:  true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		goflag.CommandLine.Parse([]string{})
 		flags := cmd.Flags()
