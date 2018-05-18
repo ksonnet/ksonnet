@@ -61,6 +61,11 @@ func new(fs afero.Fs, name, rootPath, envName, k8sSpecFlag, serverURI, namespace
 }
 
 func (i *initApp) Run() error {
+	log.WithFields(log.Fields{
+		"env-name":      i.envName,
+		"k8s-spec-flag": i.k8sSpecFlag,
+	}).Debug("initializing ksonnet app")
+
 	// Initialize directory structure.
 	if err := i.createAppDirTree(); err != nil {
 		return err

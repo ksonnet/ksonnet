@@ -21,12 +21,31 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/client"
 	"github.com/spf13/cobra"
 )
 
 const (
 	vEnvAddOverride = "env-add-override"
 )
+
+var (
+	envClientConfig *client.Config
+)
+
+func init() {
+	envCmd.AddCommand(envAddCmd)
+
+	envClientConfig = client.NewDefaultClientConfig(ka)
+	envClientConfig.BindClientGoFlags(envAddCmd)
+
+	// TODO: We need to make this default to checking the `kubeconfig` file.
+	envAddCmd.PersistentFlags().String(flagAPISpec, "",
+		"Manually specify API version from OpenAPI schema, cluster, or Kubernetes version")
+
+	envAddCmd.Flags().BoolP(flagOverride, shortOverride, false, "Add environment as override")
+	viper.BindPFlag(vEnvAddOverride, envAddCmd.Flags().Lookup(flagOverride))
+}
 
 var envAddCmd = &cobra.Command{
 	Use:   "add <env-name>",
@@ -87,10 +106,10 @@ Note that an environment *DOES NOT* contain user-specific data such as private k
 
 ### Related Commands
 
-* ` + "`ks env list` " + `— ` + protoShortDesc["list"] + `
-* ` + "`ks env rm` " + `— ` + protoShortDesc["rm"] + `
-* ` + "`ks env set` " + `— ` + protoShortDesc["set"] + `
-* ` + "`ks param set` " + `— ` + paramShortDesc["set"] + `
+* ` + "`ks env list` " + `— ` + envShortDesc["list"] + `
+* ` + "`ks env rm` " + `— ` + envShortDesc["rm"] + `
+* ` + "`ks env set` " + `— ` + envShortDesc["set"] + `
+* ` + "`ks param set` " + `— ` + envShortDesc["set"] + `
 * ` + "`ks apply` " + `— ` + applyShortDesc + `
 
 ### Syntax

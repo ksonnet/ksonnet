@@ -1,10 +1,10 @@
 ## ks module list
 
-list
+List modules
 
 ### Synopsis
 
-list
+List modules
 
 ```
 ks module list [flags]
@@ -25,5 +25,5 @@ ks module list [flags]
 
 ### SEE ALSO
 
-* [ks module](ks_module.md)	 - module
+* [ks module](ks_module.md)	 - Manage ksonnet modules
 

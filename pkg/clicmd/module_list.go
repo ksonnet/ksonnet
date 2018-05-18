@@ -28,8 +28,8 @@ const (
 // moduleListCmd represents the ns list command
 var nsListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "list",
-	Long:  `list`,
+	Short: "List modules",
+	Long:  `List modules`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		m := map[string]interface{}{
 			actions.OptionApp:     ka,

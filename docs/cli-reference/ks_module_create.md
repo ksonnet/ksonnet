@@ -1,10 +1,10 @@
 ## ks module create
 
-create
+Create a module
 
 ### Synopsis
 
-create
+Create a module
 
 ```
 ks module create <name> [flags]
@@ -24,5 +24,5 @@ ks module create <name> [flags]
 
 ### SEE ALSO
 
-* [ks module](ks_module.md)	 - module
+* [ks module](ks_module.md)	 - Manage ksonnet modules
 

@@ -22,8 +22,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-
-	"github.com/ksonnet/ksonnet/pkg/client"
 )
 
 const (
@@ -34,8 +32,7 @@ const (
 )
 
 var (
-	envClientConfig *client.Config
-	envShortDesc    = map[string]string{
+	envShortDesc = map[string]string{
 		"add":     "Add a new environment to a ksonnet application",
 		"current": "Sets the current environment",
 		"list":    "List all environments in a ksonnet application",
@@ -47,18 +44,8 @@ var (
 
 func init() {
 	RootCmd.AddCommand(envCmd)
-	envClientConfig = client.NewDefaultClientConfig(ka)
-	envClientConfig.BindClientGoFlags(envCmd)
 
-	envCmd.AddCommand(envAddCmd)
 	envCmd.AddCommand(envRmCmd)
-
-	// TODO: We need to make this default to checking the `kubeconfig` file.
-	envAddCmd.PersistentFlags().String(flagAPISpec, "version:v1.7.0",
-		"Manually specify API version from OpenAPI schema, cluster, or Kubernetes version")
-
-	envAddCmd.Flags().BoolP(flagOverride, shortOverride, false, "Add environment as override")
-	viper.BindPFlag(vEnvAddOverride, envAddCmd.Flags().Lookup(flagOverride))
 
 	envRmCmd.Flags().BoolP(flagOverride, shortOverride, false, "Remove the overridden environment")
 	viper.BindPFlag(vEnvRmOverride, envRmCmd.Flags().Lookup(flagOverride))

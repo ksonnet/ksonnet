@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/ksonnet/ksonnet/pkg/lib"
+	"github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
@@ -48,6 +49,11 @@ func NewApp010(fs afero.Fs, root string) *App010 {
 // AddEnvironment adds an environment spec to the app spec. If the spec already exists,
 // it is overwritten.
 func (a *App010) AddEnvironment(name, k8sSpecFlag string, newEnv *EnvironmentSpec, isOverride bool) error {
+	logrus.WithFields(logrus.Fields{
+		"k8s-spec-flag": k8sSpecFlag,
+		"name":          name,
+	}).Debug("adding environment")
+
 	if err := a.load(); err != nil {
 		return errors.Wrap(err, "load configuration")
 	}

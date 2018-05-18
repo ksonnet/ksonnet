@@ -29,7 +29,7 @@ const (
 // envTargetsCmd represents the env targets command
 var envTargetsCmd = &cobra.Command{
 	Use:   "targets",
-	Short: "targets",
+	Short: "Set module targets for an environment",
 	Long:  `targets`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
