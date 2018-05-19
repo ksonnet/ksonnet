@@ -84,17 +84,21 @@ func (s *Show) showYAML(apiObjects []*unstructured.Unstructured) error {
 func (s *Show) showJSON(apiObjects []*unstructured.Unstructured) error {
 	enc := json.NewEncoder(s.Out)
 	enc.SetIndent("", "  ")
-	for _, obj := range apiObjects {
-		// TODO: this is not valid framing for JSON
-		if len(apiObjects) > 1 {
-			fmt.Fprintln(s.Out, "---")
-		}
-		if err := enc.Encode(obj); err != nil {
-			return err
-		}
+
+	m := map[string]interface{}{
+		"apiVersion": "v1",
+		"kind":       "List",
 	}
 
-	return nil
+	items := make([]interface{}, 0)
+
+	for _, obj := range apiObjects {
+		items = append(items, obj.Object)
+	}
+
+	m["items"] = items
+
+	return enc.Encode(m)
 }
 
 func ShowYAML(out io.Writer, apiObjects []*unstructured.Unstructured) error {
