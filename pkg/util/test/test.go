@@ -16,6 +16,7 @@
 package test
 
 import (
+	"bytes"
 	"io"
 	"io/ioutil"
 	"os"
@@ -24,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/ksonnet/ksonnet/pkg/app/mocks"
+	godiff "github.com/shazow/go-diff"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -113,9 +115,14 @@ func WithAppFs(t *testing.T, root string, fs afero.Fs, fn func(*mocks.App, afero
 
 // AssertOutput asserts the output matches the actual contents
 func AssertOutput(t *testing.T, filename, actual string) {
-	path := filepath.Join("testdata", filename)
-	b, err := ioutil.ReadFile(path)
+	path := filepath.Join("testdata", filepath.FromSlash(filename))
+	f, err := os.Open(path)
 	require.NoError(t, err)
 
-	require.Equal(t, string(b), actual)
+	rActual := strings.NewReader(actual)
+
+	var buf bytes.Buffer
+	err = godiff.DefaultDiffer().Diff(&buf, f, rActual)
+	require.NoError(t, err)
+	require.Empty(t, buf.String())
 }

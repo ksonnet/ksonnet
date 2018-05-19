@@ -57,7 +57,7 @@ func TestShow(t *testing.T) {
 		{
 			name:        "show json",
 			format:      "json",
-			expected:    "---\n{\n  \"kind\": \"a\"\n}\n---\n{\n  \"kind\": \"b\"\n}\n",
+			expected:    "{\n  \"apiVersion\": \"v1\",\n  \"items\": [\n    {\n      \"kind\": \"a\"\n    },\n    {\n      \"kind\": \"b\"\n    }\n  ],\n  \"kind\": \"List\"\n}\n",
 			findObjects: dummyObjects,
 		},
 		{
