@@ -16,12 +16,14 @@
 package env
 
 import (
+	"io/ioutil"
+	"path/filepath"
 	"testing"
 
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/util/test"
 	"github.com/spf13/afero"
-
 	"github.com/stretchr/testify/require"
 )
 
@@ -202,4 +204,51 @@ func withJsonnetPaths(fn func()) {
 	}()
 
 	fn()
+}
+
+func TestEvaluate(t *testing.T) {
+	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+		envSpec := &app.EnvironmentSpec{
+			Path: "default",
+			Destination: &app.EnvironmentDestinationSpec{
+				Server:    "http://example.com",
+				Namespace: "default",
+			},
+		}
+		a.On("Environment", "default").Return(envSpec, nil)
+
+		test.StageFile(t, fs, "main.jsonnet", "/app/environments/default/main.jsonnet")
+
+		components, err := ioutil.ReadFile(filepath.FromSlash("testdata/evaluate/components.jsonnet"))
+		require.NoError(t, err)
+
+		got, err := Evaluate(a, "default", string(components), "")
+		require.NoError(t, err)
+
+		test.AssertOutput(t, "evaluate/out.jsonnet", got)
+	})
+}
+
+func TestMainFile(t *testing.T) {
+	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+		envSpec := &app.EnvironmentSpec{}
+		a.On("Environment", "default").Return(envSpec, nil)
+
+		test.StageFile(t, fs, "main.jsonnet", "/app/environments/main.jsonnet")
+
+		got, err := MainFile(a, "default")
+		require.NoError(t, err)
+
+		test.AssertOutput(t, "main.jsonnet", got)
+	})
+}
+
+func Test_upgradeArray(t *testing.T) {
+	snippet, err := ioutil.ReadFile(filepath.FromSlash("testdata/upgradeArray/in.jsonnet"))
+	require.NoError(t, err)
+
+	got, err := upgradeArray(string(snippet))
+	require.NoError(t, err)
+
+	test.AssertOutput(t, "upgradeArray/out.jsonnet", got)
 }

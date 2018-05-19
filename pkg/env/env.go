@@ -94,17 +94,27 @@ func MainFile(a app.App, envName string) (string, error) {
 
 // Evaluate evaluates an environment.
 func Evaluate(a app.App, envName, components, paramsStr string) (string, error) {
+
+	snippet, err := MainFile(a, envName)
+	if err != nil {
+		return "", err
+	}
+
+	evaluated, err := evaluateMain(a, envName, snippet, components, paramsStr)
+	if err != nil {
+		return "", err
+	}
+
+	return upgradeArray(evaluated)
+}
+
+func evaluateMain(a app.App, envName, snippet, components, paramsStr string) (string, error) {
 	libPath, err := a.LibPath(envName)
 	if err != nil {
 		return "", err
 	}
 
 	appEnv, err := a.Environment(envName)
-	if err != nil {
-		return "", err
-	}
-
-	snippet, err := MainFile(a, envName)
 	if err != nil {
 		return "", err
 	}
@@ -146,6 +156,27 @@ func Evaluate(a app.App, envName, components, paramsStr string) (string, error) 
 
 	return vm.EvaluateSnippet(envFileName, snippet)
 }
+
+// upgradeArray wraps component lists in Kubernetes lists.
+func upgradeArray(snippet string) (string, error) {
+	vm := jsonnet.NewVM()
+
+	vm.ExtCode("__src", snippet)
+	return vm.EvaluateSnippet("upgradeArray", jsonnetUpgradeArray)
+}
+
+var jsonnetUpgradeArray = `
+local __src = std.extVar("__src");
+local components = std.objectFields(__src);
+
+{
+[x]:
+  if std.type(__src[x]) == "array"
+  then {apiVersion: "v1", kind: "List", items: __src[x]}
+  else __src[x]
+for x in components
+}
+`
 
 func envRoot(a app.App, envName string) (string, error) {
 	envSpec, err := a.Environment(envName)

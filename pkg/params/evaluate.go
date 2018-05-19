@@ -16,12 +16,10 @@
 package params
 
 import (
-	"encoding/json"
 	"path/filepath"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/util/jsonnet"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
@@ -46,46 +44,4 @@ func EvaluateEnv(a app.App, sourcePath, paramsStr, envName string) (string, erro
 	}
 
 	return vm.EvaluateSnippet(sourcePath, string(snippet))
-}
-
-// EvaluateComponentSnippet evaluates a component with jsonnet using a snippet.
-func EvaluateComponentSnippet(a app.App, snippet, paramsStr, envName string, useMemoryImporter bool) (string, error) {
-	logrus.WithFields(logrus.Fields{
-		"env-name": envName,
-	}).Debug("evaluate component params")
-	libPath, err := a.LibPath(envName)
-	if err != nil {
-		return "", err
-	}
-
-	vm := jsonnet.NewVM()
-	if useMemoryImporter {
-		vm.Fs = a.Fs()
-		vm.UseMemoryImporter = true
-	}
-
-	vm.AddJPath(
-		libPath,
-		filepath.Join(a.Root(), "vendor"),
-	)
-	vm.ExtCode("__ksonnet/params", paramsStr)
-
-	envDetails, err := a.Environment(envName)
-	if err != nil {
-		return "", err
-	}
-
-	dest := map[string]string{
-		"server":    envDetails.Destination.Server,
-		"namespace": envDetails.Destination.Namespace,
-	}
-
-	marshalledDestination, err := json.Marshal(&dest)
-	if err != nil {
-		return "", err
-	}
-
-	vm.ExtCode("__ksonnet/environments", string(marshalledDestination))
-
-	return vm.EvaluateSnippet("snippet", snippet)
 }
