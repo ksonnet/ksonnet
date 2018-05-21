@@ -20,27 +20,23 @@ import (
 	"strings"
 )
 
-const (
-	delimiter = "\x00"
-)
-
 type index struct {
-	prototypes map[string]*SpecificationSchema
+	prototypes map[string]*Prototype
 }
 
-func (idx *index) List() (SpecificationSchemas, error) {
-	prototypes := []*SpecificationSchema{}
+func (idx *index) List() (Prototypes, error) {
+	prototypes := []*Prototype{}
 	for _, prototype := range idx.prototypes {
 		prototypes = append(prototypes, prototype)
 	}
 	return prototypes, nil
 }
 
-func (idx *index) SearchNames(query string, opts SearchOptions) (SpecificationSchemas, error) {
+func (idx *index) SearchNames(query string, opts SearchOptions) (Prototypes, error) {
 	// TODO(hausdorff): This is the world's worst search algorithm. Improve it at
 	// some point.
 
-	prototypes := []*SpecificationSchema{}
+	prototypes := []*Prototype{}
 
 	for name, prototype := range idx.prototypes {
 		isSearchResult := false

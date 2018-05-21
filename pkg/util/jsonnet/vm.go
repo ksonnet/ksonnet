@@ -111,11 +111,11 @@ func (vm *VM) EvaluateSnippet(name, snippet string) (string, error) {
 	now := time.Now()
 
 	fields := logrus.Fields{
-		"jPaths": strings.Join(vm.jPaths, ", "),
-		"name":   name,
+		"name": name,
 	}
 
 	if log.VerbosityLevel >= 2 {
+		fields["jPaths"] = strings.Join(vm.jPaths, ", ")
 		fields["snippet"] = snippet
 	}
 

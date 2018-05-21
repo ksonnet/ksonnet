@@ -25,20 +25,20 @@ func Test_prototypeUseCmd(t *testing.T) {
 	cases := []cmdTestCase{
 		{
 			name:   "in general",
-			args:   []string{"prototype", "use", "name", "--port", "8080"},
+			args:   []string{"prototype", "use", "name", "--containerPort", "8080"},
 			action: actionPrototypeUse,
 			expected: map[string]interface{}{
 				actions.OptionApp:       ka,
-				actions.OptionArguments: []string{"name", "--port", "8080"},
+				actions.OptionArguments: []string{"name", "--containerPort", "8080"},
 			},
 		},
 		{
 			name:   "using generate alias",
-			args:   []string{"generate", "name", "--port", "8080"},
+			args:   []string{"generate", "name", "--containerPort", "8080"},
 			action: actionPrototypeUse,
 			expected: map[string]interface{}{
 				actions.OptionApp:       ka,
-				actions.OptionArguments: []string{"name", "--port", "8080"},
+				actions.OptionArguments: []string{"name", "--containerPort", "8080"},
 			},
 		},
 	}

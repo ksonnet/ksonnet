@@ -33,7 +33,7 @@ func TestPrototypePreview(t *testing.T) {
 		args := []string{
 			"--name", "myDeployment",
 			"--image", "nginx",
-			"--port", "80",
+			"--containerPort", "80",
 		}
 
 		in := map[string]interface{}{

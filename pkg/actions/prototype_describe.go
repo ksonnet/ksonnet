@@ -42,7 +42,7 @@ type PrototypeDescribe struct {
 	app             app.App
 	out             io.Writer
 	query           string
-	appPrototypesFn func(app.App, pkg.Descriptor) (prototype.SpecificationSchemas, error)
+	appPrototypesFn func(app.App, pkg.Descriptor) (prototype.Prototypes, error)
 }
 
 // NewPrototypeDescribe creates an instance of PrototypeDescribe
@@ -67,7 +67,10 @@ func (pd *PrototypeDescribe) Run() error {
 		return err
 	}
 
-	index := prototype.NewIndex(prototypes)
+	index, err := prototype.NewIndex(prototypes, prototype.DefaultBuilder)
+	if err != nil {
+		return errors.Wrap(err, "create prototype index")
+	}
 
 	prototypes, err = index.List()
 	if err != nil {
@@ -97,15 +100,15 @@ func (pd *PrototypeDescribe) Run() error {
 	return nil
 }
 
-type prototypeFn func(app.App, pkg.Descriptor) (prototype.SpecificationSchemas, error)
+type prototypeFn func(app.App, pkg.Descriptor) (prototype.Prototypes, error)
 
-func allPrototypes(a app.App, appPrototypes prototypeFn) (prototype.SpecificationSchemas, error) {
+func allPrototypes(a app.App, appPrototypes prototypeFn) (prototype.Prototypes, error) {
 	libraries, err := a.Libraries()
 	if err != nil {
 		return nil, err
 	}
 
-	var prototypes prototype.SpecificationSchemas
+	var prototypes prototype.Prototypes
 
 	for _, library := range libraries {
 		d := pkg.Descriptor{
@@ -124,8 +127,11 @@ func allPrototypes(a app.App, appPrototypes prototypeFn) (prototype.Specificatio
 	return prototypes, nil
 }
 
-func findUniquePrototype(query string, prototypes prototype.SpecificationSchemas) (*prototype.SpecificationSchema, error) {
-	index := prototype.NewIndex(prototypes)
+func findUniquePrototype(query string, prototypes prototype.Prototypes) (*prototype.Prototype, error) {
+	index, err := prototype.NewIndex(prototypes, prototype.DefaultBuilder)
+	if err != nil {
+		return nil, err
+	}
 
 	sameSuffix, err := index.SearchNames(query, prototype.Suffix)
 	if err != nil {
@@ -152,7 +158,7 @@ func findUniquePrototype(query string, prototypes prototype.SpecificationSchemas
 	}
 }
 
-func specNames(prototypes []*prototype.SpecificationSchema) []string {
+func specNames(prototypes []*prototype.Prototype) []string {
 	partialMatches := []string{}
 	for _, proto := range prototypes {
 		partialMatches = append(partialMatches, proto.Name)

@@ -37,7 +37,7 @@ func TestPrototypeUse(t *testing.T) {
 			"myDeployment",
 			"--name", "myDeployment",
 			"--image", "nginx",
-			"--port", "80",
+			"--containerPort", "80",
 		}
 
 		in := map[string]interface{}{
@@ -53,10 +53,10 @@ func TestPrototypeUse(t *testing.T) {
 			assertOutput(t, "prototype/use/text.txt", text)
 
 			expectedParams := param.Params{
-				"name":     `"myDeployment"`,
-				"image":    `"nginx"`,
-				"replicas": "1",
-				"port":     "80",
+				"name":          `"myDeployment"`,
+				"image":         `"nginx"`,
+				"replicas":      "1",
+				"containerPort": "80",
 			}
 
 			assert.Equal(t, expectedParams, params)

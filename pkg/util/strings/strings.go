@@ -61,3 +61,8 @@ func InSlice(s string, sl []string) bool {
 
 	return false
 }
+
+// Ptr returns a pointer to a string.
+func Ptr(s string) *string {
+	return &s
+}

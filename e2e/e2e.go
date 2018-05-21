@@ -42,6 +42,7 @@ import (
 )
 
 var kubeconfig = flag.String("kubeconfig", "", "absolute path to kubeconfig file")
+var kubectx = flag.String("context", "", "kubernetes context")
 
 type e2e struct {
 	root       string

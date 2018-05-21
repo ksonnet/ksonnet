@@ -139,3 +139,9 @@ func Test_InSlice(t *testing.T) {
 		})
 	}
 }
+
+func TestPtr(t *testing.T) {
+	s := "hello"
+	p := Ptr(s)
+	require.Equal(t, &s, p)
+}

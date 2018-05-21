@@ -31,7 +31,7 @@ import (
 type Package struct {
 	Name        string
 	Description string
-	Prototypes  prototype.SpecificationSchemas
+	Prototypes  prototype.Prototypes
 }
 
 // New creates a new new instance of Package using a part.
@@ -61,10 +61,10 @@ func NewFromData(a app.App, d Descriptor, data []byte) (*Package, error) {
 }
 
 // LoadPrototypes returns prototypes for a Package.
-func LoadPrototypes(a app.App, d Descriptor) (prototype.SpecificationSchemas, error) {
+func LoadPrototypes(a app.App, d Descriptor) (prototype.Prototypes, error) {
 	vp := vendorPath(a)
 
-	var prototypes prototype.SpecificationSchemas
+	var prototypes prototype.Prototypes
 
 	protoPath := filepath.Join(vp, d.Registry, d.Part, "prototypes")
 	exists, err := afero.DirExists(a.Fs(), protoPath)
@@ -86,7 +86,7 @@ func LoadPrototypes(a app.App, d Descriptor) (prototype.SpecificationSchemas, er
 			return err
 		}
 
-		spec, err := prototype.FromJsonnet(string(data))
+		spec, err := prototype.DefaultBuilder(string(data))
 		if err != nil {
 			return err
 		}

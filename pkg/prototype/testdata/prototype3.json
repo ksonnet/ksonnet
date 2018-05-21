@@ -1,0 +1,20 @@
+{
+    "apiVersion": "0.1",
+    "kind": "ksonnet.io/prototype",
+    "name": "io.ksonnet.pkg.single-port-service",
+    "params": [{
+        "name": "name",
+        "alias": "name",
+        "type": "string",
+        "description": "name"
+    }],
+    "template": {
+        "jsonnetBody": [
+            "",
+            "{",
+            "   // apiVersion",
+            "   apiVersion: \"v1\"",
+            "}"
+        ]
+    }
+}

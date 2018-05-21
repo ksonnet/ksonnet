@@ -1,0 +1,74 @@
+{
+    "apiVersion": "0.1",
+    "kind": "ksonnet.io/prototype",
+    "name": "io.ksonnet.pkg.single-port-service",
+    "params": [{
+            "name": "name",
+            "alias": "name",
+            "description": "Name of the service",
+            "type": "string"
+        },
+        {
+            "name": "selector",
+            "alias": "selector",
+            "description": "label",
+            "type": "object"
+        },
+        {
+            "name": "servicePort",
+            "alias": "servicePort",
+            "description": "Port for the service to expose",
+            "default": "80",
+            "type": "string"
+        },
+        {
+            "name": "targetPort",
+            "alias": "targetPort",
+            "description": "Port for the service target",
+            "default": "80",
+            "type": "string"
+        },
+        {
+            "name": "protocol",
+            "alias": "protocol",
+            "description": "Protocol to use (either TCP or UDP)",
+            "default": "TCP",
+            "type": "string"
+        },
+        {
+            "name": "serviceType",
+            "alias": "serviceType",
+            "description": "Type of service to expose",
+            "default": "ClusterIP",
+            "type": "string"
+        }
+    ],
+    "template": {
+        "description": "long description\nline 2",
+        "shortDescription": "short description",
+        "jsonnetBody": [
+            "",
+            "// our object",
+            "{",
+            "   \"apiVersion\": \"v1\",",
+            "   \"kind\": \"Service\",",
+            "   \"metadata\": {",
+            "      \"name\": params.name",
+            "   },",
+            "   \"spec\": {",
+            "      \"ports\": [",
+            "         {",
+            "            \"protocol\": params.protocol,",
+            "            \"port\": params.servicePort,",
+            "            \"targetPort\": params.targetPort",
+            "         }",
+            "      ],",
+            "      // our selector",
+            "      \"selector\": params.targetLabelSelector,",
+            "      \"type\": params.type",
+            "   }",
+            "}",
+            ""
+        ]
+    }
+}

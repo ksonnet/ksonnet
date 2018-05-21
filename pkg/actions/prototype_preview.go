@@ -48,7 +48,7 @@ type PrototypePreview struct {
 	out             io.Writer
 	query           string
 	args            []string
-	appPrototypesFn func(app.App, pkg.Descriptor) (prototype.SpecificationSchemas, error)
+	appPrototypesFn func(app.App, pkg.Descriptor) (prototype.Prototypes, error)
 }
 
 // NewPrototypePreview creates an instance of PrototypePreview
@@ -78,7 +78,10 @@ func (pp *PrototypePreview) Run() error {
 		return err
 	}
 
-	index := prototype.NewIndex(prototypes)
+	index, err := prototype.NewIndex(prototypes, prototype.DefaultBuilder)
+	if err != nil {
+		return err
+	}
 
 	prototypes, err = index.List()
 	if err != nil {
@@ -115,7 +118,7 @@ func (pp *PrototypePreview) Run() error {
 	return nil
 }
 
-func bindPrototypeParams(p *prototype.SpecificationSchema) *pflag.FlagSet {
+func bindPrototypeParams(p *prototype.Prototype) *pflag.FlagSet {
 	fs := pflag.NewFlagSet("preview", pflag.ContinueOnError)
 
 	for _, param := range p.RequiredParams() {
@@ -129,7 +132,7 @@ func bindPrototypeParams(p *prototype.SpecificationSchema) *pflag.FlagSet {
 	return fs
 }
 
-func getParameters(proto *prototype.SpecificationSchema, flags *pflag.FlagSet) (map[string]string, error) {
+func getParameters(proto *prototype.Prototype, flags *pflag.FlagSet) (map[string]string, error) {
 	missingRequired := prototype.ParamSchemas{}
 	values := map[string]string{}
 	for _, param := range proto.RequiredParams() {
@@ -172,7 +175,7 @@ func getParameters(proto *prototype.SpecificationSchema, flags *pflag.FlagSet) (
 }
 
 // TODO: this doesn't belong here. Needs to be closer to where other jsonnet processing happens.
-func expandPrototype(proto *prototype.SpecificationSchema, templateType prototype.TemplateType, params map[string]string, componentName string) (string, error) {
+func expandPrototype(proto *prototype.Prototype, templateType prototype.TemplateType, params map[string]string, componentName string) (string, error) {
 	template, err := proto.Template.Body(templateType)
 	if err != nil {
 		return "", err

@@ -42,10 +42,10 @@ func TestPrototypeSearch(t *testing.T) {
 		var buf bytes.Buffer
 		a.out = &buf
 
-		a.protoSearchFn = func(string, prototype.SpecificationSchemas) (prototype.SpecificationSchemas, error) {
+		a.protoSearchFn = func(string, prototype.Prototypes) (prototype.Prototypes, error) {
 			snippet := prototype.SnippetSchema{ShortDescription: "description"}
 
-			return prototype.SpecificationSchemas{
+			return prototype.Prototypes{
 				{Name: "result1", Template: snippet},
 				{Name: "result2", Template: snippet},
 			}, nil
