@@ -33,7 +33,7 @@ var _ = Describe("ks env", func() {
 		It("adds an environment", func() {
 			o := a.runKs("env", "add", "prod",
 				"--server", "http://example.com",
-				"--namespace", "prod")
+				"--module", "prod")
 			assertExitStatus(o, 0)
 
 			o = a.envList()
@@ -45,7 +45,7 @@ var _ = Describe("ks env", func() {
 				o := a.runKs("env", "add", "prod",
 					"-o",
 					"--server", "http://example.com",
-					"--namespace", "prod")
+					"--module", "prod")
 				assertExitStatus(o, 0)
 
 				o = a.envList()
@@ -66,7 +66,7 @@ var _ = Describe("ks env", func() {
 				o := a.runKs("env", "add", "default",
 					"-o",
 					"--server", "http://example.com",
-					"--namespace", "prod")
+					"--module", "prod")
 				assertExitStatus(o, 0)
 
 				o = a.runKs("env", "describe", "default")
@@ -192,7 +192,7 @@ var _ = Describe("ks env", func() {
 		Context("namespace does not exist", func() {
 			It("returns an error", func() {
 				o := a.runKs("env", "targets", "invalid",
-					"--namespace", "/")
+					"--module", "/")
 				assertExitStatus(o, 1)
 				assertOutput("env/targets/invalid-env.txt", o.stderr)
 			})

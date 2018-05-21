@@ -64,7 +64,7 @@ var _ = Describe("builtin prototypes", func() {
 		namespace = e.createNamespace()
 
 		io := &initOptions{
-			context:   "gke_bryan-heptio_us-central1-a_dev2",
+			context:   "docker-for-desktop",
 			namespace: namespace,
 		}
 
@@ -92,7 +92,7 @@ var _ = Describe("builtin prototypes", func() {
 			})
 
 			It("validates", func() {
-				o := a.runKs("validate", "default")
+				o := a.runKs("validate", "default", "-v")
 				assertExitStatus(o, 0)
 			})
 

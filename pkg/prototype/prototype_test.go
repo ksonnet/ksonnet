@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	"github.com/blang/semver"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -61,7 +63,7 @@ var simpleDeployment = `{
   }
 }`
 
-func unmarshal(t *testing.T, bytes []byte) *SpecificationSchema {
+func unmarshal(t *testing.T, bytes []byte) *Prototype {
 	p, err := Unmarshal(bytes)
 	if err != nil {
 		t.Fatalf("Failed to deserialize prototype:\n%v", err)
@@ -82,10 +84,6 @@ func TestSimpleUnmarshal(t *testing.T) {
 	assertProp(t, "apiVersion", p.APIVersion, "0.0.1")
 	assertProp(t, "name", p.Name, "io.some-vendor.pkg.simple-service")
 	assertProp(t, "description", p.Template.Description, "Generates a simple service with a port exposed")
-}
-
-var testPrototypes = map[string]string{
-	"io.ksonnet.pkg.simple-service": simpleService,
 }
 
 func assertSearch(t *testing.T, idx Index, opts SearchOptions, query string, expectedNames []string) {
@@ -121,7 +119,8 @@ func assertSearch(t *testing.T, idx Index, opts SearchOptions, query string, exp
 func TestSearch(t *testing.T) {
 	svc := unmarshal(t, []byte(simpleService))
 	depl := unmarshal(t, []byte(simpleDeployment))
-	idx := NewIndex([]*SpecificationSchema{svc, depl})
+	idx, err := NewIndex([]*Prototype{svc, depl}, DefaultBuilder)
+	require.NoError(t, err)
 
 	// Prefix searches.
 	assertSearch(t, idx, Prefix, "service", []string{})
@@ -199,10 +198,52 @@ func TestApiVersionValidate(t *testing.T) {
 			t.Errorf("Failed to parse version '%s':\n%v", test.spec, err)
 		}
 
-		spec := &SpecificationSchema{APIVersion: test.spec}
+		spec := &Prototype{APIVersion: test.spec}
 		err = spec.validate()
 		if (test.err && err == nil) || (!test.err && err != nil) {
 			t.Errorf("Expected error for version '%s'? %t. Value of error: '%v'", test.spec, test.err, err)
 		}
+	}
+}
+
+func TestParseTemplateType(t *testing.T) {
+	cases := []struct {
+		name     string
+		expected TemplateType
+		isErr    bool
+	}{
+		{
+			name:     "yaml",
+			expected: YAML,
+		},
+		{
+			name:     "yml",
+			expected: YAML,
+		},
+		{
+			name:     "json",
+			expected: JSON,
+		},
+		{
+			name:     "jsonnet",
+			expected: Jsonnet,
+		},
+		{
+			name:  "unknown",
+			isErr: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tt, err := ParseTemplateType(tc.name)
+			if tc.isErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tc.expected, tt)
+		})
 	}
 }

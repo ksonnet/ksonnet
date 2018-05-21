@@ -1,29 +1,58 @@
 local env = std.extVar("__ksonnet/environments");
 local params = std.extVar("__ksonnet/params").components.preview;
-local k = import "k.libsonnet";
-local deployment = k.apps.v1beta1.deployment;
-local container = k.apps.v1beta1.deployment.mixin.spec.template.spec.containersType;
-local containerPort = container.portsType;
-local service = k.core.v1.service;
-local servicePort = k.core.v1.service.mixin.spec.portsType;
-
-local targetPort = params.containerPort;
-local labels = {app: params.name};
-
-local appService = service
-  .new(
-    params.name,
-    labels,
-    servicePort.new(params.servicePort, targetPort))
-  .withType(params.type);
-
-local appDeployment = deployment
-  .new(
-    params.name,
-    params.replicas,
-    container
-      .new(params.name, params.image)
-      .withPorts(containerPort.new(targetPort)),
-    labels);
-
-k.core.v1.list.new([appService, appDeployment])
+[
+   {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+         "name": params.name
+      },
+      "spec": {
+         "ports": [
+            {
+               "port": params.servicePort,
+               "targetPort": params.containerPort
+            }
+         ],
+         "selector": {
+            "app": params.name
+         },
+         "type": params.type
+      }
+   },
+   {
+      "apiVersion": "apps/v1beta2",
+      "kind": "Deployment",
+      "metadata": {
+         "name": params.name
+      },
+      "spec": {
+         "replicas": params.replicas,
+         "selector": {
+            "matchLabels": {
+               "app": params.name
+            },
+         },
+         "template": {
+            "metadata": {
+               "labels": {
+                  "app": params.name
+               }
+            },
+            "spec": {
+               "containers": [
+                  {
+                     "image": params.image,
+                     "name": params.name,
+                     "ports": [
+                     {
+                        "containerPort": params.containerPort
+                     }
+                     ]
+                  }
+               ]
+            }
+         }
+      }
+   }
+]

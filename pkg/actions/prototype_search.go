@@ -42,8 +42,8 @@ type PrototypeSearch struct {
 	app           app.App
 	query         string
 	out           io.Writer
-	prototypesFn  func(app.App, pkg.Descriptor) (prototype.SpecificationSchemas, error)
-	protoSearchFn func(string, prototype.SpecificationSchemas) (prototype.SpecificationSchemas, error)
+	prototypesFn  func(app.App, pkg.Descriptor) (prototype.Prototypes, error)
+	protoSearchFn func(string, prototype.Prototypes) (prototype.Prototypes, error)
 }
 
 // NewPrototypeSearch creates an instance of PrototypeSearch
@@ -99,7 +99,10 @@ func (ps *PrototypeSearch) Run() error {
 	return t.Render()
 }
 
-func protoSearch(query string, prototypes prototype.SpecificationSchemas) (prototype.SpecificationSchemas, error) {
-	index := prototype.NewIndex(prototypes)
+func protoSearch(query string, prototypes prototype.Prototypes) (prototype.Prototypes, error) {
+	index, err := prototype.NewIndex(prototypes, prototype.DefaultBuilder)
+	if err != nil {
+		return nil, err
+	}
 	return index.SearchNames(query, prototype.Substring)
 }

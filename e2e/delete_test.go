@@ -30,7 +30,7 @@ var _ = Describe("ks delete", func() {
 		namespace = e.createNamespace()
 
 		io := &initOptions{
-			context:   "gke_bryan-heptio_us-central1-a_dev2",
+			context:   *kubectx,
 			namespace: namespace,
 		}
 

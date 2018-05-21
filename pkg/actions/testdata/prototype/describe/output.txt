@@ -2,11 +2,10 @@ PROTOTYPE NAME:
 io.ksonnet.pkg.namespace
 
 DESCRIPTION:
-A simple namespace. Labels are automatically populated from the name of the
-namespace.
+A simple namespace. Labels are automatically populated from the name of the namespace.
 
 REQUIRED PARAMETERS:
-  --name=<name> Name to give the namespace. [type: string]
+  --name=<name> Name to give the namespace [type: string]
 
 OPTIONAL PARAMETERS:
   [none]

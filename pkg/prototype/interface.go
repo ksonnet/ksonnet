@@ -15,12 +15,24 @@
 
 package prototype
 
-import "github.com/ghodss/yaml"
+import (
+	rice "github.com/GeertJohan/go.rice"
+	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
+)
+
+var (
+	// DefaultBuilder is a builder that will build a prototype from a source string.
+	DefaultBuilder = JsonnetParse
+)
+
+// PrototypeBuilder builds a prototype from a source string.
+type Builder func(source string) (*Prototype, error)
 
 // Unmarshal takes the bytes of a JSON-encoded prototype specification, and
-// deserializes them to a `SpecificationSchema`.
-func Unmarshal(bytes []byte) (*SpecificationSchema, error) {
-	var p SpecificationSchema
+// de-serializes them to a `SpecificationSchema`.
+func Unmarshal(bytes []byte) (*Prototype, error) {
+	var p Prototype
 	err := yaml.Unmarshal(bytes, &p)
 	if err != nil {
 		return nil, err
@@ -50,15 +62,25 @@ const (
 
 // Index represents a queryable index of prototype specifications.
 type Index interface {
-	List() (SpecificationSchemas, error)
-	SearchNames(query string, opts SearchOptions) (SpecificationSchemas, error)
+	List() (Prototypes, error)
+	SearchNames(query string, opts SearchOptions) (Prototypes, error)
 }
 
 // NewIndex constructs an index of prototype specifications from a list.
-func NewIndex(prototypes []*SpecificationSchema) Index {
-	idx := map[string]*SpecificationSchema{}
+func NewIndex(prototypes []*Prototype, builder Builder) (Index, error) {
+	idx := map[string]*Prototype{}
 
-	for _, p := range defaultPrototypes {
+	systemBox, err := rice.FindBox("system")
+	if err != nil {
+		return nil, err
+	}
+
+	dp, err := systemPrototypes(systemBox, builder)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to load default prototypes")
+	}
+
+	for _, p := range dp {
 		idx[p.Name] = p
 	}
 
@@ -68,5 +90,5 @@ func NewIndex(prototypes []*SpecificationSchema) Index {
 
 	return &index{
 		prototypes: idx,
-	}
+	}, nil
 }

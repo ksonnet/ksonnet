@@ -43,7 +43,7 @@ type PrototypeUse struct {
 	app               app.App
 	args              []string
 	out               io.Writer
-	prototypesFn      func(app.App, pkg.Descriptor) (prototype.SpecificationSchemas, error)
+	prototypesFn      func(app.App, pkg.Descriptor) (prototype.Prototypes, error)
 	createComponentFn func(app.App, string, string, param.Params, prototype.TemplateType) (string, error)
 }
 
@@ -74,7 +74,10 @@ func (pl *PrototypeUse) Run() error {
 		return err
 	}
 
-	index := prototype.NewIndex(prototypes)
+	index, err := prototype.NewIndex(prototypes, prototype.DefaultBuilder)
+	if err != nil {
+		return err
+	}
 
 	prototypes, err = index.List()
 	if err != nil {

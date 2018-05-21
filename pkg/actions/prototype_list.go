@@ -40,7 +40,7 @@ func RunPrototypeList(m map[string]interface{}) error {
 type PrototypeList struct {
 	app          app.App
 	out          io.Writer
-	prototypesFn func(app.App, pkg.Descriptor) (prototype.SpecificationSchemas, error)
+	prototypesFn func(app.App, pkg.Descriptor) (prototype.Prototypes, error)
 }
 
 // NewPrototypeList creates an instance of PrototypeList
@@ -68,7 +68,10 @@ func (pl *PrototypeList) Run() error {
 		return err
 	}
 
-	index := prototype.NewIndex(prototypes)
+	index, err := prototype.NewIndex(prototypes, prototype.DefaultBuilder)
+	if err != nil {
+		return err
+	}
 
 	prototypes, err = index.List()
 	if err != nil {
