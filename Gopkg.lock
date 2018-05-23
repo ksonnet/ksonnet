@@ -399,6 +399,12 @@
   version = "v1.0"
 
 [[projects]]
+  name = "github.com/jonboulle/clockwork"
+  packages = ["."]
+  revision = "2eee05ed794112d45db504eb05aa693efd2b8b09"
+  version = "v0.1.0"
+
+[[projects]]
   name = "github.com/json-iterator/go"
   packages = ["."]
   revision = "f7279a603edee96fe7764d3de9c6ff8cf9970994"
@@ -882,6 +888,7 @@
     "pkg/util/httpstream/spdy",
     "pkg/util/intstr",
     "pkg/util/json",
+    "pkg/util/jsonmergepatch",
     "pkg/util/mergepatch",
     "pkg/util/net",
     "pkg/util/rand",
@@ -1027,6 +1034,7 @@
     "plugin/pkg/client/auth/oidc",
     "plugin/pkg/client/auth/openstack",
     "rest",
+    "rest/fake",
     "rest/watch",
     "scale",
     "scale/scheme",
@@ -1189,8 +1197,10 @@
     "pkg/kubectl/apps",
     "pkg/kubectl/categories",
     "pkg/kubectl/cmd/templates",
+    "pkg/kubectl/cmd/testing",
     "pkg/kubectl/cmd/util",
     "pkg/kubectl/cmd/util/openapi",
+    "pkg/kubectl/cmd/util/openapi/testing",
     "pkg/kubectl/cmd/util/openapi/validation",
     "pkg/kubectl/plugins",
     "pkg/kubectl/resource",
@@ -1257,6 +1267,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1f55255d5e4cb5cc4628c008b28a11b317e4ac1a4f987ce50ce1c19a65de7e4a"
+  inputs-digest = "d54e717c9705768768030c1d16e15347c44b0b4edb40dc2a1d7caafd34f50311"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -19,6 +19,7 @@ package e2e
 
 import (
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ks apply", func() {
@@ -26,39 +27,83 @@ var _ = Describe("ks apply", func() {
 	var namespace string
 	var o *output
 
-	BeforeEach(func() {
-		namespace = e.createNamespace()
+	Context("creating new objects", func() {
+		BeforeEach(func() {
+			namespace = e.createNamespace()
 
-		io := &initOptions{
-			context:   *kubectx,
-			namespace: namespace,
-		}
+			io := &initOptions{
+				context:   *kubectx,
+				namespace: namespace,
+			}
 
-		a = e.initApp(io)
-		a.generateDeployedService()
+			a = e.initApp(io)
+			a.generateDeployedService()
+		})
+
+		AfterEach(func() {
+			e.removeNamespace(namespace)
+		})
+
+		JustBeforeEach(func() {
+			o = a.runKs("apply", "default")
+			assertExitStatus(o, 0)
+		})
+
+		It("reports which resources it creating", func() {
+			assertOutputContainsString("Creating non-existent services guestbook-ui", o.stderr)
+			assertOutputContainsString("Creating non-existent deployments guestbook-ui", o.stderr)
+		})
+
+		It("creates a guestbook-ui service", func() {
+			v := newValidator(e.restConfig, namespace)
+			v.hasService("guestbook-ui")
+		})
+
+		It("creates a guestbook-ui deployment", func() {
+			v := newValidator(e.restConfig, namespace)
+			v.hasDeployment("guestbook-ui")
+		})
 	})
 
-	AfterEach(func() {
-		e.removeNamespace(namespace)
+	Context("updating an existing service", func() {
+		var (
+			v        *validator
+			nodePort int32
+		)
+
+		BeforeEach(func() {
+			namespace = e.createNamespace()
+
+			io := &initOptions{
+				context:   *kubectx,
+				namespace: namespace,
+			}
+
+			a = e.initApp(io)
+			a.generateDeployedService()
+
+			applyOutput := a.runKs("apply", "default")
+			assertExitStatus(applyOutput, 0)
+
+			v = newValidator(e.restConfig, namespace)
+
+			s := v.service("guestbook-ui")
+			nodePort = s.Spec.Ports[0].NodePort
+		})
+
+		AfterEach(func() {
+			e.removeNamespace(namespace)
+		})
+
+		JustBeforeEach(func() {
+			o = a.runKs("apply", "default")
+			assertExitStatus(o, 0)
+		})
+
+		It("does not update the service node port", func() {
+			currentService := v.service("guestbook-ui")
+			Expect(currentService.Spec.Ports[0].NodePort).To(Equal(nodePort))
+		})
 	})
 
-	JustBeforeEach(func() {
-		o = a.runKs("apply", "default")
-		assertExitStatus(o, 0)
-	})
-
-	It("reports which resources it creating", func() {
-		assertOutputContainsString("Creating non-existent services guestbook-ui", o.stderr)
-		assertOutputContainsString("Creating non-existent deployments guestbook-ui", o.stderr)
-	})
-
-	It("creates a guestbook-ui service", func() {
-		v := newValidator(e.restConfig, namespace)
-		v.hasService("guestbook-ui")
-	})
-
-	It("creates a guestbook-ui deployment", func() {
-		v := newValidator(e.restConfig, namespace)
-		v.hasDeployment("guestbook-ui")
-	})
 })

@@ -20,6 +20,7 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/pkg/errors"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	extv1beta1 "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
@@ -66,6 +67,16 @@ func (v *validator) hasNoService(name string) {
 
 	err = backoff.Retry(operation, bo)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+}
+
+func (v *validator) service(name string) *v1.Service {
+	c, err := corev1.NewForConfig(v.config)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	s, err := c.Services(v.namespace).Get(name, metav1.GetOptions{})
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	return s
 }
 
 func (v *validator) hasDeployment(name string) {
