@@ -36,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	kdiff "k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/apimachinery/pkg/util/sets"
+	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 )
 
 const (
@@ -173,22 +174,33 @@ func (a *Apply) Apply() error {
 
 func (a *Apply) handleObject(co clientOpts, obj *unstructured.Unstructured) (string, error) {
 	if err := tagManaged(obj); err != nil {
-		return "", errors.Wrap(err, "tag managed")
+		return "", errors.Wrap(err, "tagging ksonnet managed object")
+	}
+
+	factory := cmdutil.NewFactory(a.ClientConfig.Config)
+	m := newObjectMerger(factory)
+	mergedObject, err := m.merge(co.namespace, obj)
+	if err != nil {
+		cause := errors.Cause(err)
+		if !kerrors.IsNotFound(cause) {
+			return "", errors.Wrap(cause, "merging object with existing state")
+		}
+		mergedObject = obj
 	}
 
 	if a.GcTag != "" {
-		SetMetaDataAnnotation(obj, AnnotationGcTag, a.GcTag)
+		SetMetaDataAnnotation(mergedObject, AnnotationGcTag, a.GcTag)
 	}
 
-	desc := fmt.Sprintf("%s %s", a.objectInfo.ResourceName(co.discovery, obj), utils.FqName(obj))
+	desc := fmt.Sprintf("%s %s", a.objectInfo.ResourceName(co.discovery, mergedObject), utils.FqName(obj))
 	log.Info("Updating ", desc, a.dryRunText())
 
-	rc, err := a.resourceClientFactory(co, obj)
+	rc, err := a.resourceClientFactory(co, mergedObject)
 	if err != nil {
 		return "", err
 	}
 
-	asPatch, err := json.Marshal(obj)
+	asPatch, err := json.Marshal(mergedObject)
 	if err != nil {
 		return "", err
 	}
@@ -207,7 +219,7 @@ func (a *Apply) handleObject(co clientOpts, obj *unstructured.Unstructured) (str
 			newobj, err = rc.Create()
 			log.Debugf("Create(%s) returned (%v, %v)", obj.GetName(), newobj, err)
 		} else {
-			newobj = obj
+			newobj = mergedObject
 			err = nil
 		}
 	}
