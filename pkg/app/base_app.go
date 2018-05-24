@@ -82,37 +82,12 @@ func (ba *baseApp) save() error {
 		return errors.Wrapf(err, "write %s", ba.configPath())
 	}
 
-	if err = cleanOverride(ba.fs, ba.root); err != nil {
+	if err = removeOverride(ba.fs, ba.root); err != nil {
 		return errors.Wrap(err, "clean overrides")
 	}
 
-	hasOverrides := false
-	if len(ba.overrides.Environments) > 0 || len(ba.overrides.Registries) > 0 {
-		hasOverrides = true
-	}
-
-	if hasOverrides {
-		overrideData, err := yaml.Marshal(ba.overrides)
-		if err != nil {
-			return errors.Wrap(err, "convert override configuration to YAML")
-		}
-
-		if err = afero.WriteFile(ba.fs, overridePath(ba.root), overrideData, DefaultFilePermissions); err != nil {
-			return errors.Wrapf(err, "write %s", overridePath(ba.root))
-		}
-	}
-
-	return nil
-}
-
-func (ba *baseApp) cleanOverride() error {
-	exists, err := afero.Exists(ba.fs, ba.overridePath())
-	if err != nil {
-		return err
-	}
-
-	if exists {
-		return ba.fs.Remove(ba.overridePath())
+	if ba.overrides.IsDefined() {
+		return SaveOverride(defaultYAMLEncoder, ba.fs, ba.root, ba.overrides)
 	}
 
 	return nil
@@ -158,12 +133,8 @@ func (ba *baseApp) load() error {
 			return errors.Wrapf(err, "unmarshal override YAML config")
 		}
 
-		for k := range override.Registries {
-			override.Registries[k].isOverride = true
-		}
-
-		for k := range override.Environments {
-			override.Environments[k].isOverride = true
+		if err = override.Validate(); err != nil {
+			return errors.Wrap(err, "validating override")
 		}
 
 		if len(override.Environments) == 0 {
@@ -172,6 +143,14 @@ func (ba *baseApp) load() error {
 
 		if len(override.Registries) == 0 {
 			override.Registries = RegistryRefSpecs{}
+		}
+
+		for k := range override.Registries {
+			override.Registries[k].isOverride = true
+		}
+
+		for k := range override.Environments {
+			override.Environments[k].isOverride = true
 		}
 
 	}
