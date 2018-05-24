@@ -47,3 +47,9 @@ func TestPrototypeDescribe(t *testing.T) {
 		assertOutput(t, "prototype/describe/output.txt", buf.String())
 	})
 }
+
+func TestPrototypeDescribe_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewPrototypeDescribe(in)
+	require.Error(t, err)
+}

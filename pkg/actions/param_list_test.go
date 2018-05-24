@@ -137,3 +137,9 @@ func TestParamList(t *testing.T) {
 		}
 	})
 }
+
+func TestParamList_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewParamList(in)
+	require.Error(t, err)
+}

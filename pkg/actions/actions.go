@@ -123,7 +123,7 @@ const (
 var (
 	// ErrNotInApp is an error stating the user is not in a ksonnet application directory
 	// hierarchy.
-	ErrNotInApp = errors.Errorf("could not find ksonnet app")
+	ErrNotInApp = errors.Errorf("this command has to be run within a ksonnet application")
 )
 
 type missingOptionError struct {
@@ -154,7 +154,12 @@ func (e *invalidOptionError) Error() string {
 	return fmt.Sprintf("invalid type for option %s", e.name)
 }
 
+// optionLoader loads typed option from a configuration map. If an error
+// occurs in any of the load processes, the loader will return default
+// values for type.
 type optionLoader struct {
+	// err is the error state for the optionLoader. If this is not nil, all
+	// subsequent calls to load will return nil.
 	err error
 	m   map[string]interface{}
 }

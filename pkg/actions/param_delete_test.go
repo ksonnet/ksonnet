@@ -131,3 +131,9 @@ func TestParamDelete_env_global(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestParamDelete_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewParamDelete(in)
+	require.Error(t, err)
+}

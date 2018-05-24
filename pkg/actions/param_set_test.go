@@ -170,3 +170,9 @@ func TestParamSet_envGlobal(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestParamSet_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewParamSet(in)
+	require.Error(t, err)
+}

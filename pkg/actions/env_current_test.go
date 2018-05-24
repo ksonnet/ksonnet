@@ -95,3 +95,9 @@ func TestEnvCurrent_invalid_input(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+func TestEnvCurrent_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := newEnvCurrent(in)
+	require.Error(t, err)
+}

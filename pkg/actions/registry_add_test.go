@@ -100,3 +100,9 @@ func TestRegistryAdd(t *testing.T) {
 
 	})
 }
+
+func TestRegistryAdd_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewRegistryAdd(in)
+	require.Error(t, err)
+}

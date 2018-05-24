@@ -52,3 +52,9 @@ func TestComponentRm(t *testing.T) {
 		assert.True(t, didDelete)
 	})
 }
+
+func TestComponentRm_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewComponentRm(in)
+	require.Error(t, err)
+}

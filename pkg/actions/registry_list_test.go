@@ -51,3 +51,9 @@ func TestRegistryList(t *testing.T) {
 		assertOutput(t, "registry/list/output.txt", buf.String())
 	})
 }
+
+func TestRegistryList_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewRegistryList(in)
+	require.Error(t, err)
+}

@@ -57,3 +57,9 @@ func TestPrototypeSearch(t *testing.T) {
 		assertOutput(t, "prototype/search/output.txt", buf.String())
 	})
 }
+
+func TestProtoptypeSearch_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewPrototypeSearch(in)
+	require.Error(t, err)
+}

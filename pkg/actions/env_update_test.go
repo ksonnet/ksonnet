@@ -51,3 +51,9 @@ func TestEnvUpdate(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestEnvUpdate_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := newEnvUpdate(in)
+	require.Error(t, err)
+}

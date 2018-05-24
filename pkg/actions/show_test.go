@@ -97,3 +97,9 @@ func TestShow_invalid_input(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+func TestShow_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := newShow(in)
+	require.Error(t, err)
+}

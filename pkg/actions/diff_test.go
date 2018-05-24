@@ -95,3 +95,9 @@ func TestDiff(t *testing.T) {
 		})
 	}
 }
+
+func TestDiff_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewDiff(in)
+	require.Error(t, err)
+}

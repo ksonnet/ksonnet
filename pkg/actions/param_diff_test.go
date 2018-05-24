@@ -78,3 +78,9 @@ func TestParamDiff(t *testing.T) {
 		assertOutput(t, filepath.Join("param", "diff", "output.txt"), buf.String())
 	})
 }
+
+func TestParamDiff_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewParamDiff(in)
+	require.Error(t, err)
+}

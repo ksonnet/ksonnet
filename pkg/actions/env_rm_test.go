@@ -50,3 +50,9 @@ func TestEnvRm(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestEnvRm_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewEnvRm(in)
+	require.Error(t, err)
+}
