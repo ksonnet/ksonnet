@@ -167,3 +167,9 @@ func TestImport_invalid_file(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+func TestImport_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewImport(in)
+	require.Error(t, err)
+}

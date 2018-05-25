@@ -113,3 +113,9 @@ func TestEnvTargets_invalid_environment(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+func TestEnvTargets_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewEnvTargets(in)
+	require.Error(t, err)
+}

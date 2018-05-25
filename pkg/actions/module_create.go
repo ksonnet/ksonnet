@@ -49,6 +49,10 @@ func NewModuleCreate(m map[string]interface{}) (*ModuleCreate, error) {
 		cm: component.DefaultManager,
 	}
 
+	if ol.err != nil {
+		return nil, ol.err
+	}
+
 	return mc, nil
 }
 

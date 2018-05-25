@@ -66,3 +66,9 @@ func TestPkgInstall(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestPkgInstall_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewPkgInstall(in)
+	require.Error(t, err)
+}

@@ -98,3 +98,9 @@ func TestDelete_invalid_input(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+func TestDelete_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := newDelete(in)
+	require.Error(t, err)
+}

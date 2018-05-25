@@ -108,6 +108,12 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+func TestValidate_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewValidate(in)
+	require.Error(t, err)
+}
+
 type stubDiscovery struct{}
 
 func (d *stubDiscovery) RESTClient() restclient.Interface {

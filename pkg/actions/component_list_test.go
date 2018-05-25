@@ -146,3 +146,9 @@ func TestComponentList_wide(t *testing.T) {
 		assertOutput(t, "component/list/wide.txt", buf.String())
 	})
 }
+
+func TestComponentList_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewComponentList(in)
+	require.Error(t, err)
+}

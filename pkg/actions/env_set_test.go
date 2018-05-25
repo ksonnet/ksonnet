@@ -143,3 +143,9 @@ func TestEnvSet_name_and_namespace(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestEnvSet_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewEnvSet(in)
+	require.Error(t, err)
+}

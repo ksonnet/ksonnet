@@ -95,3 +95,9 @@ func TestEnvList(t *testing.T) {
 
 	})
 }
+
+func TestEnvList_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewEnvList(in)
+	require.Error(t, err)
+}

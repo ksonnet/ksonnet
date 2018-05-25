@@ -72,3 +72,9 @@ func TestRegistryDescribe(t *testing.T) {
 		assertOutput(t, "registry/describe/output.txt", buf.String())
 	})
 }
+
+func TestRegistryDescribe_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewRegistryDescribe(in)
+	require.Error(t, err)
+}

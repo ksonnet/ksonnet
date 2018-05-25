@@ -69,3 +69,9 @@ func TestPrototypeUse(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestPrototypeUse_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewPrototypeUse(in)
+	require.Error(t, err)
+}

@@ -64,3 +64,9 @@ func TestPkgList(t *testing.T) {
 		assertOutput(t, "pkg/list/output.txt", buf.String())
 	})
 }
+
+func TestPkgList_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewPkgList(in)
+	require.Error(t, err)
+}

@@ -104,3 +104,9 @@ func TestApply_invalid_input(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+func TestApply_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := newApply(in)
+	require.Error(t, err)
+}

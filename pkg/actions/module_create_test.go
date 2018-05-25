@@ -71,3 +71,9 @@ func TestModuleCreate_already_exists(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+func TestModuleCreate_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewModuleCreate(in)
+	require.Error(t, err)
+}

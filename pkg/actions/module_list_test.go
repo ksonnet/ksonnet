@@ -54,3 +54,9 @@ func TestModuleList(t *testing.T) {
 		assertOutput(t, "ns/list/output.txt", buf.String())
 	})
 }
+
+func TestModuleList_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewModuleList(in)
+	require.Error(t, err)
+}

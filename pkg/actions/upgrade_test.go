@@ -38,3 +38,9 @@ func TestUpgrade(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestUpgrade_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := newUpgrade(in)
+	require.Error(t, err)
+}

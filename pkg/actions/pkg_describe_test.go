@@ -92,3 +92,9 @@ func TestPkgDescribe_registry(t *testing.T) {
 		assertOutput(t, "pkg/describe/output.txt", buf.String())
 	})
 }
+
+func TestPkgDescribe_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewPkgDescribe(in)
+	require.Error(t, err)
+}

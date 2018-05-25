@@ -54,3 +54,9 @@ func TestPrototypePreview(t *testing.T) {
 		assertOutput(t, "prototype/preview/output.txt", buf.String())
 	})
 }
+
+func TestPrototypePreview_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewPrototypePreview(in)
+	require.Error(t, err)
+}

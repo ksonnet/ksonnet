@@ -57,6 +57,10 @@ func NewPrototypeDescribe(m map[string]interface{}) (*PrototypeDescribe, error) 
 		appPrototypesFn: pkg.LoadPrototypes,
 	}
 
+	if ol.err != nil {
+		return nil, ol.err
+	}
+
 	return pd, nil
 }
 
@@ -103,6 +107,10 @@ func (pd *PrototypeDescribe) Run() error {
 type prototypeFn func(app.App, pkg.Descriptor) (prototype.Prototypes, error)
 
 func allPrototypes(a app.App, appPrototypes prototypeFn) (prototype.Prototypes, error) {
+	if a == nil {
+		return nil, errors.New("app is required")
+	}
+
 	libraries, err := a.Libraries()
 	if err != nil {
 		return nil, err

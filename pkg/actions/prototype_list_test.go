@@ -46,3 +46,9 @@ func TestPrototypeList(t *testing.T) {
 		assertOutput(t, "prototype/list/output.txt", buf.String())
 	})
 }
+
+func TestPrototypeList_requires_app(t *testing.T) {
+	in := make(map[string]interface{})
+	_, err := NewPrototypeList(in)
+	require.Error(t, err)
+}
