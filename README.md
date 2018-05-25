@@ -29,6 +29,14 @@ If you are using [Homebrew](https://brew.sh/) on macOS, you can install `ks` wit
 brew install ksonnet/tap/ks
 ```
 
+### Chocolatey on Windows
+
+If you are using [Chocolatey](https://www.chocolatey.org/) on Windows, you can install `ks` with the following command:
+
+```
+choco install ksonnet
+```
+
 ### Download a prebuilt binary for your OS
 
 See the [releases page](https://github.com/ksonnet/ksonnet/releases) to download the latest released binary.
