@@ -1,11 +1,11 @@
-local params = import "../../components/params.libsonnet";
+local params = import '../../components/params.libsonnet';
 
 params + {
   components+: {
     guestbook+: {
-      name: "guestbook-dev",
+      name: 'guestbook-dev',
       replicas: params.global.replicas,
-      containerPort: 8080
-    }
-  }
+      containerPort: 8080,
+    },
+  },
 }
