@@ -136,3 +136,15 @@ func Test_baseApp_load_override(t *testing.T) {
 	_, ok := ba.overrides.Registries["new"]
 	require.True(t, ok)
 }
+
+func Test_baseApp_load_override_invalid(t *testing.T) {
+	fs := afero.NewMemMapFs()
+
+	stageFile(t, fs, "app010_app.yaml", "/app.yaml")
+	stageFile(t, fs, "add-registry-override-invalid.yaml", "/app.override.yaml")
+
+	ba := newBaseApp(fs, "/")
+
+	err := ba.load()
+	require.Error(t, err)
+}
