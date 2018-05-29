@@ -54,6 +54,31 @@ func TestParamSet(t *testing.T) {
 	})
 }
 
+func TestParamSet_invalid_component(t *testing.T) {
+	withApp(t, func(appMock *amocks.App) {
+		componentName := "deployment"
+		path := "replicas"
+		value := "3"
+
+		in := map[string]interface{}{
+			OptionApp:   appMock,
+			OptionName:  componentName,
+			OptionPath:  path,
+			OptionValue: value,
+		}
+
+		a, err := NewParamSet(in)
+		require.NoError(t, err)
+
+		a.resolvePathFn = func(app.App, string) (component.Module, component.Component, error) {
+			return nil, nil, nil
+		}
+
+		err = a.Run()
+		require.Error(t, err)
+	})
+}
+
 func TestParamSet_asString(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		componentName := "deployment"

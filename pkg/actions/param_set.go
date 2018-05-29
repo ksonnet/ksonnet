@@ -131,6 +131,10 @@ func (ps *ParamSet) setLocal(path []string, value interface{}) error {
 		return errors.Wrap(err, "could not find component")
 	}
 
+	if c == nil {
+		return errors.Errorf("unable to find component %s", ps.rawPath)
+	}
+
 	if err := c.SetParam(path, value); err != nil {
 		return errors.Wrap(err, "set param")
 	}
