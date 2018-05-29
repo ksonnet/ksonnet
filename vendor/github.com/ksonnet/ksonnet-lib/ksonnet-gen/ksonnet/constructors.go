@@ -12,7 +12,7 @@ import (
 var (
 	// reCtorSetter is a regex that matches function names. It'll successfully
 	// match `withName`, `foo.withName`, and `foo.bar.withName`.
-	reCtorSetter = regexp.MustCompile(`((^.*?)\.)*(with\w+)$`)
+	reCtorSetter = regexp.MustCompile(`((^.*?)\.)*(with\w+|mixinInstance)$`)
 )
 
 func matchCtorSetter(in string) (string, string, error) {

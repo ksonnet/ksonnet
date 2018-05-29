@@ -1,14 +1,14 @@
 {
   a:: {
     b:: {
-      c:: "value"
+      c:: 'value',
     },
     d: {
       metadata: {
         labels: {
-          label: "label"
-        }
-      }
-    }
-  }
+          label: 'label',
+        },
+      },
+    },
+  },
 }

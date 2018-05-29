@@ -94,7 +94,7 @@ var (
 		makeDescriptor("api", "core", "LimitRangeList"): objectList,
 		makeDescriptor("api", "core", "Namespace"): []constructor{
 			*newConstructor("new",
-				*newConstructorParam("name", "withName", nil)),
+				*newConstructorParam("name", "mixin.metadata.withName", nil)),
 		},
 		makeDescriptor("api", "core", "NamespaceList"):             objectList,
 		makeDescriptor("api", "core", "NodeList"):                  objectList,
@@ -132,7 +132,7 @@ var (
 				*newConstructorParam("port", "withPort", nil),
 				*newConstructorParam("targetPort", "withTargetPort", nil)),
 			*newConstructor("newNamed",
-				*newConstructorParam("name", "mixin.metadata.withName", nil),
+				*newConstructorParam("name", "withName", nil),
 				*newConstructorParam("port", "withPort", nil),
 				*newConstructorParam("targetPort", "withTargetPort", nil)),
 		},

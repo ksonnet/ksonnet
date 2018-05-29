@@ -1,5 +1,5 @@
-local params = import "../../components/params.libsonnet";
+local params = import '../../components/params.libsonnet';
 
 params {
-  components+: {}
+  components+: {},
 }

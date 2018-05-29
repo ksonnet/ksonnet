@@ -1,9 +1,9 @@
-local params = import "../../components/params.libsonnet";
+local params = import '../../components/params.libsonnet';
 
 params + {
   components+: {
     component1+: {
-      foo: "bar"
-    }
-  }
+      foo: 'bar',
+    },
+  },
 }
