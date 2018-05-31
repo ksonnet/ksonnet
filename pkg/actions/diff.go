@@ -116,7 +116,8 @@ func (d *Diff) Run() error {
 		return err
 	}
 
-	if buf.String() != "" {
+	if s := buf.String(); s != "" {
+		fmt.Fprintln(d.out, s)
 		return ErrDiffFound
 	}
 

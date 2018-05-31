@@ -41,7 +41,7 @@ type Differ struct {
 // DefaultDiff runs diff with default options.
 func DefaultDiff(a app.App, config *client.Config, l1 *Location, l2 *Location) (io.Reader, error) {
 	differ := New(a, config)
-	return differ.Diff(l1, l2)
+	return differ.Diff(l2, l1)
 }
 
 // New creates an instance of Differ.

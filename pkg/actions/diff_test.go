@@ -36,6 +36,7 @@ func TestDiff(t *testing.T) {
 		src2       string
 		eLocation1 string
 		eLocation2 string
+		diffText   string
 		isNewError bool
 		isRunError bool
 	}{
@@ -51,6 +52,15 @@ func TestDiff(t *testing.T) {
 			src2:       "remote:default",
 			eLocation1: "local:default",
 			eLocation2: "remote:default",
+		},
+		{
+			name:       "diff detected",
+			src1:       "local:default",
+			src2:       "remote:default",
+			eLocation1: "local:default",
+			eLocation2: "remote:default",
+			diffText:   "+foo\n-bar\nbaz\n",
+			isRunError: true,
 		},
 	}
 
@@ -80,13 +90,14 @@ func TestDiff(t *testing.T) {
 					assert.Equal(t, tc.eLocation1, l1.String(), "location1")
 					assert.Equal(t, tc.eLocation2, l2.String(), "location2")
 
-					r := strings.NewReader("")
+					r := strings.NewReader(tc.diffText)
 					return r, nil
 				}
 
 				err = d.Run()
 				if tc.isRunError {
-					require.Error(t, err)
+					assert.Error(t, err)
+					assert.NotEmpty(t, buf.String())
 					return
 				}
 
