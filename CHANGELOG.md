@@ -1,6 +1,22 @@
 # Change Log
 
+## [v0.11.0](https://github.com/ksonnet/ksonnet/tree/v0.11.0) (2018-6-1)
+[Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.10.2...v0.11.0)
+
+ksonnet 0.11 introduces the following changes:
+
+* `ks apply` will now use merge patching when it can, so Service NodePorts will not be reassigned
+* `ks diff` now provides more concise output
+* ksonnet built-in prototypes have been reworked to not use ksonnet-lib
+* Allow parameters with underscores in the name
+* Jsonnet printer now produces jsonnet formatter compliant output
+* `ks show` output in JSON format will use a Kubernetes list object
+* Components can now return lists and ksonnet will wrap them in a Kubernetes list object
+* App override configuration now has a kind/apiVersion
+* Fixed various panics due to ksonnet not being run in an application or receiving unknown input
+
 ## [v0.10.2](https://github.com/ksonnet/ksonnet/tree/v0.10.2) (2018-5-11)
+[Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.10.1...v0.10.2)
 
 ksonnet 0.10.2 is a bug fix release
 
@@ -14,6 +30,7 @@ ksonnet 0.10.2 is a bug fix release
 * omit library gitVersion if it is null
 
 ## [v0.10.1](https://github.com/ksonnet/ksonnet/tree/v0.10.1) (2018-04-27)
+[Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.10.0...v0.10.1)
 
 ksonnet 0.10.1 fixes issues with evaluating components
 
