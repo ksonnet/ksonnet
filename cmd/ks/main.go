@@ -42,12 +42,11 @@ func main() {
 		}
 		log.SetFormatter(logFmt)
 
-		log.Error(err.Error())
-
 		switch err {
 		case actions.ErrDiffFound:
 			os.Exit(10)
 		default:
+			log.Error(err.Error())
 			os.Exit(1)
 		}
 	}
