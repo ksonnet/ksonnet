@@ -238,7 +238,7 @@ type EnvironmentSpecs map[string]*EnvironmentSpec
 type EnvironmentSpec struct {
 	// Name is the user defined name of an environment
 	Name string `json:"-"`
-	// KubernetesVersion is the kubernetes version the targetted cluster is
+	// KubernetesVersion is the kubernetes version the targeted cluster is
 	// running on.
 	KubernetesVersion string `json:"k8sVersion"`
 	// Path is the relative project path containing metadata for this

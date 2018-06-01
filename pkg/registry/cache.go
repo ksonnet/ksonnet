@@ -31,7 +31,9 @@ import (
 // worked out.
 func CacheDependency(a app.App, d pkg.Descriptor, customName string) error {
 	logger := log.WithFields(log.Fields{
-		"descriptor":  d,
+		"part":        d.Part,
+		"registry":    d.Registry,
+		"version":     d.Version,
 		"custom-name": customName,
 	})
 
@@ -101,7 +103,7 @@ func CacheDependency(a app.App, d pkg.Descriptor, customName string) error {
 	}
 
 	for path, content := range files {
-		dir := filepath.Dir(path)
+		dir := filepath.Dir(filepath.FromSlash(path))
 
 		if err = a.Fs().MkdirAll(dir, app.DefaultFolderPermissions); err != nil {
 			return errors.Wrap(err, "unable to create directory")

@@ -25,6 +25,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
+	"github.com/ksonnet/ksonnet/pkg/metadata"
 	"github.com/ksonnet/ksonnet/utils"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -40,9 +41,6 @@ import (
 )
 
 const (
-	annotationManaged  = "ksonnet.io/managed"
-	labelDeployManager = "app.kubernetes.io/deploy-manager"
-
 	appKsonnet = "ksonnet"
 )
 
@@ -189,7 +187,7 @@ func (a *Apply) handleObject(co clientOpts, obj *unstructured.Unstructured) (str
 	}
 
 	if a.GcTag != "" {
-		SetMetaDataAnnotation(mergedObject, AnnotationGcTag, a.GcTag)
+		SetMetaDataAnnotation(mergedObject, metadata.AnnotationGcTag, a.GcTag)
 	}
 
 	desc := fmt.Sprintf("%s %s", a.objectInfo.ResourceName(co.discovery, mergedObject), utils.FqName(obj))
@@ -248,8 +246,8 @@ func tagManaged(obj *unstructured.Unstructured) error {
 		return err
 	}
 
-	SetMetaDataLabel(obj, labelDeployManager, appKsonnet)
-	SetMetaDataAnnotation(obj, annotationManaged, string(mmEncoded))
+	SetMetaDataLabel(obj, metadata.LabelDeployManager, appKsonnet)
+	SetMetaDataAnnotation(obj, metadata.AnnotationManaged, string(mmEncoded))
 
 	return nil
 }
