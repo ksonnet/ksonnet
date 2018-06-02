@@ -21,7 +21,8 @@ REVISION=$(shell git rev-parse HEAD)
 
 GO = go
 EXTRA_GO_FLAGS =
-GO_FLAGS = -ldflags="-X main.version=$(VERSION) -X main.apimachineryVersion=$(APIMACHINERY_VER) -X generator.revision=$(REVISION) $(GO_LDFLAGS) " $(EXTRA_GO_FLAGS)
+LD_FLAGS = -X main.version=$(VERSION) -X main.apimachineryVersion=$(APIMACHINERY_VER) -X generator.revision=$(REVISION) $(GO_LDFLAGS)
+GO_FLAGS = -ldflags="$(LD_FLAGS) " $(EXTRA_GO_FLAGS)
 GOFMT = gofmt
 # GINKGO = "go test" also works if you want to avoid ginkgo tool
 GINKGO = ginkgo
@@ -44,6 +45,9 @@ ks:
 
 docs:
 	$(DOC_GEN_FILE)
+
+docker-image:
+	docker build -t ks --build-arg LD_FLAGS="$(LD_FLAGS)" .
 
 install:
 	$(GO) build -o $(GOPATH)/bin/ks $(GO_FLAGS) ./cmd/ks
