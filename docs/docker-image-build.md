@@ -22,9 +22,8 @@ docker run -e KUBECONFIG="~/.kube/config" --mount type=bind,source="~/.kube/coni
 
 This sets the $KUBECONFIG environment variable inside the container, mounts the config and the directory holding certificates (which can be found inside the kubeconfig), and mounts the current working directory so that the `ks` binary knows where to work.
 
-It is also possible to use aliases, though keep in mind that this sets the working directory statically to the directory of the app you are working on:
+It is also possible to use as an alias:
 
 ```bash
-alias ks="docker run -e KUBECONFIG=/path/to/kube/config --mount type=bind,source=/path/to/kube/config,target=/path/to/kube/config --mount type=bind,source=/path/to/cert/dir,target=/path/to/cert/dir --mount type=bind,source=/path/to/app/dir,target=/path/to/app/dir -w /path/to/app/dir ks"
-ks env list
+alias ks='docker run -e KUBECONFIG=/path/to/kube/config --mount type=bind,source=/path/to/kube/config,target=/path/to/kube/config --mount type=bind,source=/path/to/cert/dir,target=/path/to/cert/dir --mount type=bind,source="$(pwd)",target="$(pwd)" -w "$(pwd)" ks'
 ```
