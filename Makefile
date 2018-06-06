@@ -16,12 +16,14 @@
 VERSION?=dev-$(shell date +%FT%T%z)
 KS_BIN?=ks
 
-APIMACHINERY_VER := $(shell dep status | grep k8s.io/apimachinery | awk '{print $$3}')
+APIMACHINERY_VER := $(shell grep -B1 k8s.io/apimachinery Gopkg.lock | head -n1 | cut -d'"' -f2)
 REVISION=$(shell git rev-parse HEAD)
+GIT_TAG=$(shell git describe --tags)
 
 GO = go
 EXTRA_GO_FLAGS =
-GO_FLAGS = -ldflags="-X main.version=$(VERSION) -X main.apimachineryVersion=$(APIMACHINERY_VER) -X generator.revision=$(REVISION) $(GO_LDFLAGS) " $(EXTRA_GO_FLAGS)
+LD_FLAGS = -X main.version=$(VERSION) -X main.apimachineryVersion=$(APIMACHINERY_VER) -X generator.revision=$(REVISION) $(GO_LDFLAGS)
+GO_FLAGS = -ldflags="$(LD_FLAGS) " $(EXTRA_GO_FLAGS)
 GOFMT = gofmt
 # GINKGO = "go test" also works if you want to avoid ginkgo tool
 GINKGO = ginkgo
@@ -39,11 +41,19 @@ INTEGRATION_TEST_FIXTURES = ./fixtures
 
 all: ks docs
 
-ks:
+Gopkg.lock: Gopkg.toml
+	dep ensure
+	touch Gopkg.lock
+	$(eval APIMACHINERY_VER := $(shell grep -B1 k8s.io/apimachinery Gopkg.lock | head -n1 | cut -d'"' -f2))
+
+ks: Gopkg.lock
 	$(GO) build -o $(KS_BIN) $(GO_FLAGS) ./cmd/ks
 
 docs:
 	$(DOC_GEN_FILE)
+
+docker-image: Gopkg.lock
+	docker build -t ks:$(GIT_TAG) --build-arg LD_FLAGS="$(LD_FLAGS) -s -w" .
 
 install:
 	$(GO) build -o $(GOPATH)/bin/ks $(GO_FLAGS) ./cmd/ks
@@ -71,5 +81,4 @@ generate:
 clean:
 	$(RM) ./ks ./docs/cli-reference/ks*.md
 
-.PHONY: all test clean vet fmt docs
-.PHONY: ks
+.PHONY: all ks test clean vet fmt docs install docker-image

@@ -33,6 +33,10 @@ brew install ksonnet/tap/ks
 
 See the [releases page](https://github.com/ksonnet/ksonnet/releases) to download the latest released binary.
 
+### Build a docker image
+
+A docker image can be built and used similarly to our manual build [as seen here](/docs/docker-image-build.md) 
+
 ### Manually build and install
 
 You can download and manually build from source by following [these instructions](/docs/build-install.md).
