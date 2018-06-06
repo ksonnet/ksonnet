@@ -81,5 +81,4 @@ generate:
 clean:
 	$(RM) ./ks ./docs/cli-reference/ks*.md
 
-.PHONY: all test clean vet fmt docs
-.PHONY: ks
+.PHONY: all ks test clean vet fmt docs install docker-image
