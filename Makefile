@@ -53,7 +53,7 @@ docs:
 	$(DOC_GEN_FILE)
 
 docker-image: Gopkg.lock
-	docker build -t ks:$(GIT_TAG) --build-arg LD_FLAGS="$(LD_FLAGS)" .
+	docker build -t ks:$(GIT_TAG) --build-arg LD_FLAGS="$(LD_FLAGS) -s -w" .
 
 install:
 	$(GO) build -o $(GOPATH)/bin/ks $(GO_FLAGS) ./cmd/ks
