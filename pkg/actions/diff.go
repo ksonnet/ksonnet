@@ -54,8 +54,9 @@ type Diff struct {
 	clientConfig *client.Config
 	src1         string
 	src2         string
+	components   []string
 
-	diffFn func(app.App, *client.Config, *diff.Location, *diff.Location) (io.Reader, error)
+	diffFn func(app.App, *client.Config, []string, *diff.Location, *diff.Location) (io.Reader, error)
 
 	out io.Writer
 }
@@ -69,6 +70,7 @@ func NewDiff(m map[string]interface{}) (*Diff, error) {
 		clientConfig: ol.LoadClientConfig(),
 		src1:         ol.LoadString(OptionSrc1),
 		src2:         ol.LoadOptionalString(OptionSrc2),
+		components:   ol.LoadStringSlice(OptionComponentNames),
 
 		diffFn: diff.DefaultDiff,
 
@@ -91,7 +93,7 @@ func (d *Diff) Run() error {
 	}
 	location2 := diff.NewLocation(d.src2)
 
-	r, err := d.diffFn(d.app, d.clientConfig, location1, location2)
+	r, err := d.diffFn(d.app, d.clientConfig, d.components, location1, location2)
 	if err != nil {
 		return err
 	}
@@ -104,9 +106,15 @@ func (d *Diff) Run() error {
 
 		switch {
 		case strings.HasPrefix(t, "+"):
-			diffAddColor.Fprintln(&buf, t)
+			_, err = diffAddColor.Fprintln(&buf, t)
+			if err != nil {
+				return err
+			}
 		case strings.HasPrefix(t, "-"):
 			diffRemoveColor.Fprintln(&buf, t)
+			if err != nil {
+				return err
+			}
 		default:
 			fmt.Fprintln(&buf, t)
 		}

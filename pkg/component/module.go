@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -70,11 +71,46 @@ func NewModule(ksApp app.App, path string) *FilesystemModule {
 	return &FilesystemModule{app: ksApp, path: path}
 }
 
-// ExtractModuleComponent extracts a module and a component from a path.
+// ExtractModuleComponent extracts a module and a component from a filesystem path.
 func ExtractModuleComponent(a app.App, path string) (Module, string) {
-	modulePath, component := filepath.Split(path)
-	m := &FilesystemModule{path: modulePath, app: a}
-	return m, component
+	dir, file := filepath.Split(path)
+	componentName := strings.TrimSuffix(file, filepath.Ext(file))
+
+	componentRoot := filepath.Join(a.Root(), componentsRoot)
+	moduleDir := strings.TrimPrefix(dir, componentRoot)
+
+	m := &FilesystemModule{path: dirToModule(moduleDir), app: a}
+
+	return m, componentName
+}
+
+// FromName returns a module and a component name given a component description.
+// Component descriptions can be one of the following:
+//   module.component
+//   component
+func FromName(name string) (string, string) {
+	parts := strings.Split(name, ".")
+
+	var moduleName, componentName string
+
+	switch len(parts) {
+	case 2:
+		moduleName = parts[0]
+		componentName = parts[1]
+	case 1:
+		componentName = parts[0]
+	}
+
+	return moduleName, componentName
+}
+
+// ModuleFromPath returns a module name from a file system path.
+func ModuleFromPath(a app.App, path string) string {
+	componentRoot := filepath.Join(a.Root(), componentsRoot)
+	moduleName := strings.TrimPrefix(path, componentRoot)
+	moduleName = strings.TrimPrefix(moduleName, string(filepath.Separator))
+
+	return strings.Replace(moduleName, string(filepath.Separator), ".", -1)
 }
 
 // Name returns the module name.
@@ -87,7 +123,15 @@ func (m *FilesystemModule) Name() string {
 
 // GetModule gets a module by path.
 func GetModule(a app.App, moduleName string) (Module, error) {
-	parts := strings.Split(moduleName, "/")
+	if moduleName == "/" {
+		moduleName = ""
+	}
+
+	if !isValidModuleName(moduleName) {
+		return nil, errors.Errorf("%q is an invalid module name", moduleName)
+	}
+
+	parts := strings.Split(moduleName, ".")
 	moduleDir := filepath.Join(append([]string{a.Root(), componentsRoot}, parts...)...)
 
 	exists, err := afero.Exists(a.Fs(), moduleDir)
@@ -100,6 +144,17 @@ func GetModule(a app.App, moduleName string) (Module, error) {
 	}
 
 	return &FilesystemModule{path: moduleName, app: a}, nil
+}
+
+var (
+	reValidModule = regexp.MustCompile(`^([_A-Za-z0-9]?[A-Za-z0-9\-_]+(\.[A-Za-z0-9\-_]+)*)?$`)
+)
+
+func isValidModuleName(name string) bool {
+	if name == "." {
+		return true
+	}
+	return reValidModule.MatchString(name)
 }
 
 // ParamsPath generates the path to params.libsonnet for a module.
@@ -143,13 +198,7 @@ func (m *FilesystemModule) writeParams(src string) error {
 
 // Dir is the absolute directory for a module.
 func (m *FilesystemModule) Dir() string {
-	parts := strings.Split(m.path, "/")
-	path := []string{m.app.Root(), componentsRoot}
-	if len(m.path) != 0 {
-		path = append(path, parts...)
-	}
-
-	return filepath.Join(path...)
+	return filepath.Join(m.app.Root(), componentsRoot, moduleToDir(m.path))
 }
 
 // ModuleParameter is a module parameter.
@@ -255,12 +304,10 @@ func ModulesFromEnv(a app.App, env string) ([]Module, error) {
 		return nil, err
 	}
 
-	prefix := a.Root() + "/components"
-
 	seen := make(map[string]bool)
 	var modules []Module
 	for _, path := range paths {
-		module := strings.TrimPrefix(path, prefix)
+		module := ModuleFromPath(a, path)
 		if _, ok := seen[module]; !ok {
 			seen[module] = true
 			m, err := GetModule(a, module)
@@ -316,7 +363,7 @@ func Modules(a app.App) ([]Module, error) {
 
 // Components returns the components in a module.
 func (m *FilesystemModule) Components() ([]Component, error) {
-	parts := strings.Split(m.path, "/")
+	parts := strings.Split(m.path, ".")
 	moduleDir := filepath.Join(append([]string{m.app.Root(), componentsRoot}, parts...)...)
 
 	fis, err := afero.ReadDir(m.app.Fs(), moduleDir)
@@ -342,10 +389,6 @@ func (m *FilesystemModule) Components() ([]Component, error) {
 	}
 
 	return components, nil
-}
-
-type renderedModule struct {
-	Components map[string]interface{} `json:"components"`
 }
 
 // Render converts components to JSON. If there are component names, only include
@@ -378,7 +421,7 @@ func (m *FilesystemModule) Render(envName string, componentNames ...string) (*as
 		f.Expr2 = node
 		doc.Fields = append(doc.Fields, *f)
 
-		componentMap[c.Name(false)] = c.Type()
+		componentMap[c.Name(true)] = c.Type()
 	}
 
 	return doc, componentMap, nil
@@ -386,4 +429,17 @@ func (m *FilesystemModule) Render(envName string, componentNames ...string) (*as
 
 func (m *FilesystemModule) log() *logrus.Entry {
 	return logrus.WithField("module-name", m.Name())
+}
+
+// moduleToDir converts a module to a filesystem directory by replacing
+// the . separator with a filesystem separator.
+func moduleToDir(s string) string {
+	return strings.Replace(s, ".", string(filepath.Separator), -1)
+}
+
+// dirToModule converts filesystem directory to a module by replacing
+// filesystem separators with ".".
+func dirToModule(s string) string {
+	s = strings.Replace(s, string(filepath.Separator), ".", -1)
+	return strings.TrimSuffix(s, ".")
 }

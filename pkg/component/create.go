@@ -37,13 +37,13 @@ var (
 )
 
 // Create creates a component.
-func Create(ksApp app.App, name, text string, params param.Params, templateType prototype.TemplateType) (string, error) {
+func Create(ksApp app.App, moduleName, name, text string, params param.Params, templateType prototype.TemplateType) (string, error) {
 	cc, err := newComponentCreator(ksApp)
 	if err != nil {
 		return "", errors.Wrap(err, "initialize component creator")
 	}
 
-	return cc.Create(name, text, params, templateType)
+	return cc.Create(moduleName, name, text, params, templateType)
 }
 
 type componentCreator struct {
@@ -54,14 +54,12 @@ func newComponentCreator(ksApp app.App) (*componentCreator, error) {
 	return &componentCreator{app: ksApp}, nil
 }
 
-func (cc *componentCreator) Create(name, text string, params param.Params, templateType prototype.TemplateType) (string, error) {
+func (cc *componentCreator) Create(module, name, text string, params param.Params, templateType prototype.TemplateType) (string, error) {
 	if !isValidName(name) {
 		return "", errors.Errorf("Component name '%s' is not valid; must not contain punctuation, spaces, or begin or end with a slash", name)
 	}
 
-	module, componentName := namespaceComponent(name)
-
-	componentDir, componentPath, err := cc.location(module, componentName, templateType)
+	componentDir, componentPath, err := cc.location(module, name, templateType)
 	if err != nil {
 		return "", errors.Wrap(err, "generate component location")
 	}
@@ -74,7 +72,7 @@ func (cc *componentCreator) Create(name, text string, params param.Params, templ
 	}
 
 	if !exists {
-		if err = cc.createNamespace(componentDir, paramsPath); err != nil {
+		if err = cc.createModule(componentDir, paramsPath); err != nil {
 			return "", err
 		}
 	}
@@ -98,7 +96,7 @@ func (cc *componentCreator) Create(name, text string, params param.Params, templ
 
 	log.Debugf("Writing component parameters at '%s/%s", componentsRoot, name)
 
-	if err := cc.writeParams(componentName, paramsPath, params); err != nil {
+	if err := cc.writeParams(name, paramsPath, params); err != nil {
 		return "", errors.Wrapf(err, "write parameters")
 	}
 
@@ -107,7 +105,9 @@ func (cc *componentCreator) Create(name, text string, params param.Params, templ
 
 // location returns the dir and full path for the component.
 func (cc *componentCreator) location(module, name string, templateType prototype.TemplateType) (string, string, error) {
-	componentDir := filepath.Join(cc.app.Root(), componentsRoot, module)
+	moduleDir := moduleToDir(module)
+
+	componentDir := filepath.Join(cc.app.Root(), componentsRoot, moduleDir)
 	componentPath := filepath.Join(componentDir, name)
 	switch templateType {
 	case prototype.YAML:
@@ -123,7 +123,7 @@ func (cc *componentCreator) location(module, name string, templateType prototype
 	return componentDir, componentPath, nil
 }
 
-func (cc *componentCreator) createNamespace(componentDir, paramsPath string) error {
+func (cc *componentCreator) createModule(componentDir, paramsPath string) error {
 	if err := cc.app.Fs().MkdirAll(componentDir, defaultFolderPermissions); err != nil {
 		return errors.Wrapf(err, "create component dir %s", componentDir)
 	}
@@ -167,7 +167,7 @@ func isValidName(name string) bool {
 }
 
 func namespaceComponent(name string) (string, string) {
-	parts := strings.Split(name, "/")
+	parts := strings.Split(name, ".")
 
 	if len(parts) == 1 {
 		return "", parts[0]
@@ -184,7 +184,7 @@ func namespaceComponent(name string) (string, string) {
 		module = append(module, parts[i])
 	}
 
-	return strings.Join(module, "/"), componentName
+	return strings.Join(module, "."), componentName
 }
 
 // GenParamsContent is the default content for params.libsonnet.

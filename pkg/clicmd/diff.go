@@ -20,6 +20,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
 	"github.com/ksonnet/ksonnet/pkg/client"
@@ -27,6 +28,8 @@ import (
 
 const (
 	diffShortDesc = "Compare manifests, based on environment or location (local or remote)"
+
+	vDiffComponentNames = "diff-component-names"
 )
 
 var (
@@ -34,11 +37,12 @@ var (
 )
 
 func init() {
-	// addEnvCmdFlags(diffCmd)
-
 	diffClientConfig = client.NewDefaultClientConfig(ka)
 	diffClientConfig.BindClientGoFlags(diffCmd)
 	bindJsonnetFlags(diffCmd, "diff")
+
+	diffCmd.Flags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component")
+	viper.BindPFlag(vDiffComponentNames, diffCmd.Flags().Lookup(flagComponent))
 
 	RootCmd.AddCommand(diffCmd)
 }
@@ -55,9 +59,10 @@ var diffCmd = &cobra.Command{
 		}
 
 		m := map[string]interface{}{
-			actions.OptionApp:          ka,
-			actions.OptionClientConfig: diffClientConfig,
-			actions.OptionSrc1:         args[0],
+			actions.OptionApp:            ka,
+			actions.OptionClientConfig:   diffClientConfig,
+			actions.OptionSrc1:           args[0],
+			actions.OptionComponentNames: viper.GetStringSlice(vDiffComponentNames),
 		}
 
 		if len(args) == 2 {

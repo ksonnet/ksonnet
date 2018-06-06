@@ -25,6 +25,7 @@ import (
 	appmocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/component"
 	cmocks "github.com/ksonnet/ksonnet/pkg/component/mocks"
+	"github.com/ksonnet/ksonnet/pkg/metadata"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -118,6 +119,9 @@ func TestPipeline_Objects(t *testing.T) {
 					"apiVersion": "v1",
 					"kind":       "Service",
 					"metadata": map[string]interface{}{
+						"labels": map[string]interface{}{
+							metadata.LabelComponent: "service",
+						},
 						"name": "my-service",
 					},
 					"spec": map[string]interface{}{

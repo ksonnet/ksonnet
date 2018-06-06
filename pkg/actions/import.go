@@ -54,7 +54,7 @@ type Import struct {
 	module string
 	path   string
 
-	createComponentFn func(a app.App, name, text string, p params.Params, templateType prototype.TemplateType) (string, error)
+	createComponentFn func(a app.App, module, name, text string, p params.Params, templateType prototype.TemplateType) (string, error)
 }
 
 // NewImport creates an instance of Import. `module` is the name of the component and
@@ -248,15 +248,15 @@ func (i *Import) createYAML(fileName, base, ext string) error {
 func (i *Import) createComponentFromData(name, data string, templateType prototype.TemplateType) error {
 	componentParams := params.Params{}
 
+	var moduleName string
 	switch i.module {
-	case "":
-	case "/":
-		name = fmt.Sprintf("/%s", name)
+	case "", "/":
+		// do nothing
 	default:
-		name = fmt.Sprintf("%s/%s", i.module, name)
+		moduleName = i.module
 	}
 
-	_, err := i.createComponentFn(i.app, name, data, componentParams, templateType)
+	_, err := i.createComponentFn(i.app, moduleName, name, data, componentParams, templateType)
 	if err != nil {
 		return errors.Wrap(err, "create component")
 	}
@@ -281,7 +281,7 @@ func (i *Import) createComponent(fileName, base, ext string, templateType protot
 
 	componentParams := params.Params{}
 
-	_, err = i.createComponentFn(i.app, sourcePath, string(contents), componentParams, templateType)
+	_, err = i.createComponentFn(i.app, i.module, sourcePath, string(contents), componentParams, templateType)
 	if err != nil {
 		return errors.Wrap(err, "create component")
 	}

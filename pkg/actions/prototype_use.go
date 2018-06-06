@@ -26,6 +26,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // RunPrototypeUse runs `prototype use`
@@ -44,7 +45,7 @@ type PrototypeUse struct {
 	args              []string
 	out               io.Writer
 	prototypesFn      func(app.App, pkg.Descriptor) (prototype.Prototypes, error)
-	createComponentFn func(app.App, string, string, param.Params, prototype.TemplateType) (string, error)
+	createComponentFn func(app.App, string, string, string, param.Params, prototype.TemplateType) (string, error)
 }
 
 // NewPrototypeUse creates an instance of PrototypeUse
@@ -123,21 +124,32 @@ func (pl *PrototypeUse) Run() error {
 		return errors.Errorf("Command has too many arguments (takes a prototype name and a component name)")
 	}
 
+	moduleName, err := flags.GetString("module")
+	if err != nil {
+		return err
+	}
+
+	mn, prototypeName := component.FromName(componentName)
+	if mn != "" {
+		logrus.WithField("module-name", mn).Info("Using module from component name instead of flag")
+		moduleName = mn
+	}
+
 	name, err := flags.GetString("name")
 	if err != nil {
 		return err
 	}
 
 	if name == "" {
-		flags.Set("name", componentName)
+		if err = flags.Set("name", prototypeName); err != nil {
+			return err
+		}
 	}
 
 	rawParams, err := getParameters(p, flags)
 	if err != nil {
 		return err
 	}
-
-	_, prototypeName := component.ExtractModuleComponent(pl.app, componentName)
 
 	text, err := expandPrototype(p, templateType, rawParams, prototypeName)
 	if err != nil {
@@ -149,7 +161,7 @@ func (pl *PrototypeUse) Run() error {
 		ps[k] = v
 	}
 
-	_, err = pl.createComponentFn(pl.app, componentName, text, ps, templateType)
+	_, err = pl.createComponentFn(pl.app, moduleName, prototypeName, text, ps, templateType)
 	if err != nil {
 		return errors.Wrap(err, "create component")
 	}

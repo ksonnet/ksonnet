@@ -78,8 +78,9 @@ func Test_Create(t *testing.T) {
 			name:          "nested/component",
 			params:        params.Params{"name": "name"},
 			templateType:  prototype.Jsonnet,
-			componentName: "nested/component",
-			componentDir:  "/components/nested",
+			ns:            "nested",
+			componentName: "component",
+			componentDir:  "/components",
 		},
 	}
 
@@ -92,9 +93,7 @@ func Test_Create(t *testing.T) {
 			ksApp.On("Fs").Return(fs)
 			ksApp.On("Root").Return(root)
 
-			name := filepath.Join(tc.ns, tc.componentName)
-
-			path, err := Create(ksApp, name, "content", tc.params, tc.templateType)
+			path, err := Create(ksApp, tc.ns, tc.componentName, "content", tc.params, tc.templateType)
 			if tc.isErr {
 				require.Error(t, err)
 			} else {

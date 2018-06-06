@@ -121,6 +121,8 @@ func (pp *PrototypePreview) Run() error {
 func bindPrototypeParams(p *prototype.Prototype) *pflag.FlagSet {
 	fs := pflag.NewFlagSet("preview", pflag.ContinueOnError)
 
+	fs.String("module", "", "Component module")
+
 	for _, param := range p.RequiredParams() {
 		fs.String(param.Name, "", param.Description)
 	}

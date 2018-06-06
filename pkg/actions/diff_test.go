@@ -86,7 +86,7 @@ func TestDiff(t *testing.T) {
 				var buf bytes.Buffer
 				d.out = &buf
 
-				d.diffFn = func(a app.App, c *client.Config, l1 *diff.Location, l2 *diff.Location) (io.Reader, error) {
+				d.diffFn = func(a app.App, c *client.Config, components []string, l1 *diff.Location, l2 *diff.Location) (io.Reader, error) {
 					assert.Equal(t, tc.eLocation1, l1.String(), "location1")
 					assert.Equal(t, tc.eLocation2, l2.String(), "location2")
 

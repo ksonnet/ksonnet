@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
@@ -101,8 +102,18 @@ func (s *Show) showJSON(apiObjects []*unstructured.Unstructured) error {
 	return enc.Encode(m)
 }
 
+// ShowYAML shows YAML objects.
 func ShowYAML(out io.Writer, apiObjects []*unstructured.Unstructured) error {
-	for _, obj := range apiObjects {
+	objects := make([]*unstructured.Unstructured, len(apiObjects))
+	for i := range apiObjects {
+		obj := apiObjects[i]
+		objects[i] = obj.DeepCopy()
+	}
+
+	sortByKind(objects)
+
+	for i := range objects {
+		obj := objects[i]
 		fmt.Fprintln(out, "---")
 		// Go via json because we need
 		// to trigger the custom scheme
@@ -119,8 +130,34 @@ func ShowYAML(out io.Writer, apiObjects []*unstructured.Unstructured) error {
 		if err != nil {
 			return err
 		}
-		out.Write(buf)
+		_, err = out.Write(buf)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
+}
+
+// sortByKind sorts objects by their kind/group/version/name
+func sortByKind(apiObjects []*unstructured.Unstructured) {
+	sort.SliceStable(apiObjects, func(i, j int) bool {
+		o1 := apiObjects[i]
+		o2 := apiObjects[j]
+
+		if o1.GroupVersionKind().Kind < o2.GroupVersionKind().Kind {
+			return true
+		}
+
+		if o1.GroupVersionKind().Group < o2.GroupVersionKind().Group {
+			return true
+		}
+
+		if o1.GroupVersionKind().Version < o2.GroupVersionKind().Version {
+			return true
+		}
+
+		return o1.GetName() < o2.GetName()
+	})
+
 }

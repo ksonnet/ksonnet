@@ -34,7 +34,7 @@ type Object struct {
 
 var (
 	// reFieldStr matches a field id that should be enclosed in quotes.
-	reFieldStr = regexp.MustCompile(`^[_A-Za-z]+[_A-Za-z0-9\-]*$`)
+	reFieldStr = regexp.MustCompile(`^([_A-Za-z0-9\.]?[A-Za-z0-9\-_\.]+(\.[A-Za-z0-9\-_]+)*)?$`)
 	// reField matches a field id.
 	reField = regexp.MustCompile(`^[_A-Za-z]+[_A-Za-z0-9]*$`)
 )

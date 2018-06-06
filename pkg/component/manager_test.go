@@ -67,18 +67,13 @@ func Test_ResolvePath(t *testing.T) {
 				cName:  "deployment",
 			},
 			{
-				name:   "/deployment",
+				name:   "deployment",
 				module: "/",
 				cName:  "deployment",
 			},
 			{
-				name:   "/nested/deployment",
-				module: "/nested",
-				cName:  "deployment",
-			},
-			{
 				name:   "nested/deployment",
-				module: "/nested",
+				module: "nested",
 				cName:  "deployment",
 			},
 			{

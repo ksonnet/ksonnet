@@ -18,7 +18,6 @@ package component
 import (
 	"encoding/json"
 	"fmt"
-	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -69,11 +68,11 @@ func (y *YAML) Name(wantsNameSpaced bool) string {
 		return name
 	}
 
-	if y.module == "/" {
+	if y.module == "/" || y.module == "" {
 		return name
 	}
 
-	return path.Join(y.module, name)
+	return strings.Join([]string{y.module, name}, ".")
 }
 
 // Type always returns "yaml".
@@ -322,7 +321,7 @@ func (y *YAML) ToNode(envName string) (string, ast.Node, error) {
 		return "", nil, err
 	}
 
-	return key, o, nil
+	return y.Name(true), o, nil
 }
 
 func (y *YAML) applyParams(componentName, data string) (string, error) {

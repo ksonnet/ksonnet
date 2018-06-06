@@ -28,10 +28,11 @@ func Test_diffCmd(t *testing.T) {
 			args:   []string{"diff", "env1", "env2"},
 			action: actionDiff,
 			expected: map[string]interface{}{
-				actions.OptionApp:          nil,
-				actions.OptionClientConfig: diffClientConfig,
-				actions.OptionSrc1:         "env1",
-				actions.OptionSrc2:         "env2",
+				actions.OptionApp:            nil,
+				actions.OptionClientConfig:   diffClientConfig,
+				actions.OptionSrc1:           "env1",
+				actions.OptionSrc2:           "env2",
+				actions.OptionComponentNames: []string{},
 			},
 		},
 	}

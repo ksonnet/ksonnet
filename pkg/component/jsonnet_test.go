@@ -68,7 +68,7 @@ func TestJsonnet_Name(t *testing.T) {
 			{
 				name:         "nested: wants namespaced",
 				isNameSpaced: true,
-				expected:     "nested/guestbook-ui",
+				expected:     "nested.guestbook-ui",
 				c:            nested,
 			},
 			{
