@@ -16,8 +16,9 @@
 VERSION?=dev-$(shell date +%FT%T%z)
 KS_BIN?=ks
 
-APIMACHINERY_VER := $(shell dep status | grep k8s.io/apimachinery | awk '{print $$3}')
+APIMACHINERY_VER := $(shell grep -B1 k8s.io/apimachinery Gopkg.lock | head -n1 | cut -d'"' -f2)
 REVISION=$(shell git rev-parse HEAD)
+GIT_TAG=$(shell git describe --tags)
 
 GO = go
 EXTRA_GO_FLAGS =
@@ -40,14 +41,19 @@ INTEGRATION_TEST_FIXTURES = ./fixtures
 
 all: ks docs
 
-ks:
+Gopkg.lock: Gopkg.toml
+	dep ensure
+	touch Gopkg.lock
+	$(eval APIMACHINERY_VER := $(shell grep -B1 k8s.io/apimachinery Gopkg.lock | head -n1 | cut -d'"' -f2))
+
+ks: Gopkg.lock
 	$(GO) build -o $(KS_BIN) $(GO_FLAGS) ./cmd/ks
 
 docs:
 	$(DOC_GEN_FILE)
 
-docker-image:
-	docker build -t ks --build-arg LD_FLAGS="$(LD_FLAGS)" .
+docker-image: Gopkg.lock
+	docker build -t ks:$(GIT_TAG) --build-arg LD_FLAGS="$(LD_FLAGS)" .
 
 install:
 	$(GO) build -o $(GOPATH)/bin/ks $(GO_FLAGS) ./cmd/ks
