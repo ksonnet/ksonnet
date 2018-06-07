@@ -25,8 +25,6 @@ EXTRA_GO_FLAGS =
 LD_FLAGS = -X main.version=$(VERSION) -X main.apimachineryVersion=$(APIMACHINERY_VER) -X generator.revision=$(REVISION) $(GO_LDFLAGS)
 GO_FLAGS = -ldflags="$(LD_FLAGS) " $(EXTRA_GO_FLAGS)
 GOFMT = gofmt
-# GINKGO = "go test" also works if you want to avoid ginkgo tool
-GINKGO = ginkgo
 
 KCFG_TEST_FILE = lib/kubecfg_test.jsonnet
 GUESTBOOK_FILE = examples/guestbook.jsonnet
@@ -65,9 +63,6 @@ gotest:
 
 docstest:
 	$(DOC_TEST_FILE)
-
-integrationtest: ks
-	$(GINKGO) -tags 'integration' integration -- -fixtures $(INTEGRATION_TEST_FIXTURES) -kubeconfig $(KUBECONFIG) -ksonnet-bin $(abspath $<)
 
 vet:
 	$(GO) vet $(GO_PACKAGES)
