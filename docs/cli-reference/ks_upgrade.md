@@ -6,22 +6,26 @@ Upgrade ks configuration
 
 
 The upgrade command upgrades a ksonnet application to the latest version.
-
+	
 ### Syntax
-
-	Example:
-
-# Upgrade ksonnet application in dry-run mode to see the changes to be performed by the
-# upgrade process.
-ks upgrade --dry-run
-
-# Upgrade ksonnet application. This will update app.yaml to apiVersion 0.1.0
-# and migrate environment spec.json files to `app.yaml`.
-ks upgrade
 
 
 ```
 ks upgrade [--dry-run] [flags]
+```
+
+### Examples
+
+```
+
+# Upgrade ksonnet application in dry-run mode to see the changes to be performed by the
+# upgrade process.
+ks upgrade --dry-run
+	
+# Upgrade ksonnet application. This will update app.yaml to apiVersion 0.1.0
+# and migrate environment spec.json files to `app.yaml`.
+ks upgrade
+
 ```
 
 ### Options
