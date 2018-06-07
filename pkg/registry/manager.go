@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/ksonnet/ksonnet/pkg/helm"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/pkg/errors"
 )
@@ -60,6 +61,12 @@ func Locate(a app.App, spec *app.RegistryRefSpec) (Registry, error) {
 		return githubFactory(a, spec)
 	case ProtocolFilesystem:
 		return NewFs(a, spec)
+	case ProtocolHelm:
+		client, err := helm.NewHTTPClient(spec.URI, nil)
+		if err != nil {
+			return nil, err
+		}
+		return NewHelm(a, spec, client, nil)
 	default:
 		return nil, errors.Errorf("invalid registry protocol %q", spec.Protocol)
 	}

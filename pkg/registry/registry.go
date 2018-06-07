@@ -30,8 +30,10 @@ func (p Protocol) String() string {
 const (
 	// ProtocolFilesystem is the protocol for file system based registries.
 	ProtocolFilesystem Protocol = "fs"
-	// ProtocolGitHub is a the protocol for GitHub based registries.
+	// ProtocolGitHub is the protocol for GitHub based registries.
 	ProtocolGitHub Protocol = "github"
+	// ProtocolHelm is the protocol for Helm based registries.
+	ProtocolHelm Protocol = "helm"
 
 	registryYAMLFile = "registry.yaml"
 	partsYAMLFile    = "parts.yaml"

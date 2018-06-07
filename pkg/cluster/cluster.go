@@ -20,6 +20,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
+	"github.com/ksonnet/ksonnet/pkg/metadata"
 	"github.com/ksonnet/ksonnet/pkg/pipeline"
 	"github.com/ksonnet/ksonnet/utils"
 	log "github.com/sirupsen/logrus"
@@ -31,23 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
-)
-
-const (
-	// AnnotationGcTag annotation that triggers
-	// garbage collection. Objects with value equal to
-	// command-line flag that are *not* in config will be deleted.
-	AnnotationGcTag = "kubecfg.ksonnet.io/garbage-collect-tag"
-
-	// AnnotationGcStrategy controls gc logic.  Current values:
-	// `auto` (default if absent) - do garbage collection
-	// `ignore` - never garbage collect this object
-	AnnotationGcStrategy = "kubecfg.ksonnet.io/garbage-collect-strategy"
-
-	// GcStrategyAuto is the default automatic gc logic
-	GcStrategyAuto = "auto"
-	// GcStrategyIgnore means this object should be ignored by garbage collection
-	GcStrategyIgnore = "ignore"
 )
 
 type genClientOptsFn func(a app.App, c *client.Config, envName string) (clientOpts, error)
@@ -177,11 +161,11 @@ func eligibleForGc(obj metav1.Object, gcTag string) bool {
 
 	a := obj.GetAnnotations()
 
-	strategy, ok := a[AnnotationGcStrategy]
+	strategy, ok := a[metadata.AnnotationGcStrategy]
 	if !ok {
-		strategy = GcStrategyAuto
+		strategy = metadata.GcStrategyAuto
 	}
 
-	return a[AnnotationGcTag] == gcTag &&
-		strategy == GcStrategyAuto
+	return a[metadata.AnnotationGcTag] == gcTag &&
+		strategy == metadata.GcStrategyAuto
 }

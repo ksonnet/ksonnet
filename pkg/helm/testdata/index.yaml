@@ -1,0 +1,12 @@
+apiVersion: v1
+entries:
+  argo-ci:
+  - apiVersion: v1
+    created: "2018-01-14T20:54:04.621855773-05:00"
+    description: A Helm chart for Kubernetes
+    digest: e896f65eb26dcdaa344a09ee6a74195efa739f4c5dad2e69ee6f0ab1a2723310
+    name: argo-ci
+    urls:
+    - charts/argo-ci-0.1.1.tgz
+    version: 0.1.1
+generated: "2018-06-01T10:18:33-04:00"

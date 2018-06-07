@@ -18,6 +18,7 @@ package cluster
 import (
 	"encoding/json"
 
+	clustermetadata "github.com/ksonnet/ksonnet/pkg/metadata"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -114,7 +115,7 @@ func RebuildObject(m map[string]interface{}) (map[string]interface{}, error) {
 	if !ok {
 		return nil, errors.New("metadata annotations not found")
 	}
-	descriptor, ok := annotations[annotationManaged].(string)
+	descriptor, ok := annotations[clustermetadata.AnnotationManaged].(string)
 	if !ok {
 		return m, nil
 	}
