@@ -165,7 +165,8 @@ Prototypes that are distributed via ksonnet *packages* typically adhere to the p
 ### Package
 
 A package contains:
-* **A set of related *prototypes*** (e.g. `redis-persistent`, `redis-stateless`)
+
+* **A set of related _prototypes_** (e.g. `redis-persistent`, `redis-stateless`)
 * **Associated helper libraries** that define the prototype *parts* (e.g. `redis.libsonnet`)
 
 Packages allow you to easily distribute and reuse code in any ksonnet *application*, using the various [`ks pkg`](/docs/cli-reference/ks_pkg.md) commands. The CLI writes package code into the `vendor/` directory.

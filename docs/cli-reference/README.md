@@ -27,6 +27,7 @@ Suggested command usage is described below:
   * [`ks prototype search`](ks_prototype_search.md)
   * [`ks prototype describe`](ks_prototype_describe.md)
   * [`ks prototype preview`](ks_prototype_preview.md)
+  * [`ks prototype use`](ks_prototype_use.md)
 
 * Learn about and download currently available [*packages*](/docs/concepts.md#package) ([`ks pkg`](ks_pkg.md))
   * [`ks pkg list`](ks_pkg_list.md)
@@ -36,14 +37,23 @@ Suggested command usage is described below:
 * Learn about existing [*registries*](/docs/concepts.md#registry) ([`ks registry`](ks_registry.md))
   * [`ks registry list`](ks_registry_list.md)
   * [`ks registry describe `](ks_registry_describe.md)
+  * [`ks registry add`](ks_registry_add.md)
+
+* List and remove existing components
+  * [`ks component list`](ks_component_list.md)
+  * [`ks component rm`](ks_component_rm.md)
 
 ## Environments
 
 * Managing [*environments*](/docs/concepts.md#environment) ([`ks env`](ks_env.md))
-  * [`ks env list`](ks_env_list.md)
   * [`ks env add`](ks_env_add.md)
-  * [`ks env set`](ks_env_set.md)
+  * [`ks env current`](ks_env_current.md)
+  * [`ks env describe`](ks_env_describe.md)
+  * [`ks env list`](ks_env_list.md)
   * [`ks env rm`](ks_env_rm.md)
+  * [`ks env set`](ks_env_set.md)
+  * [`ks env targets`](ks_env_targets.md)
+  * [`ks env update`](ks_env_update.md)
 
 * Customizing environments with [*parameters*](/docs/concepts.md#parameter) ([`ks param`](ks_param.md))
   * [`ks param list`](ks_param_list.md)
@@ -57,6 +67,9 @@ Suggested command usage is described below:
 
 * View expanded manifests
   * [`ks show`](ks_show.md)
+
+* Import a manifest
+  * [`ks import`](ks_import.md)
 
 * Validate manifests against the Kubernetes API
   * [`ks validate`](ks_validate.md)
