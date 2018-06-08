@@ -19,9 +19,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/ksonnet/ksonnet/pkg/app"
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
+	registrymocks "github.com/ksonnet/ksonnet/pkg/registry/mocks"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
@@ -29,9 +29,10 @@ import (
 
 func TestPrototypePreview(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		libaries := app.LibraryConfigs{}
+		prototypes := prototype.Prototypes{}
 
-		appMock.On("Libraries").Return(libaries, nil)
+		manager := &registrymocks.PackageManager{}
+		manager.On("Prototypes").Return(prototypes, nil)
 
 		args := []string{
 			"--name", "myDeployment",
@@ -48,6 +49,8 @@ func TestPrototypePreview(t *testing.T) {
 		a, err := NewPrototypePreview(in)
 		require.NoError(t, err)
 
+		a.packageManager = manager
+
 		var buf bytes.Buffer
 		a.out = &buf
 
@@ -60,9 +63,9 @@ func TestPrototypePreview(t *testing.T) {
 
 func TestPrototypePreview_bind_flags_failed(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		libaries := app.LibraryConfigs{}
-
-		appMock.On("Libraries").Return(libaries, nil)
+		prototypes := prototype.Prototypes{}
+		manager := &registrymocks.PackageManager{}
+		manager.On("Prototypes").Return(prototypes, nil)
 
 		args := []string{
 			"--name", "myDeployment",
@@ -82,6 +85,8 @@ func TestPrototypePreview_bind_flags_failed(t *testing.T) {
 		a.bindFlagsFn = func(*prototype.Prototype) (*pflag.FlagSet, error) {
 			return nil, errors.New("failed")
 		}
+
+		a.packageManager = manager
 
 		var buf bytes.Buffer
 		a.out = &buf

@@ -27,6 +27,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/ksonnet/ksonnet/pkg/prototype/snippet"
 	"github.com/ksonnet/ksonnet/pkg/prototype/snippet/jsonnet"
+	"github.com/ksonnet/ksonnet/pkg/registry"
 	strutil "github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
@@ -51,20 +52,22 @@ type PrototypePreview struct {
 
 	appPrototypesFn func(app.App, pkg.Descriptor) (prototype.Prototypes, error)
 	bindFlagsFn     func(p *prototype.Prototype) (*pflag.FlagSet, error)
+	packageManager  registry.PackageManager
 }
 
 // NewPrototypePreview creates an instance of PrototypePreview
 func NewPrototypePreview(m map[string]interface{}) (*PrototypePreview, error) {
 	ol := newOptionLoader(m)
 
+	app := ol.LoadApp()
 	pp := &PrototypePreview{
-		app:   ol.LoadApp(),
+		app:   app,
 		query: ol.LoadString(OptionQuery),
 		args:  ol.LoadStringSlice(OptionArguments),
 
-		out:             os.Stdout,
-		appPrototypesFn: pkg.LoadPrototypes,
-		bindFlagsFn:     prototype.BindFlags,
+		out:            os.Stdout,
+		packageManager: registry.NewPackageManager(app),
+		bindFlagsFn:    prototype.BindFlags,
 	}
 
 	if ol.err != nil {
@@ -76,7 +79,7 @@ func NewPrototypePreview(m map[string]interface{}) (*PrototypePreview, error) {
 
 // Run runs the env list action.
 func (pp *PrototypePreview) Run() error {
-	prototypes, err := allPrototypes(pp.app, pp.appPrototypesFn)
+	prototypes, err := pp.packageManager.Prototypes()
 	if err != nil {
 		return err
 	}

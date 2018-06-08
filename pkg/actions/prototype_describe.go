@@ -24,6 +24,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
+	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/pkg/errors"
 )
 
@@ -39,22 +40,23 @@ func RunPrototypeDescribe(m map[string]interface{}) error {
 
 // PrototypeDescribe describes a prototype.
 type PrototypeDescribe struct {
-	app             app.App
-	out             io.Writer
-	query           string
-	appPrototypesFn func(app.App, pkg.Descriptor) (prototype.Prototypes, error)
+	app            app.App
+	out            io.Writer
+	query          string
+	packageManager registry.PackageManager
 }
 
 // NewPrototypeDescribe creates an instance of PrototypeDescribe
 func NewPrototypeDescribe(m map[string]interface{}) (*PrototypeDescribe, error) {
 	ol := newOptionLoader(m)
 
+	app := ol.LoadApp()
 	pd := &PrototypeDescribe{
-		app:   ol.LoadApp(),
+		app:   app,
 		query: ol.LoadString(OptionQuery),
 
-		out:             os.Stdout,
-		appPrototypesFn: pkg.LoadPrototypes,
+		out:            os.Stdout,
+		packageManager: registry.NewPackageManager(app),
 	}
 
 	if ol.err != nil {
@@ -66,7 +68,7 @@ func NewPrototypeDescribe(m map[string]interface{}) (*PrototypeDescribe, error) 
 
 // Run runs the env list action.
 func (pd *PrototypeDescribe) Run() error {
-	prototypes, err := allPrototypes(pd.app, pd.appPrototypesFn)
+	prototypes, err := pd.packageManager.Prototypes()
 	if err != nil {
 		return err
 	}
@@ -105,35 +107,6 @@ func (pd *PrototypeDescribe) Run() error {
 }
 
 type prototypeFn func(app.App, pkg.Descriptor) (prototype.Prototypes, error)
-
-func allPrototypes(a app.App, appPrototypes prototypeFn) (prototype.Prototypes, error) {
-	if a == nil {
-		return nil, errors.New("app is required")
-	}
-
-	libraries, err := a.Libraries()
-	if err != nil {
-		return nil, err
-	}
-
-	var prototypes prototype.Prototypes
-
-	for _, library := range libraries {
-		d := pkg.Descriptor{
-			Registry: library.Registry,
-			Part:     library.Name,
-		}
-
-		p, err := appPrototypes(a, d)
-		if err != nil {
-			return nil, err
-		}
-
-		prototypes = append(prototypes, p...)
-	}
-
-	return prototypes, nil
-}
 
 func findUniquePrototype(query string, prototypes prototype.Prototypes) (*prototype.Prototype, error) {
 	index, err := prototype.NewIndex(prototypes, prototype.DefaultBuilder)

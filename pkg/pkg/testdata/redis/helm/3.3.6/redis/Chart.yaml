@@ -1,0 +1,16 @@
+appVersion: 4.0.9
+description: redis chart
+engine: gotpl
+home: http://redis.io/
+icon: https://bitnami.com/assets/stacks/redis/img/redis-stack-220x234.png
+keywords:
+- redis
+- keyvalue
+- database
+maintainers:
+- email: containers@bitnami.com
+  name: bitnami-bot
+name: redis
+sources:
+- https://github.com/bitnami/bitnami-docker-redis
+version: 3.3.6

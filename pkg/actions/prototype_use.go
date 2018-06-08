@@ -23,8 +23,8 @@ import (
 	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/component"
-	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
+	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -45,7 +45,7 @@ type PrototypeUse struct {
 	app               app.App
 	args              []string
 	out               io.Writer
-	prototypesFn      func(app.App, pkg.Descriptor) (prototype.Prototypes, error)
+	packageManager    registry.PackageManager
 	createComponentFn func(app.App, string, string, string, param.Params, prototype.TemplateType) (string, error)
 	bindFlagsFn       func(p *prototype.Prototype) (*pflag.FlagSet, error)
 }
@@ -54,12 +54,13 @@ type PrototypeUse struct {
 func NewPrototypeUse(m map[string]interface{}) (*PrototypeUse, error) {
 	ol := newOptionLoader(m)
 
+	app := ol.LoadApp()
 	pl := &PrototypeUse{
-		app:  ol.LoadApp(),
+		app:  app,
 		args: ol.LoadStringSlice(OptionArguments),
 
 		out:               os.Stdout,
-		prototypesFn:      pkg.LoadPrototypes,
+		packageManager:    registry.NewPackageManager(app),
 		createComponentFn: component.Create,
 		bindFlagsFn:       prototype.BindFlags,
 	}
@@ -73,7 +74,7 @@ func NewPrototypeUse(m map[string]interface{}) (*PrototypeUse, error) {
 
 // Run runs the env list action.
 func (pl *PrototypeUse) Run() error {
-	prototypes, err := allPrototypes(pl.app, pl.prototypesFn)
+	prototypes, err := pl.packageManager.Prototypes()
 	if err != nil {
 		return err
 	}

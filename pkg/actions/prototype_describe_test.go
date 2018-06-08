@@ -19,16 +19,18 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/ksonnet/ksonnet/pkg/app"
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/prototype"
+	registrymocks "github.com/ksonnet/ksonnet/pkg/registry/mocks"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPrototypeDescribe(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		libaries := app.LibraryConfigs{}
+		prototypes := prototype.Prototypes{}
 
-		appMock.On("Libraries").Return(libaries, nil)
+		manager := &registrymocks.PackageManager{}
+		manager.On("Prototypes").Return(prototypes, nil)
 
 		in := map[string]interface{}{
 			OptionApp:   appMock,
@@ -37,6 +39,8 @@ func TestPrototypeDescribe(t *testing.T) {
 
 		a, err := NewPrototypeDescribe(in)
 		require.NoError(t, err)
+
+		a.packageManager = manager
 
 		var buf bytes.Buffer
 		a.out = &buf

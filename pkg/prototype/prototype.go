@@ -25,7 +25,11 @@ import (
 )
 
 const (
+	// DefaultAPIVersion is the default api version for a prototype.
 	DefaultAPIVersion = "0.0.1"
+
+	// DefaultKind is the default kind for a prototype.
+	DefaultKind = "ksonnet.io/prototype"
 
 	apiVersionTag       = "@apiVersion"
 	nameTag             = "@name"

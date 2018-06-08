@@ -16,12 +16,11 @@
 package actions
 
 import (
-	"fmt"
 	"io"
 	"os"
+	"text/template"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
-	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 )
 
@@ -37,24 +36,26 @@ func RunPkgDescribe(m map[string]interface{}) error {
 
 // PkgDescribe describes a package.
 type PkgDescribe struct {
-	app            app.App
-	pkgName        string
+	app     app.App
+	pkgName string
+
+	templateSrc    string
 	out            io.Writer
-	libPartFn      func(app.App, string) (*pkg.Package, error)
-	registryPartFn func(app.App, string) (*pkg.Package, error)
+	packageManager registry.PackageManager
 }
 
 // NewPkgDescribe creates an instance of PkgDescribe.
 func NewPkgDescribe(m map[string]interface{}) (*PkgDescribe, error) {
 	ol := newOptionLoader(m)
 
+	app := ol.LoadApp()
 	pd := &PkgDescribe{
-		app:     ol.LoadApp(),
+		app:     app,
 		pkgName: ol.LoadString(OptionPackageName),
 
+		templateSrc:    pkgDescribeTemplate,
 		out:            os.Stdout,
-		libPartFn:      pkg.Find,
-		registryPartFn: registry.Package,
+		packageManager: registry.NewPackageManager(app),
 	}
 
 	if ol.err != nil {
@@ -66,35 +67,53 @@ func NewPkgDescribe(m map[string]interface{}) (*PkgDescribe, error) {
 
 // Run describes a package.
 func (pd *PkgDescribe) Run() error {
-	d, err := pkg.ParseName(pd.pkgName)
+	p, err := pd.packageManager.Find(pd.pkgName)
 	if err != nil {
 		return err
 	}
 
-	var p *pkg.Package
-	if d.Registry == "" {
-		p, err = pd.libPartFn(pd.app, pd.pkgName)
-		if err != nil {
-			return err
-		}
-	} else {
-		p, err = pd.registryPartFn(pd.app, pd.pkgName)
-		if err != nil {
-			return err
-		}
+	data := map[string]interface{}{
+		"Name":        pd.pkgName,
+		"Description": p.Description(),
 	}
 
-	fmt.Fprintln(pd.out, `LIBRARY NAME:`)
-	fmt.Fprintln(pd.out, p.Name)
-	fmt.Fprintln(pd.out)
-	fmt.Fprintln(pd.out, `DESCRIPTION:`)
-	fmt.Fprintln(pd.out, p.Description)
-	fmt.Fprintln(pd.out)
-	fmt.Fprintln(pd.out, `PROTOTYPES:`)
+	isInstalled, err := p.IsInstalled()
+	if err != nil {
+		return err
+	}
 
-	for _, proto := range p.Prototypes {
-		fmt.Fprintf(pd.out, "  %s\n", proto.Name)
+	data["IsInstalled"] = isInstalled
+
+	if isInstalled {
+		prototypes, err := p.Prototypes()
+		if err != nil {
+			return err
+		}
+
+		data["Prototypes"] = prototypes
+	}
+
+	t, err := template.New("pkg-describe").Parse(pd.templateSrc)
+	if err != nil {
+		return err
+	}
+
+	if err = t.Execute(pd.out, data); err != nil {
+		return err
 	}
 
 	return nil
 }
+
+const pkgDescribeTemplate = `LIBRARY NAME:
+{{.Name}}
+
+DESCRIPTION:
+{{.Description}}
+
+{{- if .IsInstalled}}
+
+PROTOTYPES:{{- range .Prototypes}}
+  {{.Name}} - {{.Template.ShortDescription}}
+{{- end}}{{- end}}
+`

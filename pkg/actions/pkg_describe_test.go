@@ -17,80 +17,174 @@ package actions
 
 import (
 	"bytes"
+	"io"
 	"testing"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/ksonnet/ksonnet/pkg/prototype"
+	"github.com/pkg/errors"
+
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
-	"github.com/ksonnet/ksonnet/pkg/pkg"
+	pkgmocks "github.com/ksonnet/ksonnet/pkg/pkg/mocks"
+	"github.com/ksonnet/ksonnet/pkg/registry"
+	regmocks "github.com/ksonnet/ksonnet/pkg/registry/mocks"
+	"github.com/ksonnet/ksonnet/pkg/util/test"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
 
-func TestPkgDescribe_library(t *testing.T) {
-	withApp(t, func(appMock *amocks.App) {
-		libaries := app.LibraryConfigs{
-			"apache": &app.LibraryConfig{},
-		}
-		appMock.On("Libraries").Return(libaries, nil)
+func TestPkgDescribe(t *testing.T) {
 
-		in := map[string]interface{}{
-			OptionApp:         appMock,
-			OptionPackageName: "apache",
-		}
+	cases := []struct {
+		name        string
+		output      string
+		pkgManager  func() registry.PackageManager
+		isErr       bool
+		templateSrc string
+		out         io.Writer
+	}{
+		{
+			name:   "with no prototypes",
+			output: "pkg/describe/output.txt",
+			pkgManager: func() registry.PackageManager {
+				p := &pkgmocks.Package{}
+				p.On("Description").Return("description")
+				p.On("IsInstalled").Return(false, nil)
 
-		a, err := NewPkgDescribe(in)
-		require.NoError(t, err)
+				pkgManager := &regmocks.PackageManager{}
+				pkgManager.On("Find", "apache").Return(p, nil)
 
-		var buf bytes.Buffer
-		a.out = &buf
+				return pkgManager
+			},
+		},
+		{
+			name:   "with prototypes",
+			output: "pkg/describe/with-prototypes.txt",
+			pkgManager: func() registry.PackageManager {
+				prototypes := prototype.Prototypes{
+					{
+						Name: "proto1",
+						Template: prototype.SnippetSchema{
+							ShortDescription: "short description",
+						},
+					},
+				}
 
-		a.libPartFn = func(a app.App, name string) (*pkg.Package, error) {
-			p := &pkg.Package{
-				Name:        "apache",
-				Description: "description",
-			}
+				p := &pkgmocks.Package{}
+				p.On("Description").Return("description")
+				p.On("IsInstalled").Return(true, nil)
+				p.On("Prototypes").Return(prototypes, nil)
 
-			return p, nil
-		}
+				pkgManager := &regmocks.PackageManager{}
+				pkgManager.On("Find", "apache").Return(p, nil)
 
-		err = a.Run()
-		require.NoError(t, err)
+				return pkgManager
+			},
+		},
+		{
+			name:  "package manager find error",
+			isErr: true,
+			pkgManager: func() registry.PackageManager {
+				pkgManager := &regmocks.PackageManager{}
+				pkgManager.On("Find", "apache").Return(nil, errors.New("failed"))
 
-		assertOutput(t, "pkg/describe/output.txt", buf.String())
-	})
-}
+				return pkgManager
+			},
+		},
+		{
+			name:  "check installed returns error",
+			isErr: true,
+			pkgManager: func() registry.PackageManager {
+				p := &pkgmocks.Package{}
+				p.On("Description").Return("description")
+				p.On("IsInstalled").Return(false, errors.New("failed"))
+
+				pkgManager := &regmocks.PackageManager{}
+				pkgManager.On("Find", "apache").Return(p, nil)
+
+				return pkgManager
+			},
+		},
+		{
+			name:  "gather prototypes returns error",
+			isErr: true,
+			pkgManager: func() registry.PackageManager {
+				p := &pkgmocks.Package{}
+				p.On("Prototypes").Return(nil, errors.New("failed"))
+				p.On("Description").Return("description")
+				p.On("IsInstalled").Return(true, nil)
+
+				pkgManager := &regmocks.PackageManager{}
+				pkgManager.On("Find", "apache").Return(p, nil)
+
+				return pkgManager
+			},
+		},
+		{
+			name:  "template is invalid",
+			isErr: true,
+			pkgManager: func() registry.PackageManager {
+				p := &pkgmocks.Package{}
+				p.On("Description").Return("description")
+				p.On("IsInstalled").Return(false, nil)
+
+				pkgManager := &regmocks.PackageManager{}
+				pkgManager.On("Find", "apache").Return(p, nil)
+
+				return pkgManager
+			},
+			templateSrc: "{{-abc}}",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					t.Fatal(r)
+				}
+			}()
+
+			test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
+				libraries := app.LibraryRefSpecs{
+					"apache": &app.LibraryRefSpec{},
+				}
 
 func TestPkgDescribe_registry(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		registries := app.RegistryConfigs{
 			"incubator": &app.RegistryConfig{},
 		}
-		appMock.On("Registries").Return(registries, nil)
+				a.On("Libraries").Return(libraries, nil)
 
-		in := map[string]interface{}{
-			OptionApp:         appMock,
-			OptionPackageName: "incubator/apache",
-		}
+				in := map[string]interface{}{
+					OptionApp:         a,
+					OptionPackageName: "apache",
+				}
 
-		a, err := NewPkgDescribe(in)
-		require.NoError(t, err)
+				pd, err := NewPkgDescribe(in)
+				require.NoError(t, err)
 
-		var buf bytes.Buffer
-		a.out = &buf
+				if tc.templateSrc != "" {
+					pd.templateSrc = tc.templateSrc
+				}
 
-		a.registryPartFn = func(a app.App, name string) (*pkg.Package, error) {
-			p := &pkg.Package{
-				Name:        "apache",
-				Description: "description",
-			}
+				pd.packageManager = tc.pkgManager()
 
-			return p, nil
-		}
+				var buf bytes.Buffer
+				pd.out = &buf
 
-		err = a.Run()
-		require.NoError(t, err)
+				err = pd.Run()
+				if tc.isErr {
+					require.Error(t, err)
+					return
+				}
+				require.NoError(t, err)
 
-		assertOutput(t, "pkg/describe/output.txt", buf.String())
-	})
+				assertOutput(t, tc.output, buf.String())
+			})
+		})
+	}
 }
 
 func TestPkgDescribe_requires_app(t *testing.T) {

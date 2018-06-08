@@ -16,128 +16,52 @@
 package pkg
 
 import (
-	"os"
-	"path/filepath"
-
-	"github.com/spf13/afero"
-
 	"github.com/ksonnet/ksonnet/pkg/app"
-	"github.com/ksonnet/ksonnet/pkg/parts"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/pkg/errors"
 )
 
+// InstallChecker checks if a package is installed.
+type InstallChecker interface {
+	// IsInstalled returns true if a package is installed.
+	IsInstalled(name string) (bool, error)
+}
+
+// DefaultInstallChecker checks if a package is installed.
+type DefaultInstallChecker struct {
+	App app.App
+}
+
+// IsInstalled returns true if the package is installed. a package is installed if it
+// has a libraries entry in app.yaml.
+func (ic *DefaultInstallChecker) IsInstalled(name string) (bool, error) {
+	if ic.App == nil {
+		return false, errors.New("app is nil")
+	}
+
+	libs, err := ic.App.Libraries()
+	if err != nil {
+		return false, errors.Wrapf(err, "checking if package %q is installed", name)
+	}
+
+	_, isInstalled := libs[name]
+	return isInstalled, nil
+}
+
 // Package is a ksonnet package.
-type Package struct {
-	Name        string
-	Description string
-	Prototypes  prototype.Prototypes
-}
+type Package interface {
+	// Name returns the name of the package.
+	Name() string
 
-// New creates a new new instance of Package using a part.
-func New(a app.App, d Descriptor, part *parts.Spec) (*Package, error) {
-	prototypes, err := LoadPrototypes(a, d)
-	if err != nil {
-		return nil, err
-	}
+	// RegistryName returns the registry name of the package.
+	RegistryName() string
 
-	p := &Package{
-		Name:        part.Name,
-		Description: part.Description,
-		Prototypes:  prototypes,
-	}
+	// IsInstalled returns true if the package is installed.
+	IsInstalled() (bool, error)
 
-	return p, nil
-}
+	// Description retrurns the package description
+	Description() string
 
-// NewFromData creates a new instance of Package using part data bytes.
-func NewFromData(a app.App, d Descriptor, data []byte) (*Package, error) {
-	part, err := parts.Unmarshal(data)
-	if err != nil {
-		return nil, err
-	}
-
-	return New(a, d, part)
-}
-
-// LoadPrototypes returns prototypes for a Package.
-func LoadPrototypes(a app.App, d Descriptor) (prototype.Prototypes, error) {
-	vp := vendorPath(a)
-
-	var prototypes prototype.Prototypes
-
-	protoPath := filepath.Join(vp, d.Registry, d.Part, "prototypes")
-	exists, err := afero.DirExists(a.Fs(), protoPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if !exists {
-		return prototypes, nil
-	}
-
-	err = afero.Walk(a.Fs(), protoPath, func(path string, fi os.FileInfo, err error) error {
-		if fi.IsDir() || filepath.Ext(path) != ".jsonnet" {
-			return nil
-		}
-
-		data, err := afero.ReadFile(a.Fs(), path)
-		if err != nil {
-			return err
-		}
-
-		spec, err := prototype.DefaultBuilder(string(data))
-		if err != nil {
-			return err
-		}
-
-		prototypes = append(prototypes, spec)
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return prototypes, nil
-
-}
-
-// Find finds a package by name.
-func Find(a app.App, name string) (*Package, error) {
-	d, err := ParseName(name)
-	if err != nil {
-		return nil, err
-	}
-
-	libs, err := a.Libraries()
-	if err != nil {
-		return nil, err
-	}
-
-	lib, ok := libs[d.Part]
-	if !ok {
-		return nil, errors.Errorf("library %q not found", d.Part)
-	}
-
-	partConfigPath := filepath.Join(vendorPath(a), lib.Registry, d.Part, "parts.yaml")
-	exists, err := afero.Exists(a.Fs(), partConfigPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if !exists {
-		return nil, errors.Errorf("part %q configuration not found in %s", d.Part, partConfigPath)
-	}
-
-	data, err := afero.ReadFile(a.Fs(), partConfigPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewFromData(a, d, data)
-}
-
-func vendorPath(a app.App) string {
-	return filepath.Join(a.Root(), "vendor")
+	// Prototypes returns prototypes defined in the package.
+	Prototypes() (prototype.Prototypes, error)
 }
