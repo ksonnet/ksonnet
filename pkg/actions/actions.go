@@ -61,6 +61,8 @@ const (
 	OptionGlobal = "global"
 	// OptionGracePeriod is gracePeriod option.
 	OptionGracePeriod = "grace-period"
+	// OptionInstalled is for listing installed packages.
+	OptionInstalled = "only-installed"
 	// OptionJPaths is jsonnet paths.
 	OptionJPaths = "jpaths"
 	// OptionLibName is libName.

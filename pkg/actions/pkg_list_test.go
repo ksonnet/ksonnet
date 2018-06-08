@@ -33,16 +33,6 @@ func TestPkgList(t *testing.T) {
 
 		appMock.On("Libraries").Return(libaries, nil)
 
-		in := map[string]interface{}{
-			OptionApp: appMock,
-		}
-
-		a, err := NewPkgList(in)
-		require.NoError(t, err)
-
-		var buf bytes.Buffer
-		a.out = &buf
-
 		spec := &registry.Spec{
 			Libraries: registry.LibraryRefSpecs{
 				"lib1": &registry.LibraryRef{},
@@ -53,15 +43,47 @@ func TestPkgList(t *testing.T) {
 		incubator := mockRegistry("incubator", false)
 		incubator.On("FetchRegistrySpec").Return(spec, nil)
 
-		a.registryListFn = func(app.App) ([]registry.Registry, error) {
-			registries := []registry.Registry{incubator}
-			return registries, nil
+		cases := []struct {
+			name          string
+			onlyInstalled bool
+			outputName    string
+		}{
+			{
+				name:       "list all packages",
+				outputName: "pkg/list/output.txt",
+			},
+			{
+				name:          "installed packages",
+				onlyInstalled: true,
+				outputName:    "pkg/list/installed.txt",
+			},
 		}
 
-		err = a.Run()
-		require.NoError(t, err)
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				in := map[string]interface{}{
+					OptionApp:       appMock,
+					OptionInstalled: tc.onlyInstalled,
+				}
 
-		assertOutput(t, "pkg/list/output.txt", buf.String())
+				a, err := NewPkgList(in)
+				require.NoError(t, err)
+
+				a.registryListFn = func(app.App) ([]registry.Registry, error) {
+					registries := []registry.Registry{incubator}
+					return registries, nil
+				}
+
+				var buf bytes.Buffer
+				a.out = &buf
+
+				err = a.Run()
+				require.NoError(t, err)
+
+				assertOutput(t, tc.outputName, buf.String())
+			})
+		}
+
 	})
 }
 

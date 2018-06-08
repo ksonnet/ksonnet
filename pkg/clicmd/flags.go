@@ -30,6 +30,7 @@ const (
 	flagFilename              = "filename"
 	flagGcTag                 = "gc-tag"
 	flagGracePeriod           = "grace-period"
+	flagInstalled             = "installed"
 	flagJpath                 = "jpath"
 	flagModule                = "module"
 	flagNamespace             = "namespace"

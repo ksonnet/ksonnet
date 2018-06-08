@@ -28,7 +28,8 @@ func Test_pkgListCmd(t *testing.T) {
 			args:   []string{"pkg", "list"},
 			action: actionPkgList,
 			expected: map[string]interface{}{
-				actions.OptionApp: ka,
+				actions.OptionApp:       ka,
+				actions.OptionInstalled: false,
 			},
 		},
 	}
