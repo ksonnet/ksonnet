@@ -49,13 +49,28 @@ type ResolveDirectory func(relPath string) error
 type Registry interface {
 	RegistrySpecDir() string
 	RegistrySpecFilePath() string
-	FetchRegistrySpec() (*Spec, error)
+	SpecFetcher
 	MakeRegistryRefSpec() *app.RegistryRefSpec
-	ResolveLibrarySpec(libID, libRefSpec string) (*parts.Spec, error)
-	ResolveLibrary(libID, libAlias, version string, onFile ResolveFile, onDir ResolveDirectory) (*parts.Spec, *app.LibraryRefSpec, error)
+	Resolver
 	Name() string
 	Protocol() Protocol
 	URI() string
 	IsOverride() bool
 	CacheRoot(name, relPath string) (string, error)
+
+	Updater
+}
+
+type SpecFetcher interface {
+	FetchRegistrySpec() (*Spec, error)
+}
+
+type Resolver interface {
+	ResolveLibrarySpec(libID, libRefSpec string) (*parts.Spec, error)
+	ResolveLibrary(libID, libAlias, version string, onFile ResolveFile, onDir ResolveDirectory) (*parts.Spec, *app.LibraryRefSpec, error)
+}
+
+// Updater is an interface for updating an existing registry
+type Updater interface {
+	Update(version string) (newVersion string, err error)
 }

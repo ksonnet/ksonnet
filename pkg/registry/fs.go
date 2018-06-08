@@ -176,3 +176,8 @@ func (fs *Fs) ResolveLibrary(partName, partAlias, libRefSpec string, onFile Reso
 func (fs *Fs) CacheRoot(name, path string) (string, error) {
 	return filepath.Join(name, path), nil
 }
+
+// Update implements registry.Updater
+func (fs *Fs) Update(version string) (string, error) {
+	return "", errors.Errorf("TODO not implemented")
+}

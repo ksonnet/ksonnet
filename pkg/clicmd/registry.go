@@ -23,9 +23,10 @@ import (
 )
 
 var regShortDesc = map[string]string{
-	"list":     "List all registries known to the current ksonnet app.",
+	"list":     "List all registries known to the current ksonnet app",
 	"describe": "Describe a ksonnet registry and the packages it contains",
 	"add":      "Add a registry to the current ksonnet app",
+	"update":   "Update currently configured registries",
 }
 
 func init() {

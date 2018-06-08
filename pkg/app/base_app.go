@@ -202,6 +202,42 @@ func (ba *baseApp) UpdateLib(name string, libSpec *LibraryRefSpec) error {
 	return ba.save()
 }
 
+// UpdateRegistry updates a registry spec and persists in app[.override].yaml
+func (ba *baseApp) UpdateRegistry(spec *RegistryRefSpec) error {
+	if err := ba.load(); err != nil {
+		return errors.Wrap(err, "load configuration")
+	}
+
+	if spec.Name == "" {
+		return ErrRegistryNameInvalid
+	}
+
+	// Figure out where the registry is defined (app or override)
+	var ok, okOverride bool
+	if ba.config != nil {
+		_, ok = ba.config.Registries[spec.Name]
+	}
+	if ba.overrides != nil {
+		_, okOverride = ba.overrides.Registries[spec.Name]
+	}
+
+	if !ok && !okOverride {
+		return errors.Errorf("registry not found: %v", spec.Name)
+	}
+
+	if ok && okOverride {
+		return errors.Errorf("registry %v found in both app.yaml and app.override.yaml", spec.Name)
+	}
+
+	if ok {
+		ba.config.Registries[spec.Name] = spec
+	} else {
+		ba.overrides.Registries[spec.Name] = spec
+	}
+
+	return ba.save()
+}
+
 func (ba *baseApp) Fs() afero.Fs {
 	return ba.fs
 }

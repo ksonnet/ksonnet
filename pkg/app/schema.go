@@ -16,6 +16,7 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 
@@ -230,6 +231,24 @@ func (r *RegistryRefSpec) IsOverride() bool {
 
 // RegistryRefSpecs is a map of the registry name to a RegistryRefSpec.
 type RegistryRefSpecs map[string]*RegistryRefSpec
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+// Our goal is to populate the Name field of RegistryRefSpec
+// objects according to they key name in the registries map.
+func (r *RegistryRefSpecs) UnmarshalJSON(b []byte) error {
+	registries := make(map[string]*RegistryRefSpec)
+	if err := json.Unmarshal(b, &registries); err != nil {
+		return err
+	}
+
+	// Set Name fields according to map keys
+	for k, v := range registries {
+		v.Name = k
+	}
+
+	*r = RegistryRefSpecs(registries)
+	return nil
+}
 
 // EnvironmentSpecs contains one or more EnvironmentSpec.
 type EnvironmentSpecs map[string]*EnvironmentSpec

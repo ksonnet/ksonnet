@@ -23,6 +23,8 @@ import (
 	"regexp"
 	gostrings "strings"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/printer"
 	"github.com/ksonnet/ksonnet/pkg/app"
@@ -34,7 +36,6 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/util/k8s"
 	"github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -61,7 +62,7 @@ type Pipeline struct {
 
 // New creates an instance of Pipeline.
 func New(ksApp app.App, envName string, opts ...Opt) *Pipeline {
-	logrus.Debugf("creating ks pipeline for environment %q", envName)
+	log.Debugf("creating ks pipeline for environment %q", envName)
 	p := &Pipeline{
 		app:                 ksApp,
 		envName:             envName,
@@ -113,6 +114,7 @@ func (p *Pipeline) EnvParameters(module string) (string, error) {
 		filepath.Join(p.app.Root(), "vendor"),
 	)
 	vm.ExtCode("__ksonnet/params", paramsStr)
+	log.Debugf("[Pipeline.EnvParameters] Evaluating: %v", envParams)
 	return vm.EvaluateSnippet("snippet", string(envParams))
 }
 
@@ -272,7 +274,7 @@ var (
 // ksonnet generates the correct file.
 func upgradeParams(envName, in string) string {
 	if reParamSwap.MatchString(in) {
-		logrus.Warnf("rewriting %q environment params to not use relative paths", envName)
+		log.Warnf("rewriting %q environment params to not use relative paths", envName)
 		return reParamSwap.ReplaceAllLiteralString(in, `std.extVar("__ksonnet/params")`)
 	}
 
@@ -288,7 +290,7 @@ func buildObjects(p *Pipeline, filter []string) ([]*unstructured.Unstructured, e
 	var ret []*unstructured.Unstructured
 
 	for _, m := range modules {
-		logrus.WithFields(logrus.Fields{
+		log.WithFields(log.Fields{
 			"action":      "pipeline",
 			"module-name": m.Name(),
 		}).Debug("building objects")

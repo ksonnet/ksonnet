@@ -56,6 +56,7 @@ const (
 	actionRegistryAdd
 	actionRegistryDescribe
 	actionRegistryList
+	actionRegistryUpdate
 	actionShow
 	actionUpgrade
 	actionValidate
@@ -98,6 +99,7 @@ var (
 		actionRegistryAdd:       actions.RunRegistryAdd,
 		actionRegistryDescribe:  actions.RunRegistryDescribe,
 		actionRegistryList:      actions.RunRegistryList,
+		actionRegistryUpdate:    actions.RunRegistryUpdate,
 		actionShow:              actions.RunShow,
 		actionUpgrade:           actions.RunUpgrade,
 		actionValidate:          actions.RunValidate,

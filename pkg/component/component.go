@@ -23,6 +23,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/schema"
 	jsonnetutil "github.com/ksonnet/ksonnet/pkg/util/jsonnet"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
@@ -196,5 +197,6 @@ func envParams(a app.App, moduleName, envName string) (string, error) {
 		filepath.Join(a.Root(), "vendor"),
 	)
 	vm.ExtCode("__ksonnet/params", paramsStr)
+	log.Debugf("[component.go:envParams] Evaluating: %v", envParams)
 	return vm.EvaluateSnippet("snippet", string(envParams))
 }

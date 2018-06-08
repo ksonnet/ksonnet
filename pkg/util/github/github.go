@@ -17,6 +17,7 @@ package github
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -36,6 +37,21 @@ type Repo struct {
 	Repo string
 }
 
+func (r Repo) String() string {
+	return fmt.Sprintf("%v/%v", r.Org, r.Repo)
+}
+
+// ContentSpec represents coordinates for fetching contents from a GitHub repo
+type ContentSpec struct {
+	Repo
+	Path    string // Path within repo to fetch
+	RefSpec string // A git refspec - branch, tag, or commit sha1.
+}
+
+func (c ContentSpec) String() string {
+	return fmt.Sprintf("%v/%v@%v", c.Repo, c.Path, c.RefSpec)
+}
+
 // GitHub is an interface for communicating with GitHub.
 type GitHub interface {
 	CommitSHA1(ctx context.Context, repo Repo, refSpec string) (string, error)
@@ -51,14 +67,14 @@ func (dg *defaultGitHub) CommitSHA1(ctx context.Context, repo Repo, refSpec stri
 		refSpec = "master"
 	}
 
-	logrus.Debugf("github: fetching SHA1 for %s/%s - %s", repo.Org, repo.Repo, refSpec)
+	logrus.Debugf("github: fetching SHA1 for %s@%s", repo, refSpec)
 	sha, _, err := dg.client().Repositories.GetCommitSHA1(ctx, repo.Org, repo.Repo, refSpec, "")
 	return sha, err
 }
 
-func (dg *defaultGitHub) Contents(ctx context.Context, repo Repo, path, sha1 string) (*github.RepositoryContent, []*github.RepositoryContent, error) {
-	logrus.Debugf("github: fetching contents for %s/%s/%s - %s", repo.Org, repo.Repo, path, sha1)
-	opts := &github.RepositoryContentGetOptions{Ref: sha1}
+func (dg *defaultGitHub) Contents(ctx context.Context, repo Repo, path, ref string) (*github.RepositoryContent, []*github.RepositoryContent, error) {
+	logrus.Debugf("github: fetching contents for %s/%s@%s", repo, path, ref)
+	opts := &github.RepositoryContentGetOptions{Ref: ref}
 
 	file, dir, _, err := dg.client().Repositories.GetContents(ctx, repo.Org, repo.Repo, path, opts)
 	return file, dir, err
