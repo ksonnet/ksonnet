@@ -29,6 +29,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/prototype/snippet/jsonnet"
 	strutil "github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 	"github.com/spf13/pflag"
 )
 
@@ -49,6 +50,7 @@ type PrototypePreview struct {
 	query           string
 	args            []string
 	appPrototypesFn func(app.App, pkg.Descriptor) (prototype.Prototypes, error)
+	protoValuesFn   func(afero.Fs, *prototype.Prototype, *pflag.FlagSet) (map[string]string, error)
 }
 
 // NewPrototypePreview creates an instance of PrototypePreview
@@ -62,6 +64,7 @@ func NewPrototypePreview(m map[string]interface{}) (*PrototypePreview, error) {
 
 		out:             os.Stdout,
 		appPrototypesFn: pkg.LoadPrototypes,
+		protoValuesFn:   prototype.Values,
 	}
 
 	if ol.err != nil {
@@ -93,7 +96,7 @@ func (pp *PrototypePreview) Run() error {
 		return err
 	}
 
-	flags := bindPrototypeParams(p)
+	flags := prototype.BindFlags(p)
 	if err = flags.Parse(pp.args); err != nil {
 		if strings.Contains(err.Error(), "help request") {
 			return nil
@@ -104,7 +107,7 @@ func (pp *PrototypePreview) Run() error {
 	// NOTE: only supporting jsonnet templates
 	templateType := prototype.Jsonnet
 
-	params, err := getParameters(p, flags)
+	params, err := prototype.Values(pp.app.Fs(), p, flags)
 	if err != nil {
 		return err
 	}
@@ -116,62 +119,6 @@ func (pp *PrototypePreview) Run() error {
 
 	fmt.Fprintln(pp.out, text)
 	return nil
-}
-
-func bindPrototypeParams(p *prototype.Prototype) *pflag.FlagSet {
-	fs := pflag.NewFlagSet("preview", pflag.ContinueOnError)
-
-	for _, param := range p.RequiredParams() {
-		fs.String(param.Name, "", param.Description)
-	}
-
-	for _, param := range p.OptionalParams() {
-		fs.String(param.Name, *param.Default, param.Description)
-	}
-
-	return fs
-}
-
-func getParameters(proto *prototype.Prototype, flags *pflag.FlagSet) (map[string]string, error) {
-	missingRequired := prototype.ParamSchemas{}
-	values := map[string]string{}
-	for _, param := range proto.RequiredParams() {
-		val, err := flags.GetString(param.Name)
-		if err != nil {
-			return nil, err
-		} else if val == "" {
-			missingRequired = append(missingRequired, param)
-		} else if _, ok := values[param.Name]; ok {
-			return nil, errors.Errorf("Prototype '%s' has multiple parameters with name '%s'", proto.Name, param.Name)
-		}
-
-		quoted, err := param.Quote(val)
-		if err != nil {
-			return nil, err
-		}
-		values[param.Name] = quoted
-	}
-
-	if len(missingRequired) > 0 {
-		return nil, errors.Errorf("failed to instantiate prototype '%s'. The following required parameters are missing:\n%s", proto.Name, missingRequired.PrettyString(""))
-	}
-
-	for _, param := range proto.OptionalParams() {
-		val, err := flags.GetString(param.Name)
-		if err != nil {
-			return nil, err
-		} else if _, ok := values[param.Name]; ok {
-			return nil, errors.Errorf("prototype '%s' has multiple parameters with name '%s'", proto.Name, param.Name)
-		}
-
-		quoted, err := param.Quote(val)
-		if err != nil {
-			return nil, err
-		}
-		values[param.Name] = quoted
-	}
-
-	return values, nil
 }
 
 // TODO: this doesn't belong here. Needs to be closer to where other jsonnet processing happens.

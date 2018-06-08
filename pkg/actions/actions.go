@@ -109,6 +109,8 @@ const (
 	OptionURI = "URI"
 	// OptionValue is value option.
 	OptionValue = "value"
+	// OptionValuesFile is a values file option.
+	OptionValuesFile = "values-file"
 	// OptionVersion is version option.
 	OptionVersion = "version"
 )

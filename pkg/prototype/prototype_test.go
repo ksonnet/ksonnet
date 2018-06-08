@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/blang/semver"
+	"github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -244,6 +245,83 @@ func TestParseTemplateType(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.Equal(t, tc.expected, tt)
+		})
+	}
+}
+
+func TestPrototype_Param(t *testing.T) {
+	proto := Prototype{}
+
+	param := &ParamSchema{
+		Name: "name",
+	}
+
+	proto.Params = append(proto.Params, param)
+
+	cases := []struct {
+		name      string
+		paramName string
+		isErr     bool
+	}{
+		{
+			name:      "existing param",
+			paramName: "name",
+		},
+		{
+			name:      "param which doesn't exist",
+			paramName: "not-there",
+			isErr:     true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := proto.Param(tc.paramName)
+			if tc.isErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestPrototype_Params(t *testing.T) {
+	proto := Prototype{}
+
+	required := &ParamSchema{
+		Name: "required",
+	}
+
+	optional := &ParamSchema{
+		Name:    "optional",
+		Default: strings.Ptr("value"),
+	}
+
+	proto.Params = append(proto.Params, required, optional)
+
+	cases := []struct {
+		name     string
+		expected ParamSchemas
+		fn       func() ParamSchemas
+	}{
+		{
+			name:     "required",
+			expected: ParamSchemas{required},
+			fn:       proto.RequiredParams,
+		},
+		{
+			name:     "optional",
+			expected: ParamSchemas{optional},
+			fn:       proto.OptionalParams,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.fn()
+			require.Equal(t, tc.expected, got)
 		})
 	}
 }

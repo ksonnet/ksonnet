@@ -67,16 +67,27 @@ func (s *Prototype) validate() error {
 // Prototypes is a slice of pointer to `SpecificationSchema`.
 type Prototypes []*Prototype
 
-// RequiredParams retrieves all parameters that are required by a prototype.
-func (s *Prototype) RequiredParams() ParamSchemas {
-	reqd := ParamSchemas{}
+// Param returns a prototype parameter by name.
+func (s *Prototype) Param(name string) (*ParamSchema, error) {
 	for _, p := range s.Params {
-		if p.Default == nil {
-			reqd = append(reqd, p)
+		if p.Name == name {
+			return p, nil
 		}
 	}
 
-	return reqd
+	return nil, errors.Errorf("param %s not found", name)
+}
+
+// RequiredParams retrieves all parameters that are required by a prototype.
+func (s *Prototype) RequiredParams() ParamSchemas {
+	required := ParamSchemas{}
+	for _, p := range s.Params {
+		if p.Default == nil {
+			required = append(required, p)
+		}
+	}
+
+	return required
 }
 
 // OptionalParams retrieves all parameters that can optionally be provided to a
@@ -187,6 +198,25 @@ type ParamSchema struct {
 	Description string    `json:"description"`
 	Default     *string   `json:"default"` // `nil` only if the parameter is optional.
 	Type        ParamType `json:"type"`
+}
+
+// IsRequired returns if this parameter is required. Parameters are required
+// if the default value is nil.
+func (ps *ParamSchema) IsRequired() bool {
+	return ps.Default == nil
+}
+
+func (ps *ParamSchema) QuotedValue(value string) (string, error) {
+	var v string
+	if ps.Default != nil {
+		v = *ps.Default
+	}
+
+	if v == "" {
+		v = value
+	}
+
+	return ps.Quote(v)
 }
 
 // Quote will parse a prototype parameter and quote it appropriately, so that it

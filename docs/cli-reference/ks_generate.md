@@ -32,6 +32,16 @@ expand prototypes into Jsonnet files.
 command line flags, such as  `--image` in the example above. Note that
 different prototypes support their own unique flags.
 
+You can also use a values file to supply values to the prototype. The format for the
+file is a key and value per line.
+
+		key1=value1
+
+The values file is supplied with an argument.
+
+		ks prototype use io.ksonnet.pkg.single-port-deployment nginx-depl \
+		 --values-file=/tmp/values-file
+
 ### Related Commands
 
 * `ks show` — Show expanded manifests for a specific environment.

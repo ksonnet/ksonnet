@@ -70,6 +70,60 @@ func TestPrototypeUse(t *testing.T) {
 	})
 }
 
+func Test_detectTemplate(t *testing.T) {
+	cases := []struct {
+		name          string
+		args          []string
+		componentName string
+		templateType  prototype.TemplateType
+		isErr         bool
+	}{
+		{
+			name:  "not enough arguments for detect",
+			args:  []string{"prototype-name"},
+			isErr: true,
+		},
+		{
+			name:          "name is supplied",
+			args:          []string{"prototype-name", "name"},
+			templateType:  prototype.Jsonnet,
+			componentName: "name",
+		},
+		{
+			name:          "template type supplied",
+			args:          []string{"prototype-name", "name", "jsonnet"},
+			templateType:  prototype.Jsonnet,
+			componentName: "name",
+		},
+		{
+			name:  "template type supplied but invalid",
+			args:  []string{"prototype-name", "arg2", "arg3"},
+			isErr: true,
+		},
+		{
+			name:  "too many arguments",
+			args:  []string{"prototype-name", "arg2", "arg3", "arg4"},
+			isErr: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			componentName, templateType, err := detectTemplate(tc.args)
+
+			if tc.isErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.componentName, componentName)
+			assert.Equal(t, tc.templateType, templateType)
+		})
+	}
+}
+
 func TestPrototypeUse_requires_app(t *testing.T) {
 	in := make(map[string]interface{})
 	_, err := NewPrototypeUse(in)

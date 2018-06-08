@@ -26,6 +26,8 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
+	"github.com/spf13/pflag"
 )
 
 // RunPrototypeUse runs `prototype use`
@@ -45,6 +47,7 @@ type PrototypeUse struct {
 	out               io.Writer
 	prototypesFn      func(app.App, pkg.Descriptor) (prototype.Prototypes, error)
 	createComponentFn func(app.App, string, string, param.Params, prototype.TemplateType) (string, error)
+	protoValuesFn     func(afero.Fs, *prototype.Prototype, *pflag.FlagSet) (map[string]string, error)
 }
 
 // NewPrototypeUse creates an instance of PrototypeUse
@@ -58,6 +61,7 @@ func NewPrototypeUse(m map[string]interface{}) (*PrototypeUse, error) {
 		out:               os.Stdout,
 		prototypesFn:      pkg.LoadPrototypes,
 		createComponentFn: component.Create,
+		protoValuesFn:     prototype.Values,
 	}
 
 	if ol.err != nil {
@@ -95,7 +99,7 @@ func (pl *PrototypeUse) Run() error {
 		return err
 	}
 
-	flags := bindPrototypeParams(p)
+	flags := prototype.BindFlags(p)
 	if err = flags.Parse(pl.args); err != nil {
 		if strings.Contains(err.Error(), "help requested") {
 			return nil
@@ -103,24 +107,9 @@ func (pl *PrototypeUse) Run() error {
 		return errors.Wrap(err, "parse preview args")
 	}
 
-	// Try to find the template type (if it is supplied) after the args are
-	// parsed. Note that the case that `len(args) == 0` is handled at the
-	// beginning of this command.
-	var componentName string
-	var templateType prototype.TemplateType
-	if args := flags.Args(); len(args) == 1 {
-		return errors.Errorf("Command is missing argument 'componentName'")
-	} else if len(args) == 2 {
-		componentName = args[1]
-		templateType = prototype.Jsonnet
-	} else if len(args) == 3 {
-		componentName = args[1]
-		templateType, err = prototype.ParseTemplateType(args[1])
-		if err != nil {
-			return err
-		}
-	} else {
-		return errors.Errorf("Command has too many arguments (takes a prototype name and a component name)")
+	componentName, templateType, err := detectTemplate(flags.Args())
+	if err != nil {
+		return err
 	}
 
 	name, err := flags.GetString("name")
@@ -132,7 +121,7 @@ func (pl *PrototypeUse) Run() error {
 		flags.Set("name", componentName)
 	}
 
-	rawParams, err := getParameters(p, flags)
+	rawParams, err := pl.protoValuesFn(pl.app.Fs(), p, flags)
 	if err != nil {
 		return err
 	}
@@ -155,4 +144,25 @@ func (pl *PrototypeUse) Run() error {
 	}
 
 	return nil
+}
+
+// Try to find the template type (if it is supplied) after the args are
+// parsed. Note that the case that `len(args) == 0` is handled at the
+// beginning of this command.
+func detectTemplate(args []string) (string, prototype.TemplateType, error) {
+	if len(args) == 1 {
+		return "", "", errors.Errorf("command is missing argument 'componentName'")
+	} else if len(args) == 2 {
+		return args[1], prototype.Jsonnet, nil
+	} else if len(args) == 3 {
+		componentName := args[1]
+		templateType, err := prototype.ParseTemplateType(args[2])
+		if err != nil {
+			return "", "", err
+		}
+
+		return componentName, templateType, nil
+	}
+
+	return "", "", errors.Errorf("command has too many arguments (takes a prototype name and a component name)")
 }
