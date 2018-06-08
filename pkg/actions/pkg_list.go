@@ -43,7 +43,9 @@ func RunPkgList(m map[string]interface{}) error {
 
 // PkgList lists available registries
 type PkgList struct {
-	app            app.App
+	app           app.App
+	onlyInstalled bool
+
 	registryListFn func(ksApp app.App) ([]registry.Registry, error)
 	out            io.Writer
 }
@@ -53,7 +55,8 @@ func NewPkgList(m map[string]interface{}) (*PkgList, error) {
 	ol := newOptionLoader(m)
 
 	rl := &PkgList{
-		app: ol.LoadApp(),
+		app:           ol.LoadApp(),
+		onlyInstalled: ol.LoadBool(OptionInstalled),
 
 		registryListFn: registry.List,
 		out:            os.Stdout,
@@ -87,13 +90,13 @@ func (pl *PkgList) Run() error {
 		}
 
 		for libName := range spec.Libraries {
-			row := []string{r.Name(), libName}
 			_, isInstalled := appLibraries[libName]
-			if isInstalled {
-				row = append(row, pkgInstalled)
+
+			if pl.onlyInstalled && !isInstalled {
+				continue
 			}
 
-			rows = append(rows, row)
+			rows = append(rows, pl.addRow(r.Name(), libName, isInstalled))
 		}
 	}
 
@@ -108,4 +111,13 @@ func (pl *PkgList) Run() error {
 	t.SetHeader([]string{"registry", "name", "installed"})
 	t.AppendBulk(rows)
 	return t.Render()
+}
+
+func (pl *PkgList) addRow(regName, libName string, isInstalled bool) []string {
+	row := []string{regName, libName}
+	if isInstalled {
+		row = append(row, pkgInstalled)
+	}
+
+	return row
 }

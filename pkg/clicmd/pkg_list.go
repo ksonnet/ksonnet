@@ -18,8 +18,14 @@ package clicmd
 import (
 	"fmt"
 
+	"github.com/spf13/viper"
+
 	"github.com/ksonnet/ksonnet/pkg/actions"
 	"github.com/spf13/cobra"
+)
+
+const (
+	vPkgListInstalled = "pkg-list-installed"
 )
 
 var pkgListCmd = &cobra.Command{
@@ -31,7 +37,8 @@ var pkgListCmd = &cobra.Command{
 		}
 
 		m := map[string]interface{}{
-			actions.OptionApp: ka,
+			actions.OptionApp:       ka,
+			actions.OptionInstalled: viper.GetBool(vPkgListInstalled),
 		}
 
 		return runAction(actionPkgList, m)
@@ -57,4 +64,7 @@ the following info:
 
 func init() {
 	pkgCmd.AddCommand(pkgListCmd)
+
+	pkgListCmd.Flags().Bool(flagInstalled, false, "Only list installed packages")
+	viper.BindPFlag(vPkgListInstalled, pkgListCmd.Flags().Lookup(flagInstalled))
 }
