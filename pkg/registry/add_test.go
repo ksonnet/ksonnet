@@ -42,7 +42,7 @@ func withApp(t *testing.T, fn func(*amocks.App, afero.Fs)) {
 
 }
 
-func TestAdd(t *testing.T) {
+func TestAdd_GitHub(t *testing.T) {
 	withApp(t, func(appMock *amocks.App, fs afero.Fs) {
 		expectedSpec := &app.RegistryRefSpec{
 			Name:     "new",
@@ -57,6 +57,7 @@ func TestAdd(t *testing.T) {
 		appMock.On("AddRegistry", expectedSpec, true).Return(nil)
 
 		ghMock := &mocks.GitHub{}
+		ghMock.On("ValidateURL", "github.com/foo/bar").Return(nil)
 		ghMock.On("CommitSHA1", mock.Anything, mock.Anything, "master").Return("40285d8a14f1ac5787e405e1023cf0c07f6aa28c", nil)
 
 		registryContent := buildContent(t, registryYAMLFile)
@@ -78,6 +79,20 @@ func TestAdd(t *testing.T) {
 
 		require.Equal(t, registrySpec, spec)
 
+	})
+}
+
+func TestAdd_fs(t *testing.T) {
+	test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
+		_, err := Add(a, ProtocolFilesystem, "/invalid", "", "", false)
+		require.Error(t, err)
+	})
+}
+
+func TestAdd_invalid(t *testing.T) {
+	test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
+		_, err := Add(a, Protocol("invalid"), "", "", "", false)
+		require.Error(t, err)
 	})
 }
 

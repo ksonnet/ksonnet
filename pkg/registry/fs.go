@@ -48,6 +48,20 @@ func NewFs(a app.App, registryRef *app.RegistryRefSpec) (*Fs, error) {
 		return nil, err
 	}
 
+	path := u.Path
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(a.Root(), path)
+	}
+
+	exists, err := afero.DirExists(a.Fs(), path)
+	if err != nil {
+		return nil, err
+	}
+
+	if !exists {
+		return nil, errors.Errorf("registry path %q does not exist", u.Path)
+	}
+
 	fs.root = u.Path
 
 	return fs, nil

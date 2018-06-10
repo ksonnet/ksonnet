@@ -25,6 +25,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/parts"
+	"github.com/ksonnet/ksonnet/pkg/util/test"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -77,6 +78,18 @@ func withRFS(t *testing.T, relPath bool, fn func(*Fs, *mocks.App, afero.Fs)) {
 	require.NoError(t, err)
 
 	fn(rfs, appMock, fs)
+}
+
+func TestFs_New_invalid_path(t *testing.T) {
+	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+		spec := &app.RegistryRefSpec{
+			Name:     "local",
+			Protocol: string(ProtocolFilesystem),
+			URI:      "/invalid",
+		}
+		_, err := NewFs(a, spec)
+		require.Error(t, err)
+	})
 }
 
 func TestFs_Name(t *testing.T) {
