@@ -111,7 +111,7 @@ func (d *Diff) Run() error {
 				return err
 			}
 		case strings.HasPrefix(t, "-"):
-			diffRemoveColor.Fprintln(&buf, t)
+			_, err = diffRemoveColor.Fprintln(&buf, t)
 			if err != nil {
 				return err
 			}
