@@ -53,6 +53,7 @@ ksonnet allows you to deploy any particular *application* to **multiple** enviro
 ![ksonnet environment diagram](/docs/img/environment.svg)
 
 If you're wondering why you might deploy a common set of manifests to different environments, here are some potential use cases:
+
 * Release Management (*dev* vs *test* vs *prod*)
 * Multi-AZ (*us-west-2* vs *us-east-1*)
 * Multi-cloud (*AWS* vs *GCP* vs *Azure*)
@@ -110,6 +111,7 @@ Out of the box, ksonnet comes with some system prototypes (like `io.ksonnet.pkg.
 Parameters allow you to customize your prototypes — both at the time of their creation, and after the fact. You can use the various [`ks param`](/docs/cli-reference/ks_param.md) commands to view or modify current parameters. Params can be set globally or per-environment.
 
 Under the hood, the `ks param` commands update a couple of local [*Jsonnet*](#jsonnet) files, so that you always have a version-controllable representation of what you `ks apply` onto your Kubernetes cluster. These are structured as follows:
+
 * **App params** (`components/params.libsonnet`) — treated like defaults
    * (Optional) **Global params**
      * Manually specified by editing the Jsonnet
