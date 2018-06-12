@@ -17,6 +17,8 @@ package cluster
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	clustermetadata "github.com/ksonnet/ksonnet/pkg/metadata"
 	"github.com/pkg/errors"
@@ -49,10 +51,10 @@ func SetMetaDataAnnotation(obj metav1.Object, key, value string) {
 }
 
 // DefaultResourceInfo fetches objects from the cluster.
-func DefaultResourceInfo(namespace string, config clientcmd.ClientConfig) *resource.Result {
+func DefaultResourceInfo(namespace string, config clientcmd.ClientConfig, components []string) *resource.Result {
 	factory := kcmdutil.NewFactory(config)
 
-	return factory.NewBuilder().
+	f := factory.NewBuilder().
 		Unstructured().
 		NamespaceParam(namespace).
 		ExportParam(false).
@@ -62,8 +64,14 @@ func DefaultResourceInfo(namespace string, config clientcmd.ClientConfig) *resou
 		Flatten().
 		IncludeUninitialized(false).
 		RequireObject(true).
-		Latest().
-		Do()
+		Latest()
+
+	if len(components) > 0 {
+		selector := fmt.Sprintf("%s in (%s)", clustermetadata.LabelComponent, strings.Join(components, ","))
+		f = f.LabelSelectorParam(selector)
+	}
+
+	return f.Do()
 }
 
 // ResourceInfo holds information about cluster resources.
@@ -129,8 +137,8 @@ func RebuildObject(m map[string]interface{}) (map[string]interface{}, error) {
 }
 
 // CollectObjects collects objects in a cluster namespace.
-func CollectObjects(namespace string, config clientcmd.ClientConfig) ([]*unstructured.Unstructured, error) {
-	res := DefaultResourceInfo(namespace, config)
+func CollectObjects(namespace string, config clientcmd.ClientConfig, components []string) ([]*unstructured.Unstructured, error) {
+	res := DefaultResourceInfo(namespace, config, components)
 	objects, err := ManagedObjects(res)
 	if err != nil {
 		return nil, err

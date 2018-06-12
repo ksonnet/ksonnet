@@ -39,7 +39,7 @@ type fakeYamlGenerator struct {
 	err error
 }
 
-func (fyg *fakeYamlGenerator) Generate(l *Location) (io.ReadSeeker, error) {
+func (fyg *fakeYamlGenerator) Generate(l *Location, components []string) (io.ReadSeeker, error) {
 	var r io.ReadSeeker
 	if fyg.b != nil {
 		r = bytes.NewReader(fyg.b)
@@ -52,7 +52,7 @@ func (fyg *fakeYamlGenerator) Generate(l *Location) (io.ReadSeeker, error) {
 
 func TestDiffer(t *testing.T) {
 	test.WithApp(t, "/", func(appMock *mocks.App, fs afero.Fs) {
-		differ := New(appMock, &client.Config{})
+		differ := New(appMock, &client.Config{}, []string{})
 
 		localGen := &fakeYamlGenerator{}
 		differ.localGen = localGen
@@ -106,7 +106,7 @@ func Test_yamlLocal(t *testing.T) {
 
 				yl.showFn = tc.showFn
 
-				rs, err := yl.Generate(location)
+				rs, err := yl.Generate(location, []string{})
 				if tc.isErr {
 					require.Error(t, err)
 					return
@@ -136,14 +136,14 @@ func Test_yamlRemote(t *testing.T) {
 	cases := []struct {
 		name      string
 		appSetup  func(a *mocks.App)
-		collectFn func(namespace string, config clientcmd.ClientConfig) ([]*unstructured.Unstructured, error)
+		collectFn func(namespace string, config clientcmd.ClientConfig, components []string) ([]*unstructured.Unstructured, error)
 		showFn    func(w io.Writer, objects []*unstructured.Unstructured) error
 		isErr     bool
 	}{
 		{
 			name:     "in general",
 			appSetup: validAppSetup,
-			collectFn: func(namespace string, config clientcmd.ClientConfig) ([]*unstructured.Unstructured, error) {
+			collectFn: func(namespace string, config clientcmd.ClientConfig, components []string) ([]*unstructured.Unstructured, error) {
 				return nil, nil
 			},
 			showFn: func(w io.Writer, objects []*unstructured.Unstructured) error {
@@ -163,7 +163,7 @@ func Test_yamlRemote(t *testing.T) {
 		{
 			name:     "collect objects failed",
 			appSetup: validAppSetup,
-			collectFn: func(namespace string, config clientcmd.ClientConfig) ([]*unstructured.Unstructured, error) {
+			collectFn: func(namespace string, config clientcmd.ClientConfig, components []string) ([]*unstructured.Unstructured, error) {
 				return nil, errors.New("fail")
 			},
 			isErr: true,
@@ -172,7 +172,7 @@ func Test_yamlRemote(t *testing.T) {
 		{
 			name:     "show failed",
 			appSetup: validAppSetup,
-			collectFn: func(namespace string, config clientcmd.ClientConfig) ([]*unstructured.Unstructured, error) {
+			collectFn: func(namespace string, config clientcmd.ClientConfig, components []string) ([]*unstructured.Unstructured, error) {
 				return nil, nil
 			},
 			showFn: func(w io.Writer, objects []*unstructured.Unstructured) error {
@@ -195,7 +195,7 @@ func Test_yamlRemote(t *testing.T) {
 
 				location := NewLocation("default")
 
-				rs, err := yr.Generate(location)
+				rs, err := yr.Generate(location, []string{})
 				if tc.isErr {
 					require.Error(t, err)
 					return

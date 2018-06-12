@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
@@ -61,7 +62,7 @@ func (cpl *componentPathLocator) Locate() ([]string, error) {
 	var paths []string
 
 	for _, target := range targets {
-		childPath := filepath.Join(rootPath, componentsRoot, target)
+		childPath := locateTarget(cpl.app.Root(), target)
 		exists, err := afero.DirExists(cpl.app.Fs(), childPath)
 		if err != nil {
 			return nil, err
@@ -77,6 +78,11 @@ func (cpl *componentPathLocator) Locate() ([]string, error) {
 	sort.Strings(paths)
 
 	return paths, nil
+}
+
+func locateTarget(rootPath, target string) string {
+	targetPath := strings.Replace(target, ".", string(filepath.Separator), -1)
+	return filepath.Join(rootPath, componentsRoot, targetPath)
 }
 
 func (cpl *componentPathLocator) allNamespaces() ([]string, error) {

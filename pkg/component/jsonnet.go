@@ -18,7 +18,6 @@ package component
 import (
 	"encoding/json"
 	"fmt"
-	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -68,11 +67,11 @@ func (j *Jsonnet) Name(wantsNameSpaced bool) string {
 		return name
 	}
 
-	if j.module == "/" {
+	if j.module == "/" || j.module == "" {
 		return name
 	}
 
-	return path.Join(j.module, name)
+	return strings.Join([]string{j.module, name}, ".")
 }
 
 // Type always returns "jsonnet".
@@ -187,7 +186,7 @@ func (j *Jsonnet) ToNode(envName string) (string, ast.Node, error) {
 		return "", nil, err
 	}
 
-	return j.Name(false), n, nil
+	return j.Name(true), n, nil
 }
 
 func (j *Jsonnet) readParams(envName string) (string, error) {

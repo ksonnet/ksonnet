@@ -21,17 +21,18 @@ import (
 	"io"
 	"path/filepath"
 	"regexp"
-
-	"github.com/ksonnet/ksonnet/pkg/util/k8s"
-	"github.com/ksonnet/ksonnet/pkg/util/strings"
+	gostrings "strings"
 
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/printer"
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/component"
 	"github.com/ksonnet/ksonnet/pkg/env"
+	clustermetadata "github.com/ksonnet/ksonnet/pkg/metadata"
 	"github.com/ksonnet/ksonnet/pkg/params"
 	"github.com/ksonnet/ksonnet/pkg/util/jsonnet"
+	"github.com/ksonnet/ksonnet/pkg/util/k8s"
+	"github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -186,19 +187,24 @@ func (p *Pipeline) moduleObjects(module component.Module, filter []string) ([]*u
 
 	ret := make([]runtime.Object, 0, len(m))
 
-	for k, v := range m {
-		if len(filter) != 0 {
-			if !strings.InSlice(k, filter) {
-				continue
-			}
+	for componentName, v := range m {
+		if len(filter) != 0 && !strings.InSlice(componentName, filter) {
+			continue
 		}
 
-		data, err := json.Marshal(v)
+		componentObject, ok := v.(map[string]interface{})
+		if !ok {
+			return nil, errors.Errorf("component %q is not an object", componentName)
+		}
+
+		labelComponents(componentObject, componentName)
+
+		data, err := json.Marshal(componentObject)
 		if err != nil {
 			return nil, err
 		}
 
-		componentType, ok := componentMap[k]
+		componentType, ok := componentMap[componentName]
 		if !ok {
 			// Items in a list won't end up in this map, so assume they are jsonnet.
 			componentType = "jsonnet"
@@ -210,15 +216,15 @@ func (p *Pipeline) moduleObjects(module component.Module, filter []string) ([]*u
 		case "jsonnet":
 			patched = string(data)
 		case "yaml":
-			patched, err = params.PatchJSON(string(data), envParamData, k)
+			patched, err = params.PatchJSON(string(data), envParamData, componentName)
 			if err != nil {
-				return nil, errors.Wrap(err, "patch YAML/JSON component")
+				return nil, errors.Wrap(err, "patching YAML/JSON component")
 			}
 		}
 
 		uns, _, err := unstructured.UnstructuredJSONScheme.Decode([]byte(patched), nil, nil)
 		if err != nil {
-			return nil, errors.Wrap(err, "decode unstructured")
+			return nil, errors.Wrap(err, "decoding unstructured")
 		}
 		ret = append(ret, uns)
 	}
@@ -296,5 +302,46 @@ func buildObjects(p *Pipeline, filter []string) ([]*unstructured.Unstructured, e
 	}
 
 	return ret, nil
+}
 
+func labelComponents(m map[string]interface{}, name string) {
+	if m["apiVersion"] == "v1" && m["kind"] == "List" {
+		list, ok := m["items"].([]interface{})
+		if !ok {
+			return
+		}
+
+		for _, item := range list {
+			itemMap, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			labelComponent(itemMap, name)
+		}
+
+		return
+	}
+
+	labelComponent(m, name)
+}
+
+func labelComponent(m map[string]interface{}, name string) {
+	metadata, ok := m["metadata"].(map[string]interface{})
+	if !ok {
+		metadata = make(map[string]interface{})
+		m["metadata"] = metadata
+	}
+
+	labels, ok := metadata["labels"].(map[string]interface{})
+	if !ok {
+		labels = make(map[string]interface{})
+		metadata["labels"] = labels
+	}
+
+	// TODO: this should be owned by module
+	name = gostrings.TrimPrefix(name, "/")
+	name = gostrings.Replace(name, "/", ".", -1)
+
+	labels[clustermetadata.LabelComponent] = name
 }

@@ -25,6 +25,72 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func Test_GetModule(t *testing.T) {
+	cases := []struct {
+		name         string
+		moduleName   string
+		dir          string
+		isErr        bool
+		expectedName string
+	}{
+		{
+			name:         "root module",
+			moduleName:   "/",
+			dir:          "/app/components",
+			expectedName: "/",
+		},
+		{
+			name:         "empty name",
+			moduleName:   "",
+			dir:          "/app/components",
+			expectedName: "/",
+		},
+		{
+			name:         "nested",
+			moduleName:   "nested",
+			dir:          "/app/components/nested",
+			expectedName: "nested",
+		},
+		{
+			name:         "nested deeply",
+			moduleName:   "deep.nested",
+			dir:          "/app/components/deep/nested",
+			expectedName: "deep.nested",
+		},
+		{
+			name:       "path doesn't exist",
+			moduleName: "invalid",
+			isErr:      true,
+		},
+		{
+			name:       "invalid name",
+			moduleName: "!!",
+			isErr:      true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+				if tc.dir != "" {
+					err := fs.MkdirAll(tc.dir, 0755)
+					require.NoError(t, err)
+				}
+
+				m, err := GetModule(a, tc.moduleName)
+				if tc.isErr {
+					require.Error(t, err)
+					return
+				}
+
+				require.NoError(t, err)
+
+				assert.Equal(t, tc.expectedName, m.Name())
+			})
+		})
+	}
+}
+
 func TestModule_Components(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
 		test.StageFile(t, fs, "certificate-crd.yaml", "/app/components/ns1/certificate-crd.yaml")
@@ -67,11 +133,108 @@ func TestFilesystemModule_DeleteParam(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
 		test.StageFile(t, fs, "params-global.libsonnet", "/app/components/params.libsonnet")
 
-		module := NewModule(a, "/")
+		module := NewModule(a, ".")
 
 		err := module.DeleteParam([]string{"metadata"})
 		require.NoError(t, err)
 
 		test.AssertContents(t, fs, "params-delete-global.libsonnet", "/app/components/params.libsonnet")
 	})
+}
+
+func TestExtractModuleComponent(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		c    string
+		m    string
+	}{
+		{
+			name: "no module",
+			in:   "component",
+			c:    "component",
+			m:    "/",
+		},
+		{
+			name: "with module",
+			in:   "module/component",
+			c:    "component",
+			m:    "module",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+				m, c := ExtractModuleComponent(a, tc.in)
+
+				assert.Equal(t, tc.m, m.Name())
+				assert.Equal(t, tc.c, c)
+			})
+		})
+	}
+}
+
+func TestFromName(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		c    string
+		m    string
+	}{
+		{
+			name: "no module",
+			in:   "component",
+			c:    "component",
+			m:    "",
+		},
+		{
+			name: "with module",
+			in:   "module.component",
+			c:    "component",
+			m:    "module",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			m, c := FromName(tc.in)
+
+			assert.Equal(t, tc.m, m)
+			assert.Equal(t, tc.c, c)
+		})
+	}
+}
+
+func TestModuleFromPath(t *testing.T) {
+	cases := []struct {
+		name     string
+		path     string
+		expected string
+	}{
+		{
+			name:     "path in application",
+			path:     "/app/components",
+			expected: "",
+		},
+		{
+			name:     "nested component",
+			path:     "/app/components/nested",
+			expected: "nested",
+		},
+		{
+			name:     "deeply nested component",
+			path:     "/app/components/nested/deeply",
+			expected: "nested.deeply",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+				modulePath := ModuleFromPath(a, tc.path)
+				require.Equal(t, tc.expected, modulePath)
+			})
+		})
+	}
 }

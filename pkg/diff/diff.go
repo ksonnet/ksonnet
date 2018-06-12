@@ -31,29 +31,31 @@ import (
 
 // Differ generates the differences between two Locations.
 type Differ struct {
-	App    app.App
-	Config *client.Config
+	App        app.App
+	Config     *client.Config
+	Components []string
 
 	localGen  yamlGenerator
 	remoteGen yamlGenerator
 }
 
 // DefaultDiff runs diff with default options.
-func DefaultDiff(a app.App, config *client.Config, l1 *Location, l2 *Location) (io.Reader, error) {
-	differ := New(a, config)
+func DefaultDiff(a app.App, config *client.Config, components []string, l1 *Location, l2 *Location) (io.Reader, error) {
+	differ := New(a, config, components)
 	return differ.Diff(l2, l1)
 }
 
 // New creates an instance of Differ.
-func New(a app.App, config *client.Config) *Differ {
+func New(a app.App, config *client.Config, components []string) *Differ {
 	yl := newYamlLocal(a)
 	yr := newYamlRemote(a, config)
 
 	d := &Differ{
-		App:       a,
-		Config:    config,
-		localGen:  yl,
-		remoteGen: yr,
+		App:        a,
+		Config:     config,
+		Components: components,
+		localGen:   yl,
+		remoteGen:  yr,
 	}
 
 	return d
@@ -93,14 +95,14 @@ func (d *Differ) toYAML(location *Location) (io.ReadSeeker, error) {
 	default:
 		return nil, errors.Errorf("unknown destation %q", location.Destination())
 	case "local":
-		return d.localGen.Generate(location)
+		return d.localGen.Generate(location, d.Components)
 	case "remote":
-		return d.remoteGen.Generate(location)
+		return d.remoteGen.Generate(location, d.Components)
 	}
 }
 
 type yamlGenerator interface {
-	Generate(*Location) (io.ReadSeeker, error)
+	Generate(*Location, []string) (io.ReadSeeker, error)
 }
 
 type yamlLocal struct {
@@ -115,14 +117,15 @@ func newYamlLocal(a app.App) *yamlLocal {
 	}
 }
 
-func (yl *yamlLocal) Generate(location *Location) (io.ReadSeeker, error) {
+func (yl *yamlLocal) Generate(location *Location, components []string) (io.ReadSeeker, error) {
 	var buf bytes.Buffer
 
 	showConfig := cluster.ShowConfig{
-		App:     yl.app,
-		EnvName: location.EnvName(),
-		Format:  "yaml",
-		Out:     &buf,
+		App:            yl.app,
+		EnvName:        location.EnvName(),
+		Format:         "yaml",
+		Out:            &buf,
+		ComponentNames: components,
 	}
 
 	if err := yl.showFn(showConfig); err != nil {
@@ -135,7 +138,7 @@ func (yl *yamlLocal) Generate(location *Location) (io.ReadSeeker, error) {
 type yamlRemote struct {
 	app              app.App
 	config           *client.Config
-	collectObjectsFn func(string, clientcmd.ClientConfig) ([]*unstructured.Unstructured, error)
+	collectObjectsFn func(string, clientcmd.ClientConfig, []string) ([]*unstructured.Unstructured, error)
 	showFn           func(io.Writer, []*unstructured.Unstructured) error
 }
 
@@ -148,7 +151,7 @@ func newYamlRemote(a app.App, config *client.Config) *yamlRemote {
 	}
 }
 
-func (yr *yamlRemote) Generate(location *Location) (io.ReadSeeker, error) {
+func (yr *yamlRemote) Generate(location *Location, components []string) (io.ReadSeeker, error) {
 	var buf bytes.Buffer
 
 	environment, err := yr.app.Environment(location.EnvName())
@@ -156,7 +159,7 @@ func (yr *yamlRemote) Generate(location *Location) (io.ReadSeeker, error) {
 		return nil, err
 	}
 
-	objects, err := yr.collectObjectsFn(environment.Destination.Namespace, yr.config.Config)
+	objects, err := yr.collectObjectsFn(environment.Destination.Namespace, yr.config.Config, components)
 	if err != nil {
 		return nil, err
 	}

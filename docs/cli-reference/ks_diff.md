@@ -72,6 +72,7 @@ ks diff dev -c redis
       --client-certificate string      Path to a client certificate file for TLS
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
+  -c, --component stringSlice          Name of a specific component
       --context string                 The name of the kubeconfig context to use
   -V, --ext-str stringSlice            Values of external variables
       --ext-str-file stringSlice       Read external variable from a file

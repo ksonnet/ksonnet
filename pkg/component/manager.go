@@ -16,13 +16,10 @@
 package component
 
 import (
-	"path"
 	"path/filepath"
 	"strings"
 
-	param "github.com/ksonnet/ksonnet/metadata/params"
 	"github.com/ksonnet/ksonnet/pkg/app"
-	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
@@ -69,7 +66,6 @@ var (
 type Manager interface {
 	Components(ns Module) ([]Component, error)
 	Component(ksApp app.App, module, componentName string) (Component, error)
-	CreateComponent(ksApp app.App, name, text string, params param.Params, templateType prototype.TemplateType) (string, error)
 	CreateModule(ksApp app.App, name string) error
 	Module(ksApp app.App, moduleName string) (Module, error)
 	Modules(ksApp app.App, envName string) ([]Module, error)
@@ -100,12 +96,8 @@ func (dm *defaultManager) Component(ksApp app.App, module, componentName string)
 	return LocateComponent(ksApp, module, componentName)
 }
 
-func (dm *defaultManager) CreateComponent(ksApp app.App, name, text string, params param.Params, templateType prototype.TemplateType) (string, error) {
-	return Create(ksApp, name, text, params, templateType)
-}
-
 func (dm *defaultManager) CreateModule(ksApp app.App, name string) error {
-	parts := strings.Split(name, "/")
+	parts := strings.Split(name, ".")
 	dir := filepath.Join(append([]string{ksApp.Root(), "components"}, parts...)...)
 
 	if err := ksApp.Fs().MkdirAll(dir, app.DefaultFolderPermissions); err != nil {
@@ -125,9 +117,9 @@ func isComponentDir2(ksApp app.App, path string) (bool, error) {
 }
 
 func checkComponent(ksApp app.App, name string) (string, string, error) {
-	parts := strings.Split(name, "/")
-	base := filepath.Join(append([]string{ksApp.Root(), componentsRoot}, parts...)...)
-	base = filepath.Clean(base)
+	module, componentName := ExtractModuleComponent(ksApp, name)
+
+	base := filepath.Join(module.Dir(), componentName)
 
 	exts := []string{".yaml", ".jsonnet", ".json"}
 	for _, ext := range exts {
@@ -137,13 +129,7 @@ func checkComponent(ksApp app.App, name string) (string, string, error) {
 		}
 
 		if exists {
-			dir, file := path.Split(base)
-			module := strings.TrimPrefix(dir, path.Join(ksApp.Root(), componentsRoot))
-			if len(module) > 0 {
-				module = strings.TrimSuffix(module, "/")
-			}
-
-			return module, file, nil
+			return module.Name(), componentName, nil
 		}
 	}
 

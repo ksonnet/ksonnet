@@ -281,7 +281,7 @@ func TestRebuildObject(t *testing.T) {
 
 func TestDefaultResourceInfo(t *testing.T) {
 	fcc := &fakeClientConfig{}
-	res := DefaultResourceInfo("default", fcc)
+	res := DefaultResourceInfo("default", fcc, []string{})
 
 	// NOTE: yes this errors.
 	require.Error(t, res.Err())

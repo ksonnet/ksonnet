@@ -34,8 +34,8 @@ func TestPrototypeUse(t *testing.T) {
 
 		args := []string{
 			"single-port-deployment",
-			"myDeployment",
-			"--name", "myDeployment",
+			"deployment",
+			"--name", "deployment",
 			"--image", "nginx",
 			"--containerPort", "80",
 		}
@@ -48,12 +48,57 @@ func TestPrototypeUse(t *testing.T) {
 		a, err := NewPrototypeUse(in)
 		require.NoError(t, err)
 
-		a.createComponentFn = func(_ app.App, name string, text string, params param.Params, template prototype.TemplateType) (string, error) {
-			assert.Equal(t, "myDeployment", name)
+		a.createComponentFn = func(_ app.App, moduleName, name string, text string, params param.Params, template prototype.TemplateType) (string, error) {
+			assert.Equal(t, "", moduleName)
+			assert.Equal(t, "deployment", name)
 			assertOutput(t, "prototype/use/text.txt", text)
 
 			expectedParams := param.Params{
-				"name":          `"myDeployment"`,
+				"name":          `"deployment"`,
+				"image":         `"nginx"`,
+				"replicas":      "1",
+				"containerPort": "80",
+			}
+
+			assert.Equal(t, expectedParams, params)
+			assert.Equal(t, prototype.Jsonnet, template)
+
+			return "", nil
+		}
+
+		err = a.Run()
+		require.NoError(t, err)
+	})
+}
+
+func TestPrototypeUse_with_module_in_name(t *testing.T) {
+	withApp(t, func(appMock *amocks.App) {
+		libaries := app.LibraryRefSpecs{}
+
+		appMock.On("Libraries").Return(libaries, nil)
+
+		args := []string{
+			"single-port-deployment",
+			"module.deployment",
+			"--image", "nginx",
+			"--containerPort", "80",
+		}
+
+		in := map[string]interface{}{
+			OptionApp:       appMock,
+			OptionArguments: args,
+		}
+
+		a, err := NewPrototypeUse(in)
+		require.NoError(t, err)
+
+		a.createComponentFn = func(_ app.App, moduleName, name string, text string, params param.Params, template prototype.TemplateType) (string, error) {
+			assert.Equal(t, "module", moduleName)
+			assert.Equal(t, "deployment", name)
+			assertOutput(t, "prototype/use/text.txt", text)
+
+			expectedParams := param.Params{
+				"name":          `"deployment"`,
 				"image":         `"nginx"`,
 				"replicas":      "1",
 				"containerPort": "80",
