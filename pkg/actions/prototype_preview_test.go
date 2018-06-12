@@ -21,6 +21,9 @@ import (
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/prototype"
+	"github.com/pkg/errors"
+	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
 )
 
@@ -52,6 +55,40 @@ func TestPrototypePreview(t *testing.T) {
 		require.NoError(t, err)
 
 		assertOutput(t, "prototype/preview/output.txt", buf.String())
+	})
+}
+
+func TestPrototypePreview_bind_flags_failed(t *testing.T) {
+	withApp(t, func(appMock *amocks.App) {
+		libaries := app.LibraryRefSpecs{}
+
+		appMock.On("Libraries").Return(libaries, nil)
+
+		args := []string{
+			"--name", "myDeployment",
+			"--image", "nginx",
+			"--containerPort", "80",
+		}
+
+		in := map[string]interface{}{
+			OptionApp:       appMock,
+			OptionQuery:     "single-port-deployment",
+			OptionArguments: args,
+		}
+
+		a, err := NewPrototypePreview(in)
+		require.NoError(t, err)
+
+		a.bindFlagsFn = func(*prototype.Prototype) (*pflag.FlagSet, error) {
+			return nil, errors.New("failed")
+		}
+
+		var buf bytes.Buffer
+		a.out = &buf
+
+		err = a.Run()
+		require.Error(t, err)
+
 	})
 }
 

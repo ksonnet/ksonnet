@@ -22,6 +22,8 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
+	"github.com/pkg/errors"
+	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -68,6 +70,54 @@ func TestPrototypeUse(t *testing.T) {
 
 		err = a.Run()
 		require.NoError(t, err)
+	})
+}
+
+func TestPrototypeUse_bind_flags_failed(t *testing.T) {
+	withApp(t, func(appMock *amocks.App) {
+		libaries := app.LibraryRefSpecs{}
+
+		appMock.On("Libraries").Return(libaries, nil)
+
+		args := []string{
+			"single-port-deployment",
+			"deployment",
+			"--name", "deployment",
+			"--image", "nginx",
+		}
+
+		in := map[string]interface{}{
+			OptionApp:       appMock,
+			OptionArguments: args,
+		}
+
+		a, err := NewPrototypeUse(in)
+		require.NoError(t, err)
+
+		a.createComponentFn = func(_ app.App, moduleName, name string, text string, params param.Params, template prototype.TemplateType) (string, error) {
+			assert.Equal(t, "", moduleName)
+			assert.Equal(t, "deployment", name)
+			assertOutput(t, "prototype/use/text.txt", text)
+
+			expectedParams := param.Params{
+				"name":          `"deployment"`,
+				"image":         `"nginx"`,
+				"replicas":      "1",
+				"containerPort": "80",
+			}
+
+			assert.Equal(t, expectedParams, params)
+			assert.Equal(t, prototype.Jsonnet, template)
+
+			return "", nil
+		}
+
+		a.bindFlagsFn = func(*prototype.Prototype) (*pflag.FlagSet, error) {
+			return nil, errors.New("failed")
+		}
+
+		err = a.Run()
+		require.Error(t, err)
 	})
 }
 
