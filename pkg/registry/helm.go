@@ -191,3 +191,8 @@ func (h *Helm) IsOverride() bool {
 func (h *Helm) CacheRoot(name string, relPath string) (string, error) {
 	return filepath.Join(name, relPath), nil
 }
+
+// Update implements registry.Updater
+func (h *Helm) Update(version string) (string, error) {
+	return "", errors.Errorf("TODO not implemented")
+}

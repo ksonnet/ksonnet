@@ -122,6 +122,62 @@ func Test_baseApp_AddRegistry_override_existing(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func Test_baseApp_UpdateRegistry(t *testing.T) {
+	tests := []struct {
+		name           string
+		regSpec        RegistryRefSpec
+		appFilePath    string
+		expectFilePath string
+		expectErr      bool
+	}{
+		{
+			name:           "no such registry",
+			regSpec:        RegistryRefSpec{Name: "no-such-registry"},
+			appFilePath:    "app010_app.yaml",
+			expectFilePath: "",
+			expectErr:      true,
+		},
+		{
+			name: "update registry",
+			regSpec: RegistryRefSpec{
+				Name: "incubator",
+				GitVersion: &GitVersionSpec{
+					RefSpec:   "master",
+					CommitSHA: "40285d8a14f1ac5787e405e1023cf0c07f6aa28c",
+				},
+			},
+			appFilePath:    "app010_app.yaml",
+			expectFilePath: "update-registry.yaml",
+			expectErr:      false,
+		},
+		// TODO: Test update to overrides
+	}
+
+	for _, tc := range tests {
+		fs := afero.NewMemMapFs()
+
+		if tc.appFilePath != "" {
+			stageFile(t, fs, tc.appFilePath, "/app.yaml")
+		}
+
+		ba := newBaseApp(fs, "/")
+
+		// Test updating non-existing registry
+		err := ba.UpdateRegistry(&tc.regSpec)
+		if tc.expectErr {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+		}
+
+		if tc.expectFilePath != "" {
+			assertContents(t, fs, tc.expectFilePath, ba.configPath())
+		}
+		//assertNotExists(t, fs, ba.overridePath())
+	}
+
+}
+
 func Test_baseApp_load_override(t *testing.T) {
 	fs := afero.NewMemMapFs()
 

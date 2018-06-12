@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/blang/semver"
+	"github.com/ghodss/yaml"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -418,8 +419,8 @@ func Test_read(t *testing.T) {
 		},
 		Libraries: LibraryRefSpecs{},
 		Registries: RegistryRefSpecs{
-			"a": &RegistryRefSpec{},
-			"b": &RegistryRefSpec{isOverride: true},
+			"a": &RegistryRefSpec{Name: "a"},
+			"b": &RegistryRefSpec{Name: "b", isOverride: true},
 		},
 	}
 
@@ -435,6 +436,37 @@ func TestEnvironmentSpec_MakePath(t *testing.T) {
 	got := spec.MakePath(rootPath)
 
 	require.Equal(t, expected, got)
+}
+
+// Test that RegistryRefSpecs are properly deserialized, specifically
+// their Name fields, which are handler by customer UnmarshalJSON code.
+func TestUnmarshalRegistryRefSpecs(t *testing.T) {
+	input := []byte(`
+apiVersion: 0.1.0
+registries:
+  incubator:
+    gitVersion:
+      commitSha: 40285d8a14f1ac5787e405e1023cf0c07f6aa28c
+      refSpec: master
+    protocol: github
+    uri: github.com/ksonnet/parts/tree/master/incubator
+  helm-stable:
+    protocol: helm
+    uri: https://kubernetes-charts.storage.googleapis.com
+  otherRegistry:
+    protocol: github
+    uri: github.com/ksonnet/parts/tree/next/incubator
+version: 0.0.1
+`)
+	var spec Spec
+
+	err := yaml.Unmarshal(input, &spec)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(spec.Registries))
+
+	for k, v := range spec.Registries {
+		assert.Equal(t, k, v.Name)
+	}
 }
 
 func assertExists(t *testing.T, fs afero.Fs, path string) {

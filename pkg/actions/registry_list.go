@@ -60,7 +60,7 @@ func NewRegistryList(m map[string]interface{}) (*RegistryList, error) {
 	return rl, nil
 }
 
-// Run runs the env list action.
+// Run runs the registry list action.
 func (rl *RegistryList) Run() error {
 	registries, err := rl.registryListFn(rl.app)
 	if err != nil {

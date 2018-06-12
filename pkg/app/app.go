@@ -89,6 +89,8 @@ type App interface {
 	UpdateTargets(envName string, targets []string) error
 	// UpdateLib updates a library.
 	UpdateLib(name string, spec *LibraryRefSpec) error
+	// UpdateRegistry updates a registry.
+	UpdateRegistry(spec *RegistryRefSpec) error
 	// Upgrade upgrades an application to the current version.
 	Upgrade(dryRun bool) error
 }
