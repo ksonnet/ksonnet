@@ -44,11 +44,13 @@ func RunPrototypePreview(m map[string]interface{}) error {
 
 // PrototypePreview lists available namespaces
 type PrototypePreview struct {
-	app             app.App
-	out             io.Writer
-	query           string
-	args            []string
+	app   app.App
+	out   io.Writer
+	query string
+	args  []string
+
 	appPrototypesFn func(app.App, pkg.Descriptor) (prototype.Prototypes, error)
+	bindFlagsFn     func(p *prototype.Prototype) (*pflag.FlagSet, error)
 }
 
 // NewPrototypePreview creates an instance of PrototypePreview
@@ -62,6 +64,7 @@ func NewPrototypePreview(m map[string]interface{}) (*PrototypePreview, error) {
 
 		out:             os.Stdout,
 		appPrototypesFn: pkg.LoadPrototypes,
+		bindFlagsFn:     prototype.BindFlags,
 	}
 
 	if ol.err != nil {
@@ -93,7 +96,11 @@ func (pp *PrototypePreview) Run() error {
 		return err
 	}
 
-	flags := bindPrototypeParams(p)
+	flags, err := pp.bindFlagsFn(p)
+	if err != nil {
+		return errors.Wrap(err, "binding prototype flags")
+	}
+
 	if err = flags.Parse(pp.args); err != nil {
 		if strings.Contains(err.Error(), "help request") {
 			return nil
@@ -116,22 +123,6 @@ func (pp *PrototypePreview) Run() error {
 
 	fmt.Fprintln(pp.out, text)
 	return nil
-}
-
-func bindPrototypeParams(p *prototype.Prototype) *pflag.FlagSet {
-	fs := pflag.NewFlagSet("preview", pflag.ContinueOnError)
-
-	fs.String("module", "", "Component module")
-
-	for _, param := range p.RequiredParams() {
-		fs.String(param.Name, "", param.Description)
-	}
-
-	for _, param := range p.OptionalParams() {
-		fs.String(param.Name, *param.Default, param.Description)
-	}
-
-	return fs
 }
 
 func getParameters(proto *prototype.Prototype, flags *pflag.FlagSet) (map[string]string, error) {

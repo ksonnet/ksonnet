@@ -27,6 +27,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
 )
 
 // RunPrototypeUse runs `prototype use`
@@ -46,6 +47,7 @@ type PrototypeUse struct {
 	out               io.Writer
 	prototypesFn      func(app.App, pkg.Descriptor) (prototype.Prototypes, error)
 	createComponentFn func(app.App, string, string, string, param.Params, prototype.TemplateType) (string, error)
+	bindFlagsFn       func(p *prototype.Prototype) (*pflag.FlagSet, error)
 }
 
 // NewPrototypeUse creates an instance of PrototypeUse
@@ -59,6 +61,7 @@ func NewPrototypeUse(m map[string]interface{}) (*PrototypeUse, error) {
 		out:               os.Stdout,
 		prototypesFn:      pkg.LoadPrototypes,
 		createComponentFn: component.Create,
+		bindFlagsFn:       prototype.BindFlags,
 	}
 
 	if ol.err != nil {
@@ -96,7 +99,11 @@ func (pl *PrototypeUse) Run() error {
 		return err
 	}
 
-	flags := bindPrototypeParams(p)
+	flags, err := pl.bindFlagsFn(p)
+	if err != nil {
+		return errors.Wrap(err, "binding prototype flags")
+	}
+
 	if err = flags.Parse(pl.args); err != nil {
 		if strings.Contains(err.Error(), "help requested") {
 			return nil
