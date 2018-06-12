@@ -34,7 +34,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func makeGh(t *testing.T, u, sha1 string) (*GitHub, *mocks.GitHub) {
+func makeGh(t *testing.T, url, sha1 string) (*GitHub, *mocks.GitHub) {
 	fs := afero.NewMemMapFs()
 	appMock := &amocks.App{}
 	appMock.On("Fs").Return(fs)
@@ -47,10 +47,13 @@ func makeGh(t *testing.T, u, sha1 string) (*GitHub, *mocks.GitHub) {
 
 	optGh := GitHubClient(ghMock)
 
+	if url == "" {
+		url = "github.com/ksonnet/parts/tree/master/incubator"
+	}
 	spec := &app.RegistryRefSpec{
 		Name:     "incubator",
 		Protocol: string(ProtocolGitHub),
-		URI:      "github.com/ksonnet/parts/tree/master/incubator",
+		URI:      url,
 	}
 
 	g, err := NewGitHub(appMock, spec, optGh)
@@ -506,5 +509,73 @@ func Test_parseGitHubURI(t *testing.T) {
 				})
 			}
 		}
+	}
+}
+
+func TestGitHub_CacheRoot(t *testing.T) {
+	defaultURL := "github.com/ksonnet/parts/tree/master/incubator"
+	tests := []struct {
+		name      string
+		url       string
+		path      string
+		expected  string
+		expectErr bool
+	}{
+		{
+			name:     "starts with registry name",
+			url:      defaultURL,
+			path:     "incubator/apache/parts.yaml",
+			expected: "incubator/apache/parts.yaml",
+		},
+		{
+			name:     "doesn't start with registry name",
+			url:      defaultURL,
+			path:     "notincubator/apache/parts.yaml",
+			expected: "incubator/notincubator/apache/parts.yaml",
+		},
+		{
+			name:     "deals with leading slash (unexpected)",
+			url:      defaultURL,
+			path:     "/incubator/apache/parts.yaml",
+			expected: "incubator/apache/parts.yaml",
+		},
+		{
+			name:     "root file",
+			url:      defaultURL,
+			path:     "registry.yaml",
+			expected: "incubator/registry.yaml",
+		},
+		{
+			name:     "registry name and url tail are different",
+			url:      "github.com/ksonnet/parts/tree/master/foobar",
+			path:     "foobar/apache/parts.yaml",
+			expected: "incubator/apache/parts.yaml",
+		},
+		// {
+		// 	name:     "no path in registry url",
+		// 	url:      "github.com/ksonnet/parts",
+		// 	path:     "foobar/apache/parts.yaml",
+		// 	expected: "incubator/foobar/apache/parts.yaml",
+		// },
+		// {
+		// 	name:      "bad url",
+		// 	url:       "github.com/ksonnet",
+		// 	path:      "foobar/apache/parts.yaml",
+		// 	expected:  "",
+		// 	expectErr: true,
+		// },
+	}
+
+	for _, tc := range tests {
+		g, _ := makeGh(t, tc.url, "12345")
+
+		result, err := g.CacheRoot(g.name, tc.path)
+		if tc.expectErr {
+			require.Error(t, err, tc.name)
+		} else {
+			require.NoError(t, err, tc.name)
+		}
+
+		assert.Equal(t, tc.expected, result, tc.name)
 	}
 }

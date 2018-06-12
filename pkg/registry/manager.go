@@ -72,18 +72,20 @@ func Locate(a app.App, spec *app.RegistryRefSpec) (Registry, error) {
 	}
 }
 
+// registryCacheRoot returns the root path for registry caches
 // TODO: add this to App
-func root(a app.App) string {
+func registryCacheRoot(a app.App) string {
 	return filepath.Join(a.Root(), ".ksonnet", "registries")
 }
 
-func makePath(a app.App, r Registry) string {
+// registrySpecFilePath returns the path for provided registry object's cached spec file
+func registrySpecFilePath(a app.App, r Registry) string {
 	path := r.RegistrySpecFilePath()
 	if filepath.IsAbs(path) {
 		return path
 	}
 
-	return filepath.Join(root(a), path)
+	return filepath.Join(registryCacheRoot(a), path)
 }
 
 // List returns a list of alphabetically sorted Registries.

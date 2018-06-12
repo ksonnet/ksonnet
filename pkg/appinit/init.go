@@ -110,6 +110,8 @@ func (i *initApp) Run() error {
 }
 
 func (i *initApp) setupRegistry(r registry.Registry) error {
+	log := log.WithField("action", "initApp.setupRegistry")
+
 	// Retrieve `registry.yaml`.
 	registryYAMLData, err := registry.DefaultYAMLData(r)
 	if err != nil {
@@ -128,6 +130,7 @@ func (i *initApp) setupRegistry(r registry.Registry) error {
 		return err
 	}
 
+	log.Debugf("creating registry cache: %v", registryPath)
 	if err = afero.WriteFile(i.fs, registryPath, registryYAMLData, app.DefaultFilePermissions); err != nil {
 		return err
 	}
