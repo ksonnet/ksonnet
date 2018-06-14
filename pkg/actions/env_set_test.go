@@ -26,8 +26,8 @@ import (
 
 func TestEnvSet_name(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		envName := "default"
-		newName := "dev"
+		envName := "old_env_name"
+		newName := "new_env_name"
 
 		in := map[string]interface{}{
 			OptionApp:        appMock,
@@ -47,9 +47,7 @@ func TestEnvSet_name(t *testing.T) {
 		}
 
 		spec := &app.EnvironmentSpec{
-			Destination: &app.EnvironmentDestinationSpec{
-				Namespace: "default",
-			},
+			Destination: &app.EnvironmentDestinationSpec{},
 		}
 
 		appMock.On("Environment", envName).Return(spec, nil)
@@ -61,20 +59,21 @@ func TestEnvSet_name(t *testing.T) {
 
 func TestEnvSet_namespace(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		envName := "default"
-		namespace := "ns2"
+		envName := "env_name"
+		oldNamespace := "old_namespace"
+		namespace := "new_name_sapce"
 
 		in := map[string]interface{}{
-			OptionApp:     appMock,
-			OptionEnvName: envName,
-			OptionModule:  namespace,
+			OptionApp:       appMock,
+			OptionEnvName:   envName,
+			OptionNamespace: namespace,
 		}
 		a, err := NewEnvSet(in)
 		require.NoError(t, err)
 
 		spec := &app.EnvironmentSpec{
 			Destination: &app.EnvironmentDestinationSpec{
-				Namespace: "default",
+				Namespace: oldNamespace,
 			},
 		}
 
@@ -92,17 +91,54 @@ func TestEnvSet_namespace(t *testing.T) {
 	})
 }
 
-func TestEnvSet_name_and_namespace(t *testing.T) {
+func TestEnvSet_server(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		envName := "default"
-		newName := "dev"
-		namespace := "ns2"
+		envName := "env_name"
+		oldServer := "old_server"
+		server := "new_server"
+
+		in := map[string]interface{}{
+			OptionApp:     appMock,
+			OptionEnvName: envName,
+			OptionServer:  server,
+		}
+		a, err := NewEnvSet(in)
+		require.NoError(t, err)
+
+		spec := &app.EnvironmentSpec{
+			Destination: &app.EnvironmentDestinationSpec{
+				Server: oldServer,
+			},
+		}
+
+		updatedSpec := &app.EnvironmentSpec{
+			Destination: &app.EnvironmentDestinationSpec{
+				Server: server,
+			},
+		}
+
+		appMock.On("Environment", envName).Return(spec, nil)
+		appMock.On("AddEnvironment", envName, "", updatedSpec, false).Return(nil)
+
+		err = a.Run()
+		require.NoError(t, err)
+	})
+}
+func TestEnvSet_all(t *testing.T) {
+	withApp(t, func(appMock *amocks.App) {
+		envName := "old_env_name"
+		newName := "new_env_name"
+		oldNamespace := "old_namespace"
+		namespace := "new_name_sapce"
+		oldServer := "old_server"
+		server := "new_server"
 
 		in := map[string]interface{}{
 			OptionApp:        appMock,
 			OptionEnvName:    envName,
 			OptionNewEnvName: newName,
-			OptionModule:     namespace,
+			OptionNamespace:  namespace,
+			OptionServer:     server,
 		}
 
 		a, err := NewEnvSet(in)
@@ -116,27 +152,21 @@ func TestEnvSet_name_and_namespace(t *testing.T) {
 			return nil
 		}
 
-		a.updateEnvFn = func(a app.App, name string, spec *app.EnvironmentSpec, override bool) error {
-			assert.Equal(t, envName, name)
-			assert.Equal(t, namespace, spec.Destination.Namespace)
-			assert.False(t, override)
-
-			return nil
-		}
-
 		spec := &app.EnvironmentSpec{
 			Destination: &app.EnvironmentDestinationSpec{
-				Namespace: "default",
+				Namespace: oldNamespace,
+				Server:    oldServer,
 			},
 		}
 
 		updatedSpec := &app.EnvironmentSpec{
 			Destination: &app.EnvironmentDestinationSpec{
 				Namespace: namespace,
+				Server:    server,
 			},
 		}
 
-		appMock.On("Environment", "default").Return(spec, nil)
+		appMock.On("Environment", envName).Return(spec, nil)
 		appMock.On("AddEnvironment", newName, "", updatedSpec, false).Return(nil)
 
 		err = a.Run()

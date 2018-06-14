@@ -34,6 +34,7 @@ const (
 	flagJpath                 = "jpath"
 	flagModule                = "module"
 	flagNamespace             = "namespace"
+	flagServer                = "server"
 	flagSet                   = "set"
 	flagSkipDefaultRegistries = "skip-default-registries"
 	flagSkipGc                = "skip-gc"

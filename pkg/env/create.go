@@ -74,8 +74,8 @@ func (c *creator) Create() error {
 		return fmt.Errorf("environment name %q is not valid; must not contain punctuation, spaces, or begin or end with a slash", c.name)
 	}
 
-	log.Infof("Creating environment %q with namespace %q, pointing to cluster at address %q",
-		c.name, c.d.Namespace(), c.d.Server())
+	log.Infof("Creating environment %q with namespace %q, pointing to %q cluster at address %q",
+		c.name, c.d.Namespace(), c.k8sSpecFlag, c.d.Server())
 
 	envPath := filepath.Join(c.app.Root(), app.EnvironmentDirName, c.name)
 	err := c.app.Fs().MkdirAll(envPath, app.DefaultFolderPermissions)

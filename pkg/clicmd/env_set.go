@@ -26,6 +26,7 @@ import (
 const (
 	vEnvSetName      = "env-set-name"
 	vEnvSetNamespace = "env-set-namespace"
+	vEnvSetServer    = "env-set-server"
 )
 
 var envSetCmd = &cobra.Command{
@@ -41,6 +42,7 @@ var envSetCmd = &cobra.Command{
 			actions.OptionEnvName:    args[0],
 			actions.OptionNewEnvName: viper.GetString(vEnvSetName),
 			actions.OptionNamespace:  viper.GetString(vEnvSetNamespace),
+			actions.OptionServer:     viper.GetString(vEnvSetServer),
 		}
 
 		return runAction(actionEnvSet, m)
@@ -71,6 +73,10 @@ func init() {
 	viper.BindPFlag(vEnvSetName, envSetCmd.Flags().Lookup(flagName))
 
 	envSetCmd.Flags().String(flagNamespace, "",
-		"Namespace for environment.")
+		"Namespace for environment")
 	viper.BindPFlag(vEnvSetNamespace, envSetCmd.Flags().Lookup(flagNamespace))
+
+	envSetCmd.Flags().String(flagServer, "",
+		"Cluster server for environment")
+	viper.BindPFlag(vEnvSetServer, envSetCmd.Flags().Lookup(flagServer))
 }

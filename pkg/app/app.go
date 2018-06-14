@@ -127,7 +127,7 @@ func updateLibData(fs afero.Fs, k8sSpecFlag, libPath string, useVersionPath bool
 		return "", err
 	}
 
-	if lm.GenerateLibData(useVersionPath); err != nil {
+	if err := lm.GenerateLibData(useVersionPath); err != nil {
 		return "", err
 	}
 

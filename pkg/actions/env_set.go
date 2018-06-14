@@ -54,6 +54,7 @@ type EnvSet struct {
 	envName   string
 	newName   string
 	newNsName string
+	newServer string
 
 	envRenameFn func(a app.App, from, to string, override bool) error
 	updateEnvFn func(a app.App, envName string, spec *app.EnvironmentSpec, override bool) error
@@ -68,6 +69,7 @@ func NewEnvSet(m map[string]interface{}) (*EnvSet, error) {
 		envName:   ol.LoadString(OptionEnvName),
 		newName:   ol.LoadOptionalString(OptionNewEnvName),
 		newNsName: ol.LoadOptionalString(OptionNamespace),
+		newServer: ol.LoadOptionalString(OptionServer),
 
 		envRenameFn: env.Rename,
 		updateEnvFn: updateEnv,
@@ -91,7 +93,11 @@ func (es *EnvSet) Run() error {
 		return err
 	}
 
-	return es.updateNamespace(env)
+	if err := es.updateEnvSpec(env); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (es *EnvSet) updateName(isOverride bool) error {
@@ -106,13 +112,20 @@ func (es *EnvSet) updateName(isOverride bool) error {
 	return nil
 }
 
-func (es *EnvSet) updateNamespace(env *app.EnvironmentSpec) error {
-	if es.newNsName != "" {
-		env.Destination.Namespace = es.newNsName
-		return updateEnv(es.app, es.envName, env, env.IsOverride())
+func (es *EnvSet) updateEnvSpec(env *app.EnvironmentSpec) error {
+	if es.newNsName == "" && es.newServer == "" {
+		return nil
 	}
 
-	return nil
+	if es.newNsName != "" {
+		env.Destination.Namespace = es.newNsName
+	}
+
+	if es.newServer != "" {
+		env.Destination.Server = es.newServer
+	}
+
+	return updateEnv(es.app, es.envName, env, env.IsOverride())
 }
 
 func updateEnv(a app.App, envName string, spec *app.EnvironmentSpec, override bool) error {
