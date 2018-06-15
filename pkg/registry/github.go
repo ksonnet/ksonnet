@@ -106,6 +106,10 @@ func NewGitHub(a app.App, registryRef *app.RegistryRefSpec, opts ...GitHubOpt) (
 		}
 	}
 
+	if err = gh.ghClient.ValidateURL(registryRef.URI); err != nil {
+		return nil, errors.Wrap(err, "validating GitHub registry URL")
+	}
+
 	return gh, nil
 }
 

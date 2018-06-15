@@ -28,6 +28,8 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/parts"
 	ghutil "github.com/ksonnet/ksonnet/pkg/util/github"
 	"github.com/ksonnet/ksonnet/pkg/util/github/mocks"
+	"github.com/ksonnet/ksonnet/pkg/util/test"
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -42,6 +44,7 @@ func makeGh(t *testing.T, url, sha1 string) (*GitHub, *mocks.GitHub) {
 	appMock.On("LibPath", mock.AnythingOfType("string")).Return(filepath.Join("/app", "lib", "v1.8.7"), nil)
 
 	ghMock := &mocks.GitHub{}
+	ghMock.On("ValidateURL", mock.Anything).Return(nil)
 	ghMock.On("CommitSHA1", mock.Anything, ghutil.Repo{Org: "ksonnet", Repo: "parts"}, "master").
 		Return(sha1, nil)
 
@@ -111,6 +114,30 @@ func buildContentDir(t *testing.T, name string) []*github.RepositoryContent {
 	}
 
 	return rcs
+}
+
+func TestGitHub_invalid_url(t *testing.T) {
+	test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
+
+		validateErr := errors.New("invalid URL")
+
+		ghMock := &mocks.GitHub{}
+		ghMock.On("ValidateURL", mock.Anything).Return(validateErr)
+		ghMock.On("CommitSHA1", mock.Anything, ghutil.Repo{Org: "ksonnet", Repo: "parts"}, "master").
+			Return("12345", nil)
+
+		optGh := GitHubClient(ghMock)
+
+		spec := &app.RegistryRefSpec{
+			Name:     "incubator",
+			Protocol: string(ProtocolGitHub),
+			URI:      "github.com/ksonnet/parts/tree/master/incubator",
+		}
+
+		_, err := NewGitHub(a, spec, optGh)
+		cause := errors.Cause(err)
+		require.Equal(t, validateErr, cause)
+	})
 }
 
 func TestGithub_Name(t *testing.T) {

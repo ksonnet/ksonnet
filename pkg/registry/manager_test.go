@@ -31,6 +31,7 @@ import (
 func Test_Package(t *testing.T) {
 	withApp(t, func(a *mocks.App, fs afero.Fs) {
 		c := &ghmocks.GitHub{}
+		c.On("ValidateURL", mock.Anything).Return(nil)
 		c.On("CommitSHA1", mock.Anything, github.Repo{Org: "foo", Repo: "bar"}, mock.AnythingOfType("string")).
 			Return("12345", nil)
 		content := buildContent(t, "apache-part.yaml")
@@ -62,6 +63,7 @@ func Test_Package(t *testing.T) {
 func Test_List(t *testing.T) {
 	withApp(t, func(a *mocks.App, fs afero.Fs) {
 		c := &ghmocks.GitHub{}
+		c.On("ValidateURL", mock.Anything).Return(nil)
 		c.On("CommitSHA1", mock.Anything, github.Repo{Org: "ksonnet", Repo: "parts"}, mock.AnythingOfType("string")).
 			Return("12345", nil)
 
