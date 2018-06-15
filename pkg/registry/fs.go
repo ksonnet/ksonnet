@@ -16,6 +16,7 @@
 package registry
 
 import (
+	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -27,6 +28,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
+
+var separator = fmt.Sprintf("%c", filepath.Separator)
 
 // Fs is a registry based on a local filesystem.
 type Fs struct {
@@ -148,7 +151,11 @@ func (fs *Fs) ResolveLibrary(partName, partAlias, libRefSpec string, onFile Reso
 			return err
 		}
 
-		libPath := strings.TrimPrefix(path, fs.URI())
+		// Make path relative to registry root
+		libPath := strings.TrimPrefix(
+			strings.TrimPrefix(path, fs.URI()),
+			separator,
+		)
 		if fi.IsDir() {
 			return onDir(libPath)
 		}

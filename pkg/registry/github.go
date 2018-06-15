@@ -82,29 +82,18 @@ func NewGitHub(a app.App, registryRef *app.RegistryRefSpec, opts ...GitHubOpt) (
 		ghClient: github.DefaultClient,
 	}
 
+	// Apply functional options
+	for _, opt := range opts {
+		opt(gh)
+	}
+
 	hd, err := parseGitHubURI(gh.URI())
 	if err != nil {
 		return nil, err
 	}
 	gh.hd = hd
 
-	// TODO phase out GitVersion.CommitSHA - just use single refspec
-	// for any of branch/tag/commit
-	/*
-		if gh.spec.GitVersion != nil && gh.spec.GitVersion.CommitSHA != "" {
-			log.Debugf("[NewGitHub] ignoring CommitSHA %v, instead using refspec %v",
-				gh.spec.GitVersion.CommitSHA,
-				hd.refSpec)
-			gh.spec.GitVersion.CommitSHA = ""
-		}
-	*/
-
 	if gh.spec.GitVersion == nil || gh.spec.GitVersion.CommitSHA == "" {
-		// TODO why are functional opts only applied in this branch??
-		for _, opt := range opts {
-			opt(gh)
-		}
-
 		ctx := context.Background()
 		sha, err := gh.ghClient.CommitSHA1(ctx, hd.Repo(), hd.refSpec)
 		if err != nil {
@@ -157,15 +146,19 @@ func (gh *GitHub) RegistrySpecFilePath() string {
 // This inventory may have been previously cached on disk, otherwise it is
 // fetched from the remote GitHub repo.
 func (gh *GitHub) FetchRegistrySpec() (*Spec, error) {
+	log := log.WithField("action", "GitHub.FetchRegistrySpec")
+
 	// Check local disk cache.
-	registrySpecFile := makePath(gh.app, gh)
+	registrySpecFile := registrySpecFilePath(gh.app, gh)
+
+	log.Debugf("checking for registry cache: %v", registrySpecFile)
 	registrySpec, exists, err := load(gh.app, registrySpecFile)
 	if err != nil {
-		log.Debugf("[FetchRegistrySpec] error loading cache for %v (%v), trying to refresh instead", gh.spec.Name, err)
+		log.Debugf("error loading cache for %v (%v), trying to refresh instead", gh.spec.Name, err)
 	}
 
 	if !exists {
-		log.Debugf("[FetchRegistrySpec] cache not found, fetching remote for %v", gh.spec.Name)
+		log.Debugf("cache not found, fetching remote for %v", gh.spec.Name)
 		// If failed, use the protocol to try to retrieve app specification.
 		cs := github.ContentSpec{
 			Repo:    gh.hd.Repo(),
@@ -187,7 +180,7 @@ func (gh *GitHub) FetchRegistrySpec() (*Spec, error) {
 		// NOTE: We call mkdir after getting the registry spec, since a
 		// network call might fail and leave this half-initialized empty
 		// directory.
-		registrySpecDir := filepath.Join(root(gh.app), gh.RegistrySpecDir())
+		registrySpecDir := filepath.Join(registryCacheRoot(gh.app), gh.RegistrySpecDir())
 		err = gh.app.Fs().MkdirAll(registrySpecDir, app.DefaultFolderPermissions)
 		if err != nil {
 			return nil, err
@@ -498,14 +491,18 @@ func (gh *GitHub) CacheRoot(name, path string) (string, error) {
 	var root string
 
 	parts := strings.Split(strings.TrimPrefix(u.Path, "/"), "/")
-	if len(parts) == 2 {
-	} else if len(parts) > 3 {
+	switch {
+	case len(parts) == 2:
+		// org/repo - use empty root prefix
+	case len(parts) > 3:
+		// org/repo/tree/branch/path/subpath
 		root = strings.Join(parts[4:], "/")
-	} else {
+	default:
 		return "", errors.Errorf("unknown path %q", u.Path)
 	}
 
-	return filepath.Join(name, strings.TrimPrefix(path, root)), nil
+	relPath := strings.TrimPrefix(path, "/")
+	return filepath.Join(name, strings.TrimPrefix(relPath, root)), nil
 }
 
 func (gh *GitHub) fetchRemoteAndSave(cs github.ContentSpec, w io.Writer) error {
@@ -575,7 +572,7 @@ func (gh *GitHub) Update(version string) (string, error) {
 	}
 
 	fs := gh.app.Fs()
-	registrySpecFile := makePath(gh.app, gh)
+	registrySpecFile := registrySpecFilePath(gh.app, gh)
 	tw, err := ksio.NewTransactionWriter(fs, registrySpecFile)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to create writer for file: %v", registrySpecFile)

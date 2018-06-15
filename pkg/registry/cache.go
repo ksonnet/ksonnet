@@ -31,6 +31,7 @@ import (
 // worked out.
 func CacheDependency(a app.App, d pkg.Descriptor, customName string) error {
 	logger := log.WithFields(log.Fields{
+		"action":      "registry.CacheDependency",
 		"part":        d.Part,
 		"registry":    d.Registry,
 		"version":     d.Version,
@@ -76,13 +77,16 @@ func CacheDependency(a app.App, d pkg.Descriptor, customName string) error {
 		customName,
 		d.Version,
 		func(relPath string, contents []byte) error {
-			var root string
-			root, err = r.CacheRoot(d.Registry, relPath)
+			var pathUnderVendor string
+			pathUnderVendor, err = r.CacheRoot(d.Registry, relPath)
 			if err != nil {
 				return err
 			}
 
-			files[filepath.Join(vendorPath, root)] = contents
+			vendorFilePath := filepath.Join(vendorPath, pathUnderVendor)
+			logger.Debugf("onFile: vendoring file to path: %v", vendorFilePath)
+
+			files[vendorFilePath] = contents
 			return nil
 		},
 		func(relPath string) error {
