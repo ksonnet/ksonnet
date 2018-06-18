@@ -28,7 +28,7 @@ func Test_paramDiffCmd(t *testing.T) {
 			args:   []string{"param", "diff", "env1", "env2", "--component", "component-name"},
 			action: actionParamDiff,
 			expected: map[string]interface{}{
-				actions.OptionApp:           ka,
+				actions.OptionApp:           nil,
 				actions.OptionComponentName: "component-name",
 				actions.OptionEnvName1:      "env1",
 				actions.OptionEnvName2:      "env2",
@@ -39,11 +39,16 @@ func Test_paramDiffCmd(t *testing.T) {
 			args:   []string{"param", "diff", "env1", "env2"},
 			action: actionParamDiff,
 			expected: map[string]interface{}{
-				actions.OptionApp:           ka,
-				actions.OptionComponentName: "component-name",
+				actions.OptionApp:           nil,
 				actions.OptionEnvName1:      "env1",
 				actions.OptionEnvName2:      "env2",
+				actions.OptionComponentName: "",
 			},
+		},
+		{
+			name:  "invalid args",
+			args:  []string{"param", "diff"},
+			isErr: true,
 		},
 	}
 

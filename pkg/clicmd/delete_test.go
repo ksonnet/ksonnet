@@ -31,9 +31,14 @@ func Test_deleteCmd(t *testing.T) {
 				actions.OptionApp:            nil,
 				actions.OptionEnvName:        "default",
 				actions.OptionComponentNames: make([]string, 0),
-				actions.OptionClientConfig:   deleteClientConfig,
+				actions.OptionClientConfig:   nil,
 				actions.OptionGracePeriod:    int64(-1),
 			},
+		},
+		{
+			name:  "invalid jsonnet flag",
+			args:  []string{"delete", "default", "--ext-str", "foo"},
+			isErr: true,
 		},
 	}
 

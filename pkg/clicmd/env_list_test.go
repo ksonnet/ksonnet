@@ -28,7 +28,7 @@ func Test_envListCmd(t *testing.T) {
 			args:   []string{"env", "list"},
 			action: actionEnvList,
 			expected: map[string]interface{}{
-				actions.OptionApp:    ka,
+				actions.OptionApp:    nil,
 				actions.OptionOutput: "",
 			},
 		},
@@ -37,9 +37,14 @@ func Test_envListCmd(t *testing.T) {
 			args:   []string{"env", "list", "-o", "json"},
 			action: actionEnvList,
 			expected: map[string]interface{}{
-				actions.OptionApp:    ka,
+				actions.OptionApp:    nil,
 				actions.OptionOutput: "json",
 			},
+		},
+		{
+			name:  "with extra arguments",
+			args:  []string{"env", "list", "extra"},
+			isErr: true,
 		},
 	}
 

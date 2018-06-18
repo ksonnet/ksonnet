@@ -17,6 +17,7 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -25,25 +26,23 @@ const (
 	vModuleListEnv = "module-list-env"
 )
 
-// moduleListCmd represents the ns list command
-var nsListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List modules",
-	Long:  `List modules`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		m := map[string]interface{}{
-			actions.OptionApp:     ka,
-			actions.OptionEnvName: viper.GetString(vModuleListEnv),
-		}
+func newModuleListCmd(a app.App) *cobra.Command {
+	moduleListCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List modules",
+		Long:  `List modules`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			m := map[string]interface{}{
+				actions.OptionApp:     a,
+				actions.OptionEnvName: viper.GetString(vModuleListEnv),
+			}
 
-		return runAction(actionModuleList, m)
-	},
-}
+			return runAction(actionModuleList, m)
+		},
+	}
 
-func init() {
-	moduleCmd.AddCommand(nsListCmd)
+	moduleListCmd.Flags().String(flagEnv, "", "Environment to list modules for")
+	viper.BindPFlag(vModuleListEnv, moduleListCmd.Flags().Lookup(flagEnv))
 
-	nsListCmd.Flags().String(flagEnv, "", "Environment to list modules for")
-	viper.BindPFlag(vModuleListEnv, nsListCmd.Flags().Lookup(flagEnv))
-
+	return moduleListCmd
 }

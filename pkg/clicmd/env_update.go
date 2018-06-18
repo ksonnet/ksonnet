@@ -19,25 +19,12 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
-var envUpdateCmd = &cobra.Command{
-	Use:   "update <env-name>",
-	Short: envShortDesc["update"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("'env update' takes a single argument, that is the name of the environment")
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:     ka,
-			actions.OptionEnvName: args[0],
-		}
-
-		return runAction(actionEnvUpdate, m)
-	},
-	Long: `
+var (
+	envUpdateLong = `
 The ` + "`update`" + ` command updates libraries for an environment.
 
 ### Related Commands
@@ -48,12 +35,32 @@ The ` + "`update`" + ` command updates libraries for an environment.
 * ` + "`ks delete` " + `— ` + `Delete all the app components running in an environment (cluster)` + `
 
 ### Syntax
-`,
-	Example: `
+`
+	envUpdateExample = `
 # Update the environment 'us-west/staging' libs.
-ks env update us-west/staging`,
-}
+ks env update us-west/staging`
+)
 
-func init() {
-	envCmd.AddCommand(envUpdateCmd)
+func newEnvUpdateCmd(a app.App) *cobra.Command {
+	envUpdateCmd := &cobra.Command{
+		Use:     "update <env-name>",
+		Short:   envShortDesc["update"],
+		Long:    envUpdateLong,
+		Example: envUpdateExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return fmt.Errorf("'env update' takes a single argument, that is the name of the environment")
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:     a,
+				actions.OptionEnvName: args[0],
+			}
+
+			return runAction(actionEnvUpdate, m)
+		},
+	}
+
+	return envUpdateCmd
+
 }

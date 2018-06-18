@@ -28,10 +28,15 @@ func Test_pkgInstallCmd(t *testing.T) {
 			args:   []string{"pkg", "install", "package-name"},
 			action: actionPkgInstall,
 			expected: map[string]interface{}{
-				actions.OptionApp:     ka,
+				actions.OptionApp:     nil,
 				actions.OptionLibName: "package-name",
 				actions.OptionName:    "",
 			},
+		},
+		{
+			name:  "invalid args",
+			args:  []string{"pkg", "install"},
+			isErr: true,
 		},
 	}
 

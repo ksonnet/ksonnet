@@ -19,24 +19,12 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
-var registryListCmd = &cobra.Command{
-	Use:   "list",
-	Short: regShortDesc["list"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("Command 'registry list' does not take arguments")
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp: ka,
-		}
-
-		return runAction(actionRegistryList, m)
-	},
-	Long: `
+var (
+	registryListLong = `
 The ` + "`list`" + ` command displays all known ksonnet registries in a table. This
 table includes the following info:
 
@@ -49,9 +37,26 @@ table includes the following info:
 * ` + "`ks registry describe` " + `— ` + regShortDesc["describe"] + `
 
 ### Syntax
-`,
-}
+`
+)
 
-func init() {
-	registryCmd.AddCommand(registryListCmd)
+func newRegistryListCmd(a app.App) *cobra.Command {
+	registryListCmd := &cobra.Command{
+		Use:   "list",
+		Short: regShortDesc["list"],
+		Long:  registryListLong,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 0 {
+				return fmt.Errorf("Command 'registry list' does not take arguments")
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp: a,
+			}
+
+			return runAction(actionRegistryList, m)
+		},
+	}
+
+	return registryListCmd
 }

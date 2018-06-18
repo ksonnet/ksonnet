@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -27,21 +28,8 @@ const (
 	vEnvListOutput = "env-list-output"
 )
 
-var envListCmd = &cobra.Command{
-	Use:   "list",
-	Short: envShortDesc["list"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("'env list' takes zero arguments")
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:    ka,
-			actions.OptionOutput: viper.GetString(vEnvListOutput),
-		}
-
-		return runAction(actionEnvList, m)
-	}, Long: `
+var (
+	envListLong = `
 The ` + "`list`" + ` command lists all of the available environments for the
 current ksonnet app. Specifically, this will display the (1) *name*,
 (2) *server*, and (3) *namespace* of each environment.
@@ -53,12 +41,29 @@ current ksonnet app. Specifically, this will display the (1) *name*,
 * ` + "`ks env rm` " + `— ` + envShortDesc["rm"] + `
 
 ### Syntax
-`,
-}
+`
+)
 
-func init() {
-	envCmd.AddCommand(envListCmd)
+func newEnvListCmd(a app.App) *cobra.Command {
+	envListCmd := &cobra.Command{
+		Use:   "list",
+		Short: envShortDesc["list"],
+		Long:  envListLong,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 0 {
+				return fmt.Errorf("'env list' takes zero arguments")
+			}
 
+			m := map[string]interface{}{
+				actions.OptionApp:    a,
+				actions.OptionOutput: viper.GetString(vEnvListOutput),
+			}
+
+			return runAction(actionEnvList, m)
+		},
+	}
 	envListCmd.Flags().StringP(flagOutput, shortOutput, "", "Output format. One of: json|wide")
 	viper.BindPFlag(vEnvListOutput, envListCmd.Flags().Lookup(flagOutput))
+
+	return envListCmd
 }

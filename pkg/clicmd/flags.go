@@ -28,6 +28,7 @@ const (
 	flagExtVar                = "ext-str"
 	flagExtVarFile            = "ext-str-file"
 	flagFilename              = "filename"
+	flagFormat                = "format"
 	flagGcTag                 = "gc-tag"
 	flagGracePeriod           = "grace-period"
 	flagInstalled             = "installed"

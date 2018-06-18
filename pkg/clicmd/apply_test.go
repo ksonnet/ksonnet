@@ -18,6 +18,8 @@ package clicmd
 import (
 	"testing"
 
+	"github.com/stretchr/testify/mock"
+
 	"github.com/ksonnet/ksonnet/pkg/actions"
 )
 
@@ -28,15 +30,20 @@ func Test_applyCmd(t *testing.T) {
 			args:   []string{"apply", "default"},
 			action: actionApply,
 			expected: map[string]interface{}{
-				actions.OptionApp:            nil,
+				actions.OptionApp:            mock.AnythingOfType("*app.App"),
 				actions.OptionEnvName:        "default",
 				actions.OptionGcTag:          "",
 				actions.OptionSkipGc:         false,
 				actions.OptionComponentNames: make([]string, 0),
 				actions.OptionCreate:         true,
 				actions.OptionDryRun:         false,
-				actions.OptionClientConfig:   applyClientConfig,
+				actions.OptionClientConfig:   mock.AnythingOfType("*client.Config"),
 			},
+		},
+		{
+			name:  "invalid jsonnet flag",
+			args:  []string{"apply", "default", "--ext-str", "foo"},
+			isErr: true,
 		},
 	}
 

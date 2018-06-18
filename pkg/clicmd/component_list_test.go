@@ -29,7 +29,7 @@ func Test_componentListCmd(t *testing.T) {
 			args:   []string{"component", "list"},
 			action: actionComponentList,
 			expected: map[string]interface{}{
-				actions.OptionApp:    ka,
+				actions.OptionApp:    nil,
 				actions.OptionModule: "",
 				actions.OptionOutput: "",
 			},

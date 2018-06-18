@@ -19,26 +19,12 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
-var registryDescribeCmd = &cobra.Command{
-	Use:   "describe <registry-name>",
-	Short: regShortDesc["describe"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("Command 'registry describe' takes one argument, which is the name of the registry to describe")
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:  ka,
-			actions.OptionName: args[0],
-		}
-
-		return runAction(actionRegistryDescribe, m)
-	},
-
-	Long: `
+var (
+	registryDescribeLong = `
 The ` + "`describe`" + ` command outputs documentation for the ksonnet registry identified
 by ` + "`<registry-name>`" + `. Specifically, it displays the following:
 
@@ -51,9 +37,27 @@ by ` + "`<registry-name>`" + `. Specifically, it displays the following:
 * ` + "`ks pkg install` " + `— ` + pkgShortDesc["install"] + `
 
 ### Syntax
-`,
-}
+`
+)
 
-func init() {
-	registryCmd.AddCommand(registryDescribeCmd)
+func newRegistryDescribeCmd(a app.App) *cobra.Command {
+	registryDescribeCmd := &cobra.Command{
+		Use:   "describe <registry-name>",
+		Short: regShortDesc["describe"],
+		Long:  registryDescribeLong,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return fmt.Errorf("Command 'registry describe' takes one argument, which is the name of the registry to describe")
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:  a,
+				actions.OptionName: args[0],
+			}
+
+			return runAction(actionRegistryDescribe, m)
+		},
+	}
+
+	return registryDescribeCmd
 }

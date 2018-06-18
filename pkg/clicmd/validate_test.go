@@ -28,11 +28,11 @@ func Test_validateCmd(t *testing.T) {
 			args:   []string{"validate", "env-name"},
 			action: actionValidate,
 			expected: map[string]interface{}{
-				actions.OptionApp:            ka,
+				actions.OptionApp:            nil,
 				actions.OptionEnvName:        "env-name",
 				actions.OptionModule:         "",
 				actions.OptionComponentNames: make([]string, 0),
-				actions.OptionClientConfig:   validateClientConfig,
+				actions.OptionClientConfig:   nil,
 			},
 		},
 	}

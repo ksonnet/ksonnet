@@ -28,8 +28,41 @@ func Test_paramListCmd(t *testing.T) {
 			args:   []string{"param", "list"},
 			action: actionParamList,
 			expected: map[string]interface{}{
-				actions.OptionApp:           ka,
+				actions.OptionApp:           nil,
 				actions.OptionEnvName:       "",
+				actions.OptionModule:        "",
+				actions.OptionComponentName: "",
+			},
+		},
+		{
+			name:   "component",
+			args:   []string{"param", "list", "component"},
+			action: actionParamList,
+			expected: map[string]interface{}{
+				actions.OptionApp:           nil,
+				actions.OptionEnvName:       "",
+				actions.OptionModule:        "",
+				actions.OptionComponentName: "component",
+			},
+		},
+		{
+			name:   "component",
+			args:   []string{"param", "list", "--module", "module"},
+			action: actionParamList,
+			expected: map[string]interface{}{
+				actions.OptionApp:           nil,
+				actions.OptionEnvName:       "",
+				actions.OptionModule:        "module",
+				actions.OptionComponentName: "",
+			},
+		},
+		{
+			name:   "env",
+			args:   []string{"param", "list", "--env", "env"},
+			action: actionParamList,
+			expected: map[string]interface{}{
+				actions.OptionApp:           nil,
+				actions.OptionEnvName:       "env",
 				actions.OptionModule:        "",
 				actions.OptionComponentName: "",
 			},

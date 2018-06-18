@@ -23,59 +23,18 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
 )
 
 const (
-	diffShortDesc = "Compare manifests, based on environment or location (local or remote)"
-
 	vDiffComponentNames = "diff-component-names"
+
+	diffShortDesc = "Compare manifests, based on environment or location (local or remote)"
 )
 
 var (
-	diffClientConfig *client.Config
-)
-
-func init() {
-	diffClientConfig = client.NewDefaultClientConfig(ka)
-	diffClientConfig.BindClientGoFlags(diffCmd)
-	bindJsonnetFlags(diffCmd, "diff")
-
-	diffCmd.Flags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component")
-	viper.BindPFlag(vDiffComponentNames, diffCmd.Flags().Lookup(flagComponent))
-
-	RootCmd.AddCommand(diffCmd)
-}
-
-var diffCmd = &cobra.Command{
-	Use:   "diff <location1:env1> [location2:env2]",
-	Short: diffShortDesc,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return fmt.Errorf("'diff' requires at least one argument, that is the name of the environment\n\n%s", cmd.UsageString())
-		}
-		if len(args) > 2 {
-			return fmt.Errorf("'diff' takes at most two arguments, that are the name of the environments\n\n%s", cmd.UsageString())
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:            ka,
-			actions.OptionClientConfig:   diffClientConfig,
-			actions.OptionSrc1:           args[0],
-			actions.OptionComponentNames: viper.GetStringSlice(vDiffComponentNames),
-		}
-
-		if len(args) == 2 {
-			m[actions.OptionSrc2] = args[1]
-		}
-
-		if err := extractJsonnetFlags("apply"); err != nil {
-			return errors.Wrap(err, "handle jsonnet flags")
-		}
-
-		return runAction(actionDiff, m)
-	},
-	Long: `
+	diffLong = `
 The ` + "`diff`" + ` command displays standard file diffs, and can be used to compare manifests
 based on *environment* or location ('local' ksonnet app manifests or what's running
 on a 'remote' server).
@@ -101,8 +60,8 @@ the manifest for that particular component.
 * ` + "`ks param diff` " + `— ` + paramShortDesc["diff"] + `
 
 ### Syntax
-`,
-	Example: `
+`
+	diffExample = `
 # Show diff between remote and local manifests for a single 'dev' environment.
 # This command diffs *all* components in the ksonnet app, and can be used in any
 # of that app's subdirectories.
@@ -123,5 +82,49 @@ ks diff local:us-west/dev remote:us-west/prod
 # Show diff between what's in the local manifest and what's actually running in the
 # 'dev' environment, but for the Redis component ONLY
 ks diff dev -c redis
-`,
+`
+)
+
+func newDiffCmd(a app.App) *cobra.Command {
+	diffClientConfig := client.NewDefaultClientConfig(a)
+
+	diffCmd := &cobra.Command{
+		Use:     "diff <location1:env1> [location2:env2]",
+		Short:   diffShortDesc,
+		Long:    diffLong,
+		Example: diffExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				return fmt.Errorf("'diff' requires at least one argument, that is the name of the environment\n\n%s", cmd.UsageString())
+			}
+			if len(args) > 2 {
+				return fmt.Errorf("'diff' takes at most two arguments, that are the name of the environments\n\n%s", cmd.UsageString())
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:            a,
+				actions.OptionClientConfig:   diffClientConfig,
+				actions.OptionSrc1:           args[0],
+				actions.OptionComponentNames: viper.GetStringSlice(vDiffComponentNames),
+			}
+
+			if len(args) == 2 {
+				m[actions.OptionSrc2] = args[1]
+			}
+
+			if err := extractJsonnetFlags(a, "diff"); err != nil {
+				return errors.Wrap(err, "handle jsonnet flags")
+			}
+
+			return runAction(actionDiff, m)
+		},
+	}
+
+	diffClientConfig.BindClientGoFlags(diffCmd)
+	bindJsonnetFlags(diffCmd, "diff")
+
+	diffCmd.Flags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component")
+	viper.BindPFlag(vDiffComponentNames, diffCmd.Flags().Lookup(flagComponent))
+
+	return diffCmd
 }

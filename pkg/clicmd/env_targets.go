@@ -17,6 +17,7 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -26,29 +27,28 @@ const (
 	vEnvTargetModules = "env-target-modules"
 )
 
-// envTargetsCmd represents the env targets command
-var envTargetsCmd = &cobra.Command{
-	Use:   "targets",
-	Short: "Set module targets for an environment",
-	Long:  `targets`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return errors.New("env targets <environment> <--module name>...")
-		}
+func newEnvTargetsCmd(a app.App) *cobra.Command {
+	envTargetsCmd := &cobra.Command{
+		Use:   "targets",
+		Short: "Set module targets for an environment",
+		Long:  `targets`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return errors.New("env targets <environment> <--module name>...")
+			}
 
-		m := map[string]interface{}{
-			actions.OptionApp:     ka,
-			actions.OptionEnvName: args[0],
-			actions.OptionModule:  viper.GetStringSlice(vEnvTargetModules),
-		}
+			m := map[string]interface{}{
+				actions.OptionApp:     a,
+				actions.OptionEnvName: args[0],
+				actions.OptionModule:  viper.GetStringSlice(vEnvTargetModules),
+			}
 
-		return runAction(actionEnvTargets, m)
-	},
-}
-
-func init() {
-	envCmd.AddCommand(envTargetsCmd)
+			return runAction(actionEnvTargets, m)
+		},
+	}
 
 	envTargetsCmd.Flags().StringSlice(flagModule, nil, "Component modules to include")
 	viper.BindPFlag(vEnvTargetModules, envTargetsCmd.Flags().Lookup(flagModule))
+
+	return envTargetsCmd
 }

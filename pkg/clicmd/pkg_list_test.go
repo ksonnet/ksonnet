@@ -28,9 +28,14 @@ func Test_pkgListCmd(t *testing.T) {
 			args:   []string{"pkg", "list"},
 			action: actionPkgList,
 			expected: map[string]interface{}{
-				actions.OptionApp:       ka,
+				actions.OptionApp:       nil,
 				actions.OptionInstalled: false,
 			},
+		},
+		{
+			name:  "invalid args",
+			args:  []string{"pkg", "list", "invalid"},
+			isErr: true,
 		},
 	}
 

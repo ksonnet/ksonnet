@@ -28,7 +28,7 @@ func Test_prototypeUseCmd(t *testing.T) {
 			args:   []string{"prototype", "use", "name", "--containerPort", "8080"},
 			action: actionPrototypeUse,
 			expected: map[string]interface{}{
-				actions.OptionApp:       ka,
+				actions.OptionApp:       nil,
 				actions.OptionArguments: []string{"name", "--containerPort", "8080"},
 			},
 		},
@@ -37,9 +37,18 @@ func Test_prototypeUseCmd(t *testing.T) {
 			args:   []string{"generate", "name", "--containerPort", "8080"},
 			action: actionPrototypeUse,
 			expected: map[string]interface{}{
-				actions.OptionApp:       ka,
+				actions.OptionApp:       nil,
 				actions.OptionArguments: []string{"name", "--containerPort", "8080"},
 			},
+		},
+		{
+			name: "show help arguments",
+			args: []string{"prototype", "use", "-h"},
+		},
+		{
+			name:  "invalid arguments",
+			args:  []string{"prototype", "use"},
+			isErr: true,
 		},
 	}
 

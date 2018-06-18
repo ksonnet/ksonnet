@@ -19,26 +19,12 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
-var pkgDescribeCmd = &cobra.Command{
-	Use:   "describe [<registry-name>/]<package-name>",
-	Short: pkgShortDesc["describe"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("Command 'pkg describe' requires a package name\n\n%s", cmd.UsageString())
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:         ka,
-			actions.OptionPackageName: args[0],
-		}
-
-		return runAction(actionPkgDescribe, m)
-	},
-
-	Long: `
+var (
+	pkgDescribeLong = `
 The ` + "`describe`" + ` command outputs documentation for a package that is available
 (e.g. downloaded) in the current ksonnet application. (This must belong to an already
 known ` + "`<registry-name>`" + ` like *incubator*). The output includes:
@@ -54,9 +40,27 @@ known ` + "`<registry-name>`" + ` like *incubator*). The output includes:
 * ` + "`ks generate` " + `— ` + protoShortDesc["use"] + `
 
 ### Syntax
-`,
-}
+`
+)
 
-func init() {
-	pkgCmd.AddCommand(pkgDescribeCmd)
+func newPkgDescribeCmd(a app.App) *cobra.Command {
+	pkgDescribeCmd := &cobra.Command{
+		Use:   "describe [<registry-name>/]<package-name>",
+		Short: pkgShortDesc["describe"],
+		Long:  pkgDescribeLong,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return fmt.Errorf("Command 'pkg describe' requires a package name\n\n%s", cmd.UsageString())
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:         a,
+				actions.OptionPackageName: args[0],
+			}
+
+			return runAction(actionPkgDescribe, m)
+		},
+	}
+
+	return pkgDescribeCmd
 }

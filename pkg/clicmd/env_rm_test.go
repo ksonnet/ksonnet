@@ -28,10 +28,15 @@ func Test_envRmCmd(t *testing.T) {
 			args:   []string{"env", "rm", "prod"},
 			action: actionEnvRm,
 			expected: map[string]interface{}{
-				actions.OptionApp:      ka,
+				actions.OptionApp:      nil,
 				actions.OptionEnvName:  "prod",
 				actions.OptionOverride: false,
 			},
+		},
+		{
+			name:  "no environment",
+			args:  []string{"env", "rm"},
+			isErr: true,
 		},
 	}
 

@@ -28,7 +28,7 @@ func Test_moduleListCmd(t *testing.T) {
 			args:   []string{"module", "list"},
 			action: actionModuleList,
 			expected: map[string]interface{}{
-				actions.OptionApp:     ka,
+				actions.OptionApp:     nil,
 				actions.OptionEnvName: "",
 			},
 		},

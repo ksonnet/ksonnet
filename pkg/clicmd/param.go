@@ -16,29 +16,18 @@
 package clicmd
 
 import (
-	"fmt"
-	"strings"
-
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
-var paramShortDesc = map[string]string{
-	"delete": "Delete component or environment parameters",
-	"set":    "Change component or environment parameters (e.g. replica count, name)",
-	"list":   "List known component parameters",
-	"diff":   "Display differences between the component parameters of two environments",
-}
-
-func init() {
-	RootCmd.AddCommand(paramCmd)
-
-	paramCmd.AddCommand(paramListCmd)
-}
-
-var paramCmd = &cobra.Command{
-	Use:   "param",
-	Short: `Manage ksonnet parameters for components and environments`,
-	Long: `
+var (
+	paramShortDesc = map[string]string{
+		"delete": "Delete component or environment parameters",
+		"set":    "Change component or environment parameters (e.g. replica count, name)",
+		"list":   "List known component parameters",
+		"diff":   "Display differences between the component parameters of two environments",
+	}
+	paramLong = `
 Parameters are customizable fields that are used inside ksonnet *component*
 manifests. Examples might include a deployment's 'name' or 'image'. Parameters
 can also be defined on a *per-environment* basis. (Environments are ksonnet
@@ -66,11 +55,20 @@ Note that all of these params are tracked **locally** in version-controllable
 Jsonnet files.
 
 ----
-`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("%s is not a valid subcommand\n\n%s", strings.Join(args, " "), cmd.UsageString())
-		}
-		return fmt.Errorf("Command 'param' requires a subcommand\n\n%s", cmd.UsageString())
-	},
+`
+)
+
+func newParamCmd(a app.App) *cobra.Command {
+	paramCmd := &cobra.Command{
+		Use:   "param",
+		Short: `Manage ksonnet parameters for components and environments`,
+		Long:  paramLong,
+	}
+
+	paramCmd.AddCommand(newParamDeleteCmd(a))
+	paramCmd.AddCommand(newParamDiffCmd(a))
+	paramCmd.AddCommand(newParamListCmd(a))
+	paramCmd.AddCommand(newParamSetCmd(a))
+
+	return paramCmd
 }

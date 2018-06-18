@@ -28,10 +28,19 @@ func Test_prototypePreviewCmd(t *testing.T) {
 			args:   []string{"prototype", "preview", "name"},
 			action: actionPrototypePreview,
 			expected: map[string]interface{}{
-				actions.OptionApp:       ka,
+				actions.OptionApp:       nil,
 				actions.OptionQuery:     "name",
 				actions.OptionArguments: make([]string, 0),
 			},
+		},
+		{
+			name: "show help arguments",
+			args: []string{"prototype", "preview", "-h"},
+		},
+		{
+			name:  "invalid arguments",
+			args:  []string{"prototype", "preview"},
+			isErr: true,
 		},
 	}
 

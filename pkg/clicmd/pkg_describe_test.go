@@ -28,9 +28,14 @@ func Test_pkgDescribeCmd(t *testing.T) {
 			args:   []string{"pkg", "describe", "package-name"},
 			action: actionPkgDescribe,
 			expected: map[string]interface{}{
-				actions.OptionApp:         ka,
+				actions.OptionApp:         nil,
 				actions.OptionPackageName: "package-name",
 			},
+		},
+		{
+			name:  "invalid args",
+			args:  []string{"pkg", "describe"},
+			isErr: true,
 		},
 	}
 

@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 )
 
 const (
@@ -40,21 +40,8 @@ var (
 		"set":     "Set environment-specific fields (name, namespace, server)",
 		"update":  "Updates the libs for an environment",
 	}
-)
 
-func init() {
-	RootCmd.AddCommand(envCmd)
-
-	envCmd.AddCommand(envRmCmd)
-
-	envRmCmd.Flags().BoolP(flagOverride, shortOverride, false, "Remove the overridden environment")
-	viper.BindPFlag(vEnvRmOverride, envRmCmd.Flags().Lookup(flagOverride))
-}
-
-var envCmd = &cobra.Command{
-	Use:   "env",
-	Short: `Manage ksonnet environments`,
-	Long: `
+	envLong = `
 An environment is a deployment target for your ksonnet app and its constituent
 components. You can use ksonnet to deploy a given app to *multiple* environments,
 such as ` + "`dev`" + ` and ` + "`prod`" + `.
@@ -89,13 +76,33 @@ represented as a hierarchy in the ` + "`environments/`" + ` directory of a ksonn
 │           └── spec.json            // Contains the environment's API server address and namespace
 ` + "```" + `
 ----
-`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("%s is not a valid subcommand\n\n%s", strings.Join(args, " "), cmd.UsageString())
-		}
-		return fmt.Errorf("Command 'env' requires a subcommand\n\n%s", cmd.UsageString())
-	},
+`
+)
+
+func newEnvCmd(a app.App) *cobra.Command {
+	envCmd := &cobra.Command{
+		Use:   "env",
+		Short: `Manage ksonnet environments`,
+		Long:  envLong,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 0 {
+				return fmt.Errorf("%s is not a valid subcommand\n\n%s", strings.Join(args, " "), cmd.UsageString())
+			}
+			return fmt.Errorf("Command 'env' requires a subcommand\n\n%s", cmd.UsageString())
+		},
+	}
+
+	envCmd.AddCommand(newEnvAddCmd(a))
+	envCmd.AddCommand(newEnvCurrentCmd(a))
+	envCmd.AddCommand(newEnvDescribeCmd(a))
+	envCmd.AddCommand(newEnvListCmd(a))
+	envCmd.AddCommand(newEnvRmCmd(a))
+	envCmd.AddCommand(newEnvSetCmd(a))
+	envCmd.AddCommand(newEnvTargetsCmd(a))
+	envCmd.AddCommand(newEnvUpdateCmd(a))
+
+	return envCmd
+
 }
 
 func commonEnvFlags(flags *pflag.FlagSet) (server, namespace, context string, err error) {

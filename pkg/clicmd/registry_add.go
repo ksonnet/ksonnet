@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
@@ -29,26 +30,8 @@ const (
 	vRegistryAddOverride = "registry-add-override"
 )
 
-var registryAddCmd = &cobra.Command{
-	Use:   "add <registry-name> <registry-uri>",
-	Short: regShortDesc["add"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 2 {
-			return fmt.Errorf("Command 'registry add' takes two arguments, which is the name and the repository address of the registry to add")
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:      ka,
-			actions.OptionName:     args[0],
-			actions.OptionURI:      args[1],
-			actions.OptionVersion:  viper.GetString(vRegistryAddVersion),
-			actions.OptionOverride: viper.GetBool(vRegistryAddOverride),
-		}
-
-		return runAction(actionRegistryAdd, m)
-	},
-
-	Long: `
+var (
+	registryAddLong = `
 The ` + "`add`" + ` command allows custom registries to be added to your ksonnet app,
 provided that their file structures follow the appropriate schema. *You can look
 at the ` + "`incubator`" + ` repo (https://github.com/ksonnet/parts/tree/master/incubator)
@@ -77,22 +60,44 @@ SCM configuration.
 * ` + "`ks registry list` " + `— ` + regShortDesc["list"] + `
 
 ### Syntax
-`,
-	Example: `# Add a registry with the name 'databases' at the uri 'github.com/example'
+`
+	registryAddExample = `# Add a registry with the name 'databases' at the uri 'github.com/example'
 ks registry add databases github.com/example
 
 # Add a registry with the name 'databases' at the uri
 # 'github.com/example/tree/master/reg' and the version (branch name) 0.0.1
 # NOTE that "0.0.1" overrides the branch name in the URI ("master")
-ks registry add databases github.com/example/tree/master/reg --version=0.0.1`,
-}
+ks registry add databases github.com/example/tree/master/reg --version=0.0.1`
+)
 
-func init() {
-	registryCmd.AddCommand(registryAddCmd)
+func newRegistryAddCmd(a app.App) *cobra.Command {
+	registryAddCmd := &cobra.Command{
+		Use:     "add <registry-name> <registry-uri>",
+		Short:   regShortDesc["add"],
+		Long:    registryAddLong,
+		Example: registryAddExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 2 {
+				return fmt.Errorf("Command 'registry add' takes two arguments, which is the name and the repository address of the registry to add")
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:      a,
+				actions.OptionName:     args[0],
+				actions.OptionURI:      args[1],
+				actions.OptionVersion:  viper.GetString(vRegistryAddVersion),
+				actions.OptionOverride: viper.GetBool(vRegistryAddOverride),
+			}
+
+			return runAction(actionRegistryAdd, m)
+		},
+	}
 
 	registryAddCmd.Flags().String(flagVersion, "", "Version of the registry to add")
 	viper.BindPFlag(vRegistryAddVersion, registryAddCmd.Flags().Lookup(flagVersion))
 
 	registryAddCmd.Flags().BoolP(flagOverride, shortOverride, false, "Store in override configuration")
 	viper.BindPFlag(vRegistryAddOverride, registryAddCmd.Flags().Lookup(flagOverride))
+
+	return registryAddCmd
 }

@@ -34,10 +34,6 @@ Jsonnet files.
 ----
 
 
-```
-ks param [flags]
-```
-
 ### Options
 
 ```

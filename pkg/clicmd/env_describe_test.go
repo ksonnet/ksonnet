@@ -28,9 +28,14 @@ func Test_envDescribeCmd(t *testing.T) {
 			args:   []string{"env", "describe", "prod"},
 			action: actionEnvDescribe,
 			expected: map[string]interface{}{
-				actions.OptionApp:     ka,
+				actions.OptionApp:     nil,
 				actions.OptionEnvName: "prod",
 			},
+		},
+		{
+			name:  "no environment",
+			args:  []string{"env", "describe"},
+			isErr: true,
 		},
 	}
 

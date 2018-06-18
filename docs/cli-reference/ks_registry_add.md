@@ -30,7 +30,7 @@ SCM configuration.
 
 ### Related Commands
 
-* `ks registry list` — List all registries known to the current ksonnet app.
+* `ks registry list` — List all registries known to the current ksonnet app
 
 ### Syntax
 

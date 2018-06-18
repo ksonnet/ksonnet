@@ -22,10 +22,6 @@ described above. (See `ks prototype --help` for more information.)
 ----
 
 
-```
-ks registry [flags]
-```
-
 ### Options
 
 ```
@@ -43,5 +39,6 @@ ks registry [flags]
 * [ks](ks.md)	 - Configure your application to deploy to a Kubernetes cluster
 * [ks registry add](ks_registry_add.md)	 - Add a registry to the current ksonnet app
 * [ks registry describe](ks_registry_describe.md)	 - Describe a ksonnet registry and the packages it contains
-* [ks registry list](ks_registry_list.md)	 - List all registries known to the current ksonnet app.
+* [ks registry list](ks_registry_list.md)	 - List all registries known to the current ksonnet app
+* [ks registry update](ks_registry_update.md)	 - Update currently configured registries
 

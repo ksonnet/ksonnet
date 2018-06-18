@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -29,25 +30,8 @@ const (
 	vEnvSetServer    = "env-set-server"
 )
 
-var envSetCmd = &cobra.Command{
-	Use:   "set <env-name>",
-	Short: envShortDesc["set"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("'env set' takes a single argument, that is the name of the environment")
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:        ka,
-			actions.OptionEnvName:    args[0],
-			actions.OptionNewEnvName: viper.GetString(vEnvSetName),
-			actions.OptionNamespace:  viper.GetString(vEnvSetNamespace),
-			actions.OptionServer:     viper.GetString(vEnvSetServer),
-		}
-
-		return runAction(actionEnvSet, m)
-	},
-	Long: `
+var (
+	envSetLong = `
 The ` + "`set`" + ` command lets you change the fields of an existing environment.
 You can currently only update your environment's name.
 
@@ -59,14 +43,34 @@ directory structure in ` + "`environments/`" + `.
 * ` + "`ks env list` " + `— ` + envShortDesc["list"] + `
 
 ### Syntax
-`,
-	Example: `#Update the name of the environment 'us-west/staging'.
+`
+	envSetExample = `#Update the name of the environment 'us-west/staging'.
 # Updating the name will update the directory structure in 'environments/'.
-ks env set us-west/staging --name=us-east/staging`,
-}
+ks env set us-west/staging --name=us-east/staging`
+)
 
-func init() {
-	envCmd.AddCommand(envSetCmd)
+func newEnvSetCmd(a app.App) *cobra.Command {
+	envSetCmd := &cobra.Command{
+		Use:     "set <env-name>",
+		Short:   envShortDesc["set"],
+		Long:    envSetLong,
+		Example: envSetExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return fmt.Errorf("'env set' takes a single argument, that is the name of the environment")
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:        a,
+				actions.OptionEnvName:    args[0],
+				actions.OptionNewEnvName: viper.GetString(vEnvSetName),
+				actions.OptionNamespace:  viper.GetString(vEnvSetNamespace),
+				actions.OptionServer:     viper.GetString(vEnvSetServer),
+			}
+
+			return runAction(actionEnvSet, m)
+		},
+	}
 
 	envSetCmd.Flags().String(flagEnvName, "",
 		"Name used to uniquely identify the environment. Must not already exist within the ksonnet app")
@@ -79,4 +83,6 @@ func init() {
 	envSetCmd.Flags().String(flagServer, "",
 		"Cluster server for environment")
 	viper.BindPFlag(vEnvSetServer, envSetCmd.Flags().Lookup(flagServer))
+
+	return envSetCmd
 }

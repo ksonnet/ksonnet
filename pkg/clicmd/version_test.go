@@ -17,9 +17,12 @@ package clicmd
 
 import (
 	"bytes"
-	"fmt"
 	"regexp"
 	"testing"
+
+	"github.com/ksonnet/ksonnet/pkg/util/test"
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/require"
 )
 
 func TestVersion(t *testing.T) {
@@ -32,14 +35,18 @@ func TestVersion(t *testing.T) {
 }
 
 func cmdOutput(t *testing.T, args []string) string {
-	var buf bytes.Buffer
-	RootCmd.SetOutput(&buf)
-	defer RootCmd.SetOutput(nil)
+	fs := afero.NewMemMapFs()
+	test.StageFile(t, fs, "app.yaml", "/app.yaml")
 
-	t.Log("Running args", args)
-	RootCmd.SetArgs(args)
-	if err := RootCmd.Execute(); err != nil {
-		fmt.Println(buf.String())
+	rootCmd, err := NewRoot(fs, "/app", args)
+	require.NoError(t, err)
+
+	var buf bytes.Buffer
+	rootCmd.SetOutput(&buf)
+	defer rootCmd.SetOutput(nil)
+
+	rootCmd.SetArgs(args)
+	if err := rootCmd.Execute(); err != nil {
 		t.Fatal("command failed:", err)
 	}
 

@@ -17,6 +17,7 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -24,56 +25,11 @@ import (
 )
 
 const (
-	deleteShortDesc = "Remove component-specified Kubernetes resources from remote clusters"
-)
-
-const (
 	vDeleteComponent   = "delete-components"
 	vDeleteGracePeriod = "delete-grace-period"
-)
 
-var (
-	deleteClientConfig *client.Config
-)
-
-func init() {
-	RootCmd.AddCommand(deleteCmd)
-
-	deleteClientConfig = client.NewDefaultClientConfig(ka)
-	deleteClientConfig.BindClientGoFlags(deleteCmd)
-	bindJsonnetFlags(deleteCmd, "delete")
-
-	deleteCmd.Flags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
-	viper.BindPFlag(vDeleteComponent, deleteCmd.Flags().Lookup(flagComponent))
-
-	deleteCmd.Flags().Int64(flagGracePeriod, -1, "Number of seconds given to resources to terminate gracefully. A negative value is ignored")
-	viper.BindPFlag(vDeleteGracePeriod, deleteCmd.Flags().Lookup(flagGracePeriod))
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete [env-name] [-c <component-name>]",
-	Short: deleteShortDesc,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		var envName string
-		if len(args) == 1 {
-			envName = args[0]
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:            ka,
-			actions.OptionClientConfig:   deleteClientConfig,
-			actions.OptionComponentNames: viper.GetStringSlice(vDeleteComponent),
-			actions.OptionEnvName:        envName,
-			actions.OptionGracePeriod:    viper.GetInt64(vDeleteGracePeriod),
-		}
-
-		if err := extractJsonnetFlags("delete"); err != nil {
-			return errors.Wrap(err, "handle jsonnet flags")
-		}
-
-		return runAction(actionDelete, m)
-	},
-	Long: `
+	deleteShortDesc = "Remove component-specified Kubernetes resources from remote clusters"
+	deleteLong      = `
 The ` + "`delete`" + ` command removes Kubernetes resources (described in local
 *component* manifests) from a cluster. This cluster is determined by the mandatory
 ` + "`<env-name>`" + `argument.
@@ -89,8 +45,8 @@ components.
 * ` + "`ks apply` " + `— ` + applyShortDesc + `
 
 ### Syntax
-`,
-	Example: `# Delete resources from the 'dev' environment, based on ALL of the manifests in your
+`
+	deleteExample = `# Delete resources from the 'dev' environment, based on ALL of the manifests in your
 # ksonnet app's 'components/' directory. This command works in any subdirectory
 # of the app.
 ks delete dev
@@ -98,5 +54,47 @@ ks delete dev
 # Delete resources described by the 'nginx' component. $KUBECONFIG is overridden by
 # the CLI-specified './kubeconfig', so these changes are deployed to the current
 # context's cluster (not the 'default' environment)
-ks delete --kubeconfig=./kubeconfig -c nginx`,
+ks delete --kubeconfig=./kubeconfig -c nginx`
+)
+
+func newDeleteCmd(a app.App) *cobra.Command {
+	deleteClientConfig := client.NewDefaultClientConfig(a)
+
+	deleteCmd := &cobra.Command{
+		Use:     "delete [env-name] [-c <component-name>]",
+		Short:   deleteShortDesc,
+		Long:    deleteLong,
+		Example: deleteExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var envName string
+			if len(args) == 1 {
+				envName = args[0]
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:            a,
+				actions.OptionClientConfig:   deleteClientConfig,
+				actions.OptionComponentNames: viper.GetStringSlice(vDeleteComponent),
+				actions.OptionEnvName:        envName,
+				actions.OptionGracePeriod:    viper.GetInt64(vDeleteGracePeriod),
+			}
+
+			if err := extractJsonnetFlags(a, "delete"); err != nil {
+				return errors.Wrap(err, "handle jsonnet flags")
+			}
+
+			return runAction(actionDelete, m)
+		},
+	}
+
+	deleteClientConfig.BindClientGoFlags(deleteCmd)
+	bindJsonnetFlags(deleteCmd, "delete")
+
+	deleteCmd.Flags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
+	viper.BindPFlag(vDeleteComponent, deleteCmd.Flags().Lookup(flagComponent))
+
+	deleteCmd.Flags().Int64(flagGracePeriod, -1, "Number of seconds given to resources to terminate gracefully. A negative value is ignored")
+	viper.BindPFlag(vDeleteGracePeriod, deleteCmd.Flags().Lookup(flagGracePeriod))
+
+	return deleteCmd
 }

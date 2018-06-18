@@ -21,31 +21,14 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
 var (
 	vPkgInstallName = "pkg-install-name"
-)
 
-var pkgInstallCmd = &cobra.Command{
-	Use:     "install <registry>/<library>@<version>",
-	Short:   pkgShortDesc["install"],
-	Aliases: []string{"get"},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("Command requires a single argument of the form <registry>/<library>@<version>\n\n%s", cmd.UsageString())
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:     ka,
-			actions.OptionLibName: args[0],
-			actions.OptionName:    viper.GetString(vPkgInstallName),
-		}
-
-		return runAction(actionPkgInstall, m)
-	},
-	Long: `
+	pkgInstallLong = `
 The ` + "`install`" + ` command caches a ksonnet library locally, and makes it available
 for use in the current ksonnet application. Enough info and metadata is recorded in
 ` + "`app.yaml` " + `that new users can retrieve the dependency after a fresh clone of this app.
@@ -61,8 +44,8 @@ channels for official ksonnet libraries.
 * ` + "`ks registry describe` " + `— ` + regShortDesc["describe"] + `
 
 ### Syntax
-`,
-	Example: `
+`
+	pkgInstallExample = `
 # Install an nginx dependency, based on the latest branch.
 # In a ksonnet source file, this can be referenced as:
 #   local nginx = import "incubator/nginx/nginx.libsonnet";
@@ -72,12 +55,34 @@ ks pkg install incubator/nginx
 # In a ksonnet source file, this can be referenced as:
 #   local nginx = import "incubator/nginx/nginx.libsonnet";
 ks pkg install incubator/nginx@master
-`,
-}
+`
+)
 
-func init() {
-	pkgCmd.AddCommand(pkgInstallCmd)
+func newPkgInstallCmd(a app.App) *cobra.Command {
+
+	pkgInstallCmd := &cobra.Command{
+		Use:     "install <registry>/<library>@<version>",
+		Short:   pkgShortDesc["install"],
+		Long:    pkgInstallLong,
+		Example: pkgInstallExample,
+		Aliases: []string{"get"},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return fmt.Errorf("Command requires a single argument of the form <registry>/<library>@<version>\n\n%s", cmd.UsageString())
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:     a,
+				actions.OptionLibName: args[0],
+				actions.OptionName:    viper.GetString(vPkgInstallName),
+			}
+
+			return runAction(actionPkgInstall, m)
+		},
+	}
 
 	pkgInstallCmd.Flags().String(flagName, "", "Name to give the dependency, to use within the ksonnet app")
 	viper.BindPFlag(vPkgInstallName, pkgInstallCmd.Flags().Lookup(flagName))
+
+	return pkgInstallCmd
 }

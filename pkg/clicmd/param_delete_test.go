@@ -28,7 +28,7 @@ func Test_paramDeleteCmd(t *testing.T) {
 			args:   []string{"param", "delete", "component-name", "param-name"},
 			action: actionParamDelete,
 			expected: map[string]interface{}{
-				actions.OptionApp:     ka,
+				actions.OptionApp:     nil,
 				actions.OptionName:    "component-name",
 				actions.OptionPath:    "param-name",
 				actions.OptionEnvName: "",
@@ -39,11 +39,16 @@ func Test_paramDeleteCmd(t *testing.T) {
 			args:   []string{"param", "delete", "param-name", "--env", "default"},
 			action: actionParamDelete,
 			expected: map[string]interface{}{
-				actions.OptionApp:     ka,
+				actions.OptionApp:     nil,
 				actions.OptionName:    "",
 				actions.OptionPath:    "param-name",
 				actions.OptionEnvName: "default",
 			},
+		},
+		{
+			name:  "invalid args",
+			args:  []string{"param", "delete"},
+			isErr: true,
 		},
 	}
 

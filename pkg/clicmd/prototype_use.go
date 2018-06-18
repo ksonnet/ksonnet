@@ -17,36 +17,12 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
-// generateCmd acts as an alias for `prototype use`
-var generateCmd = &cobra.Command{
-	Use:                "generate <prototype-name> <component-name> [type] [parameter-flags]",
-	Short:              prototypeUseCmd.Short,
-	DisableFlagParsing: prototypeUseCmd.DisableFlagParsing,
-	RunE:               prototypeUseCmd.RunE,
-	Long:               prototypeUseCmd.Long,
-	Example:            prototypeUseCmd.Example,
-}
-
-var prototypeUseCmd = &cobra.Command{
-	Use:                "use <prototype-name> <componentName> [type] [parameter-flags]",
-	Short:              protoShortDesc["use"],
-	DisableFlagParsing: true,
-	RunE: func(cmd *cobra.Command, rawArgs []string) error {
-		if len(rawArgs) == 1 && (rawArgs[0] == "--help" || rawArgs[0] == "-h") {
-			return cmd.Help()
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:       ka,
-			actions.OptionArguments: rawArgs,
-		}
-
-		return runAction(actionPrototypeUse, m)
-	},
-	Long: `
+var (
+	prototypeUseLong = `
 The ` + "`generate`" + ` command (aliased from ` + "`prototype use`" + `) generates Kubernetes-
 compatible, Jsonnet ` + `manifests for components in your ksonnet app. Each component
 corresponds to a single manifest in the` + " `components/` " + `directory. This manifest
@@ -82,8 +58,8 @@ different prototypes support their own unique flags.
 * ` + "`ks param set` " + paramShortDesc["set"] + `
 
 ### Syntax
-`,
-	Example: `
+`
+	prototypeUseExample = `
 # Instantiate prototype 'io.ksonnet.pkg.single-port-deployment', using the
 # 'nginx' image. The expanded prototype is placed in
 # 'components/nginx-depl.jsonnet'.
@@ -99,10 +75,36 @@ ks prototype use io.ksonnet.pkg.single-port-deployment nginx-depl \
 # (due to --name).
 ks prototype use deployment nginx-depl \
   --name=nginx                         \
-  --image=nginx`,
+  --image=nginx`
+)
+
+func newGenerateCmd(a app.App) *cobra.Command {
+	cmd := newPrototypeUseCmd(a)
+	cmd.Use = "generate <prototype-name> <component-name> [type] [parameter-flags]"
+
+	return cmd
 }
 
-func init() {
-	RootCmd.AddCommand(generateCmd)
-	prototypeCmd.AddCommand(prototypeUseCmd)
+func newPrototypeUseCmd(a app.App) *cobra.Command {
+	prototypeUseCmd := &cobra.Command{
+		Use:                "use <prototype-name> <componentName> [type] [parameter-flags]",
+		Short:              protoShortDesc["use"],
+		Long:               prototypeUseLong,
+		Example:            prototypeUseExample,
+		DisableFlagParsing: true,
+		RunE: func(cmd *cobra.Command, rawArgs []string) error {
+			if len(rawArgs) == 1 && (rawArgs[0] == "--help" || rawArgs[0] == "-h") {
+				return cmd.Help()
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:       a,
+				actions.OptionArguments: rawArgs,
+			}
+
+			return runAction(actionPrototypeUse, m)
+		},
+	}
+
+	return prototypeUseCmd
 }

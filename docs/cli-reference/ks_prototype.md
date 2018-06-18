@@ -21,10 +21,6 @@ for your use case.
 ----
 
 
-```
-ks prototype [flags]
-```
-
 ### Options
 
 ```
