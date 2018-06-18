@@ -51,20 +51,6 @@ func NewFs(a app.App, registryRef *app.RegistryRefSpec) (*Fs, error) {
 		return nil, err
 	}
 
-	path := u.Path
-	if !filepath.IsAbs(path) {
-		path = filepath.Join(a.Root(), path)
-	}
-
-	exists, err := afero.DirExists(a.Fs(), path)
-	if err != nil {
-		return nil, err
-	}
-
-	if !exists {
-		return nil, errors.Errorf("registry path %q does not exist", u.Path)
-	}
-
 	fs.root = u.Path
 
 	return fs, nil
@@ -201,4 +187,44 @@ func (fs *Fs) CacheRoot(name, path string) (string, error) {
 // Update implements registry.Updater
 func (fs *Fs) Update(version string) (string, error) {
 	return "", errors.Errorf("TODO not implemented")
+}
+
+// ValidateURI implements registry.Validator. A URI is valid if:
+//   * It is a valid URI (RFC 3986)
+//   * It points to an existing directory on disk
+//   * That directory contains a `registry.yaml` file
+func (fs *Fs) ValidateURI(uri string) (bool, error) {
+	if fs == nil {
+		return false, errors.Errorf("nil receiver")
+	}
+	if fs.app == nil {
+		return false, errors.Errorf("app is nil")
+	}
+
+	aferoFs := fs.app.Fs()
+	if aferoFs == nil {
+		return false, errors.Errorf("afero.Fs interface is nil")
+	}
+
+	u, err := url.Parse(uri)
+	if err != nil {
+		return false, err
+	}
+
+	path := u.Path
+
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(fs.app.Root(), path)
+	}
+
+	exists, err := afero.DirExists(aferoFs, path)
+	if err != nil {
+		return false, err
+	}
+
+	if !exists {
+		return false, errors.Errorf("registry path %q does not exist", path)
+	}
+
+	return true, nil
 }

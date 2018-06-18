@@ -308,6 +308,29 @@ func TestHelm_CacheRoot(t *testing.T) {
 	})
 }
 
+func TestHelm_ValidateURI_invalid(t *testing.T) {
+	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+		uri := ""
+
+		spec := &app.RegistryRefSpec{
+			Name:     "local",
+			Protocol: string(ProtocolHelm),
+			URI:      uri,
+		}
+
+		rc := &fakeHelmRepositoryClient{
+			chartErr: errors.New("error"),
+		}
+
+		h, err := NewHelm(a, spec, rc, nil)
+		require.NoError(t, err)
+
+		ok, err := h.ValidateURI(uri)
+		require.Error(t, err)
+		assert.Equal(t, false, ok)
+	})
+}
+
 type fakeHelmRepositoryClient struct {
 	entries    *helm.Repository
 	entriesErr error
