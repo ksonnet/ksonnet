@@ -245,3 +245,24 @@ func (_m *Registry) Update(version string) (string, error) {
 
 	return r0, r1
 }
+
+// ValidateURI provides a mock function with given fields: uri
+func (_m *Registry) ValidateURI(uri string) (bool, error) {
+	ret := _m.Called(uri)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(string) bool); ok {
+		r0 = rf(uri)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(uri)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}

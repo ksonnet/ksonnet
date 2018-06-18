@@ -128,13 +128,19 @@ func TestGitHub_invalid_url(t *testing.T) {
 
 		optGh := GitHubClient(ghMock)
 
+		uri := "github.com/ksonnet/parts/tree/master/incubator"
 		spec := &app.RegistryRefSpec{
 			Name:     "incubator",
 			Protocol: string(ProtocolGitHub),
-			URI:      "github.com/ksonnet/parts/tree/master/incubator",
+			URI:      uri,
 		}
 
-		_, err := NewGitHub(a, spec, optGh)
+		r, err := NewGitHub(a, spec, optGh)
+		require.NoError(t, err)
+
+		ok, err := r.ValidateURI(uri)
+		assert.Error(t, err)
+		assert.Equal(t, false, ok)
 		cause := errors.Cause(err)
 		require.Equal(t, validateErr, cause)
 	})

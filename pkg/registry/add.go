@@ -46,6 +46,10 @@ func Add(a app.App, protocol Protocol, name, uri, version string, isOverride boo
 		return nil, errors.Wrap(err, "unable to add registry")
 	}
 
+	if ok, err := r.ValidateURI(uri); err != nil || !ok {
+		return nil, errors.Wrap(err, "validating registry URL")
+	}
+
 	err = a.AddRegistry(r.MakeRegistryRefSpec(), isOverride)
 	if err != nil {
 		return nil, err

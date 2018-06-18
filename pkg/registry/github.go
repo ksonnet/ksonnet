@@ -106,10 +106,6 @@ func NewGitHub(a app.App, registryRef *app.RegistryRefSpec, opts ...GitHubOpt) (
 		}
 	}
 
-	if err = gh.ghClient.ValidateURL(registryRef.URI); err != nil {
-		return nil, errors.Wrap(err, "validating GitHub registry URL")
-	}
-
 	return gh, nil
 }
 
@@ -588,4 +584,21 @@ func (gh *GitHub) Update(version string) (string, error) {
 
 	tw.Commit()
 	return sha, nil
+}
+
+// ValidateURI implements registry.Validator. A URI is valid if:
+//   * It is a valid URI (RFC 3986)
+//   * It points to GitHub (Enterprise not supported at this time)
+//   * It points to a valid tree in a GitHub repository
+//   * That tree contains a `registry.yaml` file
+//   * It currently exists (a HEAD request is sent over the network)
+func (gh *GitHub) ValidateURI(uri string) (bool, error) {
+	if gh == nil {
+		return false, errors.Errorf("nil receiver")
+	}
+	if err := gh.ghClient.ValidateURL(uri); err != nil {
+		return false, errors.Wrap(err, "validating GitHub registry URL")
+	}
+
+	return true, nil
 }

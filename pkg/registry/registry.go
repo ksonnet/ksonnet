@@ -59,6 +59,7 @@ type Registry interface {
 	CacheRoot(name, relPath string) (string, error)
 
 	Updater
+	Validator
 }
 
 type SpecFetcher interface {
@@ -73,4 +74,9 @@ type Resolver interface {
 // Updater is an interface for updating an existing registry
 type Updater interface {
 	Update(version string) (newVersion string, err error)
+}
+
+// Validator is an interface for validating a registry URI
+type Validator interface {
+	ValidateURI(uri string) (bool, error)
 }

@@ -17,6 +17,7 @@ package registry
 
 import (
 	"io/ioutil"
+	"net/url"
 	"path"
 	"path/filepath"
 
@@ -195,4 +196,20 @@ func (h *Helm) CacheRoot(name string, relPath string) (string, error) {
 // Update implements registry.Updater
 func (h *Helm) Update(version string) (string, error) {
 	return "", errors.Errorf("TODO not implemented")
+}
+
+// ValidateURI implements registry.Validator. A URI is valid if:
+//   * It is a valid URI (RFC 3986)
+//   * It is an absolute URI or an absolute path
+func (h *Helm) ValidateURI(uri string) (bool, error) {
+	if h == nil {
+		return false, errors.Errorf("nil receiver")
+	}
+
+	_, err := url.ParseRequestURI(uri)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }

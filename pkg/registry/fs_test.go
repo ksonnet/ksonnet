@@ -80,15 +80,21 @@ func withRFS(t *testing.T, relPath bool, fn func(*Fs, *mocks.App, afero.Fs)) {
 	fn(rfs, appMock, fs)
 }
 
-func TestFs_New_invalid_path(t *testing.T) {
+func TestFs_ValidateURI_invalid_path(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+		uri := "/invalid"
+
 		spec := &app.RegistryRefSpec{
 			Name:     "local",
 			Protocol: string(ProtocolFilesystem),
-			URI:      "/invalid",
+			URI:      uri,
 		}
-		_, err := NewFs(a, spec)
+		r, err := NewFs(a, spec)
+		require.NoError(t, err)
+
+		ok, err := r.ValidateURI(uri)
 		require.Error(t, err)
+		assert.Equal(t, false, ok)
 	})
 }
 
