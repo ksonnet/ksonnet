@@ -28,9 +28,14 @@ func Test_protoptypeSearchCmd(t *testing.T) {
 			args:   []string{"prototype", "search", "name"},
 			action: actionPrototypeSearch,
 			expected: map[string]interface{}{
-				actions.OptionApp:   ka,
+				actions.OptionApp:   nil,
 				actions.OptionQuery: "name",
 			},
+		},
+		{
+			name:  "invalid arguments",
+			args:  []string{"prototype", "search"},
+			isErr: true,
 		},
 	}
 

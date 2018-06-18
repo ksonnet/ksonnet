@@ -17,6 +17,7 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
@@ -25,40 +26,45 @@ const (
 	flagUpgradeDryRun = "dry-run"
 )
 
-var upgradeCmd = &cobra.Command{
-	Use:   "upgrade [--dry-run]",
-	Short: upgradeShortDesc,
-	Long: `
+var (
+	upgradeLong = `
 The upgrade command upgrades a ksonnet application to the latest version.
-	
+
 ### Syntax
-`,
-	Example: `
+`
+	upgradeExample = `
 # Upgrade ksonnet application in dry-run mode to see the changes to be performed by the
 # upgrade process.
 ks upgrade --dry-run
-	
+
 # Upgrade ksonnet application. This will update app.yaml to apiVersion 0.1.0
 # and migrate environment spec.json files to ` + "`" + `app.yaml` + "`" + `.
 ks upgrade
-`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		dryRun, err := cmd.Flags().GetBool(flagUpgradeDryRun)
-		if err != nil {
-			return err
-		}
+`
+)
 
-		m := map[string]interface{}{
-			actions.OptionApp:    ka,
-			actions.OptionDryRun: dryRun,
-		}
+func newUpgradeCmd(a app.App) *cobra.Command {
+	upgradeCmd := &cobra.Command{
+		Use:     "upgrade [--dry-run]",
+		Short:   upgradeShortDesc,
+		Long:    upgradeLong,
+		Example: upgradeExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			dryRun, err := cmd.Flags().GetBool(flagUpgradeDryRun)
+			if err != nil {
+				return err
+			}
 
-		return runAction(actionUpgrade, m)
-	},
-}
+			m := map[string]interface{}{
+				actions.OptionApp:    a,
+				actions.OptionDryRun: dryRun,
+			}
 
-func init() {
-	RootCmd.AddCommand(upgradeCmd)
+			return runAction(actionUpgrade, m)
+		},
+	}
 
 	upgradeCmd.Flags().Bool(flagUpgradeDryRun, false, "Dry-run upgrade process. Prints out changes.")
+
+	return upgradeCmd
 }

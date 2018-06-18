@@ -31,84 +31,16 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
-var (
-	appFs = afero.NewOsFs()
-	ka    app.App
-)
-
-func init() {
-	RootCmd.PersistentFlags().CountP(flagVerbose, "v", "Increase verbosity. May be given multiple times.")
-	RootCmd.PersistentFlags().Set("logtostderr", "true")
-}
-
-// RootCmd is the root of cobra subcommand tree
-var RootCmd = &cobra.Command{
-	Use:   "ks",
-	Short: `Configure your application to deploy to a Kubernetes cluster`,
-	Long: `
+const (
+	rootLong = `
 You can use the ` + "`ks`" + ` commands to write, share, and deploy your Kubernetes
 application configuration to remote clusters.
 
 ----
-`,
-	SilenceErrors: true,
-	SilenceUsage:  true,
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		goflag.CommandLine.Parse([]string{})
-		flags := cmd.Flags()
+	`
+)
 
-		verbosity, err := flags.GetCount(flagVerbose)
-		if err != nil {
-			return err
-		}
-
-		log.Init(verbosity, cmd.OutOrStderr())
-
-		wd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		var isInit bool
-		if len(args) == 2 && args[0] == "init" {
-			isInit = true
-		}
-
-		ka, err = app.Load(appFs, wd, false)
-		if err != nil && isInit {
-			return err
-		}
-
-		return nil
-	},
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return cobra.NoArgs(cmd, args)
-		}
-
-		pluginName := args[0]
-		_, err := plugin.Find(appFs, pluginName)
-		if err != nil {
-			return cobra.NoArgs(cmd, args)
-		}
-
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return cmd.Help()
-		}
-		pluginName, args := args[0], args[1:]
-		p, err := plugin.Find(appFs, pluginName)
-		if err != nil {
-			return err
-		}
-
-		return runPlugin(p, args)
-	},
-}
-
-func runPlugin(p plugin.Plugin, args []string) error {
+func runPlugin(fs afero.Fs, p plugin.Plugin, args []string) error {
 	env := []string{
 		fmt.Sprintf("KS_PLUGIN_DIR=%s", p.RootDir),
 		fmt.Sprintf("KS_PLUGIN_NAME=%s", p.Config.Name),
@@ -121,7 +53,7 @@ func runPlugin(p plugin.Plugin, args []string) error {
 	}
 
 	appConfig := filepath.Join(root, "app.yaml")
-	exists, err := afero.Exists(appFs, appConfig)
+	exists, err := afero.Exists(fs, appConfig)
 	if err != nil {
 		return err
 	}
@@ -143,4 +75,91 @@ func addEnvCmdFlags(cmd *cobra.Command) {
 
 func appRoot() (string, error) {
 	return os.Getwd()
+}
+
+func NewRoot(appFs afero.Fs, wd string, args []string) (*cobra.Command, error) {
+	if appFs == nil {
+		appFs = afero.NewOsFs()
+	}
+
+	var a app.App
+	var err error
+
+	if len(args) > 0 && args[0] != "init" {
+		a, err = app.Load(appFs, wd, false)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	rootCmd := &cobra.Command{
+		Use:           "ks",
+		Short:         `Configure your application to deploy to a Kubernetes cluster`,
+		Long:          rootLong,
+		SilenceErrors: true,
+		SilenceUsage:  true,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			goflag.CommandLine.Parse([]string{})
+			flags := cmd.Flags()
+
+			verbosity, err := flags.GetCount(flagVerbose)
+			if err != nil {
+				return err
+			}
+
+			log.Init(verbosity, cmd.OutOrStderr())
+
+			return nil
+		},
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				return cobra.NoArgs(cmd, args)
+			}
+
+			pluginName := args[0]
+			_, err := plugin.Find(appFs, pluginName)
+			if err != nil {
+				return cobra.NoArgs(cmd, args)
+			}
+
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				return cmd.Help()
+			}
+			pluginName, args := args[0], args[1:]
+			p, err := plugin.Find(appFs, pluginName)
+			if err != nil {
+				return err
+			}
+
+			return runPlugin(appFs, p, args)
+		},
+	}
+
+	rootCmd.SetArgs(args)
+
+	rootCmd.PersistentFlags().CountP(flagVerbose, "v", "Increase verbosity. May be given multiple times.")
+	rootCmd.PersistentFlags().Set("logtostderr", "true")
+
+	rootCmd.AddCommand(newApplyCmd(a))
+	rootCmd.AddCommand(newComponentCmd(a))
+	rootCmd.AddCommand(newDeleteCmd(a))
+	rootCmd.AddCommand(newDiffCmd(a))
+	rootCmd.AddCommand(newEnvCmd(a))
+	rootCmd.AddCommand(newGenerateCmd(a))
+	rootCmd.AddCommand(newImportCmd(a))
+	rootCmd.AddCommand(newInitCmd(appFs, wd))
+	rootCmd.AddCommand(newModuleCmd(a))
+	rootCmd.AddCommand(newParamCmd(a))
+	rootCmd.AddCommand(newPkgCmd(a))
+	rootCmd.AddCommand(newPrototypeCmd(a))
+	rootCmd.AddCommand(newRegistryCmd(a))
+	rootCmd.AddCommand(newShowCmd(a))
+	rootCmd.AddCommand(newValidateCmd(a))
+	rootCmd.AddCommand(newUpgradeCmd(a))
+	rootCmd.AddCommand(newVersionCmd())
+
+	return rootCmd, nil
 }

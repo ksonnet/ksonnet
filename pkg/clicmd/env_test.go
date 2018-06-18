@@ -17,28 +17,18 @@ package clicmd
 
 import (
 	"testing"
-
-	"github.com/ksonnet/ksonnet/pkg/actions"
 )
 
-func Test_envAddCmd(t *testing.T) {
+func Test_envCmd(t *testing.T) {
 	cases := []cmdTestCase{
 		{
-			name:   "in general",
-			args:   []string{"env", "add", "prod", "--server", "http://example.com", "--api-spec", "version:v1.9.5"},
-			action: actionEnvAdd,
-			expected: map[string]interface{}{
-				actions.OptionApp:      nil,
-				actions.OptionEnvName:  "prod",
-				actions.OptionModule:   "default",
-				actions.OptionOverride: false,
-				actions.OptionServer:   "http://example.com",
-				actions.OptionSpecFlag: "version:v1.9.5",
-			},
+			name:  "no command",
+			args:  []string{"env"},
+			isErr: true,
 		},
 		{
-			name:  "no environment",
-			args:  []string{"env", "add"},
+			name:  "invalid command",
+			args:  []string{"env", "invalid"},
 			isErr: true,
 		},
 	}

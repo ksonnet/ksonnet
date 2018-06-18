@@ -18,6 +18,12 @@ package clicmd
 import (
 	"testing"
 
+	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/ksonnet/ksonnet/pkg/client"
+	"github.com/ksonnet/ksonnet/pkg/util/test"
+	"github.com/spf13/afero"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -58,9 +64,18 @@ func runTestCmd(t *testing.T, cases []cmdTestCase) {
 			s := stubCmdOverride{}
 
 			withCmd(tc.action, s.override, func() {
-				RootCmd.SetArgs(tc.args)
+				fs := afero.NewMemMapFs()
 
-				err := RootCmd.Execute()
+				wd := "/"
+				if len(tc.args) > 0 && tc.args[0] != "init" {
+					wd = "/app"
+					test.StageFile(t, fs, "app.yaml", "/app/app.yaml")
+				}
+
+				root, err := NewRoot(fs, wd, tc.args)
+				require.NoError(t, err)
+
+				err = root.Execute()
 				if tc.isErr {
 					require.Error(t, err)
 					return
@@ -68,7 +83,21 @@ func runTestCmd(t *testing.T, cases []cmdTestCase) {
 
 				require.NoError(t, err)
 
-				assert.Equal(t, tc.expected, s.got)
+				for k, v := range s.got {
+					switch k {
+					case actions.OptionApp:
+						var expected *app.App010
+						assert.IsType(t, expected, v)
+					case actions.OptionClientConfig:
+						var expected *client.Config
+						assert.IsType(t, expected, v)
+					case actions.OptionFs:
+						var expected *afero.MemMapFs
+						assert.IsType(t, expected, v)
+					default:
+						assert.Equal(t, tc.expected[k], v, "unexpected value for %q", k)
+					}
+				}
 			})
 		})
 	}

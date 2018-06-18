@@ -1,6 +1,6 @@
 ## ks registry list
 
-List all registries known to the current ksonnet app.
+List all registries known to the current ksonnet app
 
 ### Synopsis
 

@@ -29,11 +29,26 @@ func Test_diffCmd(t *testing.T) {
 			action: actionDiff,
 			expected: map[string]interface{}{
 				actions.OptionApp:            nil,
-				actions.OptionClientConfig:   diffClientConfig,
+				actions.OptionClientConfig:   nil,
 				actions.OptionSrc1:           "env1",
 				actions.OptionSrc2:           "env2",
 				actions.OptionComponentNames: []string{},
 			},
+		},
+		{
+			name:  "no args",
+			args:  []string{"diff"},
+			isErr: true,
+		},
+		{
+			name:  "too many args",
+			args:  []string{"diff", "env1", "env2", "env3"},
+			isErr: true,
+		},
+		{
+			name:  "invalid jsonnet flag",
+			args:  []string{"diff", "default", "--ext-str", "foo"},
+			isErr: true,
 		},
 	}
 

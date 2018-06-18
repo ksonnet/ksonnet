@@ -15,15 +15,20 @@
 
 package clicmd
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/spf13/cobra"
+)
 
-// moduleCmd represents the module command
-var moduleCmd = &cobra.Command{
-	Use:   "module",
-	Short: "Manage ksonnet modules",
-	Long:  `Manage ksonnet modules`,
-}
+func newModuleCmd(a app.App) *cobra.Command {
+	moduleCmd := &cobra.Command{
+		Use:   "module",
+		Short: "Manage ksonnet modules",
+		Long:  `Manage ksonnet modules`,
+	}
 
-func init() {
-	RootCmd.AddCommand(moduleCmd)
+	moduleCmd.AddCommand(newModuleCreateCmd(a))
+	moduleCmd.AddCommand(newModuleListCmd(a))
+
+	return moduleCmd
 }

@@ -17,6 +17,7 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -25,40 +26,7 @@ import (
 var (
 	vParamSetEnv      = "param-set-env"
 	vParamSetAsString = "param-set-as-string"
-)
-
-var paramSetCmd = &cobra.Command{
-	Use:   "set <component-name> <param-key> <param-value>",
-	Short: paramShortDesc["set"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		var name string
-		var path string
-		var value string
-
-		switch len(args) {
-		default:
-			return errors.New("invalid arguments for 'param set'")
-		case 3:
-			name = args[0]
-			path = args[1]
-			value = args[2]
-		case 2:
-			path = args[0]
-			value = args[1]
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:      ka,
-			actions.OptionName:     name,
-			actions.OptionPath:     path,
-			actions.OptionValue:    value,
-			actions.OptionEnvName:  viper.GetString(vParamSetEnv),
-			actions.OptionAsString: viper.GetBool(vParamSetAsString),
-		}
-
-		return runAction(actionParamSet, m)
-	},
-	Long: `
+	paramSetLong      = `
 The ` + "`set`" + ` command sets component or environment parameters such as replica count
 or name. Parameters are set individually, one at a time. All of these changes are
 reflected in the ` + "`params.libsonnet`" + ` files.
@@ -76,22 +44,57 @@ for greater customization of environment parameters, we suggest modifying the
 * ` + "`ks apply` " + `— ` + applyShortDesc + `
 
 ### Syntax
-`,
-	Example: `
+`
+	paramSetExample = `
 # Update the replica count of the 'guestbook' component to 4.
 ks param set guestbook replicas 4
 
 # Update the replica count of the 'guestbook' component to 2, but only for the
 # 'dev' environment
-ks param set guestbook replicas 2 --env=dev`,
-}
+ks param set guestbook replicas 2 --env=dev`
+)
 
-func init() {
-	paramCmd.AddCommand(paramSetCmd)
+func newParamSetCmd(a app.App) *cobra.Command {
+	paramSetCmd := &cobra.Command{
+		Use:     "set <component-name> <param-key> <param-value>",
+		Short:   paramShortDesc["set"],
+		Long:    paramSetLong,
+		Example: paramSetExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var name string
+			var path string
+			var value string
+
+			switch len(args) {
+			default:
+				return errors.New("invalid arguments for 'param set'")
+			case 3:
+				name = args[0]
+				path = args[1]
+				value = args[2]
+			case 2:
+				path = args[0]
+				value = args[1]
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:      a,
+				actions.OptionName:     name,
+				actions.OptionPath:     path,
+				actions.OptionValue:    value,
+				actions.OptionEnvName:  viper.GetString(vParamSetEnv),
+				actions.OptionAsString: viper.GetBool(vParamSetAsString),
+			}
+
+			return runAction(actionParamSet, m)
+		},
+	}
 
 	paramSetCmd.Flags().String(flagEnv, "", "Specify environment to set parameters for")
 	viper.BindPFlag(vParamSetEnv, paramSetCmd.Flags().Lookup(flagEnv))
 
 	paramSetCmd.Flags().Bool(flagAsString, false, "Force value to be interpreted as string")
 	viper.BindPFlag(vParamSetAsString, paramSetCmd.Flags().Lookup(flagAsString))
+
+	return paramSetCmd
 }

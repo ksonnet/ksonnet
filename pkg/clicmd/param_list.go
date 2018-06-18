@@ -19,43 +19,12 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
-var paramListCmd = &cobra.Command{
-	Use:   "list [<component-name>] [--env <env-name>]",
-	Short: paramShortDesc["list"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		flags := cmd.Flags()
-		if len(args) > 1 {
-			return fmt.Errorf("'param list' takes at most one argument, that is the name of the component")
-		}
-
-		component := ""
-		if len(args) == 1 {
-			component = args[0]
-		}
-
-		env, err := flags.GetString(flagEnv)
-		if err != nil {
-			return err
-		}
-
-		module, err := flags.GetString(flagModule)
-		if err != nil {
-			return err
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:           ka,
-			actions.OptionComponentName: component,
-			actions.OptionEnvName:       env,
-			actions.OptionModule:        module,
-		}
-
-		return runAction(actionParamList, m)
-	},
-	Long: `
+var (
+	paramListLong = `
 The ` + "`list`" + ` command displays all known component parameters or environment parameters.
 
 If a component is specified, this command displays all of its specific parameters.
@@ -67,8 +36,8 @@ Furthermore, parameters can be listed on a per-environment basis.
 * ` + "`ks param set` " + `— ` + paramShortDesc["set"] + `
 
 ### Syntax
-`,
-	Example: `
+`
+	paramListExample = `
 # List all component parameters
 ks param list
 
@@ -79,5 +48,50 @@ ks param list guestbook
 ks param list --env=dev
 
 # List all parameters for the component "guestbook" in the environment "dev"
-ks param list guestbook --env=dev`,
+ks param list guestbook --env=dev`
+)
+
+func newParamListCmd(a app.App) *cobra.Command {
+	paramListCmd := &cobra.Command{
+		Use:     "list [<component-name>] [--env <env-name>]",
+		Short:   paramShortDesc["list"],
+		Long:    paramListLong,
+		Example: paramListExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			flags := cmd.Flags()
+			if len(args) > 1 {
+				return fmt.Errorf("'param list' takes at most one argument, that is the name of the component")
+			}
+
+			component := ""
+			if len(args) == 1 {
+				component = args[0]
+			}
+
+			env, err := flags.GetString(flagEnv)
+			if err != nil {
+				return err
+			}
+
+			module, err := flags.GetString(flagModule)
+			if err != nil {
+				return err
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:           a,
+				actions.OptionComponentName: component,
+				actions.OptionEnvName:       env,
+				actions.OptionModule:        module,
+			}
+
+			return runAction(actionParamList, m)
+		},
+	}
+
+	paramListCmd.PersistentFlags().String(flagEnv, "", "Specify environment to list parameters for")
+	paramListCmd.Flags().String(flagModule, "", "Specify module to list parameters for")
+
+	return paramListCmd
+
 }

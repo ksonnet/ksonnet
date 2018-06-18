@@ -19,25 +19,12 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
-var prototypeSearchCmd = &cobra.Command{
-	Use:   "search <name-substring>",
-	Short: protoShortDesc["search"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("Command 'prototype search' requires a prototype name\n\n%s", cmd.UsageString())
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:   ka,
-			actions.OptionQuery: args[0],
-		}
-
-		return runAction(actionPrototypeSearch, m)
-	},
-	Long: `
+var (
+	prototypeSearchLong = `
 The ` + "`prototype search`" + ` command allows you to search for specific prototypes by name.
 Specifically, it matches any prototypes with names that contain the string <name-substring>.
 
@@ -47,12 +34,31 @@ Specifically, it matches any prototypes with names that contain the string <name
 * ` + "`ks prototype list` " + `— ` + protoShortDesc["list"] + `
 
 ### Syntax
-`,
-	Example: `
+`
+	prototypeSearchExample = `
 # Search for prototypes with names that contain the string 'service'.
-ks prototype search service`,
-}
+ks prototype search service`
+)
 
-func init() {
-	prototypeCmd.AddCommand(prototypeSearchCmd)
+func newPrototypeSearchCmd(a app.App) *cobra.Command {
+	prototypeSearchCmd := &cobra.Command{
+		Use:     "search <name-substring>",
+		Short:   protoShortDesc["search"],
+		Long:    prototypeSearchLong,
+		Example: prototypeSearchExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return fmt.Errorf("Command 'prototype search' requires a prototype name\n\n%s", cmd.UsageString())
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:   a,
+				actions.OptionQuery: args[0],
+			}
+
+			return runAction(actionPrototypeSearch, m)
+		},
+	}
+
+	return prototypeSearchCmd
 }

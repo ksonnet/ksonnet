@@ -19,20 +19,25 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	RootCmd.AddCommand(componentCmd)
-}
+func newComponentCmd(a app.App) *cobra.Command {
+	componentCmd := &cobra.Command{
+		Use:   "component",
+		Short: "Manage ksonnet components",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 0 {
+				return fmt.Errorf("%s is not a valid subcommand\n\n%s", strings.Join(args, " "), cmd.UsageString())
+			}
+			return fmt.Errorf("Command 'component' requires a subcommand\n\n%s", cmd.UsageString())
+		},
+	}
 
-var componentCmd = &cobra.Command{
-	Use:   "component",
-	Short: "Manage ksonnet components",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("%s is not a valid subcommand\n\n%s", strings.Join(args, " "), cmd.UsageString())
-		}
-		return fmt.Errorf("Command 'component' requires a subcommand\n\n%s", cmd.UsageString())
-	},
+	componentCmd.AddCommand(newComponentListCmd(a))
+	componentCmd.AddCommand(newComponentRmCmd(a))
+
+	return componentCmd
+
 }

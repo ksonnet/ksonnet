@@ -21,24 +21,31 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
 )
 
-func Test_envAddCmd(t *testing.T) {
+func Test_registryUpdateCmd(t *testing.T) {
 	cases := []cmdTestCase{
 		{
-			name:   "in general",
-			args:   []string{"env", "add", "prod", "--server", "http://example.com", "--api-spec", "version:v1.9.5"},
-			action: actionEnvAdd,
+			name:   "registry",
+			args:   []string{"registry", "update", "databases"},
+			action: actionRegistryUpdate,
 			expected: map[string]interface{}{
-				actions.OptionApp:      nil,
-				actions.OptionEnvName:  "prod",
-				actions.OptionModule:   "default",
-				actions.OptionOverride: false,
-				actions.OptionServer:   "http://example.com",
-				actions.OptionSpecFlag: "version:v1.9.5",
+				actions.OptionApp:     nil,
+				actions.OptionName:    "databases",
+				actions.OptionVersion: "",
 			},
 		},
 		{
-			name:  "no environment",
-			args:  []string{"env", "add"},
+			name:   "registry with version",
+			args:   []string{"registry", "update", "databases", "0.0.1"},
+			action: actionRegistryUpdate,
+			expected: map[string]interface{}{
+				actions.OptionApp:     nil,
+				actions.OptionName:    "databases",
+				actions.OptionVersion: "0.0.1",
+			},
+		},
+		{
+			name:  "invalid arguments",
+			args:  []string{"registry", "update"},
 			isErr: true,
 		},
 	}

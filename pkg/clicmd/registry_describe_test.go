@@ -28,9 +28,14 @@ func Test_envRegistryDescribe(t *testing.T) {
 			args:   []string{"registry", "describe", "name"},
 			action: actionRegistryDescribe,
 			expected: map[string]interface{}{
-				actions.OptionApp:  ka,
+				actions.OptionApp:  nil,
 				actions.OptionName: "name",
 			},
+		},
+		{
+			name:  "invalid arguments",
+			args:  []string{"registry", "describe"},
+			isErr: true,
 		},
 	}
 

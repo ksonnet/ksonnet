@@ -17,29 +17,30 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
-// envDescribeCmd represents the env describe command
-var envDescribeCmd = &cobra.Command{
-	Use:   "describe <env>",
-	Short: "Describe an environment",
-	Long:  `describe`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return errors.New("env describe <environment>")
-		}
+func newEnvDescribeCmd(a app.App) *cobra.Command {
+	envDescribeCmd := &cobra.Command{
+		Use:   "describe <env>",
+		Short: "Describe an environment",
+		Long:  `describe`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return errors.New("env describe <environment>")
+			}
 
-		m := map[string]interface{}{
-			actions.OptionApp:     ka,
-			actions.OptionEnvName: args[0],
-		}
+			m := map[string]interface{}{
+				actions.OptionApp:     a,
+				actions.OptionEnvName: args[0],
+			}
 
-		return runAction(actionEnvDescribe, m)
-	},
-}
+			return runAction(actionEnvDescribe, m)
+		},
+	}
 
-func init() {
-	envCmd.AddCommand(envDescribeCmd)
+	return envDescribeCmd
+
 }

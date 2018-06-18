@@ -17,37 +17,20 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 const (
-	flagFormat    = "format"
-	showShortDesc = "Show expanded manifests for a specific environment."
-)
-
-const (
+	showShortDesc  = "Show expanded manifests for a specific environment."
 	vShowComponent = "show-components"
 	vShowFormat    = "show-format"
 )
 
-func init() {
-	RootCmd.AddCommand(showCmd)
-
-	bindJsonnetFlags(showCmd, "show")
-
-	showCmd.Flags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
-	viper.BindPFlag(vShowComponent, showCmd.Flags().Lookup(flagComponent))
-
-	showCmd.Flags().StringP(flagFormat, shortFormat, "yaml", "Output format.  Supported values are: json, yaml")
-	viper.BindPFlag(vShowFormat, showCmd.Flags().Lookup(flagFormat))
-}
-
-var showCmd = &cobra.Command{
-	Use:   "show <env> [-c <component-filename>]",
-	Short: showShortDesc,
-	Long: `
+var (
+	showLong = `
 Show expanded manifests (resource definitions) for a specific environment.
 Jsonnet manifests, each defining a ksonnet component, are expanded into their
 JSON or YAML equivalents (YAML is the default). Any parameters in these Jsonnet
@@ -67,8 +50,8 @@ manifest for that particular component.
 * ` + "`ks apply` " + `— ` + applyShortDesc + `
 
 ### Syntax
-`,
-	Example: `
+`
+	showExample = `
 # Show all of the components for the 'dev' environment, in YAML
 # (In other words, expands all manifests in the components/ directory)
 ks show dev
@@ -78,24 +61,42 @@ ks show prod -c redis -o json
 
 # Show multiple components from the 'dev' environment, in YAML
 ks show dev -c redis -c nginx-server
-`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		var envName string
-		if len(args) == 1 {
-			envName = args[0]
-		}
+`
+)
 
-		m := map[string]interface{}{
-			actions.OptionApp:            ka,
-			actions.OptionComponentNames: viper.GetStringSlice(vShowComponent),
-			actions.OptionEnvName:        envName,
-			actions.OptionFormat:         viper.GetString(vShowFormat),
-		}
+func newShowCmd(a app.App) *cobra.Command {
+	showCmd := &cobra.Command{
+		Use:     "show <env> [-c <component-filename>]",
+		Short:   showShortDesc,
+		Long:    showLong,
+		Example: showExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var envName string
+			if len(args) == 1 {
+				envName = args[0]
+			}
 
-		if err := extractJsonnetFlags("show"); err != nil {
-			return errors.Wrap(err, "handle jsonnet flags")
-		}
+			m := map[string]interface{}{
+				actions.OptionApp:            a,
+				actions.OptionComponentNames: viper.GetStringSlice(vShowComponent),
+				actions.OptionEnvName:        envName,
+				actions.OptionFormat:         viper.GetString(vShowFormat),
+			}
 
-		return runAction(actionShow, m)
-	},
+			if err := extractJsonnetFlags(a, "show"); err != nil {
+				return errors.Wrap(err, "handle jsonnet flags")
+			}
+
+			return runAction(actionShow, m)
+		},
+	}
+	bindJsonnetFlags(showCmd, "show")
+
+	showCmd.Flags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
+	viper.BindPFlag(vShowComponent, showCmd.Flags().Lookup(flagComponent))
+
+	showCmd.Flags().StringP(flagFormat, shortFormat, "yaml", "Output format.  Supported values are: json, yaml")
+	viper.BindPFlag(vShowFormat, showCmd.Flags().Lookup(flagFormat))
+
+	return showCmd
 }

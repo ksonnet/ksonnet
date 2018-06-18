@@ -16,20 +16,12 @@
 package clicmd
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/stretchr/testify/require"
 )
 
 func Test_initCmd(t *testing.T) {
-	cwd, err := os.Getwd()
-	require.NoError(t, err)
-
-	root := filepath.Join(cwd, "app")
-
 	cases := []cmdTestCase{
 		{
 			name: "in general",
@@ -41,15 +33,20 @@ func Test_initCmd(t *testing.T) {
 			},
 			action: actionInit,
 			expected: map[string]interface{}{
-				actions.OptionFs:                    appFs,
+				actions.OptionFs:                    nil,
 				actions.OptionName:                  "app",
 				actions.OptionEnvName:               "env-name",
-				actions.OptionRootPath:              root,
+				actions.OptionRootPath:              "/app",
 				actions.OptionServer:                "http://127.0.0.1",
 				actions.OptionSpecFlag:              "version:v1.8.0",
 				actions.OptionNamespace:             "new-namespace",
 				actions.OptionSkipDefaultRegistries: false,
 			},
+		},
+		{
+			name:  "no args",
+			args:  []string{"init"},
+			isErr: true,
 		},
 	}
 

@@ -19,24 +19,12 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
-var prototypeListCmd = &cobra.Command{
-	Use:   "list",
-	Short: protoShortDesc["list"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("Command 'prototype list' does not take any arguments")
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp: ka,
-		}
-
-		return runAction(actionPrototypeList, m)
-	},
-	Long: `
+var (
+	prototypeListLong = `
 The ` + "`list`" + ` command displays all prototypes that are available locally, as
 well as brief descriptions of what they generate.
 
@@ -53,9 +41,26 @@ from the *incubator* registry.
 * ` + "`ks pkg install` " + pkgShortDesc["install"] + `
 
 ### Syntax
-`,
-}
+`
+)
 
-func init() {
-	prototypeCmd.AddCommand(prototypeListCmd)
+func newPrototypeListCmd(a app.App) *cobra.Command {
+	prototypeListCmd := &cobra.Command{
+		Use:   "list",
+		Short: protoShortDesc["list"],
+		Long:  prototypeListLong,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 0 {
+				return fmt.Errorf("Command 'prototype list' does not take any arguments")
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp: a,
+			}
+
+			return runAction(actionPrototypeList, m)
+		},
+	}
+
+	return prototypeListCmd
 }

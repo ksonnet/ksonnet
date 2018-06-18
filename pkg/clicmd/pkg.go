@@ -16,9 +16,7 @@
 package clicmd
 
 import (
-	"fmt"
-	"strings"
-
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
@@ -26,20 +24,13 @@ const (
 	flagName = "name"
 )
 
-var pkgShortDesc = map[string]string{
-	"install":  "Install a package (e.g. extra prototypes) for the current ksonnet app",
-	"describe": "Describe a ksonnet package and its contents",
-	"list":     "List all packages known (downloaded or not) for the current ksonnet app",
-}
-
-func init() {
-	RootCmd.AddCommand(pkgCmd)
-}
-
-var pkgCmd = &cobra.Command{
-	Use:   "pkg",
-	Short: `Manage packages and dependencies for the current ksonnet application`,
-	Long: `
+var (
+	pkgShortDesc = map[string]string{
+		"install":  "Install a package (e.g. extra prototypes) for the current ksonnet app",
+		"describe": "Describe a ksonnet package and its contents",
+		"list":     "List all packages known (downloaded or not) for the current ksonnet app",
+	}
+	pkgLong = `
 A ksonnet package contains:
 
 * A set of prototypes (see ` + "`ks prototype --help`" + ` for more info on prototypes), which
@@ -64,11 +55,19 @@ See the annotated file tree below, as an example:
 └── redis.libsonnet                // Helper library, includes prototype parts
 ` + "```" + `
 ---
-`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("%s is not a valid subcommand\n\n%s", strings.Join(args, " "), cmd.UsageString())
-		}
-		return fmt.Errorf("Command 'pkg' requires a subcommand\n\n%s", cmd.UsageString())
-	},
+`
+)
+
+func newPkgCmd(a app.App) *cobra.Command {
+	pkgCmd := &cobra.Command{
+		Use:   "pkg",
+		Short: `Manage packages and dependencies for the current ksonnet application`,
+		Long:  pkgLong,
+	}
+
+	pkgCmd.AddCommand(newPkgListCmd(a))
+	pkgCmd.AddCommand(newPkgInstallCmd(a))
+	pkgCmd.AddCommand(newPkgDescribeCmd(a))
+
+	return pkgCmd
 }

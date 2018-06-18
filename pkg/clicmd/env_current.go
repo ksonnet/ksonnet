@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -28,23 +29,8 @@ const (
 	vEnvCurrentUnset = "env-current-unset"
 )
 
-var envCurrentCmd = &cobra.Command{
-	Use:   "current [--set <name> | --unset]",
-	Short: envShortDesc["current"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("'env current' takes no arguments")
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:     ka,
-			actions.OptionEnvName: viper.GetString(vEnvCurrentSet),
-			actions.OptionUnset:   viper.GetBool(vEnvCurrentUnset),
-		}
-
-		return runAction(actionEnvCurrent, m)
-	},
-	Long: `
+var (
+	envCurrentLong = `
 The ` + "`current`" + ` command lets you set the current ksonnet environment.
 
 ### Related Commands
@@ -52,19 +38,37 @@ The ` + "`current`" + ` command lets you set the current ksonnet environment.
 * ` + "`ks env list` " + `— ` + envShortDesc["list"] + `
 
 ### Syntax
-`,
-	Example: `#Update the current environment to 'us-west/staging'
+`
+	envCurrentExample = `#Update the current environment to 'us-west/staging'
 ks env current --set us-west/staging
 
 #Retrieve the current environment
 ks env current
 
 #Unset the current environment
-ks env current --unset`,
-}
+ks env current --unset`
+)
 
-func init() {
-	envCmd.AddCommand(envCurrentCmd)
+func newEnvCurrentCmd(a app.App) *cobra.Command {
+	envCurrentCmd := &cobra.Command{
+		Use:     "current [--set <name> | --unset]",
+		Short:   envShortDesc["current"],
+		Long:    envCurrentLong,
+		Example: envCurrentExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 0 {
+				return fmt.Errorf("'env current' takes no arguments")
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:     a,
+				actions.OptionEnvName: viper.GetString(vEnvCurrentSet),
+				actions.OptionUnset:   viper.GetBool(vEnvCurrentUnset),
+			}
+
+			return runAction(actionEnvCurrent, m)
+		},
+	}
 
 	envCurrentCmd.Flags().String(flagSet, "",
 		"Environment to set as current")
@@ -73,4 +77,6 @@ func init() {
 	envCurrentCmd.Flags().Bool(flagUnset, false,
 		"Unset current environment")
 	viper.BindPFlag(vEnvCurrentUnset, envCurrentCmd.Flags().Lookup(flagUnset))
+
+	return envCurrentCmd
 }

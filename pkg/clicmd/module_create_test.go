@@ -28,9 +28,14 @@ func Test_moduleCreateCmd(t *testing.T) {
 			args:   []string{"module", "create", "app1"},
 			action: actionModuleCreate,
 			expected: map[string]interface{}{
-				actions.OptionApp:    ka,
+				actions.OptionApp:    nil,
 				actions.OptionModule: "app1",
 			},
+		},
+		{
+			name:  "no module name",
+			args:  []string{"module", "create"},
+			isErr: true,
 		},
 	}
 

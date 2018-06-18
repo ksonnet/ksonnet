@@ -18,6 +18,7 @@ package clicmd
 import (
 	"strings"
 
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/env"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -41,7 +42,7 @@ func bindJsonnetFlags(cmd *cobra.Command, name string) {
 	viper.BindPFlag(name+"-tla-var-file", cmd.Flags().Lookup(flagTlaVarFile))
 }
 
-func extractJsonnetFlags(name string) error {
+func extractJsonnetFlags(a app.App, name string) error {
 	jPaths := viper.GetStringSlice(name + "-jpath")
 	env.AddJPaths(jPaths...)
 
@@ -62,7 +63,7 @@ func extractJsonnetFlags(name string) error {
 			return errors.Wrap(err, "ext var files flag")
 		}
 
-		if err = env.AddExtVarFile(ka, k, v); err != nil {
+		if err = env.AddExtVarFile(a, k, v); err != nil {
 			return errors.Wrap(err, "add ext var file")
 		}
 	}
@@ -84,7 +85,7 @@ func extractJsonnetFlags(name string) error {
 			return errors.Wrap(err, "tla var files flag")
 		}
 
-		if err = env.AddTlaVarFile(ka, k, v); err != nil {
+		if err = env.AddTlaVarFile(a, k, v); err != nil {
 			return errors.Wrap(err, "add tla var file")
 		}
 	}

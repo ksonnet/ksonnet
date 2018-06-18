@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -26,39 +27,42 @@ import (
 var (
 	vComponentListNamespace = "component-list-namespace"
 	vComponentListOutput    = "component-list-output"
-)
 
-var componentListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List known components",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("'component list' takes zero arguments")
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:    ka,
-			actions.OptionModule: viper.GetString(vComponentListNamespace),
-			actions.OptionOutput: viper.GetString(vComponentListOutput),
-		}
-
-		return runAction(actionComponentList, m)
-	},
-	Long: `
+	componentListLong = `
 The ` + "`list`" + ` command displays all known components.
 
 ### Syntax
-`,
-	Example: `
+`
+	componentListExample = `
 # List all components
-ks component list`,
-}
+ks component list`
+)
 
-func init() {
-	componentCmd.AddCommand(componentListCmd)
+func newComponentListCmd(a app.App) *cobra.Command {
+	componentListCmd := &cobra.Command{
+		Use:     "list",
+		Short:   "List known components",
+		Long:    componentListLong,
+		Example: componentListExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 0 {
+				return fmt.Errorf("'component list' takes zero arguments")
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:    a,
+				actions.OptionModule: viper.GetString(vComponentListNamespace),
+				actions.OptionOutput: viper.GetString(vComponentListOutput),
+			}
+
+			return runAction(actionComponentList, m)
+		},
+	}
 
 	componentListCmd.Flags().StringP(flagOutput, shortOutput, "", "Output format. Valid options: wide")
 	viper.BindPFlag(vComponentListOutput, componentListCmd.Flags().Lookup(flagOutput))
 	componentListCmd.Flags().String(flagModule, "", "Component module")
 	viper.BindPFlag(vComponentListNamespace, componentListCmd.Flags().Lookup(flagModule))
+
+	return componentListCmd
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
 )
 
@@ -31,43 +32,7 @@ const (
 )
 
 var (
-	validateClientConfig *client.Config
-)
-
-func init() {
-	RootCmd.AddCommand(validateCmd)
-	addEnvCmdFlags(validateCmd)
-	bindJsonnetFlags(validateCmd, "validate")
-	validateClientConfig = client.NewDefaultClientConfig(ka)
-	validateClientConfig.BindClientGoFlags(validateCmd)
-
-	viper.BindPFlag(vValidateComponent, validateCmd.Flag(flagComponent))
-}
-
-var validateCmd = &cobra.Command{
-	Use:   "validate <env-name> [-c <component-name>]",
-	Short: valShortDesc,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		var envName string
-		if len(args) == 1 {
-			envName = args[0]
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:            ka,
-			actions.OptionEnvName:        envName,
-			actions.OptionModule:         "",
-			actions.OptionComponentNames: viper.GetStringSlice(vValidateComponent),
-			actions.OptionClientConfig:   validateClientConfig,
-		}
-
-		if err := extractJsonnetFlags("validate"); err != nil {
-			return errors.Wrap(err, "handle jsonnet flags")
-		}
-
-		return runAction(actionValidate, m)
-	},
-	Long: `
+	validateLong = `
 The ` + "`validate`" + ` command checks that an application or file is compliant with the
 server APIs Kubernetes specification. Note that this command actually communicates
 *with* the server for the specified ` + "`<env-name>`" + `, so it only works if your
@@ -86,8 +51,8 @@ the manifest for that particular component.
 * ` + "`ks apply` " + `— ` + applyShortDesc + `
 
 ### Syntax
-`,
-	Example: `
+`
+	validateExample = `
 # Validate all resources described in the ksonnet app, against the server
 # specified by the 'dev' environment.
 # NOTE: Make sure your current $KUBECONFIG matches the 'dev' cluster info
@@ -97,5 +62,44 @@ ksonnet validate dev
 # by the 'prod' environment
 # NOTE: Make sure your current $KUBECONFIG matches the 'prod' cluster info
 ksonnet validate prod -c redis
-`,
+`
+)
+
+func newValidateCmd(a app.App) *cobra.Command {
+	validateClientConfig := client.NewDefaultClientConfig(a)
+
+	validateCmd := &cobra.Command{
+		Use:     "validate <env-name> [-c <component-name>]",
+		Short:   valShortDesc,
+		Long:    validateLong,
+		Example: validateExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var envName string
+			if len(args) == 1 {
+				envName = args[0]
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:            a,
+				actions.OptionEnvName:        envName,
+				actions.OptionModule:         "",
+				actions.OptionComponentNames: viper.GetStringSlice(vValidateComponent),
+				actions.OptionClientConfig:   validateClientConfig,
+			}
+
+			if err := extractJsonnetFlags(a, "validate"); err != nil {
+				return errors.Wrap(err, "handle jsonnet flags")
+			}
+
+			return runAction(actionValidate, m)
+		},
+	}
+
+	addEnvCmdFlags(validateCmd)
+	bindJsonnetFlags(validateCmd, "validate")
+	validateClientConfig.BindClientGoFlags(validateCmd)
+
+	viper.BindPFlag(vValidateComponent, validateCmd.Flag(flagComponent))
+
+	return validateCmd
 }

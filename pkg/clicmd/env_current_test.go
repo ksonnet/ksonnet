@@ -28,7 +28,7 @@ func Test_envCurrentCmd(t *testing.T) {
 			args:   []string{"env", "current"},
 			action: actionEnvCurrent,
 			expected: map[string]interface{}{
-				actions.OptionApp:     ka,
+				actions.OptionApp:     nil,
 				actions.OptionEnvName: "",
 				actions.OptionUnset:   false,
 			},
@@ -38,10 +38,15 @@ func Test_envCurrentCmd(t *testing.T) {
 			args:   []string{"env", "current", "--set", "default"},
 			action: actionEnvCurrent,
 			expected: map[string]interface{}{
-				actions.OptionApp:     ka,
+				actions.OptionApp:     nil,
 				actions.OptionEnvName: "default",
 				actions.OptionUnset:   false,
 			},
+		},
+		{
+			name:  "with extra arguments",
+			args:  []string{"env", "current", "extra"},
+			isErr: true,
 		},
 	}
 

@@ -28,9 +28,14 @@ func Test_prototypeDescribeCmd(t *testing.T) {
 			args:   []string{"prototype", "describe", "name"},
 			action: actionPrototypeDescribe,
 			expected: map[string]interface{}{
-				actions.OptionApp:   ka,
+				actions.OptionApp:   nil,
 				actions.OptionQuery: "name",
 			},
+		},
+		{
+			name:  "invalid arguments",
+			args:  []string{"prototype", "describe"},
+			isErr: true,
 		},
 	}
 

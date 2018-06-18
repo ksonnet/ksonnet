@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -27,23 +28,8 @@ const (
 	vEnvRmOverride = "env-rm-override"
 )
 
-var envRmCmd = &cobra.Command{
-	Use:   "rm <env-name>",
-	Short: envShortDesc["rm"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("'env rm' takes a single argument, that is the name of the environment")
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:      ka,
-			actions.OptionEnvName:  args[0],
-			actions.OptionOverride: viper.GetBool(vEnvRmOverride),
-		}
-
-		return runAction(actionEnvRm, m)
-	},
-	Long: `
+var (
+	envRmLong = `
 The ` + "`rm`" + ` command deletes an environment from a ksonnet application. This is
 the same as removing the ` + "`<env-name>`" + ` environment directory and all files
 contained. All empty parent directories are also subsequently deleted.
@@ -59,9 +45,37 @@ need to use the ` + "`ks delete`" + ` command.
 * ` + "`ks delete` " + `— ` + `Delete all the app components running in an environment (cluster)` + `
 
 ### Syntax
-`,
-	Example: `
+`
+	envRmExample = `
 # Remove the directory 'environments/us-west/staging' and all of its contents.
 # This will also remove the parent directory 'us-west' if it is empty.
-ks env rm us-west/staging`,
+ks env rm us-west/staging`
+)
+
+func newEnvRmCmd(a app.App) *cobra.Command {
+	envRmCmd := &cobra.Command{
+		Use:     "rm <env-name>",
+		Short:   envShortDesc["rm"],
+		Long:    envRmLong,
+		Example: envRmExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return fmt.Errorf("'env rm' takes a single argument, that is the name of the environment")
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:      a,
+				actions.OptionEnvName:  args[0],
+				actions.OptionOverride: viper.GetBool(vEnvRmOverride),
+			}
+
+			return runAction(actionEnvRm, m)
+		},
+	}
+
+	envRmCmd.Flags().BoolP(flagOverride, shortOverride, false, "Remove the overridden environment")
+	viper.BindPFlag(vEnvRmOverride, envRmCmd.Flags().Lookup(flagOverride))
+
+	return envRmCmd
+
 }

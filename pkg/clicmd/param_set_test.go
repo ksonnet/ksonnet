@@ -28,7 +28,7 @@ func Test_paramSetCmd(t *testing.T) {
 			args:   []string{"param", "set", "component-name", "param-name", "param-value"},
 			action: actionParamSet,
 			expected: map[string]interface{}{
-				actions.OptionApp:      ka,
+				actions.OptionApp:      nil,
 				actions.OptionName:     "component-name",
 				actions.OptionPath:     "param-name",
 				actions.OptionValue:    "param-value",
@@ -42,7 +42,7 @@ func Test_paramSetCmd(t *testing.T) {
 			args:   []string{"param", "set", "param-name", "param-value", "--env", "default"},
 			action: actionParamSet,
 			expected: map[string]interface{}{
-				actions.OptionApp:      ka,
+				actions.OptionApp:      nil,
 				actions.OptionName:     "",
 				actions.OptionPath:     "param-name",
 				actions.OptionValue:    "param-value",
@@ -61,7 +61,7 @@ func Test_paramSetCmd(t *testing.T) {
 			args:   []string{"param", "set", "component-name", "param-name", "param-value", "--as-string", "--env", ""},
 			action: actionParamSet,
 			expected: map[string]interface{}{
-				actions.OptionApp:      ka,
+				actions.OptionApp:      nil,
 				actions.OptionName:     "component-name",
 				actions.OptionPath:     "param-name",
 				actions.OptionValue:    "param-value",

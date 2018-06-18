@@ -16,34 +16,19 @@
 package clicmd
 
 import (
-	"fmt"
-	"strings"
-
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
-var protoShortDesc = map[string]string{
-	"list":     "List all locally available ksonnet prototypes",
-	"describe": "See more info about a prototype's output and usage",
-	"preview":  "Preview a prototype's output without creating a component (stdout)",
-	"search":   "Search for a prototype",
-	"use":      "Use the specified prototype to generate a component manifest",
-}
-
-func init() {
-	RootCmd.AddCommand(prototypeCmd)
-}
-
-var prototypeCmd = &cobra.Command{
-	Use:   "prototype",
-	Short: `Instantiate, inspect, and get examples for ksonnet prototypes`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("%s is not a valid subcommand\n\n%s", strings.Join(args, " "), cmd.UsageString())
-		}
-		return fmt.Errorf("Command 'prototype' requires a subcommand\n\n%s", cmd.UsageString())
-	},
-	Long: `
+var (
+	protoShortDesc = map[string]string{
+		"list":     "List all locally available ksonnet prototypes",
+		"describe": "See more info about a prototype's output and usage",
+		"preview":  "Preview a prototype's output without creating a component (stdout)",
+		"search":   "Search for a prototype",
+		"use":      "Use the specified prototype to generate a component manifest",
+	}
+	protoLong = `
 Use the` + " `prototype` " + `subcommands to manage, inspect, instantiate, and get
 examples for ksonnet prototypes.
 
@@ -58,5 +43,21 @@ use prototypes to autogenerate boilerplate code and focus on customizing them
 for your use case.
 
 ----
-`,
+`
+)
+
+func newPrototypeCmd(a app.App) *cobra.Command {
+	prototypeCmd := &cobra.Command{
+		Use:   "prototype",
+		Short: `Instantiate, inspect, and get examples for ksonnet prototypes`,
+		Long:  protoLong,
+	}
+
+	prototypeCmd.AddCommand(newPrototypeDescribeCmd(a))
+	prototypeCmd.AddCommand(newPrototypeListCmd(a))
+	prototypeCmd.AddCommand(newPrototypePreviewCmd(a))
+	prototypeCmd.AddCommand(newPrototypeSearchCmd(a))
+	prototypeCmd.AddCommand(newPrototypeUseCmd(a))
+
+	return prototypeCmd
 }

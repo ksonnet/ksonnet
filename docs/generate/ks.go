@@ -16,22 +16,34 @@
 package main
 
 import (
-	"log"
 	"os"
 
 	"github.com/ksonnet/ksonnet/pkg/clicmd"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra/doc"
 )
 
 func main() {
 	outputDir := os.Args[1]
 
-	cmd := clicmd.RootCmd
-	// Remove auto-generated timestamps
-	cmd.DisableAutoGenTag = true
-
-	err := doc.GenMarkdownTree(cmd, outputDir)
+	wd, err := os.Getwd()
 	if err != nil {
-		log.Fatal(err)
+		logrus.WithError(err).Error("unable to find working directory")
+		os.Exit(1)
+	}
+
+	rootCmd, err := clicmd.NewRoot(afero.NewOsFs(), wd, []string{})
+	if err != nil {
+		logrus.WithError(err).Error("unable create ksonnet command")
+		os.Exit(1)
+	}
+
+	// Remove auto-generated timestamps
+	rootCmd.DisableAutoGenTag = true
+
+	err = doc.GenMarkdownTree(rootCmd, outputDir)
+	if err != nil {
+		logrus.Fatal(err)
 	}
 }

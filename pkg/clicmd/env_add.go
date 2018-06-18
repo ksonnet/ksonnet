@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
 	"github.com/spf13/cobra"
 )
@@ -31,63 +32,7 @@ const (
 
 var (
 	envClientConfig *client.Config
-)
-
-func init() {
-	envCmd.AddCommand(envAddCmd)
-
-	envClientConfig = client.NewDefaultClientConfig(ka)
-	envClientConfig.BindClientGoFlags(envAddCmd)
-
-	// TODO: We need to make this default to checking the `kubeconfig` file.
-	envAddCmd.PersistentFlags().String(flagAPISpec, "",
-		"Manually specify API version from OpenAPI schema, cluster, or Kubernetes version")
-
-	envAddCmd.Flags().BoolP(flagOverride, shortOverride, false, "Add environment as override")
-	viper.BindPFlag(vEnvAddOverride, envAddCmd.Flags().Lookup(flagOverride))
-}
-
-var envAddCmd = &cobra.Command{
-	Use:   "add <env-name>",
-	Short: envShortDesc["add"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		flags := cmd.Flags()
-		if len(args) != 1 {
-			return fmt.Errorf("'env add' takes exactly one argument, which is the name of the environment")
-		}
-
-		name := args[0]
-
-		server, namespace, err := resolveEnvFlags(flags)
-		if err != nil {
-			return err
-		}
-
-		// TODO: pass envClientConfig to the action so it can pull out the
-		// spec flag if it is empty.
-		specFlag, err := flags.GetString(flagAPISpec)
-		if err != nil {
-			return err
-		}
-		if specFlag == "" {
-			specFlag = envClientConfig.GetAPISpec()
-		}
-
-		isOverride := viper.GetBool(vEnvAddOverride)
-
-		m := map[string]interface{}{
-			actions.OptionApp:      ka,
-			actions.OptionEnvName:  name,
-			actions.OptionServer:   server,
-			actions.OptionModule:   namespace,
-			actions.OptionSpecFlag: specFlag,
-			actions.OptionOverride: isOverride,
-		}
-
-		return runAction(actionEnvAdd, m)
-	},
-
-	Long: `
+	envAddLong      = `
 The ` + "`add`" + ` command creates a new environment (specifically for the ksonnet app
 whose directory it's executed in). This environment is cached with the following
 info:
@@ -113,8 +58,8 @@ Note that an environment *DOES NOT* contain user-specific data such as private k
 * ` + "`ks apply` " + `— ` + applyShortDesc + `
 
 ### Syntax
-`,
-	Example: `
+`
+	envAddExample = `
 # Initialize a new environment, called "staging". No flags are set, so 'server'
 # and 'namespace' info are pulled from the file specified by $KUBECONFIG.
 # 'version' defaults to the latest that ksonnet supports.
@@ -134,5 +79,63 @@ ks env add my-env --context=dev
 
 # Initialize a new environment "prod" using the address of a cluster's Kubernetes
 # API server.
-ks env add prod --server=https://ksonnet-1.us-west.elb.amazonaws.com`,
+ks env add prod --server=https://ksonnet-1.us-west.elb.amazonaws.com`
+)
+
+func newEnvAddCmd(a app.App) *cobra.Command {
+	envClientConfig := client.NewDefaultClientConfig(a)
+
+	envAddCmd := &cobra.Command{
+		Use:     "add <env-name>",
+		Short:   envShortDesc["add"],
+		Long:    envAddLong,
+		Example: envAddExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			flags := cmd.Flags()
+			if len(args) != 1 {
+				return fmt.Errorf("'env add' takes exactly one argument, which is the name of the environment")
+			}
+
+			name := args[0]
+
+			server, namespace, err := resolveEnvFlags(flags)
+			if err != nil {
+				return err
+			}
+
+			// TODO: pass envClientConfig to the action so it can pull out the
+			// spec flag if it is empty.
+			specFlag, err := flags.GetString(flagAPISpec)
+			if err != nil {
+				return err
+			}
+			if specFlag == "" {
+				specFlag = envClientConfig.GetAPISpec()
+			}
+
+			isOverride := viper.GetBool(vEnvAddOverride)
+
+			m := map[string]interface{}{
+				actions.OptionApp:      a,
+				actions.OptionEnvName:  name,
+				actions.OptionServer:   server,
+				actions.OptionModule:   namespace,
+				actions.OptionSpecFlag: specFlag,
+				actions.OptionOverride: isOverride,
+			}
+
+			return runAction(actionEnvAdd, m)
+		},
+	}
+
+	envClientConfig.BindClientGoFlags(envAddCmd)
+
+	// TODO: We need to make this default to checking the `kubeconfig` file.
+	envAddCmd.PersistentFlags().String(flagAPISpec, "",
+		"Manually specify API version from OpenAPI schema, cluster, or Kubernetes version")
+
+	envAddCmd.Flags().BoolP(flagOverride, shortOverride, false, "Add environment as override")
+	viper.BindPFlag(vEnvAddOverride, envAddCmd.Flags().Lookup(flagOverride))
+
+	return envAddCmd
 }

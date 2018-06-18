@@ -34,6 +34,11 @@ func Test_showCmd(t *testing.T) {
 				actions.OptionFormat:         "yaml",
 			},
 		},
+		{
+			name:  "invalid jsonnet flag",
+			args:  []string{"show", "default", "--ext-str", "foo"},
+			isErr: true,
+		},
 	}
 
 	runTestCmd(t, cases)

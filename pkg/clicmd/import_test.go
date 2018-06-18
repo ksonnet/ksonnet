@@ -21,25 +21,26 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
 )
 
-func Test_envAddCmd(t *testing.T) {
+func Test_importCmd(t *testing.T) {
 	cases := []cmdTestCase{
 		{
-			name:   "in general",
-			args:   []string{"env", "add", "prod", "--server", "http://example.com", "--api-spec", "version:v1.9.5"},
-			action: actionEnvAdd,
+			name:   "import location",
+			args:   []string{"import", "-f", "location"},
+			action: actionImport,
 			expected: map[string]interface{}{
-				actions.OptionApp:      nil,
-				actions.OptionEnvName:  "prod",
-				actions.OptionModule:   "default",
-				actions.OptionOverride: false,
-				actions.OptionServer:   "http://example.com",
-				actions.OptionSpecFlag: "version:v1.9.5",
+				actions.OptionApp:  nil,
+				actions.OptionPath: "location",
 			},
 		},
 		{
-			name:  "no environment",
-			args:  []string{"env", "add"},
-			isErr: true,
+			name:   "import location with module",
+			args:   []string{"import", "-f", "location", "--module", "module"},
+			action: actionImport,
+			expected: map[string]interface{}{
+				actions.OptionApp:    nil,
+				actions.OptionPath:   "location",
+				actions.OptionModule: "module",
+			},
 		},
 	}
 

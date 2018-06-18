@@ -19,6 +19,7 @@ import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
 	"github.com/ksonnet/ksonnet/pkg/clicmd"
@@ -32,7 +33,19 @@ func main() {
 	clicmd.Version = version
 	clicmd.APImachineryVersion = apimachineryVersion
 
-	if err := clicmd.RootCmd.Execute(); err != nil {
+	wd, err := os.Getwd()
+	if err != nil {
+		log.WithError(err).Error("unable to find working directory")
+		os.Exit(1)
+	}
+
+	rootCmd, err := clicmd.NewRoot(afero.NewOsFs(), wd, os.Args[1:])
+	if err != nil {
+		log.WithError(err).Error("unable create ksonnet command")
+		os.Exit(1)
+	}
+
+	if err := rootCmd.Execute(); err != nil {
 		// PersistentPreRunE may not have been run for early
 		// errors, like invalid command line flags.
 		logFmt := &log.TextFormatter{

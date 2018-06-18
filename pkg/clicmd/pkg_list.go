@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
@@ -28,22 +29,8 @@ const (
 	vPkgListInstalled = "pkg-list-installed"
 )
 
-var pkgListCmd = &cobra.Command{
-	Use:   "list",
-	Short: pkgShortDesc["list"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("Command 'pkg list' does not take arguments")
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:       ka,
-			actions.OptionInstalled: viper.GetBool(vPkgListInstalled),
-		}
-
-		return runAction(actionPkgList, m)
-	},
-	Long: `
+var (
+	pkgListLong = `
 The ` + "`list`" + ` command outputs a table that describes all *known* packages (not
 necessarily downloaded, but available from existing registries). This includes
 the following info:
@@ -59,12 +46,30 @@ the following info:
 * ` + "`ks registry describe` " + `— ` + regShortDesc["describe"] + `
 
 ### Syntax
-`,
-}
+`
+)
 
-func init() {
-	pkgCmd.AddCommand(pkgListCmd)
+func newPkgListCmd(a app.App) *cobra.Command {
+	pkgListCmd := &cobra.Command{
+		Use:   "list",
+		Short: pkgShortDesc["list"],
+		Long:  pkgListLong,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 0 {
+				return fmt.Errorf("Command 'pkg list' does not take arguments")
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:       a,
+				actions.OptionInstalled: viper.GetBool(vPkgListInstalled),
+			}
+
+			return runAction(actionPkgList, m)
+		},
+	}
 
 	pkgListCmd.Flags().Bool(flagInstalled, false, "Only list installed packages")
 	viper.BindPFlag(vPkgListInstalled, pkgListCmd.Flags().Lookup(flagInstalled))
+
+	return pkgListCmd
 }

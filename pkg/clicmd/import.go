@@ -17,6 +17,7 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
@@ -27,27 +28,29 @@ const (
 	vImportModule   = "import-module"
 )
 
-// importCmd represents the import command
-var importCmd = &cobra.Command{
-	Use:   "import",
-	Short: "Import manifest",
-	Long:  `Import manifest`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		m := map[string]interface{}{
-			actions.OptionApp:    ka,
-			actions.OptionModule: viper.GetString(vImportModule),
-			actions.OptionPath:   viper.GetString(vImportFilename),
-		}
+func newImportCmd(a app.App) *cobra.Command {
+	importCmd := &cobra.Command{
+		Use:   "import",
+		Short: "Import manifest",
+		Long:  `Import manifest`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			m := map[string]interface{}{
+				actions.OptionApp:  a,
+				actions.OptionPath: viper.GetString(vImportFilename),
+			}
 
-		return runAction(actionImport, m)
-	},
-}
+			if mod := viper.GetString(vImportModule); mod != "" {
+				m[actions.OptionModule] = mod
+			}
 
-func init() {
-	RootCmd.AddCommand(importCmd)
+			return runAction(actionImport, m)
+		},
+	}
 
 	importCmd.Flags().StringP(flagFilename, shortFilename, "", "Filename, directory, or URL for component to import")
 	viper.BindPFlag(vImportFilename, importCmd.Flags().Lookup(flagFilename))
 	importCmd.Flags().String(flagModule, "", "Component module")
 	viper.BindPFlag(vImportModule, importCmd.Flags().Lookup(flagModule))
+
+	return importCmd
 }

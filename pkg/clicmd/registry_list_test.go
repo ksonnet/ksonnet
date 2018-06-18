@@ -28,8 +28,13 @@ func Test_registryListCmd(t *testing.T) {
 			args:   []string{"registry", "list"},
 			action: actionRegistryList,
 			expected: map[string]interface{}{
-				actions.OptionApp: ka,
+				actions.OptionApp: nil,
 			},
+		},
+		{
+			name:  "invalid arguments",
+			args:  []string{"registry", "list", "invalid"},
+			isErr: true,
 		},
 	}
 

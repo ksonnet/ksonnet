@@ -31,3 +31,5 @@ _testmain.go
 
 # gotags
 tags
+
+.DS_Store

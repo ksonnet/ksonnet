@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -27,24 +28,8 @@ const (
 	vParamDiffComponent = "param-diff-component"
 )
 
-var paramDiffCmd = &cobra.Command{
-	Use:   "diff <env1> <env2> [--component <component-name>]",
-	Short: paramShortDesc["diff"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 2 {
-			return fmt.Errorf("'param diff' takes exactly two arguments: the respective names of the environments being diffed")
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:           ka,
-			actions.OptionEnvName1:      args[0],
-			actions.OptionEnvName2:      args[1],
-			actions.OptionComponentName: viper.GetString(vParamDiffComponent),
-		}
-
-		return runAction(actionParamDiff, m)
-	},
-	Long: `
+var (
+	paramDiffLong = `
 The ` + "`diff`" + ` command pretty prints differences between the component parameters
 of two environments.
 
@@ -57,22 +42,40 @@ is supported via a component flag.
 * ` + "`ks apply` " + `— ` + applyShortDesc + `
 
 ### Syntax
-`,
-	Example: `
+`
+	paramDiffExample = `
 # Diff between all component parameters for environments 'dev' and 'prod'
 ks param diff dev prod
 
 # Diff only between the parameters for the 'guestbook' component for environments
 # 'dev' and 'prod'
-ks param diff dev prod --component=guestbook`,
-}
+ks param diff dev prod --component=guestbook`
+)
 
-func init() {
-	paramCmd.AddCommand(paramDiffCmd)
+func newParamDiffCmd(a app.App) *cobra.Command {
+	paramDiffCmd := &cobra.Command{
+		Use:     "diff <env1> <env2> [--component <component-name>]",
+		Short:   paramShortDesc["diff"],
+		Long:    paramDiffLong,
+		Example: paramDiffExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 2 {
+				return fmt.Errorf("'param diff' takes exactly two arguments: the respective names of the environments being diffed")
+			}
 
-	paramListCmd.PersistentFlags().String(flagEnv, "", "Specify environment to list parameters for")
-	paramListCmd.Flags().String(flagModule, "", "Specify module to list parameters for")
+			m := map[string]interface{}{
+				actions.OptionApp:           a,
+				actions.OptionEnvName1:      args[0],
+				actions.OptionEnvName2:      args[1],
+				actions.OptionComponentName: viper.GetString(vParamDiffComponent),
+			}
+
+			return runAction(actionParamDiff, m)
+		},
+	}
 
 	paramDiffCmd.Flags().String(flagComponent, "", "Specify the component to diff against")
 	viper.BindPFlag(vParamDiffComponent, paramDiffCmd.Flags().Lookup(flagComponent))
+
+	return paramDiffCmd
 }

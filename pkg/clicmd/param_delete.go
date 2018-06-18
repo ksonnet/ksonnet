@@ -17,6 +17,7 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -24,35 +25,7 @@ import (
 
 var (
 	vParamDeleteEnv = "param-delete-env"
-)
-
-var paramDeleteCmd = &cobra.Command{
-	Use:   "delete [component-name] <param-key>",
-	Short: paramShortDesc["delete"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		var name string
-		var path string
-
-		switch len(args) {
-		default:
-			return errors.New("invalid arguments for 'param delete'")
-		case 2:
-			name = args[0]
-			path = args[1]
-		case 1:
-			path = args[0]
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:     ka,
-			actions.OptionName:    name,
-			actions.OptionPath:    path,
-			actions.OptionEnvName: viper.GetString(vParamDeleteEnv),
-		}
-
-		return runAction(actionParamDelete, m)
-	},
-	Long: `
+	paramDeleteLong = `
 The ` + "`delete`" + ` command deletes component or environment parameters.
 
 ### Related Commands
@@ -62,18 +35,48 @@ The ` + "`delete`" + ` command deletes component or environment parameters.
 * ` + "`ks apply` " + `— ` + applyShortDesc + `
 
 ### Syntax
-`,
-	Example: `
+`
+	paramDeleteExample = `
 # Delete 'guestbook' component replica parameter
 ks param delete guestbook replicas
 
 # Delete 'guestbook' component replicate in 'dev' environment
-ks param delete guestbook replicas --env=dev`,
-}
+ks param delete guestbook replicas --env=dev`
+)
 
-func init() {
-	paramCmd.AddCommand(paramDeleteCmd)
+func newParamDeleteCmd(a app.App) *cobra.Command {
+	paramDeleteCmd := &cobra.Command{
+		Use:     "delete [component-name] <param-key>",
+		Short:   paramShortDesc["delete"],
+		Long:    paramDeleteLong,
+		Example: paramDeleteExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var name string
+			var path string
+
+			switch len(args) {
+			default:
+				return errors.New("invalid arguments for 'param delete'")
+			case 2:
+				name = args[0]
+				path = args[1]
+			case 1:
+				path = args[0]
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:     a,
+				actions.OptionName:    name,
+				actions.OptionPath:    path,
+				actions.OptionEnvName: viper.GetString(vParamDeleteEnv),
+			}
+
+			return runAction(actionParamDelete, m)
+		},
+	}
 
 	paramDeleteCmd.Flags().String(flagEnv, "", "Specify environment to delete parameter from")
 	viper.BindPFlag(vParamDeleteEnv, paramDeleteCmd.Flags().Lookup(flagEnv))
+
+	return paramDeleteCmd
 }

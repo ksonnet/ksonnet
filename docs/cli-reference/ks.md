@@ -9,7 +9,7 @@ You can use the `ks` commands to write, share, and deploy your Kubernetes
 application configuration to remote clusters.
 
 ----
-
+	
 
 ```
 ks [flags]

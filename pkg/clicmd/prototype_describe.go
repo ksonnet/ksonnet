@@ -19,25 +19,12 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
-var prototypeDescribeCmd = &cobra.Command{
-	Use:   "describe <prototype-name>",
-	Short: protoShortDesc["describe"],
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("Command 'prototype describe' requires a prototype name\n\n%s", cmd.UsageString())
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:   ka,
-			actions.OptionQuery: args[0],
-		}
-
-		return runAction(actionPrototypeDescribe, m)
-	},
-	Long: `
+var (
+	prototypeDescribeLong = `
 This command outputs documentation, examples, and other information for
 the specified prototype (identified by name). Specifically, this describes:
 
@@ -52,12 +39,31 @@ the specified prototype (identified by name). Specifically, this describes:
 * ` + "`ks prototype use` " + `— ` + protoShortDesc["use"] + `
 
 ### Syntax
-`,
-	Example: `
+`
+	prototypeDescribeExample = `
 # Display documentation about the prototype 'io.ksonnet.pkg.single-port-deployment'
-ks prototype describe deployment`,
-}
+ks prototype describe deployment`
+)
 
-func init() {
-	prototypeCmd.AddCommand(prototypeDescribeCmd)
+func newPrototypeDescribeCmd(a app.App) *cobra.Command {
+	prototypeDescribeCmd := &cobra.Command{
+		Use:     "describe <prototype-name>",
+		Short:   protoShortDesc["describe"],
+		Long:    prototypeDescribeLong,
+		Example: prototypeDescribeExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return fmt.Errorf("Command 'prototype describe' requires a prototype name\n\n%s", cmd.UsageString())
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:   a,
+				actions.OptionQuery: args[0],
+			}
+
+			return runAction(actionPrototypeDescribe, m)
+		},
+	}
+
+	return prototypeDescribeCmd
 }

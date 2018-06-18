@@ -16,19 +16,14 @@
 package clicmd
 
 import (
+	"fmt"
+
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-)
-
-var (
-	applyClientConfig *client.Config
-)
-
-const (
-	applyShortDesc = "Apply local Kubernetes manifests (components) to remote clusters"
 )
 
 const (
@@ -37,58 +32,9 @@ const (
 	vApplyGcTag     = "apply-gc-tag"
 	vApplyDryRun    = "apply-dry-run"
 	vApplySkipGc    = "apply-skip-gc"
-)
 
-func init() {
-	RootCmd.AddCommand(applyCmd)
-
-	applyClientConfig = client.NewDefaultClientConfig(ka)
-	applyClientConfig.BindClientGoFlags(applyCmd)
-	bindJsonnetFlags(applyCmd, "apply")
-
-	applyCmd.Flags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
-	viper.BindPFlag(vApplyComponent, applyCmd.Flags().Lookup(flagComponent))
-
-	applyCmd.Flags().Bool(flagCreate, true, "Option to create resources if they do not already exist on the cluster")
-	viper.BindPFlag(vApplyCreate, applyCmd.Flags().Lookup(flagCreate))
-
-	applyCmd.Flags().Bool(flagSkipGc, false, "Option to skip garbage collection, even with --"+flagGcTag+" specified")
-	viper.BindPFlag(vApplySkipGc, applyCmd.Flags().Lookup(flagSkipGc))
-
-	applyCmd.Flags().String(flagGcTag, "", "A tag that's (1) added to all updated objects (2) used to garbage collect existing objects that are no longer in the manifest")
-	viper.BindPFlag(vApplyGcTag, applyCmd.Flags().Lookup(flagGcTag))
-
-	applyCmd.Flags().Bool(flagDryRun, false, "Option to preview the list of operations without changing the cluster state")
-	viper.BindPFlag(vApplyDryRun, applyCmd.Flags().Lookup(flagDryRun))
-}
-
-var applyCmd = &cobra.Command{
-	Use:   "apply <env-name> [-c <component-name>] [--dry-run]",
-	Short: applyShortDesc,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		var envName string
-		if len(args) == 1 {
-			envName = args[0]
-		}
-
-		m := map[string]interface{}{
-			actions.OptionApp:            ka,
-			actions.OptionClientConfig:   applyClientConfig,
-			actions.OptionComponentNames: viper.GetStringSlice(vApplyComponent),
-			actions.OptionCreate:         viper.GetBool(vApplyCreate),
-			actions.OptionDryRun:         viper.GetBool(vApplyDryRun),
-			actions.OptionEnvName:        envName,
-			actions.OptionGcTag:          viper.GetString(vApplyGcTag),
-			actions.OptionSkipGc:         viper.GetBool(vApplySkipGc),
-		}
-
-		if err := extractJsonnetFlags("apply"); err != nil {
-			return errors.Wrap(err, "handle jsonnet flags")
-		}
-
-		return runAction(actionApply, m)
-	},
-	Long: `
+	applyShortDesc = "Apply local Kubernetes manifests (components) to remote clusters"
+	applyLong      = `
 The ` + "`apply`" + `command uses local manifest(s) to update (and optionally create)
 Kubernetes resources on a remote cluster. This cluster is determined by the
 mandatory ` + "`<env-name>`" + ` argument.
@@ -108,8 +54,9 @@ Note that this command needs to be run *within* a ksonnet app directory.
 * ` + "`ks delete` " + `— ` + deleteShortDesc + `
 
 ### Syntax
-`,
-	Example: `
+`
+
+	applyExample = `
 # Create or update all resources described in the ksonnet application, specifically
 # the ones running in the 'dev' environment. This command works in any subdirectory
 # of the app.
@@ -134,5 +81,60 @@ ks apply dev -c guestbook-ui
 # This essentially deploys 'components/guestbook-ui.jsonnet' and
 # 'components/nginx-depl.jsonnet'.
 ks apply dev -c guestbook-ui -c nginx-depl --create false
-`,
+`
+)
+
+func newApplyCmd(a app.App) *cobra.Command {
+	applyClientConfig := client.NewDefaultClientConfig(a)
+
+	applyCmd := &cobra.Command{
+		Use:   "apply <env-name> [-c <component-name>] [--dry-run]",
+		Short: applyShortDesc,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var envName string
+			if len(args) == 1 {
+				envName = args[0]
+			}
+
+			m := map[string]interface{}{
+				actions.OptionApp:            a,
+				actions.OptionClientConfig:   applyClientConfig,
+				actions.OptionComponentNames: viper.GetStringSlice(vApplyComponent),
+				actions.OptionCreate:         viper.GetBool(vApplyCreate),
+				actions.OptionDryRun:         viper.GetBool(vApplyDryRun),
+				actions.OptionEnvName:        envName,
+				actions.OptionGcTag:          viper.GetString(vApplyGcTag),
+				actions.OptionSkipGc:         viper.GetBool(vApplySkipGc),
+			}
+
+			fmt.Println("extract jsonnet flag")
+			if err := extractJsonnetFlags(a, "apply"); err != nil {
+				return errors.Wrap(err, "handle jsonnet flags")
+			}
+
+			return runAction(actionApply, m)
+		},
+		Long:    applyLong,
+		Example: applyExample,
+	}
+
+	applyClientConfig.BindClientGoFlags(applyCmd)
+	bindJsonnetFlags(applyCmd, "apply")
+
+	applyCmd.Flags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
+	viper.BindPFlag(vApplyComponent, applyCmd.Flags().Lookup(flagComponent))
+
+	applyCmd.Flags().Bool(flagCreate, true, "Option to create resources if they do not already exist on the cluster")
+	viper.BindPFlag(vApplyCreate, applyCmd.Flags().Lookup(flagCreate))
+
+	applyCmd.Flags().Bool(flagSkipGc, false, "Option to skip garbage collection, even with --"+flagGcTag+" specified")
+	viper.BindPFlag(vApplySkipGc, applyCmd.Flags().Lookup(flagSkipGc))
+
+	applyCmd.Flags().String(flagGcTag, "", "A tag that's (1) added to all updated objects (2) used to garbage collect existing objects that are no longer in the manifest")
+	viper.BindPFlag(vApplyGcTag, applyCmd.Flags().Lookup(flagGcTag))
+
+	applyCmd.Flags().Bool(flagDryRun, false, "Option to preview the list of operations without changing the cluster state")
+	viper.BindPFlag(vApplyDryRun, applyCmd.Flags().Lookup(flagDryRun))
+
+	return applyCmd
 }

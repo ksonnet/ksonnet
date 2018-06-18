@@ -16,33 +16,18 @@
 package clicmd
 
 import (
-	"fmt"
-	"strings"
-
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
-var regShortDesc = map[string]string{
-	"list":     "List all registries known to the current ksonnet app",
-	"describe": "Describe a ksonnet registry and the packages it contains",
-	"add":      "Add a registry to the current ksonnet app",
-	"update":   "Update currently configured registries",
-}
-
-func init() {
-	RootCmd.AddCommand(registryCmd)
-}
-
-var registryCmd = &cobra.Command{
-	Use:   "registry",
-	Short: `Manage registries for current project`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("%s is not a valid subcommand\n\n%s", strings.Join(args, " "), cmd.UsageString())
-		}
-		return fmt.Errorf("Command 'registry' requires a subcommand\n\n%s", cmd.UsageString())
-	},
-	Long: `
+var (
+	regShortDesc = map[string]string{
+		"list":     "List all registries known to the current ksonnet app",
+		"describe": "Describe a ksonnet registry and the packages it contains",
+		"add":      "Add a registry to the current ksonnet app",
+		"update":   "Update currently configured registries",
+	}
+	registryLong = `
 A ksonnet registry is basically a repository for *packages*. (Registry here is
 used in the same sense as a container image registry). Registries are identified
 by a ` + "`registry.yaml`" + ` in their root that declares which packages they contain.
@@ -58,5 +43,20 @@ which can be combined together to configure a Kubernetes application for some ta
 described above. (See ` + "`ks prototype --help`" + ` for more information.)
 
 ----
-`,
+`
+)
+
+func newRegistryCmd(a app.App) *cobra.Command {
+	registryCmd := &cobra.Command{
+		Use:   "registry",
+		Short: `Manage registries for current project`,
+		Long:  registryLong,
+	}
+
+	registryCmd.AddCommand(newRegistryAddCmd(a))
+	registryCmd.AddCommand(newRegistryDescribeCmd(a))
+	registryCmd.AddCommand(newRegistryListCmd(a))
+	registryCmd.AddCommand(newRegistryUpdateCmd(a))
+
+	return registryCmd
 }

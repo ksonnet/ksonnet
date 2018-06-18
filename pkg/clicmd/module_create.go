@@ -17,30 +17,29 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
-// moduleCreateCmd creates a ns create command.
-var moduleCreateCmd = &cobra.Command{
-	Use:   "create <name>",
-	Short: "Create a module",
-	Long:  `Create a module`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return errors.New("module create <module name>")
-		}
+func newModuleCreateCmd(a app.App) *cobra.Command {
+	moduleCreateCmd := &cobra.Command{
+		Use:   "create <name>",
+		Short: "Create a module",
+		Long:  `Create a module`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return errors.New("module create <module name>")
+			}
 
-		m := map[string]interface{}{
-			actions.OptionApp:    ka,
-			actions.OptionModule: args[0],
-		}
+			m := map[string]interface{}{
+				actions.OptionApp:    a,
+				actions.OptionModule: args[0],
+			}
 
-		return runAction(actionModuleCreate, m)
-	},
-}
+			return runAction(actionModuleCreate, m)
+		},
+	}
 
-func init() {
-	moduleCmd.AddCommand(moduleCreateCmd)
-
+	return moduleCreateCmd
 }

@@ -15,10 +15,9 @@ ks component rm <component-name> [flags]
 ### Examples
 
 ```
-# Remove the component 'guestbook'. This is equivalent to deleting guestbook.jsonnet
-# in the components directory, and cleaning up references to the component
-# throughout the ksonnet application.
-ks component rm guestbook
+
+# List all components
+ks component list
 ```
 
 ### Options

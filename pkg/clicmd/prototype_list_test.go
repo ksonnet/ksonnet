@@ -28,8 +28,13 @@ func Test_prototypeListCmd(t *testing.T) {
 			args:   []string{"prototype", "list"},
 			action: actionPrototypeList,
 			expected: map[string]interface{}{
-				actions.OptionApp: ka,
+				actions.OptionApp: nil,
 			},
+		},
+		{
+			name:  "invalid arguments",
+			args:  []string{"prototype", "list", "invalid"},
+			isErr: true,
 		},
 	}
 

@@ -31,10 +31,6 @@ See the annotated file tree below, as an example:
 ---
 
 
-```
-ks pkg [flags]
-```
-
 ### Options
 
 ```

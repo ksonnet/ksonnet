@@ -28,9 +28,14 @@ func Test_componentRmCmd(t *testing.T) {
 			args:   []string{"component", "rm", "name"},
 			action: actionComponentRm,
 			expected: map[string]interface{}{
-				actions.OptionApp:           ka,
+				actions.OptionApp:           nil,
 				actions.OptionComponentName: "name",
 			},
+		},
+		{
+			name:  "no component name",
+			args:  []string{"component", "rm"},
+			isErr: true,
 		},
 	}
 

@@ -18,9 +18,9 @@ package clicmd
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 
+	"github.com/spf13/afero"
 	"github.com/spf13/viper"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
@@ -38,75 +38,7 @@ const (
 )
 
 var (
-	initClientConfig *client.Config
-)
-
-func init() {
-	RootCmd.AddCommand(initCmd)
-	initClientConfig = client.NewDefaultClientConfig(ka)
-	initClientConfig.BindClientGoFlags(initCmd)
-
-	initCmd.Flags().String(flagDir, "", "Ksonnet application directory")
-	viper.BindPFlag(vInitDir, initCmd.Flag(flagDir))
-
-	// TODO: We need to make this default to checking the `kubeconfig` file.
-	initCmd.Flags().String(flagAPISpec, "",
-		"Manually specified Kubernetes API version. The corresponding OpenAPI spec is used to generate ksonnet's Kubernetes libraries")
-	viper.BindPFlag(vInitAPISpec, initCmd.Flag(flagAPISpec))
-
-	initCmd.Flags().Bool(flagSkipDefaultRegistries, false, "Skip configuration of default registries")
-	viper.BindPFlag(vInitSkipDefaultRegistries, initCmd.Flag(flagSkipDefaultRegistries))
-
-	initCmd.Flags().String(flagEnv, "", "Name of initial environment to create")
-	viper.BindPFlag(vInitEnvironment, initCmd.Flag(flagEnv))
-}
-
-var initCmd = &cobra.Command{
-	Use:   "init <app-name>",
-	Short: initShortDesc,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		flags := cmd.Flags()
-		if len(args) != 1 {
-			return fmt.Errorf("'init' takes a single argument that names the application we're initializing")
-		}
-
-		appName := args[0]
-		wd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		initDir := viper.GetString(vInitDir)
-
-		appRoot, err := genKsRoot(appName, wd, initDir)
-		if err != nil {
-			return err
-		}
-
-		server, namespace, err := resolveEnvFlags(flags)
-		if err != nil {
-			return err
-		}
-
-		specFlag := viper.GetString(vInitAPISpec)
-		if specFlag == "" {
-			specFlag = initClientConfig.GetAPISpec()
-		}
-
-		m := map[string]interface{}{
-			actions.OptionFs:                    appFs,
-			actions.OptionName:                  appName,
-			actions.OptionRootPath:              appRoot,
-			actions.OptionEnvName:               viper.GetString(vInitEnvironment),
-			actions.OptionSpecFlag:              specFlag,
-			actions.OptionServer:                server,
-			actions.OptionNamespace:             namespace,
-			actions.OptionSkipDefaultRegistries: viper.GetBool(vInitSkipDefaultRegistries),
-		}
-
-		return runAction(actionInit, m)
-	},
-	Long: `
+	initLong = `
 The ` + "`init`" + ` command initializes a ksonnet application in a new directory,` + " `app-name`" + `.
 
 This command generates all the project scaffolding required to begin creating and
@@ -142,8 +74,8 @@ current context, in the file pointed to by` + " `$KUBECONFIG`" + `.
 * ` + "`ks generate` " + `— ` + protoShortDesc["use"] + `
 
 ### Syntax
-`,
-	Example: `# Initialize a ksonnet application, based on cluster information from the
+`
+	initExample = `# Initialize a ksonnet application, based on cluster information from the
 # active kubeconfig file (as specified by the environment variable $KUBECONFIG).
 # More specifically, the current context is used.
 ks init app-name
@@ -169,7 +101,74 @@ ks init app-name --api-spec=file:swagger.json
 
 # Initialize a ksonnet application, outputting the application directory into
 # the specified 'custom-location'.
-ks init app-name --dir=custom-location`,
+ks init app-name --dir=custom-location`
+)
+
+func newInitCmd(fs afero.Fs, wd string) *cobra.Command {
+	clientConfig := client.NewDefaultClientConfig(nil)
+
+	initCmd := &cobra.Command{
+		Use:     "init <app-name>",
+		Short:   initShortDesc,
+		Long:    initLong,
+		Example: initExample,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			flags := cmd.Flags()
+			if len(args) != 1 {
+				return fmt.Errorf("'init' takes a single argument that names the application we're initializing")
+			}
+
+			appName := args[0]
+
+			initDir := viper.GetString(vInitDir)
+
+			appRoot, err := genKsRoot(appName, wd, initDir)
+			if err != nil {
+				return err
+			}
+
+			server, namespace, err := resolveEnvFlags(flags)
+			if err != nil {
+				return err
+			}
+
+			specFlag := viper.GetString(vInitAPISpec)
+			if specFlag == "" {
+				specFlag = clientConfig.GetAPISpec()
+			}
+
+			m := map[string]interface{}{
+				actions.OptionFs:                    fs,
+				actions.OptionName:                  appName,
+				actions.OptionRootPath:              appRoot,
+				actions.OptionEnvName:               viper.GetString(vInitEnvironment),
+				actions.OptionSpecFlag:              specFlag,
+				actions.OptionServer:                server,
+				actions.OptionNamespace:             namespace,
+				actions.OptionSkipDefaultRegistries: viper.GetBool(vInitSkipDefaultRegistries),
+			}
+
+			return runAction(actionInit, m)
+		},
+	}
+
+	clientConfig.BindClientGoFlags(initCmd)
+
+	initCmd.Flags().String(flagDir, "", "Ksonnet application directory")
+	viper.BindPFlag(vInitDir, initCmd.Flag(flagDir))
+
+	// TODO: We need to make this default to checking the `kubeconfig` file.
+	initCmd.Flags().String(flagAPISpec, "",
+		"Manually specified Kubernetes API version. The corresponding OpenAPI spec is used to generate ksonnet's Kubernetes libraries")
+	viper.BindPFlag(vInitAPISpec, initCmd.Flag(flagAPISpec))
+
+	initCmd.Flags().Bool(flagSkipDefaultRegistries, false, "Skip configuration of default registries")
+	viper.BindPFlag(vInitSkipDefaultRegistries, initCmd.Flag(flagSkipDefaultRegistries))
+
+	initCmd.Flags().String(flagEnv, "", "Name of initial environment to create")
+	viper.BindPFlag(vInitEnvironment, initCmd.Flag(flagEnv))
+
+	return initCmd
 }
 
 func genKsRoot(appName, ksDir, wd string) (string, error) {
