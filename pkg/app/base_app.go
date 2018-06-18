@@ -41,7 +41,7 @@ func newBaseApp(fs afero.Fs, root string) *baseApp {
 		config: &Spec{},
 		overrides: &Override{
 			Environments: EnvironmentSpecs{},
-			Registries:   RegistryRefSpecs{},
+			Registries:   RegistryConfigs{},
 		},
 	}
 }
@@ -117,12 +117,12 @@ func (ba *baseApp) load() error {
 	}
 
 	if len(config.Registries) == 0 {
-		config.Registries = RegistryRefSpecs{}
+		config.Registries = RegistryConfigs{}
 	}
 
 	override := Override{
 		Environments: EnvironmentSpecs{},
-		Registries:   RegistryRefSpecs{},
+		Registries:   RegistryConfigs{},
 	}
 	if exists {
 		overrideData, err := afero.ReadFile(ba.fs, ba.overridePath())
@@ -142,7 +142,7 @@ func (ba *baseApp) load() error {
 		}
 
 		if len(override.Registries) == 0 {
-			override.Registries = RegistryRefSpecs{}
+			override.Registries = RegistryConfigs{}
 		}
 
 		for k := range override.Registries {
@@ -161,7 +161,7 @@ func (ba *baseApp) load() error {
 	return ba.config.validate()
 }
 
-func (ba *baseApp) AddRegistry(newReg *RegistryRefSpec, isOverride bool) error {
+func (ba *baseApp) AddRegistry(newReg *RegistryConfig, isOverride bool) error {
 	if err := ba.load(); err != nil {
 		return errors.Wrap(err, "load configuration")
 	}
@@ -193,7 +193,7 @@ func (ba *baseApp) AddRegistry(newReg *RegistryRefSpec, isOverride bool) error {
 	return ba.save()
 }
 
-func (ba *baseApp) UpdateLib(name string, libSpec *LibraryRefSpec) error {
+func (ba *baseApp) UpdateLib(name string, libSpec *LibraryConfig) error {
 	if err := ba.load(); err != nil {
 		return errors.Wrap(err, "load configuration")
 	}
@@ -203,7 +203,7 @@ func (ba *baseApp) UpdateLib(name string, libSpec *LibraryRefSpec) error {
 }
 
 // UpdateRegistry updates a registry spec and persists in app[.override].yaml
-func (ba *baseApp) UpdateRegistry(spec *RegistryRefSpec) error {
+func (ba *baseApp) UpdateRegistry(spec *RegistryConfig) error {
 	if err := ba.load(); err != nil {
 		return errors.Wrap(err, "load configuration")
 	}

@@ -49,8 +49,6 @@ type ResolveDirectory func(relPath string) error
 type Registry interface {
 	RegistrySpecDir() string
 	RegistrySpecFilePath() string
-	SpecFetcher
-	MakeRegistryRefSpec() *app.RegistryRefSpec
 	Resolver
 	Name() string
 	Protocol() Protocol
@@ -58,22 +56,27 @@ type Registry interface {
 	IsOverride() bool
 	CacheRoot(name, relPath string) (string, error)
 
-	Updater
 	Validator
+	Setter
 }
 
+// SpecFetcher fetches registry metadata
 type SpecFetcher interface {
+	// FetchRegistrySpec fetches the registry spec (registry.yaml, inventory of packages)
 	FetchRegistrySpec() (*Spec, error)
 }
 
+// Resolver fetches metadata and libraries (packages) from a registry
 type Resolver interface {
 	ResolveLibrarySpec(libID, libRefSpec string) (*parts.Spec, error)
-	ResolveLibrary(libID, libAlias, version string, onFile ResolveFile, onDir ResolveDirectory) (*parts.Spec, *app.LibraryRefSpec, error)
+	ResolveLibrary(libID, libAlias, version string, onFile ResolveFile, onDir ResolveDirectory) (*parts.Spec, *app.LibraryConfig, error)
 }
 
-// Updater is an interface for updating an existing registry
-type Updater interface {
-	Update(version string) (newVersion string, err error)
+// Setter is an interface for updating an existing registry
+type Setter interface {
+	SetURI(uri string) (err error)
+	MakeRegistryConfig() *app.RegistryConfig
+	SpecFetcher
 }
 
 // Validator is an interface for validating a registry URI

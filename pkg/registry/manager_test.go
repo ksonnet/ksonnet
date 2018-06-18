@@ -39,12 +39,12 @@ func Test_Package(t *testing.T) {
 			Return(content, nil, nil)
 
 		ghcOpt := GitHubClient(c)
-		githubFactory = func(a app.App, spec *app.RegistryRefSpec) (*GitHub, error) {
+		githubFactory = func(a app.App, spec *app.RegistryConfig) (*GitHub, error) {
 			return NewGitHub(a, spec, ghcOpt)
 		}
 
-		registries := app.RegistryRefSpecs{
-			"incubator": &app.RegistryRefSpec{
+		registries := app.RegistryConfigs{
+			"incubator": &app.RegistryConfig{
 				URI:      "github.com/foo/bar",
 				Protocol: "github",
 			},
@@ -68,12 +68,12 @@ func Test_List(t *testing.T) {
 			Return("12345", nil)
 
 		ghcOpt := GitHubClient(c)
-		githubFactory = func(a app.App, spec *app.RegistryRefSpec) (*GitHub, error) {
+		githubFactory = func(a app.App, spec *app.RegistryConfig) (*GitHub, error) {
 			return NewGitHub(a, spec, ghcOpt)
 		}
 
-		specs := app.RegistryRefSpecs{
-			"incubator": &app.RegistryRefSpec{
+		specs := app.RegistryConfigs{
+			"incubator": &app.RegistryConfig{
 				Protocol: string(ProtocolGitHub),
 				URI:      "github.com/ksonnet/parts/tree/master/incubator",
 			},

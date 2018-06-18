@@ -31,13 +31,13 @@ import (
 // Helm is a Helm repository.
 type Helm struct {
 	app              app.App
-	spec             *app.RegistryRefSpec
+	spec             *app.RegistryConfig
 	repositoryClient helm.RepositoryClient
 	unarchiver       archive.Unarchiver
 }
 
 // NewHelm creates an instance of Helm.
-func NewHelm(a app.App, registryRef *app.RegistryRefSpec, rc helm.RepositoryClient, ua archive.Unarchiver) (*Helm, error) {
+func NewHelm(a app.App, registryRef *app.RegistryConfig, rc helm.RepositoryClient, ua archive.Unarchiver) (*Helm, error) {
 	if ua == nil {
 		ua = &archive.Tgz{}
 	}
@@ -72,7 +72,7 @@ func (h *Helm) RegistrySpecFilePath() string {
 // of registry.yaml
 func (h *Helm) FetchRegistrySpec() (*Spec, error) {
 	spec := &Spec{
-		Libraries: LibraryRefSpecs{},
+		Libraries: LibraryConfigs{},
 	}
 
 	repository, err := h.repositoryClient.Repository()
@@ -86,7 +86,7 @@ func (h *Helm) FetchRegistrySpec() (*Spec, error) {
 			return nil, errors.Errorf("entries are invalid")
 		}
 
-		spec.Libraries[name] = &LibraryRef{
+		spec.Libraries[name] = &LibaryConfig{
 			Path:    name,
 			Version: chart.Version,
 		}
@@ -95,8 +95,8 @@ func (h *Helm) FetchRegistrySpec() (*Spec, error) {
 	return spec, nil
 }
 
-// MakeRegistryRefSpec returns app registry ref spec.
-func (h *Helm) MakeRegistryRefSpec() *app.RegistryRefSpec {
+// MakeRegistryConfig returns app registry ref spec.
+func (h *Helm) MakeRegistryConfig() *app.RegistryConfig {
 	return h.spec
 }
 
@@ -120,7 +120,7 @@ func (h *Helm) ResolveLibrarySpec(partName, version string) (*parts.Spec, error)
 }
 
 // ResolveLibrary fetches the part and creates a parts spec and library ref spec.
-func (h *Helm) ResolveLibrary(partName string, partAlias string, version string, onFile ResolveFile, onDir ResolveDirectory) (*parts.Spec, *app.LibraryRefSpec, error) {
+func (h *Helm) ResolveLibrary(partName string, partAlias string, version string, onFile ResolveFile, onDir ResolveDirectory) (*parts.Spec, *app.LibraryConfig, error) {
 	part, err := h.ResolveLibrarySpec(partName, version)
 	if err != nil {
 		return nil, nil, err
@@ -158,7 +158,7 @@ func (h *Helm) ResolveLibrary(partName string, partAlias string, version string,
 		}
 	}
 
-	refSpec := &app.LibraryRefSpec{
+	refSpec := &app.LibraryConfig{
 		Name:     partAlias,
 		Registry: h.Name(),
 	}
@@ -212,4 +212,22 @@ func (h *Helm) ValidateURI(uri string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// SetURI implements registry.Setter. It sets the URI for the registry.
+func (h *Helm) SetURI(uri string) error {
+	if h == nil {
+		return errors.Errorf("nil receiver")
+	}
+	if h.spec == nil {
+		return errors.Errorf("nil spec")
+	}
+
+	// Validate
+	if ok, err := h.ValidateURI(uri); err != nil || !ok {
+		return errors.Wrap(err, "validating uri")
+	}
+
+	h.spec.URI = uri
+	return nil
 }

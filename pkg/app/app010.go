@@ -154,7 +154,7 @@ func (a *App010) LibPath(envName string) (string, error) {
 }
 
 // Libraries returns application libraries.
-func (a *App010) Libraries() (LibraryRefSpecs, error) {
+func (a *App010) Libraries() (LibraryConfigs, error) {
 	if err := a.load(); err != nil {
 		return nil, errors.Wrap(err, "load configuration")
 	}
@@ -163,12 +163,12 @@ func (a *App010) Libraries() (LibraryRefSpecs, error) {
 }
 
 // Registries returns application registries.
-func (a *App010) Registries() (RegistryRefSpecs, error) {
+func (a *App010) Registries() (RegistryConfigs, error) {
 	if err := a.load(); err != nil {
 		return nil, errors.Wrap(err, "load configuration")
 	}
 
-	registries := RegistryRefSpecs{}
+	registries := RegistryConfigs{}
 
 	for k, v := range a.config.Registries {
 		registries[k] = v

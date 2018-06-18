@@ -41,7 +41,7 @@ type RegistryDescribe struct {
 	app                 app.App
 	name                string
 	out                 io.Writer
-	fetchRegistrySpecFn func(a app.App, name string) (*registry.Spec, *app.RegistryRefSpec, error)
+	fetchRegistrySpecFn func(a app.App, name string) (*registry.Spec, *app.RegistryConfig, error)
 }
 
 // NewRegistryDescribe creates an instance of RegistryDescribe
@@ -93,7 +93,7 @@ func (rd *RegistryDescribe) Run() error {
 	return nil
 }
 
-func fetchRegistrySpec(a app.App, name string) (*registry.Spec, *app.RegistryRefSpec, error) {
+func fetchRegistrySpec(a app.App, name string) (*registry.Spec, *app.RegistryConfig, error) {
 	appRegistries, err := a.Registries()
 	if err != nil {
 		return nil, nil, err

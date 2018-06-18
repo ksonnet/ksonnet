@@ -118,7 +118,7 @@ func (i *Init) Run() error {
 func initIncubator(a app.App) (registry.Registry, error) {
 	return registry.NewGitHub(
 		a,
-		&app.RegistryRefSpec{
+		&app.RegistryConfig{
 			Name:     "incubator",
 			Protocol: string(registry.ProtocolGitHub),
 			URI:      defaultIncubatorURI,

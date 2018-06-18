@@ -40,11 +40,11 @@ func (_m *App) AddEnvironment(name string, k8sSpecFlag string, spec *app.Environ
 }
 
 // AddRegistry provides a mock function with given fields: spec, isOverride
-func (_m *App) AddRegistry(spec *app.RegistryRefSpec, isOverride bool) error {
+func (_m *App) AddRegistry(spec *app.RegistryConfig, isOverride bool) error {
 	ret := _m.Called(spec, isOverride)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*app.RegistryRefSpec, bool) error); ok {
+	if rf, ok := ret.Get(0).(func(*app.RegistryConfig, bool) error); ok {
 		r0 = rf(spec, isOverride)
 	} else {
 		r0 = ret.Error(0)
@@ -186,15 +186,15 @@ func (_m *App) LibPath(envName string) (string, error) {
 }
 
 // Libraries provides a mock function with given fields:
-func (_m *App) Libraries() (app.LibraryRefSpecs, error) {
+func (_m *App) Libraries() (app.LibraryConfigs, error) {
 	ret := _m.Called()
 
-	var r0 app.LibraryRefSpecs
-	if rf, ok := ret.Get(0).(func() app.LibraryRefSpecs); ok {
+	var r0 app.LibraryConfigs
+	if rf, ok := ret.Get(0).(func() app.LibraryConfigs); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(app.LibraryRefSpecs)
+			r0 = ret.Get(0).(app.LibraryConfigs)
 		}
 	}
 
@@ -209,15 +209,15 @@ func (_m *App) Libraries() (app.LibraryRefSpecs, error) {
 }
 
 // Registries provides a mock function with given fields:
-func (_m *App) Registries() (app.RegistryRefSpecs, error) {
+func (_m *App) Registries() (app.RegistryConfigs, error) {
 	ret := _m.Called()
 
-	var r0 app.RegistryRefSpecs
-	if rf, ok := ret.Get(0).(func() app.RegistryRefSpecs); ok {
+	var r0 app.RegistryConfigs
+	if rf, ok := ret.Get(0).(func() app.RegistryConfigs); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(app.RegistryRefSpecs)
+			r0 = ret.Get(0).(app.RegistryConfigs)
 		}
 	}
 
@@ -288,11 +288,11 @@ func (_m *App) SetCurrentEnvironment(name string) error {
 }
 
 // UpdateLib provides a mock function with given fields: name, spec
-func (_m *App) UpdateLib(name string, spec *app.LibraryRefSpec) error {
+func (_m *App) UpdateLib(name string, spec *app.LibraryConfig) error {
 	ret := _m.Called(name, spec)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, *app.LibraryRefSpec) error); ok {
+	if rf, ok := ret.Get(0).(func(string, *app.LibraryConfig) error); ok {
 		r0 = rf(name, spec)
 	} else {
 		r0 = ret.Error(0)
@@ -302,11 +302,11 @@ func (_m *App) UpdateLib(name string, spec *app.LibraryRefSpec) error {
 }
 
 // UpdateRegistry provides a mock function with given fields: spec
-func (_m *App) UpdateRegistry(spec *app.RegistryRefSpec) error {
+func (_m *App) UpdateRegistry(spec *app.RegistryConfig) error {
 	ret := _m.Called(spec)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*app.RegistryRefSpec) error); ok {
+	if rf, ok := ret.Get(0).(func(*app.RegistryConfig) error); ok {
 		r0 = rf(spec)
 	} else {
 		r0 = ret.Error(0)

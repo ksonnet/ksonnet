@@ -30,7 +30,7 @@ import (
 
 func TestPrototypeUse(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		libaries := app.LibraryRefSpecs{}
+		libaries := app.LibraryConfigs{}
 
 		appMock.On("Libraries").Return(libaries, nil)
 
@@ -75,7 +75,7 @@ func TestPrototypeUse(t *testing.T) {
 
 func TestPrototypeUse_bind_flags_failed(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		libaries := app.LibraryRefSpecs{}
+		libaries := app.LibraryConfigs{}
 
 		appMock.On("Libraries").Return(libaries, nil)
 
@@ -123,7 +123,7 @@ func TestPrototypeUse_bind_flags_failed(t *testing.T) {
 
 func TestPrototypeUse_with_module_in_name(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		libaries := app.LibraryRefSpecs{}
+		libaries := app.LibraryConfigs{}
 
 		appMock.On("Libraries").Return(libaries, nil)
 

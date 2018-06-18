@@ -26,7 +26,7 @@ import (
 
 func TestPrototypeList(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		libaries := app.LibraryRefSpecs{}
+		libaries := app.LibraryConfigs{}
 
 		appMock.On("Libraries").Return(libaries, nil)
 

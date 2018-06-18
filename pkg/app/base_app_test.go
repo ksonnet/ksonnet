@@ -78,7 +78,7 @@ func Test_baseApp_AddRegistry(t *testing.T) {
 
 	ba := newBaseApp(fs, "/")
 
-	reg := &RegistryRefSpec{
+	reg := &RegistryConfig{
 		Name: "new",
 	}
 
@@ -96,7 +96,7 @@ func Test_baseApp_AddRegistry_override(t *testing.T) {
 
 	ba := newBaseApp(fs, "/")
 
-	reg := &RegistryRefSpec{
+	reg := &RegistryConfig{
 		Name: "new",
 	}
 
@@ -114,7 +114,7 @@ func Test_baseApp_AddRegistry_override_existing(t *testing.T) {
 
 	ba := newBaseApp(fs, "/")
 
-	reg := &RegistryRefSpec{
+	reg := &RegistryConfig{
 		Name: "incubator",
 	}
 
@@ -125,32 +125,18 @@ func Test_baseApp_AddRegistry_override_existing(t *testing.T) {
 func Test_baseApp_UpdateRegistry(t *testing.T) {
 	tests := []struct {
 		name           string
-		regSpec        RegistryRefSpec
+		regSpec        RegistryConfig
 		appFilePath    string
 		expectFilePath string
 		expectErr      bool
 	}{
 		{
 			name:           "no such registry",
-			regSpec:        RegistryRefSpec{Name: "no-such-registry"},
+			regSpec:        RegistryConfig{Name: "no-such-registry"},
 			appFilePath:    "app010_app.yaml",
 			expectFilePath: "",
 			expectErr:      true,
 		},
-		{
-			name: "update registry",
-			regSpec: RegistryRefSpec{
-				Name: "incubator",
-				GitVersion: &GitVersionSpec{
-					RefSpec:   "master",
-					CommitSHA: "40285d8a14f1ac5787e405e1023cf0c07f6aa28c",
-				},
-			},
-			appFilePath:    "app010_app.yaml",
-			expectFilePath: "update-registry.yaml",
-			expectErr:      false,
-		},
-		// TODO: Test update to overrides
 	}
 
 	for _, tc := range tests {

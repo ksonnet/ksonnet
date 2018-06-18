@@ -38,26 +38,26 @@ func TestRegistryDescribe(t *testing.T) {
 		var buf bytes.Buffer
 		a.out = &buf
 
-		a.fetchRegistrySpecFn = func(a app.App, name string) (*registry.Spec, *app.RegistryRefSpec, error) {
+		a.fetchRegistrySpecFn = func(a app.App, name string) (*registry.Spec, *app.RegistryConfig, error) {
 			require.Equal(t, "incubator", name)
 
 			spec := &registry.Spec{
-				Libraries: registry.LibraryRefSpecs{
-					"apache":    &registry.LibraryRef{Path: "apache"},
-					"efk":       &registry.LibraryRef{Path: "efk"},
-					"mariadb":   &registry.LibraryRef{Path: "mariadb"},
-					"memcached": &registry.LibraryRef{Path: "memcached"},
-					"mongodb":   &registry.LibraryRef{Path: "mongodb"},
-					"mysql":     &registry.LibraryRef{Path: "mysql"},
-					"nginx":     &registry.LibraryRef{Path: "nginx"},
-					"node":      &registry.LibraryRef{Path: "node"},
-					"postres":   &registry.LibraryRef{Path: "postgres"},
-					"redis":     &registry.LibraryRef{Path: "redis"},
-					"tomcat":    &registry.LibraryRef{Path: "tomcat"},
+				Libraries: registry.LibraryConfigs{
+					"apache":    &registry.LibaryConfig{Path: "apache"},
+					"efk":       &registry.LibaryConfig{Path: "efk"},
+					"mariadb":   &registry.LibaryConfig{Path: "mariadb"},
+					"memcached": &registry.LibaryConfig{Path: "memcached"},
+					"mongodb":   &registry.LibaryConfig{Path: "mongodb"},
+					"mysql":     &registry.LibaryConfig{Path: "mysql"},
+					"nginx":     &registry.LibaryConfig{Path: "nginx"},
+					"node":      &registry.LibaryConfig{Path: "node"},
+					"postres":   &registry.LibaryConfig{Path: "postgres"},
+					"redis":     &registry.LibaryConfig{Path: "redis"},
+					"tomcat":    &registry.LibaryConfig{Path: "tomcat"},
 				},
 			}
 
-			regRef := &app.RegistryRefSpec{
+			regRef := &app.RegistryConfig{
 				Name:     "incubator",
 				URI:      "github.com/ksonnet/parts/tree/master/incubator",
 				Protocol: "github",

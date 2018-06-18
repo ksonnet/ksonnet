@@ -51,11 +51,11 @@ func TestPkgInstall(t *testing.T) {
 
 		a.depCacherFn = dc
 
-		libaries := app.LibraryRefSpecs{}
+		libaries := app.LibraryConfigs{}
 		appMock.On("Libraries").Return(libaries, nil)
 
-		registries := app.RegistryRefSpecs{
-			"incubator": &app.RegistryRefSpec{
+		registries := app.RegistryConfigs{
+			"incubator": &app.RegistryConfig{
 				Protocol: string(registry.ProtocolFilesystem),
 				URI:      "file:///tmp",
 			},

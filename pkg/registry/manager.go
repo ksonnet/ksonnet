@@ -55,7 +55,7 @@ func Package(a app.App, name string) (*pkg.Package, error) {
 }
 
 // Locate locates a registry given a spec.
-func Locate(a app.App, spec *app.RegistryRefSpec) (Registry, error) {
+func Locate(a app.App, spec *app.RegistryConfig) (Registry, error) {
 	switch Protocol(spec.Protocol) {
 	case ProtocolGitHub:
 		return githubFactory(a, spec)

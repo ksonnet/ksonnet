@@ -26,7 +26,7 @@ import (
 
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 )
 
@@ -110,17 +110,19 @@ func (dg *defaultGitHub) ValidateURL(urlStr string) error {
 }
 
 func (dg *defaultGitHub) CommitSHA1(ctx context.Context, repo Repo, refSpec string) (string, error) {
+	log := log.WithField("action", "defaultGitHub.CommitSHA1")
 	if refSpec == "" {
 		refSpec = "master"
 	}
 
-	logrus.Debugf("github: fetching SHA1 for %s@%s", repo, refSpec)
+	log.Debugf("fetching SHA1 for %s@%s", repo, refSpec)
 	sha, _, err := dg.client().Repositories.GetCommitSHA1(ctx, repo.Org, repo.Repo, refSpec, "")
 	return sha, err
 }
 
 func (dg *defaultGitHub) Contents(ctx context.Context, repo Repo, path, ref string) (*github.RepositoryContent, []*github.RepositoryContent, error) {
-	logrus.Debugf("github: fetching contents for %s/%s@%s", repo, path, ref)
+	log := log.WithField("action", "defaultGitHub.CommitSHA1")
+	log.Debugf("fetching contents for %s/%s@%s", repo, path, ref)
 	opts := &github.RepositoryContentGetOptions{Ref: ref}
 
 	file, dir, _, err := dg.client().Repositories.GetContents(ctx, repo.Org, repo.Repo, path, opts)
