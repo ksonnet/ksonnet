@@ -407,8 +407,8 @@
 [[projects]]
   name = "github.com/json-iterator/go"
   packages = ["."]
-  revision = "f7279a603edee96fe7764d3de9c6ff8cf9970994"
-  version = "1.0.4"
+  revision = "ca39e5af3ece67bbcda3d0f4f56a8e24d9f2dad4"
+  version = "1.1.3"
 
 [[projects]]
   branch = "master"
@@ -474,6 +474,18 @@
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
   revision = "00c29f56e2386353d58c599509e8dc3801b0d716"
+
+[[projects]]
+  name = "github.com/modern-go/concurrent"
+  packages = ["."]
+  revision = "bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94"
+  version = "1.0.3"
+
+[[projects]]
+  name = "github.com/modern-go/reflect2"
+  packages = ["."]
+  revision = "1df9eeb2bb81f327b96228865c5687bc2194af3f"
+  version = "1.0.0"
 
 [[projects]]
   name = "github.com/onsi/ginkgo"
@@ -839,7 +851,7 @@
     "storage/v1alpha1",
     "storage/v1beta1"
   ]
-  revision = "590a9173e3b65d74e907fcfd94b78465cf314760"
+  revision = "8b7507fac302640dd5f1efbf9643199952cc58db"
 
 [[projects]]
   branch = "master"
@@ -848,7 +860,6 @@
   revision = "8d2dca0b4e6ad410ebdefa9e524872cf0f67177a"
 
 [[projects]]
-  branch = "release-1.10"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/equality",
@@ -907,10 +918,10 @@
     "third_party/forked/golang/netutil",
     "third_party/forked/golang/reflect"
   ]
-  revision = "01bc873149a1802eb74df583613872d126449ed5"
+  revision = "17529ec7eadb8de8e7dc835201455f53571f655a"
+  version = "kubernetes-1.10.4"
 
 [[projects]]
-  branch = "release-1.10"
   name = "k8s.io/apiserver"
   packages = [
     "pkg/apis/audit",
@@ -922,7 +933,8 @@
     "pkg/util/feature",
     "pkg/util/flag"
   ]
-  revision = "0841753fc26e934b715ca7a83dced5bcb721245a"
+  revision = "8378ef881d4fa7d3ca5c5e7e5309592ec69b11e4"
+  version = "kubernetes-1.10.4"
 
 [[projects]]
   name = "k8s.io/client-go"
@@ -1249,8 +1261,8 @@
     "pkg/volume/util/recyclerclient",
     "pkg/volume/util/types"
   ]
-  revision = "81753b10df112992bf51bbc2c2f85208aad78335"
-  version = "v1.10.2"
+  revision = "5ca598b4ba5abb89bb773071ce452e33fb66339d"
+  version = "v1.10.4"
 
 [[projects]]
   branch = "master"
@@ -1267,6 +1279,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "113cd4f1995d7833f4da0f087a2e80b8f26295d15afcc91c2a7708df41a8696e"
+  inputs-digest = "4129e34247fee6a404e66d137eb7e5096e689d2ca16912a0261b49fbb562b558"
   solver-name = "gps-cdcl"
   solver-version = 1
