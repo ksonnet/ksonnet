@@ -22,7 +22,7 @@ import (
 
 // Add adds a registry with `name`, `protocol`, and `uri` to
 // the current ksonnet application.
-func Add(a app.App, protocol Protocol, name, uri, version string, isOverride bool) (*Spec, error) {
+func Add(a app.App, protocol Protocol, name string, uri string, isOverride bool) (*Spec, error) {
 	var r Registry
 	var err error
 
