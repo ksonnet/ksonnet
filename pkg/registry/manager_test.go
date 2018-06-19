@@ -27,38 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_Package(t *testing.T) {
-	withApp(t, func(a *mocks.App, fs afero.Fs) {
-		c := &ghmocks.GitHub{}
-		c.On("ValidateURL", mock.Anything).Return(nil)
-		c.On("CommitSHA1", mock.Anything, github.Repo{Org: "foo", Repo: "bar"}, mock.AnythingOfType("string")).
-			Return("12345", nil)
-		content := buildContent(t, "apache-part.yaml")
-		c.On("Contents", mock.Anything, github.Repo{Org: "foo", Repo: "bar"}, "/apache/parts.yaml", "12345").
-			Return(content, nil, nil)
-
-		ghcOpt := GitHubClient(c)
-		githubFactory = func(a app.App, spec *app.RegistryConfig) (*GitHub, error) {
-			return NewGitHub(a, spec, ghcOpt)
-		}
-
-		registries := app.RegistryConfigs{
-			"incubator": &app.RegistryConfig{
-				URI:      "github.com/foo/bar",
-				Protocol: "github",
-			},
-		}
-		a.On("Registries").Return(registries, nil)
-
-		p, err := Package(a, "incubator/apache")
-		require.NoError(t, err)
-
-		assert.Equal(t, "apache", p.Name)
-		assert.Equal(t, "part description", p.Description)
-	})
-
-}
-
 func Test_List(t *testing.T) {
 	withApp(t, func(a *mocks.App, fs afero.Fs) {
 		c := &ghmocks.GitHub{}

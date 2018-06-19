@@ -36,8 +36,8 @@ func Test_DefaultInstallChecker_isInstalled(t *testing.T) {
 		{
 			name: "is installed",
 			setupLibraries: func(a *amocks.App) {
-				libraries := app.LibraryRefSpecs{
-					"redis": &app.LibraryRefSpec{},
+				libraries := app.LibraryConfigs{
+					"redis": &app.LibraryConfig{},
 				}
 
 				a.On("Libraries").Return(libraries, nil)

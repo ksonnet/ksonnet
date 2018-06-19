@@ -94,7 +94,7 @@ func (m *packageManager) Find(name string) (pkg.Package, error) {
 
 	libraryConfig, ok := libraryConfigs[d.Part]
 	if ok {
-		return m.loadPackage(registry.MakeRegistryRefSpec(), d.Part, d.Registry, libraryConfig.Version)
+		return m.loadPackage(registry.MakeRegistryConfig(), d.Part, d.Registry, libraryConfig.Version)
 	}
 
 	partConfig, err := registry.ResolveLibrarySpec(d.Part, d.Version)
@@ -169,7 +169,7 @@ func (m *packageManager) Packages() ([]pkg.Package, error) {
 	return packages, nil
 }
 
-func (m *packageManager) loadPackage(registryConfig *app.RegistryRefSpec, pkgName, registryName, version string) (pkg.Package, error) {
+func (m *packageManager) loadPackage(registryConfig *app.RegistryConfig, pkgName, registryName, version string) (pkg.Package, error) {
 	switch protocol := registryConfig.Protocol; Protocol(protocol) {
 	case ProtocolHelm:
 		h, err := pkg.NewHelm(m.app, pkgName, registryName, version, m.InstallChecker)

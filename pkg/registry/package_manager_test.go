@@ -35,8 +35,8 @@ func Test_packageManager_Find(t *testing.T) {
 
 		a.On("VendorPath").Return("/app/vendor")
 
-		registries := app.RegistryRefSpecs{
-			"incubator": &app.RegistryRefSpec{
+		registries := app.RegistryConfigs{
+			"incubator": &app.RegistryConfig{
 				Protocol: "fs",
 				URI:      "/work",
 			},
@@ -44,8 +44,8 @@ func Test_packageManager_Find(t *testing.T) {
 
 		a.On("Registries").Return(registries, nil)
 
-		libraries := app.LibraryRefSpecs{
-			"apache": &app.LibraryRefSpec{},
+		libraries := app.LibraryConfigs{
+			"apache": &app.LibraryConfig{},
 		}
 
 		a.On("Libraries").Return(libraries, nil)
@@ -67,8 +67,8 @@ func Test_packageManager_Packages(t *testing.T) {
 
 		a.On("VendorPath").Return("/app/vendor")
 
-		registries := app.RegistryRefSpecs{
-			"incubator": &app.RegistryRefSpec{
+		registries := app.RegistryConfigs{
+			"incubator": &app.RegistryConfig{
 				Protocol: "fs",
 				URI:      "/work",
 			},
@@ -76,8 +76,8 @@ func Test_packageManager_Packages(t *testing.T) {
 
 		a.On("Registries").Return(registries, nil)
 
-		libraries := app.LibraryRefSpecs{
-			"apache": &app.LibraryRefSpec{
+		libraries := app.LibraryConfigs{
+			"apache": &app.LibraryConfig{
 				Registry: "incubator",
 			},
 		}
@@ -104,8 +104,8 @@ func Test_packageManager_Prototypes(t *testing.T) {
 
 		a.On("VendorPath").Return("/app/vendor")
 
-		registries := app.RegistryRefSpecs{
-			"incubator": &app.RegistryRefSpec{
+		registries := app.RegistryConfigs{
+			"incubator": &app.RegistryConfig{
 				Protocol: "fs",
 				URI:      "/work",
 			},
@@ -113,8 +113,8 @@ func Test_packageManager_Prototypes(t *testing.T) {
 
 		a.On("Registries").Return(registries, nil)
 
-		libraries := app.LibraryRefSpecs{
-			"apache": &app.LibraryRefSpec{
+		libraries := app.LibraryConfigs{
+			"apache": &app.LibraryConfig{
 				Registry: "incubator",
 			},
 		}

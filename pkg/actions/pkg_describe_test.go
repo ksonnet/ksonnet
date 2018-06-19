@@ -146,15 +146,10 @@ func TestPkgDescribe(t *testing.T) {
 			}()
 
 			test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
-				libraries := app.LibraryRefSpecs{
-					"apache": &app.LibraryRefSpec{},
+				libraries := app.LibraryConfigs{
+					"apache": &app.LibraryConfig{},
 				}
 
-func TestPkgDescribe_registry(t *testing.T) {
-	withApp(t, func(appMock *amocks.App) {
-		registries := app.RegistryConfigs{
-			"incubator": &app.RegistryConfig{},
-		}
 				a.On("Libraries").Return(libraries, nil)
 
 				in := map[string]interface{}{
