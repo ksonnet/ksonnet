@@ -21,8 +21,8 @@ import (
 	"sort"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
-	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
+	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/ksonnet/ksonnet/pkg/util/table"
 )
 
@@ -38,20 +38,20 @@ func RunPrototypeList(m map[string]interface{}) error {
 
 // PrototypeList lists available prototypes.
 type PrototypeList struct {
-	app          app.App
-	out          io.Writer
-	prototypesFn func(app.App, pkg.Descriptor) (prototype.Prototypes, error)
+	app            app.App
+	out            io.Writer
+	packageManager registry.PackageManager
 }
 
 // NewPrototypeList creates an instance of PrototypeList
 func NewPrototypeList(m map[string]interface{}) (*PrototypeList, error) {
 	ol := newOptionLoader(m)
 
+	app := ol.LoadApp()
 	pl := &PrototypeList{
-		app: ol.LoadApp(),
-
-		out:          os.Stdout,
-		prototypesFn: pkg.LoadPrototypes,
+		app:            app,
+		out:            os.Stdout,
+		packageManager: registry.NewPackageManager(app),
 	}
 
 	if ol.err != nil {
@@ -63,7 +63,7 @@ func NewPrototypeList(m map[string]interface{}) (*PrototypeList, error) {
 
 // Run runs the env list action.
 func (pl *PrototypeList) Run() error {
-	prototypes, err := allPrototypes(pl.app, pl.prototypesFn)
+	prototypes, err := pl.packageManager.Prototypes()
 	if err != nil {
 		return err
 	}

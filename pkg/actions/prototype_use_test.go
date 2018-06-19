@@ -22,6 +22,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
+	registrymocks "github.com/ksonnet/ksonnet/pkg/registry/mocks"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -30,9 +31,10 @@ import (
 
 func TestPrototypeUse(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		libaries := app.LibraryConfigs{}
+		prototypes := prototype.Prototypes{}
 
-		appMock.On("Libraries").Return(libaries, nil)
+		manager := &registrymocks.PackageManager{}
+		manager.On("Prototypes").Return(prototypes, nil)
 
 		args := []string{
 			"single-port-deployment",
@@ -50,7 +52,9 @@ func TestPrototypeUse(t *testing.T) {
 		a, err := NewPrototypeUse(in)
 		require.NoError(t, err)
 
-		a.createComponentFn = func(_ app.App, moduleName, name string, text string, params param.Params, template prototype.TemplateType) (string, error) {
+		a.packageManager = manager
+
+		a.createComponentFn = func(_ app.App, moduleName, name, text string, params param.Params, template prototype.TemplateType) (string, error) {
 			assert.Equal(t, "", moduleName)
 			assert.Equal(t, "deployment", name)
 			assertOutput(t, "prototype/use/text.txt", text)
@@ -75,9 +79,10 @@ func TestPrototypeUse(t *testing.T) {
 
 func TestPrototypeUse_bind_flags_failed(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		libaries := app.LibraryConfigs{}
+		prototypes := prototype.Prototypes{}
 
-		appMock.On("Libraries").Return(libaries, nil)
+		manager := &registrymocks.PackageManager{}
+		manager.On("Prototypes").Return(prototypes, nil)
 
 		args := []string{
 			"single-port-deployment",
@@ -116,6 +121,8 @@ func TestPrototypeUse_bind_flags_failed(t *testing.T) {
 			return nil, errors.New("failed")
 		}
 
+		a.packageManager = manager
+
 		err = a.Run()
 		require.Error(t, err)
 	})
@@ -123,9 +130,10 @@ func TestPrototypeUse_bind_flags_failed(t *testing.T) {
 
 func TestPrototypeUse_with_module_in_name(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		libaries := app.LibraryConfigs{}
+		prototypes := prototype.Prototypes{}
 
-		appMock.On("Libraries").Return(libaries, nil)
+		manager := &registrymocks.PackageManager{}
+		manager.On("Prototypes").Return(prototypes, nil)
 
 		args := []string{
 			"single-port-deployment",
@@ -159,6 +167,8 @@ func TestPrototypeUse_with_module_in_name(t *testing.T) {
 
 			return "", nil
 		}
+
+		a.packageManager = manager
 
 		err = a.Run()
 		require.NoError(t, err)

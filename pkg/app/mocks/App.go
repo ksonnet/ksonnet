@@ -342,3 +342,17 @@ func (_m *App) Upgrade(dryRun bool) error {
 
 	return r0
 }
+
+// VendorPath provides a mock function with given fields:
+func (_m *App) VendorPath() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}

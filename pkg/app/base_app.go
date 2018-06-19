@@ -258,3 +258,7 @@ func (ba *baseApp) EnvironmentParams(envName string) (string, error) {
 
 	return string(b), nil
 }
+
+func (ba *baseApp) VendorPath() string {
+	return filepath.Join(ba.Root(), "vendor")
+}

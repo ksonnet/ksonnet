@@ -22,8 +22,8 @@ import (
 	"sort"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
-	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
+	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/ksonnet/ksonnet/pkg/util/table"
 )
 
@@ -39,24 +39,26 @@ func RunPrototypeSearch(m map[string]interface{}) error {
 
 // PrototypeSearch searches for prototypes by name.
 type PrototypeSearch struct {
-	app           app.App
-	query         string
-	out           io.Writer
-	prototypesFn  func(app.App, pkg.Descriptor) (prototype.Prototypes, error)
-	protoSearchFn func(string, prototype.Prototypes) (prototype.Prototypes, error)
+	app   app.App
+	query string
+
+	out            io.Writer
+	packageManager registry.PackageManager
+	protoSearchFn  func(string, prototype.Prototypes) (prototype.Prototypes, error)
 }
 
 // NewPrototypeSearch creates an instance of PrototypeSearch
 func NewPrototypeSearch(m map[string]interface{}) (*PrototypeSearch, error) {
 	ol := newOptionLoader(m)
 
+	app := ol.LoadApp()
 	ps := &PrototypeSearch{
-		app:   ol.LoadApp(),
+		app:   app,
 		query: ol.LoadString(OptionQuery),
 
-		out:           os.Stdout,
-		prototypesFn:  pkg.LoadPrototypes,
-		protoSearchFn: protoSearch,
+		out:            os.Stdout,
+		packageManager: registry.NewPackageManager(app),
+		protoSearchFn:  protoSearch,
 	}
 
 	if ol.err != nil {
@@ -68,7 +70,7 @@ func NewPrototypeSearch(m map[string]interface{}) (*PrototypeSearch, error) {
 
 // Run runs the env list action.
 func (ps *PrototypeSearch) Run() error {
-	prototypes, err := allPrototypes(ps.app, ps.prototypesFn)
+	prototypes, err := ps.packageManager.Prototypes()
 	if err != nil {
 		return err
 	}

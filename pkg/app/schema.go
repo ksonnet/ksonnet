@@ -297,6 +297,7 @@ type EnvironmentDestinationSpec struct {
 type LibraryConfig struct {
 	Name       string          `json:"name"`
 	Registry   string          `json:"registry"`
+	Version    string          `json:"version"`
 	GitVersion *GitVersionSpec `json:"gitVersion,omitempty"`
 }
 

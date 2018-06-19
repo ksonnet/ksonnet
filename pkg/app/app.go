@@ -93,6 +93,9 @@ type App interface {
 	UpdateRegistry(spec *RegistryConfig) error
 	// Upgrade upgrades an application to the current version.
 	Upgrade(dryRun bool) error
+
+	// VendorPath returns the root of the vendor path.
+	VendorPath() string
 }
 
 // Load loads the application configuration.

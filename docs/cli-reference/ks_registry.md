@@ -40,5 +40,5 @@ described above. (See `ks prototype --help` for more information.)
 * [ks registry add](ks_registry_add.md)	 - Add a registry to the current ksonnet app
 * [ks registry describe](ks_registry_describe.md)	 - Describe a ksonnet registry and the packages it contains
 * [ks registry list](ks_registry_list.md)	 - List all registries known to the current ksonnet app
-* [ks registry update](ks_registry_update.md)	 - Update currently configured registries
+* [ks registry set](ks_registry_set.md)	 - Set configuration options for registry
 

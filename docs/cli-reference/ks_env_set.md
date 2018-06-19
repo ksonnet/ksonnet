@@ -33,6 +33,7 @@ ks env set us-west/staging --name=us-east/staging
 ### Options
 
 ```
+      --api-spec string    Kubernetes version for environment
   -h, --help               help for set
       --name string        Name used to uniquely identify the environment. Must not already exist within the ksonnet app
       --namespace string   Namespace for environment
