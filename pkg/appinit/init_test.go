@@ -137,7 +137,7 @@ func assertExists(t *testing.T, fs afero.Fs, path string) {
 func assertLib(t *testing.T, fs afero.Fs, root, version string) {
 	files := []string{"swagger.json", "k.libsonnet", "k8s.libsonnet"}
 	for _, f := range files {
-		path := filepath.Join(root, "lib", version, f)
+		path := filepath.Join(root, "lib", "ksonnet-lib", version, f)
 		assertExists(t, fs, path)
 	}
 }

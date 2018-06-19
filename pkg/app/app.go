@@ -124,13 +124,13 @@ func Load(fs afero.Fs, cwd string, skipFindRoot bool) (App, error) {
 	}
 }
 
-func updateLibData(fs afero.Fs, k8sSpecFlag, libPath string, useVersionPath bool) (string, error) {
+func updateLibData(fs afero.Fs, k8sSpecFlag, libPath string) (string, error) {
 	lm, err := lib.NewManager(k8sSpecFlag, fs, libPath)
 	if err != nil {
 		return "", err
 	}
 
-	if err := lm.GenerateLibData(useVersionPath); err != nil {
+	if err := lm.GenerateLibData(); err != nil {
 		return "", err
 	}
 
@@ -142,7 +142,7 @@ func app010LibPath(root string) string {
 }
 
 // StubUpdateLibData always returns no error.
-func StubUpdateLibData(fs afero.Fs, k8sSpecFlag, libPath string, useVersionPath bool) (string, error) {
+func StubUpdateLibData(fs afero.Fs, k8sSpecFlag, libPath string) (string, error) {
 	return "v1.8.7", nil
 }
 

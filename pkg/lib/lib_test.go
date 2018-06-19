@@ -20,12 +20,15 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/ksonnet/ksonnet/pkg/util/kslib"
+
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	blankSwagger     = "/blankSwagger.json"
+	swaggerLocation  = "/blankSwagger.json"
 	blankSwaggerData = `{
   "swagger": "2.0",
   "info": {
@@ -41,54 +44,120 @@ const (
 
 func TestGenerateLibData(t *testing.T) {
 	cases := []struct {
-		name           string
-		useVersionPath bool
-		basePath       string
+		name        string
+		basePath    string
+		generator   KsLibGenerator
+		swaggerData []byte
 	}{
 		{
-			name:           "use version path",
-			useVersionPath: true,
-			basePath:       "v1.7.0",
-		},
-		{
-			name: "don't use version path",
+			name:     "use version path",
+			basePath: "v1.7.0",
+			generator: &fakeKsLibGenerator{
+				ksonnetLib: &kslib.KsonnetLib{},
+			},
+			swaggerData: []byte(blankSwaggerData),
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			testFS := afero.NewMemMapFs()
-			afero.WriteFile(testFS, blankSwagger, []byte(blankSwaggerData), os.ModePerm)
+			fs := afero.NewMemMapFs()
+			afero.WriteFile(fs, swaggerLocation, tc.swaggerData, os.ModePerm)
 
-			specFlag := fmt.Sprintf("file:%s", blankSwagger)
+			specFlag := fmt.Sprintf("file:%s", swaggerLocation)
 			libPath := "lib"
 
-			libManager, err := NewManager(specFlag, testFS, libPath)
-			if err != nil {
-				t.Fatal("Failed to initialize lib.Manager")
-			}
+			libManager, err := NewManager(specFlag, fs, libPath)
+			require.NoError(t, err)
 
-			err = libManager.GenerateLibData(tc.useVersionPath)
-			if err != nil {
-				t.Fatal("Failed to generate lib data")
-			}
+			libManager.generator = tc.generator
+
+			err = libManager.GenerateLibData()
+			require.NoError(t, err)
 
 			// Verify contents of lib.
-			genPath := filepath.Join(libPath, tc.basePath)
-			schemaPath := filepath.Join(genPath, "swagger.json")
-			extPath := filepath.Join(genPath, "k.libsonnet")
-			k8sPath := filepath.Join(genPath, "k8s.libsonnet")
+			genPath := filepath.Join(libPath, KsonnetLibHome, tc.basePath)
 
-			checkExists(t, testFS, schemaPath)
-			checkExists(t, testFS, extPath)
-			checkExists(t, testFS, k8sPath)
+			checkKsLib(t, fs, genPath)
 		})
 	}
-
 }
 
-func checkExists(t *testing.T, fs afero.Fs, path string) {
-	exists, err := afero.Exists(fs, path)
-	require.NoError(t, err)
-	require.True(t, exists, "%q did not exist", path)
+func checkKsLib(t *testing.T, fs afero.Fs, path string) {
+	files := []string{"swagger.json", "k.libsonnet", "k8s.libsonnet"}
+	for _, f := range files {
+		p := filepath.Join(path, f)
+		exists, err := afero.Exists(fs, p)
+		assert.NoError(t, err, p)
+		assert.True(t, exists, "%q did not exist", p)
+	}
+}
+
+func TestManager_GetLibPath(t *testing.T) {
+	cases := []struct {
+		name     string
+		initFs   func(*testing.T, string, string) afero.Fs
+		expected string
+	}{
+		{
+			name: "with ksonnet-lib",
+			initFs: func(t *testing.T, version, libPath string) afero.Fs {
+				fs := afero.NewMemMapFs()
+				klPath := filepath.Join(libPath, KsonnetLibHome, version)
+				err := fs.MkdirAll(klPath, 0755)
+				require.NoError(t, err)
+
+				return fs
+			},
+			expected: filepath.FromSlash("lib/ksonnet-lib/v1.10.3"),
+		},
+		{
+			name: "without ksonnet-lib",
+			initFs: func(t *testing.T, version, libPath string) afero.Fs {
+				fs := afero.NewMemMapFs()
+				klPath := filepath.Join(libPath, version)
+				err := fs.MkdirAll(klPath, 0755)
+				require.NoError(t, err)
+
+				return fs
+			},
+			expected: filepath.FromSlash("lib/v1.10.3"),
+		},
+		{
+			name: "doesn't already exist",
+			initFs: func(t *testing.T, version, libPath string) afero.Fs {
+				fs := afero.NewMemMapFs()
+				return fs
+			},
+			expected: filepath.FromSlash("lib/ksonnet-lib/v1.10.3"),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			specFlag := "version:v1.10.3"
+			libPath := "lib"
+
+			fs := tc.initFs(t, "v1.10.3", "lib")
+
+			libManager, err := NewManager(specFlag, fs, libPath)
+			require.NoError(t, err)
+
+			got, err := libManager.GetLibPath()
+			require.NoError(t, err)
+
+			require.Equal(t, tc.expected, got)
+		})
+	}
+}
+
+type fakeKsLibGenerator struct {
+	ksonnetLib *kslib.KsonnetLib
+	err        error
+}
+
+var _ (KsLibGenerator) = (*fakeKsLibGenerator)(nil)
+
+func (g *fakeKsLibGenerator) Generate() (*kslib.KsonnetLib, error) {
+	return g.ksonnetLib, g.err
 }

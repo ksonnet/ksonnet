@@ -85,5 +85,5 @@ func genLib(a app.App, k8sSpecFlag, libPath string) error {
 		return err
 	}
 
-	return libManager.GenerateLibData(false)
+	return libManager.GenerateLibData()
 }
