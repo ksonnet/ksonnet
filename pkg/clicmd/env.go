@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/ksonnet/ksonnet/pkg/client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -129,7 +130,7 @@ func commonEnvFlags(flags *pflag.FlagSet) (server, namespace, context string, er
 	return server, namespace, context, nil
 }
 
-func resolveEnvFlags(flags *pflag.FlagSet) (string, string, error) {
+func resolveEnvFlags(flags *pflag.FlagSet, config *client.Config) (string, string, error) {
 	defaultNamespace := "default"
 
 	server, envNs, context, err := commonEnvFlags(flags)
@@ -140,7 +141,7 @@ func resolveEnvFlags(flags *pflag.FlagSet) (string, string, error) {
 	var ctxNs string
 	if server == "" {
 		// server is not provided -- use the context.
-		server, ctxNs, err = envClientConfig.ResolveContext(context)
+		server, ctxNs, err = config.ResolveContext(context)
 		if err != nil {
 			return "", "", err
 		}
