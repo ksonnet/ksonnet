@@ -51,6 +51,14 @@ func TestHelm_error_when_version_does_not_exist(t *testing.T) {
 	})
 }
 
+func TestHelm_error_when_chart_has_no_versions(t *testing.T) {
+	withHelmChart(t, func(a *amocks.App, fs afero.Fs) {
+		test.StageDir(t, fs, "noversion", "/app/vendor/helm-stable/noversion")
+		_, err := NewHelm(a, "noversion", "helm-stable", "", nil)
+		require.Error(t, err)
+	})
+}
+
 func TestHelm_Name(t *testing.T) {
 	withHelmChart(t, func(a *amocks.App, fs afero.Fs) {
 		h, err := NewHelm(a, "redis", "helm-stable", "3.3.6", nil)

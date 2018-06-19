@@ -106,6 +106,10 @@ func latestChartRelease(a app.App, name, registryName string) (string, error) {
 		}
 	}
 
+	if len(versions) == 0 {
+		return "", errors.Errorf("chart %q doesn't have any releases", name)
+	}
+
 	semver.Sort(versions)
 	return versions[0].String(), nil
 }
