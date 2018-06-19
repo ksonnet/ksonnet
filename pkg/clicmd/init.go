@@ -127,7 +127,9 @@ func newInitCmd(fs afero.Fs, wd string) *cobra.Command {
 				return err
 			}
 
-			server, namespace, err := resolveEnvFlags(flags)
+			clientConfig := client.NewDefaultClientConfig(nil)
+
+			server, namespace, err := resolveEnvFlags(flags, clientConfig)
 			if err != nil {
 				return err
 			}

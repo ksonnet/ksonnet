@@ -31,8 +31,7 @@ const (
 )
 
 var (
-	envClientConfig *client.Config
-	envAddLong      = `
+	envAddLong = `
 The ` + "`add`" + ` command creates a new environment (specifically for the ksonnet app
 whose directory it's executed in). This environment is cached with the following
 info:
@@ -98,7 +97,7 @@ func newEnvAddCmd(a app.App) *cobra.Command {
 
 			name := args[0]
 
-			server, namespace, err := resolveEnvFlags(flags)
+			server, namespace, err := resolveEnvFlags(flags, envClientConfig)
 			if err != nil {
 				return err
 			}
