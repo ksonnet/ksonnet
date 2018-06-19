@@ -25,7 +25,7 @@ func Test_envSetCmd(t *testing.T) {
 	cases := []cmdTestCase{
 		{
 			name:   "in general",
-			args:   []string{"env", "set", "default", "--name", "new-name", "--namespace", "new-namespace", "--server", "new-server"},
+			args:   []string{"env", "set", "default", "--name", "new-name", "--namespace", "new-namespace", "--server", "new-server", "--api-spec", "new-api-spec"},
 			action: actionEnvSet,
 			expected: map[string]interface{}{
 				actions.OptionApp:        nil,
@@ -33,6 +33,7 @@ func Test_envSetCmd(t *testing.T) {
 				actions.OptionNewEnvName: "new-name",
 				actions.OptionNamespace:  "new-namespace",
 				actions.OptionServer:     "new-server",
+				actions.OptionSpecFlag:   "new-api-spec",
 			},
 		},
 		{

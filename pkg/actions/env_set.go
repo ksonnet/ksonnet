@@ -48,16 +48,21 @@ func RunEnvSet(m map[string]interface{}) error {
 	return et.Run()
 }
 
+// func types for renaming and updating environments
+type envRenameFn func(a app.App, from, to string, override bool) error
+type updateEnvFn func(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentSpec, override bool) error
+
 // EnvSet sets targets for an environment.
 type EnvSet struct {
-	app       app.App
-	envName   string
-	newName   string
-	newNsName string
-	newServer string
+	app        app.App
+	envName    string
+	newName    string
+	newNsName  string
+	newServer  string
+	newAPISpec string
 
-	envRenameFn func(a app.App, from, to string, override bool) error
-	updateEnvFn func(a app.App, envName string, spec *app.EnvironmentSpec, override bool) error
+	envRenameFn envRenameFn
+	updateEnvFn updateEnvFn
 }
 
 // NewEnvSet creates an instance of EnvSet.
@@ -65,11 +70,12 @@ func NewEnvSet(m map[string]interface{}) (*EnvSet, error) {
 	ol := newOptionLoader(m)
 
 	es := &EnvSet{
-		app:       ol.LoadApp(),
-		envName:   ol.LoadString(OptionEnvName),
-		newName:   ol.LoadOptionalString(OptionNewEnvName),
-		newNsName: ol.LoadOptionalString(OptionNamespace),
-		newServer: ol.LoadOptionalString(OptionServer),
+		app:        ol.LoadApp(),
+		envName:    ol.LoadString(OptionEnvName),
+		newName:    ol.LoadOptionalString(OptionNewEnvName),
+		newNsName:  ol.LoadOptionalString(OptionNamespace),
+		newServer:  ol.LoadOptionalString(OptionServer),
+		newAPISpec: ol.LoadOptionalString(OptionSpecFlag),
 
 		envRenameFn: env.Rename,
 		updateEnvFn: updateEnv,
@@ -113,7 +119,7 @@ func (es *EnvSet) updateName(isOverride bool) error {
 }
 
 func (es *EnvSet) updateEnvSpec(env *app.EnvironmentSpec) error {
-	if es.newNsName == "" && es.newServer == "" {
+	if es.newNsName == "" && es.newServer == "" && es.newAPISpec == "" {
 		return nil
 	}
 
@@ -125,9 +131,9 @@ func (es *EnvSet) updateEnvSpec(env *app.EnvironmentSpec) error {
 		env.Destination.Server = es.newServer
 	}
 
-	return updateEnv(es.app, es.envName, env, env.IsOverride())
+	return es.updateEnvFn(es.app, es.envName, es.newAPISpec, env, env.IsOverride())
 }
 
-func updateEnv(a app.App, envName string, spec *app.EnvironmentSpec, override bool) error {
-	return a.AddEnvironment(envName, "", spec, override)
+func updateEnv(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentSpec, override bool) error {
+	return a.AddEnvironment(envName, k8sAPISpec, spec, override)
 }

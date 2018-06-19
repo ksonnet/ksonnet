@@ -28,6 +28,7 @@ const (
 	vEnvSetName      = "env-set-name"
 	vEnvSetNamespace = "env-set-namespace"
 	vEnvSetServer    = "env-set-server"
+	vEnvSetAPISpec   = "env-set-spec-flag"
 )
 
 var (
@@ -66,6 +67,7 @@ func newEnvSetCmd(a app.App) *cobra.Command {
 				actions.OptionNewEnvName: viper.GetString(vEnvSetName),
 				actions.OptionNamespace:  viper.GetString(vEnvSetNamespace),
 				actions.OptionServer:     viper.GetString(vEnvSetServer),
+				actions.OptionSpecFlag:   viper.GetString(vEnvSetAPISpec),
 			}
 
 			return runAction(actionEnvSet, m)
@@ -84,5 +86,8 @@ func newEnvSetCmd(a app.App) *cobra.Command {
 		"Cluster server for environment")
 	viper.BindPFlag(vEnvSetServer, envSetCmd.Flags().Lookup(flagServer))
 
+	envSetCmd.Flags().String(flagAPISpec, "",
+		"Kubernetes version for environment")
+	viper.BindPFlag(vEnvSetAPISpec, envSetCmd.Flags().Lookup(flagAPISpec))
 	return envSetCmd
 }

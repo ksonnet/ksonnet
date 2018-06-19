@@ -24,153 +24,155 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestEnvSet_name(t *testing.T) {
-	withApp(t, func(appMock *amocks.App) {
-		envName := "old_env_name"
-		newName := "new_env_name"
+func TestEnvSet(t *testing.T) {
+	envName := "old_env_name"
+	newName := "new_env_name"
+	oldNamespace := "old_namespace"
+	namespace := "new_namesapce"
+	oldServer := "old_server"
+	server := "new_server"
+	newk8sAPISpec := "version:new_api_spec"
 
-		in := map[string]interface{}{
-			OptionApp:        appMock,
-			OptionEnvName:    envName,
-			OptionNewEnvName: newName,
-		}
-
-		a, err := NewEnvSet(in)
-		require.NoError(t, err)
-
-		a.envRenameFn = func(a app.App, from, to string, override bool) error {
-			assert.Equal(t, envName, from)
-			assert.Equal(t, newName, to)
-			assert.False(t, override)
-
-			return nil
-		}
-
-		spec := &app.EnvironmentSpec{
-			Destination: &app.EnvironmentDestinationSpec{},
-		}
-
-		appMock.On("Environment", envName).Return(spec, nil)
-
-		err = a.Run()
-		require.NoError(t, err)
-	})
-}
-
-func TestEnvSet_namespace(t *testing.T) {
-	withApp(t, func(appMock *amocks.App) {
-		envName := "env_name"
-		oldNamespace := "old_namespace"
-		namespace := "new_name_sapce"
-
-		in := map[string]interface{}{
-			OptionApp:       appMock,
-			OptionEnvName:   envName,
-			OptionNamespace: namespace,
-		}
-		a, err := NewEnvSet(in)
-		require.NoError(t, err)
-
-		spec := &app.EnvironmentSpec{
-			Destination: &app.EnvironmentDestinationSpec{
-				Namespace: oldNamespace,
-			},
-		}
-
-		updatedSpec := &app.EnvironmentSpec{
-			Destination: &app.EnvironmentDestinationSpec{
-				Namespace: namespace,
-			},
-		}
-
-		appMock.On("Environment", envName).Return(spec, nil)
-		appMock.On("AddEnvironment", envName, "", updatedSpec, false).Return(nil)
-
-		err = a.Run()
-		require.NoError(t, err)
-	})
-}
-
-func TestEnvSet_server(t *testing.T) {
-	withApp(t, func(appMock *amocks.App) {
-		envName := "env_name"
-		oldServer := "old_server"
-		server := "new_server"
-
-		in := map[string]interface{}{
-			OptionApp:     appMock,
-			OptionEnvName: envName,
-			OptionServer:  server,
-		}
-		a, err := NewEnvSet(in)
-		require.NoError(t, err)
-
-		spec := &app.EnvironmentSpec{
-			Destination: &app.EnvironmentDestinationSpec{
-				Server: oldServer,
-			},
-		}
-
-		updatedSpec := &app.EnvironmentSpec{
-			Destination: &app.EnvironmentDestinationSpec{
-				Server: server,
-			},
-		}
-
-		appMock.On("Environment", envName).Return(spec, nil)
-		appMock.On("AddEnvironment", envName, "", updatedSpec, false).Return(nil)
-
-		err = a.Run()
-		require.NoError(t, err)
-	})
-}
-func TestEnvSet_all(t *testing.T) {
-	withApp(t, func(appMock *amocks.App) {
-		envName := "old_env_name"
-		newName := "new_env_name"
-		oldNamespace := "old_namespace"
-		namespace := "new_name_sapce"
-		oldServer := "old_server"
-		server := "new_server"
-
-		in := map[string]interface{}{
-			OptionApp:        appMock,
-			OptionEnvName:    envName,
-			OptionNewEnvName: newName,
-			OptionNamespace:  namespace,
-			OptionServer:     server,
-		}
-
-		a, err := NewEnvSet(in)
-		require.NoError(t, err)
-
-		a.envRenameFn = func(a app.App, from, to string, override bool) error {
-			assert.Equal(t, envName, from)
-			assert.Equal(t, newName, to)
-			assert.False(t, override)
-
-			return nil
-		}
-
-		spec := &app.EnvironmentSpec{
+	environmentMockFn := func(name string) *app.EnvironmentSpec {
+		return &app.EnvironmentSpec{
 			Destination: &app.EnvironmentDestinationSpec{
 				Namespace: oldNamespace,
 				Server:    oldServer,
 			},
 		}
+	}
 
-		updatedSpec := &app.EnvironmentSpec{
-			Destination: &app.EnvironmentDestinationSpec{
-				Namespace: namespace,
-				Server:    server,
+	withApp(t, func(appMock *amocks.App) {
+		cases := []struct {
+			name        string
+			in          map[string]interface{}
+			spec        *app.EnvironmentSpec
+			envRenameFn func(t *testing.T) envRenameFn
+			updateEnvFn func(t *testing.T) updateEnvFn
+		}{
+			{
+				name: "rename environment",
+				in: map[string]interface{}{
+					OptionApp:        appMock,
+					OptionEnvName:    envName,
+					OptionNewEnvName: newName,
+				},
+				envRenameFn: func(t *testing.T) envRenameFn {
+					return func(a app.App, from, to string, override bool) error {
+						assert.Equal(t, envName, from)
+						assert.Equal(t, newName, to)
+						assert.False(t, override)
+
+						return nil
+					}
+				},
+			},
+			{
+				name: "set new namespace",
+				in: map[string]interface{}{
+					OptionApp:       appMock,
+					OptionEnvName:   envName,
+					OptionNamespace: namespace,
+				},
+				updateEnvFn: func(t *testing.T) updateEnvFn {
+					return func(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentSpec, override bool) error {
+						assert.Equal(t, spec, &app.EnvironmentSpec{
+							Destination: &app.EnvironmentDestinationSpec{
+								Namespace: namespace,
+								Server:    oldServer,
+							},
+						})
+						return nil
+					}
+				},
+			},
+			{
+				name: "set new server",
+				in: map[string]interface{}{
+					OptionApp:     appMock,
+					OptionEnvName: envName,
+					OptionServer:  server,
+				},
+				updateEnvFn: func(t *testing.T) updateEnvFn {
+					return func(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentSpec, override bool) error {
+						assert.Equal(t, spec, &app.EnvironmentSpec{
+							Destination: &app.EnvironmentDestinationSpec{
+								Namespace: oldNamespace,
+								Server:    server,
+							},
+						})
+						return nil
+					}
+				},
+			},
+			{
+				name: "set new api spec",
+				in: map[string]interface{}{
+					OptionApp:      appMock,
+					OptionEnvName:  envName,
+					OptionSpecFlag: newk8sAPISpec,
+				},
+				updateEnvFn: func(t *testing.T) updateEnvFn {
+					return func(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentSpec, override bool) error {
+						assert.Equal(t, newk8sAPISpec, k8sAPISpec)
+						return nil
+					}
+				},
+			},
+			{
+				name: "set everything at once",
+				in: map[string]interface{}{
+					OptionApp:        appMock,
+					OptionEnvName:    envName,
+					OptionNewEnvName: newName,
+					OptionNamespace:  namespace,
+					OptionServer:     server,
+					OptionSpecFlag:   newk8sAPISpec,
+				},
+				updateEnvFn: func(t *testing.T) updateEnvFn {
+					return func(a app.App, newName, k8sAPISpec string, spec *app.EnvironmentSpec, override bool) error {
+						assert.Equal(t, spec, &app.EnvironmentSpec{
+							Destination: &app.EnvironmentDestinationSpec{
+								Namespace: namespace,
+								Server:    server,
+							},
+						})
+						assert.Equal(t, newk8sAPISpec, k8sAPISpec)
+						return nil
+					}
+				},
+				envRenameFn: func(t *testing.T) envRenameFn {
+					return func(a app.App, from, to string, override bool) error {
+						assert.Equal(t, envName, from)
+						assert.Equal(t, newName, to)
+						assert.False(t, override)
+
+						return nil
+					}
+				},
 			},
 		}
 
-		appMock.On("Environment", envName).Return(spec, nil)
-		appMock.On("AddEnvironment", newName, "", updatedSpec, false).Return(nil)
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				a, err := NewEnvSet(tc.in)
+				require.NoError(t, err)
 
-		err = a.Run()
-		require.NoError(t, err)
+				if tc.envRenameFn != nil {
+					a.envRenameFn = tc.envRenameFn(t)
+				}
+
+				if tc.updateEnvFn != nil {
+					a.updateEnvFn = tc.updateEnvFn(t)
+				}
+
+				appMock.On("Environment", tc.in[OptionEnvName]).Return(environmentMockFn, nil)
+
+				err = a.Run()
+				require.NoError(t, err)
+
+			})
+		}
 	})
 }
 
