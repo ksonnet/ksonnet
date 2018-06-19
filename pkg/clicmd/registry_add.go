@@ -26,7 +26,6 @@ import (
 )
 
 const (
-	vRegistryAddVersion  = "registry-add-version"
 	vRegistryAddOverride = "registry-add-override"
 )
 
@@ -37,10 +36,7 @@ provided that their file structures follow the appropriate schema. *You can look
 at the ` + "`incubator`" + ` repo (https://github.com/ksonnet/parts/tree/master/incubator)
 as an example.*
 
-A registry is uniquely identified by its:
-
-1. Name (e.g. ` + "`incubator`" + `)
-2. Version (e.g. ` + "`master`" + `)
+A registry is given a string identifier, which must be unique within a ksonnet application.
 
 There are two supported registry protocols: **github** and **fs**.
 
@@ -48,8 +44,7 @@ GitHub registries expect a path in a GitHub repository, and filesystem based
 registries expect a path on the local filesystem.
 
 During creation, all registries must specify a unique name and URI where the
-registry lives. Optionally, a version can be provided (e.g. the *Github branch
-name*). If a version is not specified, it will default to ` + "`latest`" + `.
+registry lives. GitHub registries can specify a commit, tag, or branch to follow as part of the URI.
 
 Registries can be overridden with ` + "`--override`" + `.  Overridden registries
 are stored in ` + "`app.override.yaml`" + ` and can be safely ignored using your
@@ -65,9 +60,8 @@ SCM configuration.
 ks registry add databases github.com/example
 
 # Add a registry with the name 'databases' at the uri
-# 'github.com/example/tree/master/reg' and the version (branch name) 0.0.1
-# NOTE that "0.0.1" overrides the branch name in the URI ("master")
-ks registry add databases github.com/example/tree/master/reg --version=0.0.1`
+# 'github.com/org/example/tree/0.0.1/registry' (0.0.1 is the branch name)
+ks registry add databases github.com/org/example/tree/0.0.1/registry`
 )
 
 func newRegistryAddCmd(a app.App) *cobra.Command {
@@ -85,16 +79,12 @@ func newRegistryAddCmd(a app.App) *cobra.Command {
 				actions.OptionApp:      a,
 				actions.OptionName:     args[0],
 				actions.OptionURI:      args[1],
-				actions.OptionVersion:  viper.GetString(vRegistryAddVersion),
 				actions.OptionOverride: viper.GetBool(vRegistryAddOverride),
 			}
 
 			return runAction(actionRegistryAdd, m)
 		},
 	}
-
-	registryAddCmd.Flags().String(flagVersion, "", "Version of the registry to add")
-	viper.BindPFlag(vRegistryAddVersion, registryAddCmd.Flags().Lookup(flagVersion))
 
 	registryAddCmd.Flags().BoolP(flagOverride, shortOverride, false, "Store in override configuration")
 	viper.BindPFlag(vRegistryAddOverride, registryAddCmd.Flags().Lookup(flagOverride))

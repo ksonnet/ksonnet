@@ -70,7 +70,7 @@ func TestAdd_GitHub(t *testing.T) {
 			return NewGitHub(a, registryRef, ghOpt)
 		}
 
-		spec, err := Add(appMock, ProtocolGitHub, "new", "github.com/foo/bar", "", true)
+		spec, err := Add(appMock, ProtocolGitHub, "new", "github.com/foo/bar", true)
 		require.NoError(t, err)
 
 		require.Equal(t, registrySpec, spec)
@@ -80,14 +80,14 @@ func TestAdd_GitHub(t *testing.T) {
 
 func TestAdd_fs(t *testing.T) {
 	test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
-		_, err := Add(a, ProtocolFilesystem, "/invalid", "", "", false)
+		_, err := Add(a, ProtocolFilesystem, "/invalid", "", false)
 		require.Error(t, err)
 	})
 }
 
 func TestAdd_invalid(t *testing.T) {
 	test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
-		_, err := Add(a, Protocol("invalid"), "", "", "", false)
+		_, err := Add(a, Protocol("invalid"), "", "", false)
 		require.Error(t, err)
 	})
 }

@@ -39,9 +39,8 @@ type RegistryAdd struct {
 	app           app.App
 	name          string
 	uri           string
-	version       string
 	isOverride    bool
-	registryAddFn func(a app.App, protocol registry.Protocol, name, uri, version string, isOverride bool) (*registry.Spec, error)
+	registryAddFn func(a app.App, protocol registry.Protocol, name string, uri string, isOverride bool) (*registry.Spec, error)
 }
 
 // NewRegistryAdd creates an instance of RegistryAdd.
@@ -52,7 +51,6 @@ func NewRegistryAdd(m map[string]interface{}) (*RegistryAdd, error) {
 		app:        ol.LoadApp(),
 		name:       ol.LoadString(OptionName),
 		uri:        ol.LoadString(OptionURI),
-		version:    ol.LoadString(OptionVersion),
 		isOverride: ol.LoadBool(OptionOverride),
 
 		registryAddFn: registry.Add,
@@ -72,7 +70,7 @@ func (ra *RegistryAdd) Run() error {
 		return errors.Wrap(err, "detect registry protocol")
 	}
 
-	_, err = ra.registryAddFn(ra.app, rd.Protocol, ra.name, rd.URI, ra.version, ra.isOverride)
+	_, err = ra.registryAddFn(ra.app, rd.Protocol, ra.name, rd.URI, ra.isOverride)
 	return err
 }
 
