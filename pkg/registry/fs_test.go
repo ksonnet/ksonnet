@@ -44,7 +44,7 @@ func withRFS(t *testing.T, relPath bool, fn func(*Fs, *mocks.App, afero.Fs)) {
 	appMock.On("Root").Return("/app")
 	appMock.On("LibPath", mock.AnythingOfType("string")).Return(filepath.Join("/app", "lib", "v1.8.7"), nil)
 
-	spec := &app.RegistryRefSpec{
+	spec := &app.RegistryConfig{
 		Name:     "local",
 		Protocol: string(ProtocolFilesystem),
 		URI:      uri,
@@ -84,7 +84,7 @@ func TestFs_ValidateURI_invalid_path(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
 		uri := "/invalid"
 
-		spec := &app.RegistryRefSpec{
+		spec := &app.RegistryConfig{
 			Name:     "local",
 			Protocol: string(ProtocolFilesystem),
 			URI:      uri,
@@ -151,8 +151,8 @@ func TestFs_FetchRegistrySpec(t *testing.T) {
 				expected := &Spec{
 					APIVersion: "0.1.0",
 					Kind:       "ksonnet.io/registry",
-					Libraries: LibraryRefSpecs{
-						"apache": &LibraryRef{
+					Libraries: LibraryConfigs{
+						"apache": &LibaryConfig{
 							Path: "apache",
 						},
 					},
@@ -165,14 +165,14 @@ func TestFs_FetchRegistrySpec(t *testing.T) {
 
 }
 
-func TestFs_MakeRegistryRefSpec(t *testing.T) {
+func TestFs_MakeRegistryConfig(t *testing.T) {
 	withRFS(t, false, func(rfs *Fs, appMock *mocks.App, fs afero.Fs) {
-		expected := &app.RegistryRefSpec{
+		expected := &app.RegistryConfig{
 			Name:     "local",
 			Protocol: string(ProtocolFilesystem),
 			URI:      "/work/local",
 		}
-		assert.Equal(t, expected, rfs.MakeRegistryRefSpec())
+		assert.Equal(t, expected, rfs.MakeRegistryConfig())
 
 	})
 }
@@ -265,7 +265,7 @@ func TestFs_ResolveLibrary(t *testing.T) {
 		}
 		assert.Equal(t, expectedSpec, spec)
 
-		expectedLibRefSpec := &app.LibraryRefSpec{
+		expectedLibRefSpec := &app.LibraryConfig{
 			Name:     "alias",
 			Registry: "local",
 		}

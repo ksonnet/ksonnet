@@ -34,13 +34,13 @@ var separator = fmt.Sprintf("%c", filepath.Separator)
 // Fs is a registry based on a local filesystem.
 type Fs struct {
 	app  app.App
-	spec *app.RegistryRefSpec
+	spec *app.RegistryConfig
 	root string
 }
 
-// NewFs creates an instance of Fs. Assign a name to the RegistryRefSpec if you want
+// NewFs creates an instance of Fs. Assign a name to the RegistryConfig if you want
 // the Fs to know it's name.
-func NewFs(a app.App, registryRef *app.RegistryRefSpec) (*Fs, error) {
+func NewFs(a app.App, registryRef *app.RegistryConfig) (*Fs, error) {
 	fs := &Fs{
 		app:  a,
 		spec: registryRef,
@@ -117,8 +117,8 @@ func (fs *Fs) FetchRegistrySpec() (*Spec, error) {
 	return Unmarshal(data)
 }
 
-// MakeRegistryRefSpec returns an app registry ref spec.
-func (fs *Fs) MakeRegistryRefSpec() *app.RegistryRefSpec {
+// MakeRegistryConfig returns an app registry ref spec.
+func (fs *Fs) MakeRegistryConfig() *app.RegistryConfig {
 	return fs.spec
 }
 
@@ -134,7 +134,7 @@ func (fs *Fs) ResolveLibrarySpec(partName, libRefSpec string) (*parts.Spec, erro
 }
 
 // ResolveLibrary fetches the part and creates a parts spec and library ref spec.
-func (fs *Fs) ResolveLibrary(partName, partAlias, libRefSpec string, onFile ResolveFile, onDir ResolveDirectory) (*parts.Spec, *app.LibraryRefSpec, error) {
+func (fs *Fs) ResolveLibrary(partName, partAlias, libRefSpec string, onFile ResolveFile, onDir ResolveDirectory) (*parts.Spec, *app.LibraryConfig, error) {
 	if partAlias == "" {
 		partAlias = partName
 	}
@@ -171,7 +171,7 @@ func (fs *Fs) ResolveLibrary(partName, partAlias, libRefSpec string, onFile Reso
 		return nil, nil, err
 	}
 
-	refSpec := &app.LibraryRefSpec{
+	refSpec := &app.LibraryConfig{
 		Name:     partAlias,
 		Registry: fs.Name(),
 	}
@@ -184,9 +184,29 @@ func (fs *Fs) CacheRoot(name, path string) (string, error) {
 	return filepath.Join(name, path), nil
 }
 
-// Update implements registry.Updater
-func (fs *Fs) Update(version string) (string, error) {
-	return "", errors.Errorf("TODO not implemented")
+// SetURI implements registry.Setter. It sets the URI for the registry.
+func (fs *Fs) SetURI(uri string) error {
+	if fs == nil {
+		return errors.Errorf("nil receiver")
+	}
+	if fs.spec == nil {
+		return errors.Errorf("nil spec")
+	}
+
+	// Validate
+	if ok, err := fs.ValidateURI(uri); err != nil || !ok {
+		return errors.Wrap(err, "validating uri")
+	}
+
+	u, err := url.Parse(uri)
+	if err != nil {
+		return errors.Wrapf(err, "parsing uri: %v", uri)
+	}
+
+	fs.root = u.Path
+	fs.spec.URI = uri
+
+	return nil
 }
 
 // ValidateURI implements registry.Validator. A URI is valid if:

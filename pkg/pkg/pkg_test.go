@@ -31,8 +31,8 @@ func TestPackage_Prototypes(t *testing.T) {
 	test.WithApp(t, "/", func(a *mocks.App, fs afero.Fs) {
 		test.StageDir(t, fs, filepath.Join("incubator", "apache"), "/vendor/apache")
 
-		libs := app.LibraryRefSpecs{
-			"apache": &app.LibraryRefSpec{},
+		libs := app.LibraryConfigs{
+			"apache": &app.LibraryConfig{},
 		}
 		a.On("Libraries").Return(libs, nil)
 
@@ -47,8 +47,8 @@ func Test_Find(t *testing.T) {
 	test.WithApp(t, "/", func(a *mocks.App, fs afero.Fs) {
 		test.StageDir(t, fs, filepath.Join("incubator", "apache"), "/vendor/incubator/apache")
 
-		libs := app.LibraryRefSpecs{
-			"apache": &app.LibraryRefSpec{
+		libs := app.LibraryConfigs{
+			"apache": &app.LibraryConfig{
 				Registry: "incubator",
 			},
 		}

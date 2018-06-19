@@ -31,11 +31,11 @@ func Test_CacheDependency(t *testing.T) {
 	withApp(t, func(a *amocks.App, fs afero.Fs) {
 		test.StageDir(t, fs, "incubator", filepath.Join("/work", "incubator"))
 
-		libraries := app.LibraryRefSpecs{}
+		libraries := app.LibraryConfigs{}
 		a.On("Libraries").Return(libraries, nil)
 
-		registries := app.RegistryRefSpecs{
-			"incubator": &app.RegistryRefSpec{
+		registries := app.RegistryConfigs{
+			"incubator": &app.RegistryConfig{
 				Name:     "incubator",
 				Protocol: string(ProtocolFilesystem),
 				URI:      "/work/incubator",
@@ -43,7 +43,7 @@ func Test_CacheDependency(t *testing.T) {
 		}
 		a.On("Registries").Return(registries, nil)
 
-		library := &app.LibraryRefSpec{
+		library := &app.LibraryConfig{
 			Name:     "apache",
 			Registry: "incubator",
 		}

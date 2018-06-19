@@ -27,15 +27,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func makeSimpleRefSpec(name, protocol, uri, version string) *RegistryRefSpec {
-	return &RegistryRefSpec{
+func makeSimpleRefSpec(name, protocol, uri, version string) *RegistryConfig {
+	return &RegistryConfig{
 		Name:     name,
 		Protocol: protocol,
 		URI:      uri,
-		GitVersion: &GitVersionSpec{
-			RefSpec:   version,
-			CommitSHA: version,
-		},
 	}
 }
 
@@ -87,15 +83,15 @@ func TestApiVersionValidate(t *testing.T) {
 
 func TestGetRegistryRefSuccess(t *testing.T) {
 	example1 := Spec{
-		Registries: RegistryRefSpecs{
-			"simple1": &RegistryRefSpec{
+		Registries: RegistryConfigs{
+			"simple1": &RegistryConfig{
 				URI:      "example.com",
 				Protocol: "github",
 			},
 		},
 	}
 
-	r1, ok := example1.GetRegistryRef("simple1")
+	r1, ok := example1.RegistryConfig("simple1")
 	if r1 == nil || !ok {
 		t.Error("Expected registry to contain 'simple1'")
 	}
@@ -107,15 +103,15 @@ func TestGetRegistryRefSuccess(t *testing.T) {
 
 func TestGetRegistryRefFailure(t *testing.T) {
 	example1 := Spec{
-		Registries: RegistryRefSpecs{
-			"simple1": &RegistryRefSpec{
+		Registries: RegistryConfigs{
+			"simple1": &RegistryConfig{
 				URI:      "example.com",
 				Protocol: "github",
 			},
 		},
 	}
 
-	r1, ok := example1.GetRegistryRef("simple2")
+	r1, ok := example1.RegistryConfig("simple2")
 	if r1 != nil || ok {
 		t.Error("Expected registry to not contain 'simple2'")
 	}
@@ -123,18 +119,18 @@ func TestGetRegistryRefFailure(t *testing.T) {
 
 func TestAddRegistryRefSuccess(t *testing.T) {
 	var example1 = Spec{
-		Registries: RegistryRefSpecs{},
+		Registries: RegistryConfigs{},
 	}
 
-	err := example1.AddRegistryRef(makeSimpleRefSpec("simple1", "github", "example.com", "master"))
+	err := example1.AddRegistryConfig(makeSimpleRefSpec("simple1", "github", "example.com", "master"))
 	require.NoError(t, err)
 
-	r1, ok1 := example1.GetRegistryRef("simple1")
+	r1, ok1 := example1.RegistryConfig("simple1")
 	assert.True(t, ok1)
-	expectedR1 := &RegistryRefSpec{URI: "example.com", Name: "simple1", Protocol: "github", GitVersion: &GitVersionSpec{RefSpec: "master", CommitSHA: "master"}}
+	expectedR1 := &RegistryConfig{URI: "example.com", Name: "simple1", Protocol: "github"}
 	require.Equal(t, expectedR1, r1)
 
-	r2, ok2 := example1.GetRegistryRef("simple1")
+	r2, ok2 := example1.RegistryConfig("simple1")
 	assert.True(t, ok2)
 	require.Equal(t, expectedR1, r2)
 
@@ -142,25 +138,25 @@ func TestAddRegistryRefSuccess(t *testing.T) {
 
 func TestAddRegistryRefFailure(t *testing.T) {
 	example1 := Spec{
-		Registries: RegistryRefSpecs{
-			"simple1": &RegistryRefSpec{
+		Registries: RegistryConfigs{
+			"simple1": &RegistryConfig{
 				URI:      "example.com",
 				Protocol: "github",
 			},
 		},
 	}
 
-	err := example1.AddRegistryRef(makeSimpleRefSpec("", "github", "example.com", "master"))
+	err := example1.AddRegistryConfig(makeSimpleRefSpec("", "github", "example.com", "master"))
 	if err != ErrRegistryNameInvalid {
 		t.Error("Expected registry to fail to add registry with invalid name")
 	}
 
-	err = example1.AddRegistryRef(makeSimpleRefSpec("simple1", "fakeProtocol", "example.com", "master"))
+	err = example1.AddRegistryConfig(makeSimpleRefSpec("simple1", "fakeProtocol", "example.com", "master"))
 	if err != ErrRegistryExists {
 		t.Error("Expected registry to fail to add registry with duplicate name and different protocol")
 	}
 
-	err = example1.AddRegistryRef(makeSimpleRefSpec("simple1", "github", "fakeUrl", "master"))
+	err = example1.AddRegistryConfig(makeSimpleRefSpec("simple1", "github", "fakeUrl", "master"))
 	if err != ErrRegistryExists {
 		t.Error("Expected registry to fail to add registry with duplicate name and different uri")
 	}
@@ -363,9 +359,9 @@ func Test_write(t *testing.T) {
 			"a": &EnvironmentSpec{},
 			"b": &EnvironmentSpec{isOverride: true},
 		},
-		Registries: RegistryRefSpecs{
-			"a": &RegistryRefSpec{},
-			"b": &RegistryRefSpec{isOverride: true},
+		Registries: RegistryConfigs{
+			"a": &RegistryConfig{},
+			"b": &RegistryConfig{isOverride: true},
 		},
 	}
 
@@ -387,8 +383,8 @@ func Test_write_no_override(t *testing.T) {
 		Environments: EnvironmentSpecs{
 			"a": &EnvironmentSpec{},
 		},
-		Registries: RegistryRefSpecs{
-			"a": &RegistryRefSpec{},
+		Registries: RegistryConfigs{
+			"a": &RegistryConfig{},
 		},
 	}
 
@@ -417,10 +413,10 @@ func Test_read(t *testing.T) {
 			"a": &EnvironmentSpec{},
 			"b": &EnvironmentSpec{isOverride: true},
 		},
-		Libraries: LibraryRefSpecs{},
-		Registries: RegistryRefSpecs{
-			"a": &RegistryRefSpec{Name: "a"},
-			"b": &RegistryRefSpec{Name: "b", isOverride: true},
+		Libraries: LibraryConfigs{},
+		Registries: RegistryConfigs{
+			"a": &RegistryConfig{Name: "a"},
+			"b": &RegistryConfig{Name: "b", isOverride: true},
 		},
 	}
 
@@ -438,9 +434,9 @@ func TestEnvironmentSpec_MakePath(t *testing.T) {
 	require.Equal(t, expected, got)
 }
 
-// Test that RegistryRefSpecs are properly deserialized, specifically
+// Test that RegistryConfigs are properly deserialized, specifically
 // their Name fields, which are handler by customer UnmarshalJSON code.
-func TestUnmarshalRegistryRefSpecs(t *testing.T) {
+func TestUnmarshalRegistryConfigs(t *testing.T) {
 	input := []byte(`
 apiVersion: 0.1.0
 registries:

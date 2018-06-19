@@ -16,12 +16,14 @@
 package registry
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/blang/semver"
 	"github.com/ghodss/yaml"
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 )
 
 const (
@@ -33,10 +35,50 @@ const (
 
 // Spec describes how a registry is stored.
 type Spec struct {
+	APIVersion string         `json:"apiVersion"`
+	Kind       string         `json:"kind"`
+	Version    string         `json:"version"`
+	Libraries  LibraryConfigs `json:"libraries"`
+}
+
+// specDeprecated is the previous registry specification
+type specDeprecated struct {
 	APIVersion string              `json:"apiVersion"`
 	Kind       string              `json:"kind"`
 	GitVersion *app.GitVersionSpec `json:"gitVersion"`
-	Libraries  LibraryRefSpecs     `json:"libraries"`
+	Libraries  LibraryConfigs      `json:"libraries"`
+}
+
+// spec is an alias that allows us to leverage default JSON decoding
+//  in our custom UnmarshalJSON handler without triggering infinite recursion.
+type spec Spec
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+// We implement some compatibility conversions.
+func (s *Spec) UnmarshalJSON(b []byte) error {
+	var newSpec spec
+
+	if err := json.Unmarshal(b, &newSpec); err != nil {
+		return err
+	}
+	*s = Spec(newSpec)
+
+	// Check if there's any need for conversions
+	if s.Version != "" {
+		return nil
+	}
+
+	// Try to convert deprecated fields
+	var oldStyle specDeprecated
+	if err := json.Unmarshal(b, &oldStyle); err != nil {
+		// This is best-effort, not an error
+		return nil
+	}
+	if oldStyle.GitVersion != nil {
+		s.Version = oldStyle.GitVersion.CommitSHA
+	}
+
+	return nil
 }
 
 // Unmarshal unmarshals bytes to a Spec.
@@ -80,14 +122,50 @@ func (s *Spec) validate() error {
 	return nil
 }
 
+// load loads a registry spec from disk.
+// Returns the parsed spec, bool if it existed, and optional error.
+func load(a app.App, path string) (*Spec, bool, error) {
+	exists, err := afero.Exists(a.Fs(), path)
+	if err != nil {
+		return nil, false, errors.Wrapf(err, "check if %q exists", path)
+	}
+
+	// NOTE: case where directory of the same name exists should be
+	// fine, most filesystems allow you to have a directory and file of
+	// the same name.
+	if !exists {
+		return nil, false, nil
+	}
+
+	isDir, err := afero.IsDir(a.Fs(), path)
+	if err != nil {
+		return nil, false, errors.Wrapf(err, "check if %q is a dir", path)
+	}
+
+	if isDir {
+		return nil, false, nil
+	}
+
+	registrySpecBytes, err := afero.ReadFile(a.Fs(), path)
+	if err != nil {
+		return nil, false, err
+	}
+
+	registrySpec, err := Unmarshal(registrySpecBytes)
+	if err != nil {
+		return nil, false, err
+	}
+	return registrySpec, true, nil
+}
+
 // Specs is a slice of *Spec.
 type Specs []*Spec
 
-// LibraryRef is library reference.
-type LibraryRef struct {
+// LibaryConfig is library reference.
+type LibaryConfig struct {
 	Version string `json:"version"`
 	Path    string `json:"path"`
 }
 
-// LibraryRefSpecs maps LibraryRefs to a name.
-type LibraryRefSpecs map[string]*LibraryRef
+// LibraryConfigs maps LibraryConfigs to a name.
+type LibraryConfigs map[string]*LibaryConfig

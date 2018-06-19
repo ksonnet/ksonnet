@@ -34,7 +34,7 @@ type Override struct {
 	Kind         string           `json:"kind"`
 	APIVersion   string           `json:"apiVersion"`
 	Environments EnvironmentSpecs `json:"environments,omitempty"`
-	Registries   RegistryRefSpecs `json:"registries,omitempty"`
+	Registries   RegistryConfigs  `json:"registries,omitempty"`
 }
 
 // Validate validates an Override.

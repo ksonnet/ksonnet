@@ -44,14 +44,10 @@ func withApp(t *testing.T, fn func(*amocks.App, afero.Fs)) {
 
 func TestAdd_GitHub(t *testing.T) {
 	withApp(t, func(appMock *amocks.App, fs afero.Fs) {
-		expectedSpec := &app.RegistryRefSpec{
+		expectedSpec := &app.RegistryConfig{
 			Name:     "new",
 			Protocol: string(ProtocolGitHub),
 			URI:      "github.com/foo/bar",
-			GitVersion: &app.GitVersionSpec{
-				CommitSHA: "40285d8a14f1ac5787e405e1023cf0c07f6aa28c",
-				RefSpec:   "master",
-			},
 		}
 
 		appMock.On("AddRegistry", expectedSpec, true).Return(nil)
@@ -70,7 +66,7 @@ func TestAdd_GitHub(t *testing.T) {
 			Return(registryContent, nil, nil)
 
 		ghOpt := GitHubClient(ghMock)
-		githubFactory = func(a app.App, registryRef *app.RegistryRefSpec) (*GitHub, error) {
+		githubFactory = func(a app.App, registryRef *app.RegistryConfig) (*GitHub, error) {
 			return NewGitHub(a, registryRef, ghOpt)
 		}
 
@@ -140,20 +136,3 @@ func Test_load(t *testing.T) {
 
 	})
 }
-
-var (
-	registrySpec = &Spec{
-		APIVersion: "0.1.0",
-		Kind:       "ksonnet.io/registry",
-		GitVersion: &app.GitVersionSpec{
-			RefSpec:   "master",
-			CommitSHA: "40285d8a14f1ac5787e405e1023cf0c07f6aa28c",
-		},
-		Libraries: LibraryRefSpecs{
-			"apache": &LibraryRef{
-				Version: "master",
-				Path:    "apache",
-			},
-		},
-	}
-)

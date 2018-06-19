@@ -37,7 +37,7 @@ import (
 
 func TestHelm_requires_repository_client(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
-		spec := &app.RegistryRefSpec{
+		spec := &app.RegistryConfig{
 			URI:  "http://example.com",
 			Name: "name",
 		}
@@ -48,7 +48,7 @@ func TestHelm_requires_repository_client(t *testing.T) {
 
 func TestHelm_requires_name(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
-		spec := &app.RegistryRefSpec{
+		spec := &app.RegistryConfig{
 			URI:  "http://example.com",
 			Name: "name",
 		}
@@ -61,7 +61,7 @@ func TestHelm_requires_name(t *testing.T) {
 
 func TestHelm_requires_uri(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
-		spec := &app.RegistryRefSpec{
+		spec := &app.RegistryConfig{
 			URI:  "http://example.com",
 			Name: "name",
 		}
@@ -74,7 +74,7 @@ func TestHelm_requires_uri(t *testing.T) {
 
 func TestHelm_requires_protocol(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
-		spec := &app.RegistryRefSpec{
+		spec := &app.RegistryConfig{
 			URI:  "http://example.com",
 			Name: "name",
 		}
@@ -87,7 +87,7 @@ func TestHelm_requires_protocol(t *testing.T) {
 
 func TestHelm_RegistrySpecDir(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
-		spec := &app.RegistryRefSpec{
+		spec := &app.RegistryConfig{
 			URI:  "http://example.com",
 			Name: "name",
 		}
@@ -100,7 +100,7 @@ func TestHelm_RegistrySpecDir(t *testing.T) {
 
 func TestHelm_RegistrySpecFilePath(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
-		spec := &app.RegistryRefSpec{
+		spec := &app.RegistryConfig{
 			URI:  "http://example.com",
 			Name: "name",
 		}
@@ -112,7 +112,7 @@ func TestHelm_RegistrySpecFilePath(t *testing.T) {
 }
 func TestHelm_FetchRegistrySpec(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
-		spec := &app.RegistryRefSpec{
+		spec := &app.RegistryConfig{
 			URI:  "http://example.com",
 			Name: "name",
 		}
@@ -147,12 +147,12 @@ func TestHelm_FetchRegistrySpec(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := &Spec{
-			Libraries: LibraryRefSpecs{
-				"app-a": &LibraryRef{
+			Libraries: LibraryConfigs{
+				"app-a": &LibaryConfig{
 					Path:    "app-a",
 					Version: "0.1.0",
 				},
-				"app-b": &LibraryRef{
+				"app-b": &LibaryConfig{
 					Path:    "app-b",
 					Version: "0.2.0",
 				},
@@ -163,16 +163,16 @@ func TestHelm_FetchRegistrySpec(t *testing.T) {
 	})
 }
 
-func TestHelm_MakeRegistryRefSpec(t *testing.T) {
+func TestHelm_MakeRegistryConfig(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
-		spec := &app.RegistryRefSpec{
+		spec := &app.RegistryConfig{
 			URI:  "http://example.com",
 			Name: "name",
 		}
 		h, err := NewHelm(a, spec, &fakeHelmRepositoryClient{}, nil)
 		require.NoError(t, err)
 
-		got := h.MakeRegistryRefSpec()
+		got := h.MakeRegistryConfig()
 
 		require.Equal(t, spec, got)
 	})
@@ -180,7 +180,7 @@ func TestHelm_MakeRegistryRefSpec(t *testing.T) {
 
 func TestHelm_ResolveLibrarySpec(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
-		spec := &app.RegistryRefSpec{
+		spec := &app.RegistryConfig{
 			URI:  "http://example.com",
 			Name: "name",
 		}
@@ -213,7 +213,7 @@ func TestHelm_ResolveLibrarySpec(t *testing.T) {
 
 func TestHelm_ResolveLibrarySpec_chart_error(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
-		spec := &app.RegistryRefSpec{
+		spec := &app.RegistryConfig{
 			URI:  "http://example.com",
 			Name: "name",
 		}
@@ -232,7 +232,7 @@ func TestHelm_ResolveLibrarySpec_chart_error(t *testing.T) {
 
 func TestHelm_ResolveLibrary(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
-		spec := &app.RegistryRefSpec{
+		spec := &app.RegistryConfig{
 			URI:  "http://example.com",
 			Name: "name",
 		}
@@ -278,7 +278,7 @@ func TestHelm_ResolveLibrary(t *testing.T) {
 
 		assert.Equal(t, expectedPart, part)
 
-		expectedLib := &app.LibraryRefSpec{
+		expectedLib := &app.LibraryConfig{
 			Registry: "name",
 		}
 
@@ -289,7 +289,7 @@ func TestHelm_ResolveLibrary(t *testing.T) {
 
 func TestHelm_CacheRoot(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
-		spec := &app.RegistryRefSpec{
+		spec := &app.RegistryConfig{
 			URI:  "http://example.com",
 			Name: "name",
 		}
@@ -312,7 +312,7 @@ func TestHelm_ValidateURI_invalid(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
 		uri := ""
 
-		spec := &app.RegistryRefSpec{
+		spec := &app.RegistryConfig{
 			Name:     "local",
 			Protocol: string(ProtocolHelm),
 			URI:      uri,

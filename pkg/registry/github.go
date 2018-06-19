@@ -24,11 +24,11 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/parts"
 	"github.com/ksonnet/ksonnet/pkg/util/github"
-	ksio "github.com/ksonnet/ksonnet/pkg/util/io"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -43,12 +43,12 @@ var (
 	// errInvalidURI is an invalid github uri error.
 	errInvalidURI = fmt.Errorf("Invalid GitHub URI: try navigating in GitHub to the URI of the folder containing the 'yaml', and using that URI instead. Generally, this URI should be of the form 'github.com/{organization}/{repository}/tree/{branch}/[path-to-directory]'")
 
-	githubFactory = func(a app.App, spec *app.RegistryRefSpec) (*GitHub, error) {
+	githubFactory = func(a app.App, spec *app.RegistryConfig) (*GitHub, error) {
 		return NewGitHub(a, spec)
 	}
 )
 
-type ghFactoryFn func(a app.App, spec *app.RegistryRefSpec) (*GitHub, error)
+type ghFactoryFn func(a app.App, spec *app.RegistryConfig) (*GitHub, error)
 
 // GitHubClient is an option for the setting a github client.
 func GitHubClient(c github.GitHub) GitHubOpt {
@@ -66,11 +66,11 @@ type GitHub struct {
 	name     string
 	hd       *hubDescriptor
 	ghClient github.GitHub
-	spec     *app.RegistryRefSpec
+	spec     *app.RegistryConfig
 }
 
 // NewGitHub creates an instance of GitHub.
-func NewGitHub(a app.App, registryRef *app.RegistryRefSpec, opts ...GitHubOpt) (*GitHub, error) {
+func NewGitHub(a app.App, registryRef *app.RegistryConfig, opts ...GitHubOpt) (*GitHub, error) {
 	if registryRef == nil {
 		return nil, errors.New("registry ref is nil")
 	}
@@ -92,19 +92,6 @@ func NewGitHub(a app.App, registryRef *app.RegistryRefSpec, opts ...GitHubOpt) (
 		return nil, err
 	}
 	gh.hd = hd
-
-	if gh.spec.GitVersion == nil || gh.spec.GitVersion.CommitSHA == "" {
-		ctx := context.Background()
-		sha, err := gh.ghClient.CommitSHA1(ctx, hd.Repo(), hd.refSpec)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to find SHA1 for repo")
-		}
-
-		gh.spec.GitVersion = &app.GitVersionSpec{
-			RefSpec:   hd.refSpec,
-			CommitSHA: sha,
-		}
-	}
 
 	return gh, nil
 }
@@ -136,15 +123,41 @@ func (gh *GitHub) RegistrySpecDir() string {
 
 // RegistrySpecFilePath is the path for the registry.yaml
 func (gh *GitHub) RegistrySpecFilePath() string {
-	if gh.spec.GitVersion.CommitSHA != "" {
-		return path.Join(gh.Name(), gh.spec.GitVersion.CommitSHA+".yaml")
+	return path.Join(gh.Name(), registryYAMLFile)
+}
+
+// resolveLatestSHA fetches the SHA currently pointed to by configured RefSpec from remote
+func (gh *GitHub) resolveLatestSHA() (string, error) {
+	log := log.WithField("action", "GitHub.resolveLatestSHA")
+
+	if gh == nil {
+		return "", errors.Errorf("nil receiver")
 	}
-	return path.Join(gh.Name(), gh.spec.GitVersion.RefSpec+".yaml")
+	// Generally hubDescriptor is parsed in NewGitHub - this is just a backup.
+	if gh.hd == nil {
+		hd, err := parseGitHubURI(gh.URI())
+		if err != nil {
+			return "", errors.Wrapf(err, "unable to parse URI: %v", gh.URI())
+		}
+		gh.hd = hd
+	}
+
+	log.Debugf("resolving SHA for URI: %v", gh.URI())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	sha, err := gh.ghClient.CommitSHA1(ctx, gh.hd.Repo(), gh.hd.refSpec)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to find SHA1 for URI: %v", gh.URI())
+	}
+
+	return sha, nil
 }
 
 // FetchRegistrySpec fetches the registry spec (registry.yaml, inventory of packages)
-// This inventory may have been previously cached on disk, otherwise it is
-// fetched from the remote GitHub repo.
+// This inventory may have been previously cached on disk. If the cache is not stale,
+// it will be used. Otherwise, the spec is fetched from the remote repository.
 func (gh *GitHub) FetchRegistrySpec() (*Spec, error) {
 	log := log.WithField("action", "GitHub.FetchRegistrySpec")
 
@@ -154,57 +167,80 @@ func (gh *GitHub) FetchRegistrySpec() (*Spec, error) {
 	log.Debugf("checking for registry cache: %v", registrySpecFile)
 	registrySpec, exists, err := load(gh.app, registrySpecFile)
 	if err != nil {
-		log.Debugf("error loading cache for %v (%v), trying to refresh instead", gh.spec.Name, err)
+		log.Warnf("error loading cache for %v (%v), trying to refresh instead", gh.spec.Name, err)
+		exists = false
 	}
 
-	if !exists {
+	var cachedVersion string
+	if registrySpec != nil {
+		cachedVersion = registrySpec.Version
+	}
+
+	// Get the latest matching commit to determine staleness of cache
+	sha, err := gh.resolveLatestSHA()
+	if err != nil || sha == "" {
+		log.Warnf("%v", errors.Wrapf(err, "unable to resolve commit for refspec: %v", gh.hd.refSpec))
+		log.Warnf("falling back to cached version (%v)", cachedVersion)
+		return registrySpec, nil
+	}
+
+	// Check if cache is still current
+	if exists && cachedVersion == sha {
+		log.Debugf("using cache @%v", sha)
+		return registrySpec, nil
+	}
+
+	if exists {
+		log.Debugf("cache is stale, updating to %v", sha)
+	} else {
 		log.Debugf("cache not found, fetching remote for %v", gh.spec.Name)
-		// If failed, use the protocol to try to retrieve app specification.
-		cs := github.ContentSpec{
-			Repo:    gh.hd.Repo(),
-			Path:    gh.hd.regSpecRepoPath,
-			RefSpec: gh.spec.GitVersion.CommitSHA,
-		}
+	}
 
-		registrySpec, err = gh.fetchRemoteSpec(cs)
-		if err != nil {
-			return nil, err
-		}
+	// Abandoning cache - fetch from remote
 
-		var registrySpecBytes []byte
-		registrySpecBytes, err = registrySpec.Marshal()
-		if err != nil {
-			return nil, err
-		}
+	cs := github.ContentSpec{
+		Repo:    gh.hd.Repo(),
+		Path:    gh.hd.regSpecRepoPath,
+		RefSpec: sha,
+	}
 
-		// NOTE: We call mkdir after getting the registry spec, since a
-		// network call might fail and leave this half-initialized empty
-		// directory.
-		registrySpecDir := filepath.Join(registryCacheRoot(gh.app), gh.RegistrySpecDir())
-		err = gh.app.Fs().MkdirAll(registrySpecDir, app.DefaultFolderPermissions)
-		if err != nil {
-			return nil, err
-		}
+	registrySpec, err = gh.fetchRemoteSpec(cs)
+	if err != nil {
+		return nil, err
+	}
 
-		err = afero.WriteFile(gh.app.Fs(), registrySpecFile, registrySpecBytes, app.DefaultFilePermissions)
-		if err != nil {
-			return nil, err
-		}
-	} else if err != nil {
+	var registrySpecBytes []byte
+	registrySpecBytes, err = registrySpec.Marshal()
+	if err != nil {
+		return nil, err
+	}
+
+	// NOTE: We call mkdir after getting the registry spec, since a
+	// network call might fail and leave this half-initialized empty
+	// directory.
+	registrySpecDir := filepath.Join(registryCacheRoot(gh.app), gh.RegistrySpecDir())
+	err = gh.app.Fs().MkdirAll(registrySpecDir, app.DefaultFolderPermissions)
+	if err != nil {
+		return nil, err
+	}
+
+	err = afero.WriteFile(gh.app.Fs(), registrySpecFile, registrySpecBytes, app.DefaultFilePermissions)
+	if err != nil {
 		return nil, err
 	}
 
 	return registrySpec, nil
 }
 
-// fetchRemoteSpec fetche a ksonnet registry spec (registry.yaml) from a remote GitHub repository.
+// fetchRemoteSpec fetches a ksonnet registry spec (registry.yaml) from a remote GitHub repository.
 // repo describes the remote repo (org/repo)
 // path is the file path within the repo (represents the registry.yaml file)
 // sha1 is the commit to pull the contents from
 func (gh *GitHub) fetchRemoteSpec(cs github.ContentSpec) (*Spec, error) {
+	log := log.WithField("action", "GitHub.fetchRemoteSpec")
 	ctx := context.Background()
 
-	log.Debugf("[fetchRemoteSpec] fetching %v", cs)
+	log.Debugf("fetching %v", cs)
 	file, _, err := gh.ghClient.Contents(ctx, cs.Repo, cs.Path,
 		cs.RefSpec)
 	if err != nil {
@@ -225,16 +261,15 @@ func (gh *GitHub) fetchRemoteSpec(cs github.ContentSpec) (*Spec, error) {
 		return nil, err
 	}
 
-	registrySpec.GitVersion = &app.GitVersionSpec{
-		RefSpec:   gh.spec.GitVersion.RefSpec,
-		CommitSHA: gh.spec.GitVersion.CommitSHA,
-	}
+	// Version will persisted in registry.yaml cache.
+	// This allows us to check whether the cache is stale.
+	registrySpec.Version = cs.RefSpec
 
 	return registrySpec, nil
 }
 
-// MakeRegistryRefSpec returns an app registry ref spec.
-func (gh *GitHub) MakeRegistryRefSpec() *app.RegistryRefSpec {
+// MakeRegistryConfig returns an app registry ref spec.
+func (gh *GitHub) MakeRegistryConfig() *app.RegistryConfig {
 	return gh.spec
 }
 
@@ -270,7 +305,7 @@ func (gh *GitHub) ResolveLibrarySpec(partName, libRefSpec string) (*parts.Spec, 
 }
 
 // ResolveLibrary fetches the part and creates a parts spec and library ref spec.
-func (gh *GitHub) ResolveLibrary(partName, partAlias, libRefSpec string, onFile ResolveFile, onDir ResolveDirectory) (*parts.Spec, *app.LibraryRefSpec, error) {
+func (gh *GitHub) ResolveLibrary(partName, partAlias, libRefSpec string, onFile ResolveFile, onDir ResolveDirectory) (*parts.Spec, *app.LibraryConfig, error) {
 	defaultRefSpec := "master"
 
 	// Resolve `version` (a git refspec) to a specific SHA.
@@ -316,7 +351,7 @@ func (gh *GitHub) ResolveLibrary(partName, partAlias, libRefSpec string, onFile 
 		partAlias = partName
 	}
 
-	refSpec := app.LibraryRefSpec{
+	refSpec := app.LibraryConfig{
 		Name:     partAlias,
 		Registry: gh.Name(),
 		GitVersion: &app.GitVersionSpec{
@@ -377,7 +412,7 @@ func (gh *GitHub) registrySpecRawURL() string {
 		rawGitHubRoot,
 		gh.hd.org,
 		gh.hd.repo,
-		gh.spec.GitVersion.RefSpec,
+		gh.hd.refSpec,
 		gh.hd.regSpecRepoPath}, "/")
 }
 
@@ -520,7 +555,7 @@ func (gh *GitHub) fetchRemoteAndSave(cs github.ContentSpec, w io.Writer) error {
 
 	// If failed, use the protocol to try to retrieve app specification.
 	registrySpec, err := gh.fetchRemoteSpec(cs)
-	if err != nil {
+	if err != nil || registrySpec == nil {
 		return err
 	}
 
@@ -540,50 +575,30 @@ func (gh *GitHub) fetchRemoteAndSave(cs github.ContentSpec, w io.Writer) error {
 	return nil
 }
 
-// Update implements registry.Updater
-func (gh *GitHub) Update(version string) (string, error) {
+// SetURI implements registry.Setter. It sets the URI for the registry.
+func (gh *GitHub) SetURI(uri string) error {
 	if gh == nil {
-		return "", errors.Errorf("nil receiver")
+		return errors.Errorf("nil receiver")
+	}
+	if gh.spec == nil {
+		return errors.Errorf("nil spec")
 	}
 
-	if version != "" {
-		// TODO, see NewGitHub
-		return "", errors.Errorf("TODO not implemented")
-	}
-
-	// Should we be using gh.spec.GitVersion.RefSpec instead??
-	log.Debugf("[github.Update] trying to update registry %v@%v", gh.hd.Repo(), gh.hd.refSpec)
-	if gh.spec.GitVersion != nil {
-		log.Debugf("[github.Update] current version: %v", gh.spec.GitVersion.CommitSHA)
-	}
-
-	// Resolve the latest SHA for the desired git RefSpec
-	ctx := context.Background()
-	sha, err := gh.ghClient.CommitSHA1(ctx, gh.hd.Repo(), gh.hd.refSpec)
+	// 1. Verify URI
+	hd, err := parseGitHubURI(uri)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to find SHA1 for repo")
+		return err
+	}
+	if ok, err := gh.ValidateURI(uri); err != nil || !ok {
+		return errors.Wrap(err, "validating uri")
 	}
 
-	// Use the new sha we resolved using the branch refspec
-	cs := github.ContentSpec{
-		Repo:    gh.hd.Repo(),
-		Path:    gh.hd.regSpecRepoPath,
-		RefSpec: sha,
-	}
+	// 3. Set URI
+	gh.hd = hd
+	gh.spec.URI = uri
 
-	fs := gh.app.Fs()
-	registrySpecFile := registrySpecFilePath(gh.app, gh)
-	tw, err := ksio.NewTransactionWriter(fs, registrySpecFile)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to create writer for file: %v", registrySpecFile)
-	}
-	if err := gh.fetchRemoteAndSave(cs, tw); err != nil {
-		tw.Abort()
-		return "", errors.Wrapf(err, "failed to update registry %v", gh.name)
-	}
-
-	tw.Commit()
-	return sha, nil
+	// TODO: Call FetchRegistrySpec here or from our caller?
+	return nil
 }
 
 // ValidateURI implements registry.Validator. A URI is valid if:
@@ -598,6 +613,10 @@ func (gh *GitHub) ValidateURI(uri string) (bool, error) {
 	}
 	if err := gh.ghClient.ValidateURL(uri); err != nil {
 		return false, errors.Wrap(err, "validating GitHub registry URL")
+	}
+
+	if _, err := parseGitHubURI(uri); err != nil {
+		return false, errors.Wrap(err, "parsing GitHub registry URL")
 	}
 
 	return true, nil

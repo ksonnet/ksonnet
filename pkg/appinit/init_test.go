@@ -35,10 +35,10 @@ func TestInit(t *testing.T) {
 
 	r := &mocks.Registry{}
 
-	regRefSpec := &app.RegistryRefSpec{
+	regRefSpec := &app.RegistryConfig{
 		Name: "incubator",
 	}
-	r.On("MakeRegistryRefSpec").Return(regRefSpec)
+	r.On("MakeRegistryConfig").Return(regRefSpec)
 
 	regSpec := &registry.Spec{}
 	r.On("FetchRegistrySpec").Return(regSpec, nil)

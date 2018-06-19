@@ -84,16 +84,16 @@ func (_m *Registry) IsOverride() bool {
 	return r0
 }
 
-// MakeRegistryRefSpec provides a mock function with given fields:
-func (_m *Registry) MakeRegistryRefSpec() *app.RegistryRefSpec {
+// MakeRegistryConfig provides a mock function with given fields:
+func (_m *Registry) MakeRegistryConfig() *app.RegistryConfig {
 	ret := _m.Called()
 
-	var r0 *app.RegistryRefSpec
-	if rf, ok := ret.Get(0).(func() *app.RegistryRefSpec); ok {
+	var r0 *app.RegistryConfig
+	if rf, ok := ret.Get(0).(func() *app.RegistryConfig); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*app.RegistryRefSpec)
+			r0 = ret.Get(0).(*app.RegistryConfig)
 		}
 	}
 
@@ -157,7 +157,7 @@ func (_m *Registry) RegistrySpecFilePath() string {
 }
 
 // ResolveLibrary provides a mock function with given fields: libID, libAlias, version, onFile, onDir
-func (_m *Registry) ResolveLibrary(libID string, libAlias string, version string, onFile registry.ResolveFile, onDir registry.ResolveDirectory) (*parts.Spec, *app.LibraryRefSpec, error) {
+func (_m *Registry) ResolveLibrary(libID string, libAlias string, version string, onFile registry.ResolveFile, onDir registry.ResolveDirectory) (*parts.Spec, *app.LibraryConfig, error) {
 	ret := _m.Called(libID, libAlias, version, onFile, onDir)
 
 	var r0 *parts.Spec
@@ -169,12 +169,12 @@ func (_m *Registry) ResolveLibrary(libID string, libAlias string, version string
 		}
 	}
 
-	var r1 *app.LibraryRefSpec
-	if rf, ok := ret.Get(1).(func(string, string, string, registry.ResolveFile, registry.ResolveDirectory) *app.LibraryRefSpec); ok {
+	var r1 *app.LibraryConfig
+	if rf, ok := ret.Get(1).(func(string, string, string, registry.ResolveFile, registry.ResolveDirectory) *app.LibraryConfig); ok {
 		r1 = rf(libID, libAlias, version, onFile, onDir)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*app.LibraryRefSpec)
+			r1 = ret.Get(1).(*app.LibraryConfig)
 		}
 	}
 
@@ -211,6 +211,20 @@ func (_m *Registry) ResolveLibrarySpec(libID string, libRefSpec string) (*parts.
 	return r0, r1
 }
 
+// SetURI provides a mock function with given fields: uri
+func (_m *Registry) SetURI(uri string) error {
+	ret := _m.Called(uri)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(uri)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // URI provides a mock function with given fields:
 func (_m *Registry) URI() string {
 	ret := _m.Called()
@@ -223,27 +237,6 @@ func (_m *Registry) URI() string {
 	}
 
 	return r0
-}
-
-// Update provides a mock function with given fields: version
-func (_m *Registry) Update(version string) (string, error) {
-	ret := _m.Called(version)
-
-	var r0 string
-	if rf, ok := ret.Get(0).(func(string) string); ok {
-		r0 = rf(version)
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(version)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
 }
 
 // ValidateURI provides a mock function with given fields: uri

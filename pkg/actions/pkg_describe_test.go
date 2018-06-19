@@ -27,8 +27,8 @@ import (
 
 func TestPkgDescribe_library(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		libaries := app.LibraryRefSpecs{
-			"apache": &app.LibraryRefSpec{},
+		libaries := app.LibraryConfigs{
+			"apache": &app.LibraryConfig{},
 		}
 		appMock.On("Libraries").Return(libaries, nil)
 
@@ -61,8 +61,8 @@ func TestPkgDescribe_library(t *testing.T) {
 
 func TestPkgDescribe_registry(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		registries := app.RegistryRefSpecs{
-			"incubator": &app.RegistryRefSpec{},
+		registries := app.RegistryConfigs{
+			"incubator": &app.RegistryConfig{},
 		}
 		appMock.On("Registries").Return(registries, nil)
 

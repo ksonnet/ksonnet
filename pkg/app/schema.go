@@ -62,9 +62,9 @@ type Spec struct {
 	Repository   *RepositorySpec  `json:"repository,omitempty"`
 	Bugs         string           `json:"bugs,omitempty"`
 	Keywords     []string         `json:"keywords,omitempty"`
-	Registries   RegistryRefSpecs `json:"registries,omitempty"`
+	Registries   RegistryConfigs  `json:"registries,omitempty"`
 	Environments EnvironmentSpecs `json:"environments,omitempty"`
-	Libraries    LibraryRefSpecs  `json:"libraries,omitempty"`
+	Libraries    LibraryConfigs   `json:"libraries,omitempty"`
 	License      string           `json:"license,omitempty"`
 }
 
@@ -131,7 +131,7 @@ func write(fs afero.Fs, appRoot string, spec *Spec) error {
 		Kind:         overrideKind,
 		APIVersion:   overrideVersion,
 		Environments: EnvironmentSpecs{},
-		Registries:   RegistryRefSpecs{},
+		Registries:   RegistryConfigs{},
 	}
 
 	overrideKeys := map[string][]string{
@@ -208,35 +208,33 @@ type RepositorySpec struct {
 	URI  string `json:"uri"`
 }
 
-// RegistryRefSpec defines the spec for a registry. A registry is a collection
+// RegistryConfig defines the spec for a registry. A registry is a collection
 // of library parts.
-type RegistryRefSpec struct {
+type RegistryConfig struct {
 	// Name is the user defined name of a registry.
 	Name string `json:"-"`
 	// Protocol is the registry protocol for this registry. Currently supported
-	// values are `github` and `fs`.
+	// values are `github`, `fs`, `helm`.
 	Protocol string `json:"protocol"`
 	// URI is the location of the registry.
 	URI string `json:"uri"`
-	// GitVersion is the git information for the registry.
-	GitVersion *GitVersionSpec `json:"gitVersion,omitempty"`
 
 	isOverride bool
 }
 
-// IsOverride is true if this RegistryRefSpec is an override.
-func (r *RegistryRefSpec) IsOverride() bool {
+// IsOverride is true if this RegistryConfig is an override.
+func (r *RegistryConfig) IsOverride() bool {
 	return r.isOverride
 }
 
-// RegistryRefSpecs is a map of the registry name to a RegistryRefSpec.
-type RegistryRefSpecs map[string]*RegistryRefSpec
+// RegistryConfigs is a map of the registry name to a RegistryConfig.
+type RegistryConfigs map[string]*RegistryConfig
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
-// Our goal is to populate the Name field of RegistryRefSpec
+// Our goal is to populate the Name field of RegistryConfig
 // objects according to they key name in the registries map.
-func (r *RegistryRefSpecs) UnmarshalJSON(b []byte) error {
-	registries := make(map[string]*RegistryRefSpec)
+func (r *RegistryConfigs) UnmarshalJSON(b []byte) error {
+	registries := make(map[string]*RegistryConfig)
 	if err := json.Unmarshal(b, &registries); err != nil {
 		return err
 	}
@@ -246,7 +244,7 @@ func (r *RegistryRefSpecs) UnmarshalJSON(b []byte) error {
 		v.Name = k
 	}
 
-	*r = RegistryRefSpecs(registries)
+	*r = RegistryConfigs(registries)
 	return nil
 }
 
@@ -295,8 +293,8 @@ type EnvironmentDestinationSpec struct {
 	Namespace string `json:"namespace"`
 }
 
-// LibraryRefSpec is the specification for a library part.
-type LibraryRefSpec struct {
+// LibraryConfig is the specification for a library part.
+type LibraryConfig struct {
 	Name       string          `json:"name"`
 	Registry   string          `json:"registry"`
 	GitVersion *GitVersionSpec `json:"gitVersion,omitempty"`
@@ -308,8 +306,8 @@ type GitVersionSpec struct {
 	CommitSHA string `json:"commitSha"`
 }
 
-// LibraryRefSpecs is a mapping of a library name to it's LibraryRefSpec.
-type LibraryRefSpecs map[string]*LibraryRefSpec
+// LibraryConfigs is a mapping of a library configurations by name.
+type LibraryConfigs map[string]*LibraryConfig
 
 // ContributorSpec is a specification for the project contributors.
 type ContributorSpec struct {
@@ -325,29 +323,30 @@ func (s *Spec) Marshal() ([]byte, error) {
 	return yaml.Marshal(s)
 }
 
-// GetRegistryRef returns a populated RegistryRefSpec given a registry name.
-func (s *Spec) GetRegistryRef(name string) (*RegistryRefSpec, bool) {
-	registryRefSpec, ok := s.Registries[name]
+// RegistryConfig returns a populated RegistryConfig given a registry name.
+func (s *Spec) RegistryConfig(name string) (*RegistryConfig, bool) {
+	cfg, ok := s.Registries[name]
 	if ok {
-		// Populate name, which we do not include in the de-serialization
-		// process.
-		registryRefSpec.Name = name
+		// Verify map name matches the name in configuration. These should always match.
+		if cfg.Name != name {
+			log.WithField("action", "app.Spec.RegistryConfig").Warnf("registry configuration name mismatch: %v vs. %v", cfg.Name, name)
+			cfg.Name = name
+		}
 	}
-	return registryRefSpec, ok
+	return cfg, ok
 }
 
-// AddRegistryRef adds the RegistryRefSpec to the app spec.
-func (s *Spec) AddRegistryRef(registryRefSpec *RegistryRefSpec) error {
-	if registryRefSpec.Name == "" {
+// AddRegistryConfig adds the RegistryConfig to the app spec.
+func (s *Spec) AddRegistryConfig(RegistryConfig *RegistryConfig) error {
+	if RegistryConfig.Name == "" {
 		return ErrRegistryNameInvalid
 	}
 
-	_, registryRefExists := s.Registries[registryRefSpec.Name]
-	if registryRefExists {
+	if _, exists := s.Registries[RegistryConfig.Name]; exists {
 		return ErrRegistryExists
 	}
 
-	s.Registries[registryRefSpec.Name] = registryRefSpec
+	s.Registries[RegistryConfig.Name] = RegistryConfig
 	return nil
 }
 
@@ -357,11 +356,11 @@ func (s *Spec) validate() error {
 	}
 
 	if s.Registries == nil {
-		s.Registries = RegistryRefSpecs{}
+		s.Registries = RegistryConfigs{}
 	}
 
 	if s.Libraries == nil {
-		s.Libraries = LibraryRefSpecs{}
+		s.Libraries = LibraryConfigs{}
 	}
 
 	if s.Environments == nil {

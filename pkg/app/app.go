@@ -58,7 +58,7 @@ type App interface {
 	// AddEnvironment adds an environment.
 	AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec, isOverride bool) error
 	// AddRegistry adds a registry.
-	AddRegistry(spec *RegistryRefSpec, isOverride bool) error
+	AddRegistry(spec *RegistryConfig, isOverride bool) error
 	// CurrentEnvironment returns the current environment name or an empty string.
 	CurrentEnvironment() string
 	// Environment finds an environment by name.
@@ -74,9 +74,9 @@ type App interface {
 	// LibPath returns the path of the lib for an environment.
 	LibPath(envName string) (string, error)
 	// Libraries returns all environments.
-	Libraries() (LibraryRefSpecs, error)
+	Libraries() (LibraryConfigs, error)
 	// Registries returns all registries.
-	Registries() (RegistryRefSpecs, error)
+	Registries() (RegistryConfigs, error)
 	// RemoveEnvironment removes an environment from the main configuration or an override.
 	RemoveEnvironment(name string, override bool) error
 	// RenameEnvironment renames an environment in the main configuration or an override.
@@ -88,9 +88,9 @@ type App interface {
 	// UpdateTargets sets the targets for an environment.
 	UpdateTargets(envName string, targets []string) error
 	// UpdateLib updates a library.
-	UpdateLib(name string, spec *LibraryRefSpec) error
+	UpdateLib(name string, spec *LibraryConfig) error
 	// UpdateRegistry updates a registry.
-	UpdateRegistry(spec *RegistryRefSpec) error
+	UpdateRegistry(spec *RegistryConfig) error
 	// Upgrade upgrades an application to the current version.
 	Upgrade(dryRun bool) error
 }

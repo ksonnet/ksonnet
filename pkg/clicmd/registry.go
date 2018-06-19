@@ -25,7 +25,7 @@ var (
 		"list":     "List all registries known to the current ksonnet app",
 		"describe": "Describe a ksonnet registry and the packages it contains",
 		"add":      "Add a registry to the current ksonnet app",
-		"update":   "Update currently configured registries",
+		"set":      "Set configuration options for registry",
 	}
 	registryLong = `
 A ksonnet registry is basically a repository for *packages*. (Registry here is
@@ -56,7 +56,7 @@ func newRegistryCmd(a app.App) *cobra.Command {
 	registryCmd.AddCommand(newRegistryAddCmd(a))
 	registryCmd.AddCommand(newRegistryDescribeCmd(a))
 	registryCmd.AddCommand(newRegistryListCmd(a))
-	registryCmd.AddCommand(newRegistryUpdateCmd(a))
+	registryCmd.AddCommand(newRegistrySetCmd(a))
 
 	return registryCmd
 }

@@ -16,4 +16,4 @@
 package mocks
 
 //go:generate mockery -dir .. -output . -name=Registry
-//go:generate mockery -dir .. -output . -name=Updater
+//go:generate mockery -dir .. -output . -name=Setter

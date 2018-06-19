@@ -27,16 +27,16 @@ import (
 
 func TestPkgList(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		libaries := app.LibraryRefSpecs{
-			"lib1": &app.LibraryRefSpec{},
+		libaries := app.LibraryConfigs{
+			"lib1": &app.LibraryConfig{},
 		}
 
 		appMock.On("Libraries").Return(libaries, nil)
 
 		spec := &registry.Spec{
-			Libraries: registry.LibraryRefSpecs{
-				"lib1": &registry.LibraryRef{},
-				"lib2": &registry.LibraryRef{},
+			Libraries: registry.LibraryConfigs{
+				"lib1": &registry.LibaryConfig{},
+				"lib2": &registry.LibaryConfig{},
 			},
 		}
 

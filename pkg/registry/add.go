@@ -18,7 +18,6 @@ package registry
 import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
-	"github.com/spf13/afero"
 )
 
 // Add adds a registry with `name`, `protocol`, and `uri` to
@@ -27,7 +26,7 @@ func Add(a app.App, protocol Protocol, name, uri, version string, isOverride boo
 	var r Registry
 	var err error
 
-	initSpec := &app.RegistryRefSpec{
+	initSpec := &app.RegistryConfig{
 		Name:     name,
 		Protocol: string(protocol),
 		URI:      uri,
@@ -38,6 +37,7 @@ func Add(a app.App, protocol Protocol, name, uri, version string, isOverride boo
 		r, err = githubFactory(a, initSpec)
 	case ProtocolFilesystem:
 		r, err = NewFs(a, initSpec)
+	// TODO Helm
 	default:
 		return nil, errors.Errorf("invalid registry protocol %q", protocol)
 	}
@@ -50,7 +50,7 @@ func Add(a app.App, protocol Protocol, name, uri, version string, isOverride boo
 		return nil, errors.Wrap(err, "validating registry URL")
 	}
 
-	err = a.AddRegistry(r.MakeRegistryRefSpec(), isOverride)
+	err = a.AddRegistry(r.MakeRegistryConfig(), isOverride)
 	if err != nil {
 		return nil, err
 	}
@@ -62,36 +62,4 @@ func Add(a app.App, protocol Protocol, name, uri, version string, isOverride boo
 	}
 
 	return registrySpec, nil
-}
-
-func load(a app.App, path string) (*Spec, bool, error) {
-	exists, err := afero.Exists(a.Fs(), path)
-	if err != nil {
-		return nil, false, errors.Wrapf(err, "check if %q exists", path)
-	}
-
-	// NOTE: case where directory of the same name exists should be
-	// fine, most filesystems allow you to have a directory and file of
-	// the same name.
-	if exists {
-		isDir, err := afero.IsDir(a.Fs(), path)
-		if err != nil {
-			return nil, false, errors.Wrapf(err, "check if %q is a dir", path)
-		}
-
-		if !isDir {
-			registrySpecBytes, err := afero.ReadFile(a.Fs(), path)
-			if err != nil {
-				return nil, false, err
-			}
-
-			registrySpec, err := Unmarshal(registrySpecBytes)
-			if err != nil {
-				return nil, false, err
-			}
-			return registrySpec, true, nil
-		}
-	}
-
-	return nil, false, nil
 }

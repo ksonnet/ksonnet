@@ -53,7 +53,7 @@ func makeGh(t *testing.T, url, sha1 string) (*GitHub, *mocks.GitHub) {
 	if url == "" {
 		url = "github.com/ksonnet/parts/tree/master/incubator"
 	}
-	spec := &app.RegistryRefSpec{
+	spec := &app.RegistryConfig{
 		Name:     "incubator",
 		Protocol: string(ProtocolGitHub),
 		URI:      url,
@@ -61,6 +61,10 @@ func makeGh(t *testing.T, url, sha1 string) (*GitHub, *mocks.GitHub) {
 
 	g, err := NewGitHub(appMock, spec, optGh)
 	require.NoError(t, err)
+
+	ok, err := g.ValidateURI(url)
+	require.NoError(t, err)
+	require.Equal(t, true, ok)
 
 	return g, ghMock
 }
@@ -129,7 +133,7 @@ func TestGitHub_invalid_url(t *testing.T) {
 		optGh := GitHubClient(ghMock)
 
 		uri := "github.com/ksonnet/parts/tree/master/incubator"
-		spec := &app.RegistryRefSpec{
+		spec := &app.RegistryConfig{
 			Name:     "incubator",
 			Protocol: string(ProtocolGitHub),
 			URI:      uri,
@@ -178,17 +182,18 @@ func TestGithub_RegistrySpecFilePath(t *testing.T) {
 	u := "github.com/ksonnet/parts/tree/master/incubator"
 	g, _ := makeGh(t, u, "12345")
 
-	assert.Equal(t, "incubator/12345.yaml", g.RegistrySpecFilePath())
+	// Registry cache path is now fixed.
+	assert.Equal(t, "incubator/registry.yaml", g.RegistrySpecFilePath())
 }
 
 func TestGithub_RegistrySpecFilePath_no_sha1(t *testing.T) {
 	u := "github.com/ksonnet/parts/tree/master/incubator"
 	g, _ := makeGh(t, u, "")
 
-	assert.Equal(t, "incubator/master.yaml", g.RegistrySpecFilePath())
+	assert.Equal(t, "incubator/registry.yaml", g.RegistrySpecFilePath())
 }
 
-func TestGithub_FetchRegistrySpec(t *testing.T) {
+func TestGithub_FetchRegistrySpec_nocache(t *testing.T) {
 	u := "github.com/ksonnet/parts/tree/master/incubator"
 	g, ghMock := makeGh(t, u, "12345")
 
@@ -208,12 +213,9 @@ func TestGithub_FetchRegistrySpec(t *testing.T) {
 	expected := &Spec{
 		APIVersion: "0.1.0",
 		Kind:       "ksonnet.io/registry",
-		GitVersion: &app.GitVersionSpec{
-			CommitSHA: "12345",
-			RefSpec:   "master",
-		},
-		Libraries: LibraryRefSpecs{
-			"apache": &LibraryRef{
+		Version:    "12345",
+		Libraries: LibraryConfigs{
+			"apache": &LibaryConfig{
 				Path:    "apache",
 				Version: "master",
 			},
@@ -241,21 +243,118 @@ func TestGithub_FetchRegistrySpec_invalid_manifest(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestGithub_MakeRegistryRefSpec(t *testing.T) {
+func TestGithub_FetchRegistrySpec_cache_current(t *testing.T) {
+	u := "github.com/ksonnet/parts/tree/master/incubator"
+	remoteSHA := "40285d8a14f1ac5787e405e1023cf0c07f6aa28c"
+	g, ghMock := makeGh(t, u, remoteSHA)
+
+	// Stage cached registry.yaml
+	fs := g.app.Fs()
+	path := registrySpecFilePath(g.app, g)
+	test.StageFile(t, fs, "registry.yaml", path)
+
+	// Parse and capture for comparison below
+	expected, _, err := load(g.app, path)
+	require.NoError(t, err)
+
+	spec, err := g.FetchRegistrySpec()
+	require.NoError(t, err)
+
+	// Remote registry should not have been requested, the cache was current.
+	ghMock.AssertNumberOfCalls(t, "Contents", 0)
+
+	// Verify the cached registry was used
+	assert.Equal(t, expected, spec)
+}
+
+func TestGithub_FetchRegistrySpec_cache_stale(t *testing.T) {
+	u := "github.com/ksonnet/parts/tree/master/incubator"
+	remoteSHA := "40285d8a14f1ac5787e405e1023cf0c07f6aa28c"
+	g, ghMock := makeGh(t, u, remoteSHA)
+
+	// Stage cached registry.yaml
+	fs := g.app.Fs()
+	path := registrySpecFilePath(g.app, g)
+	test.StageFile(t, fs, "stale-registry.yaml", path)
+
+	// Parse and capture for comparison below
+	notExpected, _, err := load(g.app, path)
+	require.NoError(t, err)
+
+	// Contents will be called, as the registry is stale
+	file := buildContent(t, "registry.yaml")
+	ghMock.On(
+		"Contents",
+		mock.Anything,
+		ghutil.Repo{Org: "ksonnet", Repo: "parts"},
+		"incubator/registry.yaml",
+		remoteSHA,
+	).Return(file, nil, nil)
+
+	spec, err := g.FetchRegistrySpec()
+	require.NoError(t, err)
+
+	ghMock.AssertExpectations(t)
+
+	// Verify the cached registry was not used
+	assert.NotEqual(t, notExpected, spec)
+
+	// Verify expected registry (remote) was returned
+	in := filepath.Join("testdata", "registry.yaml")
+	b, err := ioutil.ReadFile(in)
+	require.NoError(t, err)
+
+	expected, err := Unmarshal(b)
+	require.NoError(t, err)
+	assert.Equal(t, expected, spec)
+}
+
+func TestGithub_FetchRegistrySpec_cache_invalid(t *testing.T) {
+	u := "github.com/ksonnet/parts/tree/master/incubator"
+	remoteSHA := "40285d8a14f1ac5787e405e1023cf0c07f6aa28c"
+	g, ghMock := makeGh(t, u, remoteSHA)
+
+	// Stage cached registry.yaml
+	fs := g.app.Fs()
+	path := registrySpecFilePath(g.app, g)
+	test.StageFile(t, fs, "invalid-registry.yaml", path)
+
+	// Contents will be called, as the registry is invalid
+	file := buildContent(t, "registry.yaml")
+	ghMock.On(
+		"Contents",
+		mock.Anything,
+		ghutil.Repo{Org: "ksonnet", Repo: "parts"},
+		"incubator/registry.yaml",
+		remoteSHA,
+	).Return(file, nil, nil)
+
+	spec, err := g.FetchRegistrySpec()
+	require.NoError(t, err)
+
+	ghMock.AssertExpectations(t)
+
+	// Verify expected registry (remote) was returned
+	in := filepath.Join("testdata", "registry.yaml")
+	b, err := ioutil.ReadFile(in)
+	require.NoError(t, err)
+
+	expected, err := Unmarshal(b)
+	require.NoError(t, err)
+	assert.Equal(t, expected, spec)
+}
+
+func TestGithub_MakeRegistryConfig(t *testing.T) {
 	u := "github.com/ksonnet/parts/tree/master/incubator"
 	g, _ := makeGh(t, u, "12345")
 
-	expected := &app.RegistryRefSpec{
+	expected := &app.RegistryConfig{
 		Name:     "incubator",
 		Protocol: string(ProtocolGitHub),
 		URI:      "github.com/ksonnet/parts/tree/master/incubator",
-		GitVersion: &app.GitVersionSpec{
-			CommitSHA: "12345",
-			RefSpec:   "master",
-		},
 	}
 
-	assert.Equal(t, expected, g.MakeRegistryRefSpec())
+	assert.Equal(t, expected, g.MakeRegistryConfig())
 }
 
 func TestGithub_ResolveLibrarySpec(t *testing.T) {
@@ -390,7 +489,7 @@ func TestGithub_ResolveLibrary(t *testing.T) {
 	}
 	assert.Equal(t, expectedSpec, spec)
 
-	expectedLibRefSpec := &app.LibraryRefSpec{
+	expectedLibRefSpec := &app.LibraryConfig{
 		Name:     "alias",
 		Registry: "incubator",
 		GitVersion: &app.GitVersionSpec{
@@ -584,19 +683,6 @@ func TestGitHub_CacheRoot(t *testing.T) {
 			path:     "foobar/apache/parts.yaml",
 			expected: "incubator/apache/parts.yaml",
 		},
-		// {
-		// 	name:     "no path in registry url",
-		// 	url:      "github.com/ksonnet/parts",
-		// 	path:     "foobar/apache/parts.yaml",
-		// 	expected: "incubator/foobar/apache/parts.yaml",
-		// },
-		// {
-		// 	name:      "bad url",
-		// 	url:       "github.com/ksonnet",
-		// 	path:      "foobar/apache/parts.yaml",
-		// 	expected:  "",
-		// 	expectErr: true,
-		// },
 	}
 
 	for _, tc := range tests {

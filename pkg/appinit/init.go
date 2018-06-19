@@ -138,18 +138,18 @@ func (i *initApp) setupRegistry(r registry.Registry) error {
 	return nil
 }
 
-func generateAppYAMLData(name string, refs ...*app.RegistryRefSpec) ([]byte, error) {
+func generateAppYAMLData(name string, refs ...*app.RegistryConfig) ([]byte, error) {
 	content := app.Spec{
 		APIVersion:   app.DefaultAPIVersion,
 		Kind:         app.Kind,
 		Name:         name,
 		Version:      app.DefaultVersion,
-		Registries:   app.RegistryRefSpecs{},
+		Registries:   app.RegistryConfigs{},
 		Environments: app.EnvironmentSpecs{},
 	}
 
 	for _, ref := range refs {
-		err := content.AddRegistryRef(ref)
+		err := content.AddRegistryConfig(ref)
 		if err != nil {
 			return nil, err
 		}
@@ -187,9 +187,9 @@ func (i *initApp) createAppDirTree() error {
 		}
 	}
 
-	var specs []*app.RegistryRefSpec
+	var specs []*app.RegistryConfig
 	for _, r := range i.registries {
-		specs = append(specs, r.MakeRegistryRefSpec())
+		specs = append(specs, r.MakeRegistryConfig())
 	}
 
 	// Generate data for `app.yaml`.

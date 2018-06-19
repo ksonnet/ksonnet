@@ -29,7 +29,7 @@ import (
 
 func TestPrototypePreview(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		libaries := app.LibraryRefSpecs{}
+		libaries := app.LibraryConfigs{}
 
 		appMock.On("Libraries").Return(libaries, nil)
 
@@ -60,7 +60,7 @@ func TestPrototypePreview(t *testing.T) {
 
 func TestPrototypePreview_bind_flags_failed(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		libaries := app.LibraryRefSpecs{}
+		libaries := app.LibraryConfigs{}
 
 		appMock.On("Libraries").Return(libaries, nil)
 
