@@ -40,7 +40,7 @@ func newBaseApp(fs afero.Fs, root string) *baseApp {
 		root:   root,
 		config: &Spec{},
 		overrides: &Override{
-			Environments: EnvironmentSpecs{},
+			Environments: EnvironmentConfigs{},
 			Registries:   RegistryConfigs{},
 		},
 	}
@@ -113,7 +113,7 @@ func (ba *baseApp) load() error {
 	}
 
 	if len(config.Environments) == 0 {
-		config.Environments = EnvironmentSpecs{}
+		config.Environments = EnvironmentConfigs{}
 	}
 
 	if len(config.Registries) == 0 {
@@ -121,7 +121,7 @@ func (ba *baseApp) load() error {
 	}
 
 	override := Override{
-		Environments: EnvironmentSpecs{},
+		Environments: EnvironmentConfigs{},
 		Registries:   RegistryConfigs{},
 	}
 	if exists {
@@ -138,7 +138,7 @@ func (ba *baseApp) load() error {
 		}
 
 		if len(override.Environments) == 0 {
-			override.Environments = EnvironmentSpecs{}
+			override.Environments = EnvironmentConfigs{}
 		}
 
 		if len(override.Registries) == 0 {

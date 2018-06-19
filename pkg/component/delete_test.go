@@ -30,8 +30,8 @@ func TestDelete(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
 		test.StageDir(t, fs, "delete", "/app")
 
-		envs := app.EnvironmentSpecs{
-			"default": &app.EnvironmentSpec{},
+		envs := app.EnvironmentConfigs{
+			"default": &app.EnvironmentConfig{},
 		}
 		a.On("Environments").Return(envs, nil)
 

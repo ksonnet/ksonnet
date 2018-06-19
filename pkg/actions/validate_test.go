@@ -64,7 +64,7 @@ func TestValidate(t *testing.T) {
 				aModuleName := "module"
 				aClientConfig := &client.Config{}
 
-				env := &app.EnvironmentSpec{}
+				env := &app.EnvironmentConfig{}
 				appMock.On("Environment", "default").Return(env, nil)
 
 				in := map[string]interface{}{

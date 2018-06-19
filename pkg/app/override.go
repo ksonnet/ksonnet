@@ -31,10 +31,10 @@ const (
 
 // Override defines overrides to ksonnet project configurations.
 type Override struct {
-	Kind         string           `json:"kind"`
-	APIVersion   string           `json:"apiVersion"`
-	Environments EnvironmentSpecs `json:"environments,omitempty"`
-	Registries   RegistryConfigs  `json:"registries,omitempty"`
+	Kind         string             `json:"kind"`
+	APIVersion   string             `json:"apiVersion"`
+	Environments EnvironmentConfigs `json:"environments,omitempty"`
+	Registries   RegistryConfigs    `json:"registries,omitempty"`
 }
 
 // Validate validates an Override.

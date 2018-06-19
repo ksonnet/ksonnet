@@ -51,7 +51,7 @@ func TestPipeline_EnvParameters(t *testing.T) {
 		m.On("NSResolveParams", ns).Return("", nil)
 		a.On("EnvironmentParams", "default").Return("{}", nil)
 
-		env := &app.EnvironmentSpec{Path: "default"}
+		env := &app.EnvironmentConfig{Path: "default"}
 		a.On("Environment", "default").Return(env, nil)
 
 		got, err := p.EnvParameters("/")
@@ -150,7 +150,7 @@ func TestPipeline_Objects(t *testing.T) {
 		m.On("NSResolveParams", module).Return("", nil)
 		a.On("EnvironmentParams", "default").Return("{}", nil)
 
-		env := &app.EnvironmentSpec{Path: "default"}
+		env := &app.EnvironmentConfig{Path: "default"}
 		a.On("Environment", "default").Return(env, nil)
 
 		serviceJSON, err := ioutil.ReadFile(filepath.Join("testdata", "components.json"))

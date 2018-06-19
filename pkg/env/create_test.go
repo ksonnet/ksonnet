@@ -33,7 +33,7 @@ func TestCreate(t *testing.T) {
 			"AddEnvironment",
 			"newenv",
 			"version:v1.8.7",
-			mock.AnythingOfType("*app.EnvironmentSpec"),
+			mock.AnythingOfType("*app.EnvironmentConfig"),
 			false,
 		).Return(nil)
 

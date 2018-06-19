@@ -33,7 +33,7 @@ func TestApp010_AddEnvironment(t *testing.T) {
 
 		envLen := len(envs)
 
-		newEnv := &EnvironmentSpec{
+		newEnv := &EnvironmentConfig{
 			Destination: &EnvironmentDestinationSpec{
 				Namespace: "some-namespace",
 				Server:    "http://example.com",
@@ -83,8 +83,9 @@ func TestApp010_AddEnvironment_empty_spec_flag(t *testing.T) {
 
 func TestApp0101_Environments(t *testing.T) {
 	withApp010Fs(t, "app010_app.yaml", func(app *App010) {
-		expected := EnvironmentSpecs{
-			"default": &EnvironmentSpec{
+		expected := EnvironmentConfigs{
+			"default": &EnvironmentConfig{
+				Name: "default",
 				Destination: &EnvironmentDestinationSpec{
 					Namespace: "some-namespace",
 					Server:    "http://example.com",
@@ -92,7 +93,8 @@ func TestApp0101_Environments(t *testing.T) {
 				KubernetesVersion: "v1.7.0",
 				Path:              "default",
 			},
-			"us-east/test": &EnvironmentSpec{
+			"us-east/test": &EnvironmentConfig{
+				Name: "us-east/test",
 				Destination: &EnvironmentDestinationSpec{
 					Namespace: "some-namespace",
 					Server:    "http://example.com",
@@ -100,7 +102,8 @@ func TestApp0101_Environments(t *testing.T) {
 				KubernetesVersion: "v1.7.0",
 				Path:              "us-east/test",
 			},
-			"us-west/test": &EnvironmentSpec{
+			"us-west/test": &EnvironmentConfig{
+				Name: "us-west/test",
 				Destination: &EnvironmentDestinationSpec{
 					Namespace: "some-namespace",
 					Server:    "http://example.com",
@@ -108,7 +111,8 @@ func TestApp0101_Environments(t *testing.T) {
 				KubernetesVersion: "v1.7.0",
 				Path:              "us-west/test",
 			},
-			"us-west/prod": &EnvironmentSpec{
+			"us-west/prod": &EnvironmentConfig{
+				Name: "us-west/prod",
 				Destination: &EnvironmentDestinationSpec{
 					Namespace: "some-namespace",
 					Server:    "http://example.com",

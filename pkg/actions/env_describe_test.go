@@ -28,7 +28,7 @@ func TestEnvDescribe(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		envName := "default"
 
-		env := &app.EnvironmentSpec{
+		env := &app.EnvironmentConfig{
 			KubernetesVersion: "v1.7.0",
 		}
 

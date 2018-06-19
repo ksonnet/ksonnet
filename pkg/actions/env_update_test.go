@@ -27,7 +27,7 @@ import (
 func TestEnvUpdate(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 
-		envSpec := &app.EnvironmentSpec{
+		envSpec := &app.EnvironmentConfig{
 			KubernetesVersion: "v1.8.9",
 		}
 		appMock.On("Environment", "envName").Return(envSpec, nil)

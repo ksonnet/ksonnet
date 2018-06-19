@@ -208,7 +208,7 @@ func withJsonnetPaths(fn func()) {
 
 func TestEvaluate(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
-		envSpec := &app.EnvironmentSpec{
+		envSpec := &app.EnvironmentConfig{
 			Path: "default",
 			Destination: &app.EnvironmentDestinationSpec{
 				Server:    "http://example.com",
@@ -231,7 +231,7 @@ func TestEvaluate(t *testing.T) {
 
 func TestMainFile(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
-		envSpec := &app.EnvironmentSpec{}
+		envSpec := &app.EnvironmentConfig{}
 		a.On("Environment", "default").Return(envSpec, nil)
 
 		test.StageFile(t, fs, "main.jsonnet", "/app/environments/main.jsonnet")

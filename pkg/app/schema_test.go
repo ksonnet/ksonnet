@@ -35,8 +35,8 @@ func makeSimpleRefSpec(name, protocol, uri, version string) *RegistryConfig {
 	}
 }
 
-func makeSimpleEnvironmentSpec(name, namespace, server, k8sVersion string) *EnvironmentSpec {
-	return &EnvironmentSpec{
+func makeSimpleEnvironmentSpec(name, namespace, server, k8sVersion string) *EnvironmentConfig {
+	return &EnvironmentConfig{
 		Name: name,
 		Destination: &EnvironmentDestinationSpec{
 			Namespace: namespace,
@@ -162,10 +162,10 @@ func TestAddRegistryRefFailure(t *testing.T) {
 	}
 }
 
-func TestGetEnvironmentSpecs(t *testing.T) {
+func TestGetEnvironmentConfigs(t *testing.T) {
 	example1 := Spec{
-		Environments: EnvironmentSpecs{
-			"dev": &EnvironmentSpec{
+		Environments: EnvironmentConfigs{
+			"dev": &EnvironmentConfig{
 				Destination: &EnvironmentDestinationSpec{
 					Namespace: "default",
 					Server:    "http://example.com",
@@ -175,13 +175,41 @@ func TestGetEnvironmentSpecs(t *testing.T) {
 		},
 	}
 
-	r1 := example1.GetEnvironmentSpecs()
+	r1 := example1.GetEnvironmentConfigs()
 	if len(r1) != 1 {
 		t.Error("Expected environments to contain to be of length 1")
 	}
 
 	if r1["dev"].Name != "dev" {
 		t.Error("Expected to populate name value")
+	}
+}
+
+// Verifies that EnvironmentConfig.Name fields are injected at unmarshal time.
+func TestEnvironmentConfigHasName(t *testing.T) {
+	b := []byte(`
+apiVersion: 0.1.0
+environments:
+  default:
+    destination:
+      namespace: some-namespace
+      server: http://example.com
+    k8sVersion: v1.7.0
+    path: default
+  another:
+    destination:
+      namespace: some-namespace
+      server: http://example.com
+    k8sVersion: v1.7.0
+    path: default
+`)
+
+	var spec Spec
+	err := yaml.Unmarshal(b, &spec)
+	require.NoError(t, err)
+
+	for k, v := range spec.Environments {
+		assert.Equal(t, k, v.Name)
 	}
 }
 
@@ -194,8 +222,8 @@ func TestGetEnvironmentSpecSuccess(t *testing.T) {
 	)
 
 	example1 := Spec{
-		Environments: EnvironmentSpecs{
-			env: &EnvironmentSpec{
+		Environments: EnvironmentConfigs{
+			env: &EnvironmentConfig{
 				Destination: &EnvironmentDestinationSpec{
 					Namespace: namespace,
 					Server:    server,
@@ -205,7 +233,7 @@ func TestGetEnvironmentSpecSuccess(t *testing.T) {
 		},
 	}
 
-	r1, ok := example1.GetEnvironmentSpec(env)
+	r1, ok := example1.GetEnvironmentConfig(env)
 	if r1 == nil || !ok {
 		t.Errorf("Expected environments to contain '%s'", env)
 	}
@@ -218,8 +246,8 @@ func TestGetEnvironmentSpecSuccess(t *testing.T) {
 
 func TestGetEnvironmentSpecFailure(t *testing.T) {
 	example1 := Spec{
-		Environments: EnvironmentSpecs{
-			"dev": &EnvironmentSpec{
+		Environments: EnvironmentConfigs{
+			"dev": &EnvironmentConfig{
 				Destination: &EnvironmentDestinationSpec{
 					Namespace: "default",
 					Server:    "http://example.com",
@@ -229,7 +257,7 @@ func TestGetEnvironmentSpecFailure(t *testing.T) {
 		},
 	}
 
-	r1, ok := example1.GetEnvironmentSpec("prod")
+	r1, ok := example1.GetEnvironmentConfig("prod")
 	if r1 != nil || ok {
 		t.Error("Expected environments to not contain 'prod'")
 	}
@@ -244,15 +272,15 @@ func TestAddEnvironmentSpecSuccess(t *testing.T) {
 	)
 
 	example1 := Spec{
-		Environments: EnvironmentSpecs{},
+		Environments: EnvironmentConfigs{},
 	}
 
-	err := example1.AddEnvironmentSpec(makeSimpleEnvironmentSpec(env, namespace, server, k8sVersion))
+	err := example1.AddEnvironmentConfig(makeSimpleEnvironmentSpec(env, namespace, server, k8sVersion))
 	if err != nil {
 		t.Errorf("Expected environment add to succeed:\n%s", err)
 	}
 
-	r1, ok1 := example1.GetEnvironmentSpec(env)
+	r1, ok1 := example1.GetEnvironmentConfig(env)
 	if !ok1 || r1.Destination.Namespace != namespace ||
 		r1.Destination.Server != server || r1.KubernetesVersion != k8sVersion {
 		t.Errorf("Environment did not add correct values:\n%v", r1)
@@ -269,8 +297,8 @@ func TestAddEnvironmentSpecFailure(t *testing.T) {
 	)
 
 	example1 := Spec{
-		Environments: EnvironmentSpecs{
-			envName1: &EnvironmentSpec{
+		Environments: EnvironmentConfigs{
+			envName1: &EnvironmentConfig{
 				Destination: &EnvironmentDestinationSpec{
 					Namespace: namespace,
 					Server:    server,
@@ -280,12 +308,12 @@ func TestAddEnvironmentSpecFailure(t *testing.T) {
 		},
 	}
 
-	err := example1.AddEnvironmentSpec(makeSimpleEnvironmentSpec(envName2, namespace, server, k8sVersion))
+	err := example1.AddEnvironmentConfig(makeSimpleEnvironmentSpec(envName2, namespace, server, k8sVersion))
 	if err != ErrEnvironmentNameInvalid {
 		t.Error("Expected failure while adding environment with an invalid name")
 	}
 
-	err = example1.AddEnvironmentSpec(makeSimpleEnvironmentSpec(envName1, namespace, server, k8sVersion))
+	err = example1.AddEnvironmentConfig(makeSimpleEnvironmentSpec(envName1, namespace, server, k8sVersion))
 	if err != ErrEnvironmentExists {
 		t.Error("Expected failure while adding environment with duplicate name")
 	}
@@ -293,8 +321,8 @@ func TestAddEnvironmentSpecFailure(t *testing.T) {
 
 func TestDeleteEnvironmentSpec(t *testing.T) {
 	example1 := Spec{
-		Environments: EnvironmentSpecs{
-			"dev": &EnvironmentSpec{
+		Environments: EnvironmentConfigs{
+			"dev": &EnvironmentConfig{
 				Destination: &EnvironmentDestinationSpec{
 					Namespace: "default",
 					Server:    "http://example.com",
@@ -304,20 +332,20 @@ func TestDeleteEnvironmentSpec(t *testing.T) {
 		},
 	}
 
-	err := example1.DeleteEnvironmentSpec("dev")
+	err := example1.DeleteEnvironmentConfig("dev")
 	if err != nil {
 		t.Error("Expected to successfully delete an environment in spec")
 	}
 
-	if _, ok := example1.GetEnvironmentSpec("dev"); ok {
+	if _, ok := example1.GetEnvironmentConfig("dev"); ok {
 		t.Error("Expected environment 'dev' to be deleted from spec, but still exists")
 	}
 }
 
 func TestUpdateEnvironmentSpec(t *testing.T) {
 	example1 := Spec{
-		Environments: EnvironmentSpecs{
-			"dev": &EnvironmentSpec{
+		Environments: EnvironmentConfigs{
+			"dev": &EnvironmentConfig{
 				Destination: &EnvironmentDestinationSpec{
 					Namespace: "default",
 					Server:    "http://example.com",
@@ -327,7 +355,7 @@ func TestUpdateEnvironmentSpec(t *testing.T) {
 		},
 	}
 
-	example2 := EnvironmentSpec{
+	example2 := EnvironmentConfig{
 		Name: "foo",
 		Destination: &EnvironmentDestinationSpec{
 			Namespace: "foo",
@@ -336,16 +364,16 @@ func TestUpdateEnvironmentSpec(t *testing.T) {
 		KubernetesVersion: "1.8.0",
 	}
 
-	err := example1.UpdateEnvironmentSpec("dev", &example2)
+	err := example1.UpdateEnvironmentConfig("dev", &example2)
 	if err != nil {
 		t.Error("Expected to successfully update an environment in spec")
 	}
 
-	if _, ok := example1.GetEnvironmentSpec("dev"); ok {
+	if _, ok := example1.GetEnvironmentConfig("dev"); ok {
 		t.Error("Expected environment 'dev' to be deleted from spec, but still exists")
 	}
 
-	if _, ok := example1.GetEnvironmentSpec("foo"); !ok {
+	if _, ok := example1.GetEnvironmentConfig("foo"); !ok {
 		t.Error("Expected environment 'foo' to be created in spec, but does not exists")
 	}
 }
@@ -355,9 +383,9 @@ func Test_write(t *testing.T) {
 
 	spec := &Spec{
 		APIVersion: "0.1.0",
-		Environments: EnvironmentSpecs{
-			"a": &EnvironmentSpec{},
-			"b": &EnvironmentSpec{isOverride: true},
+		Environments: EnvironmentConfigs{
+			"a": &EnvironmentConfig{},
+			"b": &EnvironmentConfig{isOverride: true},
 		},
 		Registries: RegistryConfigs{
 			"a": &RegistryConfig{},
@@ -380,8 +408,8 @@ func Test_write_no_override(t *testing.T) {
 
 	spec := &Spec{
 		APIVersion: "0.1.0",
-		Environments: EnvironmentSpecs{
-			"a": &EnvironmentSpec{},
+		Environments: EnvironmentConfigs{
+			"a": &EnvironmentConfig{},
 		},
 		Registries: RegistryConfigs{
 			"a": &RegistryConfig{},
@@ -409,9 +437,9 @@ func Test_read(t *testing.T) {
 	expected := &Spec{
 		APIVersion:   "0.1.0",
 		Contributors: ContributorSpecs{},
-		Environments: EnvironmentSpecs{
-			"a": &EnvironmentSpec{},
-			"b": &EnvironmentSpec{isOverride: true},
+		Environments: EnvironmentConfigs{
+			"a": &EnvironmentConfig{Name: "a"},
+			"b": &EnvironmentConfig{Name: "b", isOverride: true},
 		},
 		Libraries: LibraryConfigs{},
 		Registries: RegistryConfigs{
@@ -426,7 +454,7 @@ func Test_read(t *testing.T) {
 func TestEnvironmentSpec_MakePath(t *testing.T) {
 	rootPath := "/"
 
-	spec := EnvironmentSpec{Path: "default"}
+	spec := EnvironmentConfig{Path: "default"}
 
 	expected := filepath.Join("/", "environments", "default")
 	got := spec.MakePath(rootPath)

@@ -29,14 +29,14 @@ import (
 func TestEnvList(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 
-		env := &app.EnvironmentSpec{
+		env := &app.EnvironmentConfig{
 			KubernetesVersion: "v1.7.0",
 			Destination: &app.EnvironmentDestinationSpec{
 				Namespace: "default",
 				Server:    "http://example.com",
 			},
 		}
-		envs := app.EnvironmentSpecs{
+		envs := app.EnvironmentConfigs{
 			"default": env,
 		}
 

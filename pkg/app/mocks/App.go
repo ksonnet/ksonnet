@@ -26,11 +26,11 @@ type App struct {
 }
 
 // AddEnvironment provides a mock function with given fields: name, k8sSpecFlag, spec, isOverride
-func (_m *App) AddEnvironment(name string, k8sSpecFlag string, spec *app.EnvironmentSpec, isOverride bool) error {
+func (_m *App) AddEnvironment(name string, k8sSpecFlag string, spec *app.EnvironmentConfig, isOverride bool) error {
 	ret := _m.Called(name, k8sSpecFlag, spec, isOverride)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, *app.EnvironmentSpec, bool) error); ok {
+	if rf, ok := ret.Get(0).(func(string, string, *app.EnvironmentConfig, bool) error); ok {
 		r0 = rf(name, k8sSpecFlag, spec, isOverride)
 	} else {
 		r0 = ret.Error(0)
@@ -68,15 +68,15 @@ func (_m *App) CurrentEnvironment() string {
 }
 
 // Environment provides a mock function with given fields: name
-func (_m *App) Environment(name string) (*app.EnvironmentSpec, error) {
+func (_m *App) Environment(name string) (*app.EnvironmentConfig, error) {
 	ret := _m.Called(name)
 
-	var r0 *app.EnvironmentSpec
-	if rf, ok := ret.Get(0).(func(string) *app.EnvironmentSpec); ok {
+	var r0 *app.EnvironmentConfig
+	if rf, ok := ret.Get(0).(func(string) *app.EnvironmentConfig); ok {
 		r0 = rf(name)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*app.EnvironmentSpec)
+			r0 = ret.Get(0).(*app.EnvironmentConfig)
 		}
 	}
 
@@ -112,15 +112,15 @@ func (_m *App) EnvironmentParams(name string) (string, error) {
 }
 
 // Environments provides a mock function with given fields:
-func (_m *App) Environments() (app.EnvironmentSpecs, error) {
+func (_m *App) Environments() (app.EnvironmentConfigs, error) {
 	ret := _m.Called()
 
-	var r0 app.EnvironmentSpecs
-	if rf, ok := ret.Get(0).(func() app.EnvironmentSpecs); ok {
+	var r0 app.EnvironmentConfigs
+	if rf, ok := ret.Get(0).(func() app.EnvironmentConfigs); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(app.EnvironmentSpecs)
+			r0 = ret.Get(0).(app.EnvironmentConfigs)
 		}
 	}
 
