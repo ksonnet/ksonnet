@@ -51,7 +51,7 @@ func NewPackageManager(a app.App) PackageManager {
 	}
 }
 
-// Find finds a package by name.
+// Find finds a package by name. Package names have the format `<registry>/<library>@<version>`.
 func (m *packageManager) Find(name string) (pkg.Package, error) {
 	d, err := pkg.ParseName(name)
 	if err != nil {
