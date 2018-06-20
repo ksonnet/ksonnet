@@ -16,11 +16,11 @@
 package lib
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 
@@ -34,7 +34,32 @@ const (
 	// ExtensionsLibFilename is the file name with the contents of the
 	// generated ksonnet-lib
 	ExtensionsLibFilename = "k.libsonnet"
+
+	// KsonnetLibHome is name of the directory ksonnet lib files will be generated in.
+	KsonnetLibHome = "ksonnet-lib"
 )
+
+// KsLibGenerator generates ksonnet-lib.
+type KsLibGenerator interface {
+	Generate() (*kslib.KsonnetLib, error)
+}
+
+type defaultKsLibGenerator struct {
+	spec ClusterSpec
+}
+
+func (g *defaultKsLibGenerator) Generate() (*kslib.KsonnetLib, error) {
+	if g.spec == nil {
+		return nil, errors.Errorf("uninitialized ClusterSpec")
+	}
+
+	b, err := g.spec.OpenAPI()
+	if err != nil {
+		return nil, err
+	}
+
+	return kslib.Ksonnet(b)
+}
 
 // Manager operates on the files in the lib directory of a ksonnet project.
 // This included generating the ksonnet-lib files needed to compile the
@@ -43,9 +68,10 @@ type Manager struct {
 	// K8sVersion is the Kubernetes version of the Open API spec.
 	K8sVersion string
 
-	spec    ClusterSpec
 	libPath string
 	fs      afero.Fs
+
+	generator KsLibGenerator
 }
 
 // NewManager creates a new instance of lib.Manager
@@ -63,33 +89,25 @@ func NewManager(k8sSpecFlag string, fs afero.Fs, libPath string) (*Manager, erro
 		return nil, err
 	}
 
-	return &Manager{K8sVersion: version, fs: fs, libPath: libPath, spec: spec}, nil
+	return &Manager{
+		K8sVersion: version,
+		fs:         fs,
+		libPath:    libPath,
+		generator:  &defaultKsLibGenerator{spec: spec},
+	}, nil
 }
 
 // GenerateLibData will generate the swagger and ksonnet-lib files in the lib
 // directory of a ksonnet project. The swagger and ksonnet-lib files are
 // unique to each Kubernetes API version. If the files already exist for a
 // specific Kubernetes API version, they won't be re-generated here.
-func (m *Manager) GenerateLibData(useVersionPath bool) error {
-	if m.spec == nil {
-		return fmt.Errorf("Uninitialized ClusterSpec")
-	}
-
-	b, err := m.spec.OpenAPI()
+func (m *Manager) GenerateLibData() error {
+	kl, err := m.generator.Generate()
 	if err != nil {
 		return err
 	}
 
-	kl, err := kslib.Ksonnet(b)
-	if err != nil {
-		return err
-	}
-
-	genPath := m.libPath
-
-	if useVersionPath {
-		genPath = filepath.Join(m.libPath, m.K8sVersion)
-	}
+	genPath := filepath.Join(m.ksLibDir(), m.K8sVersion)
 
 	ok, err := afero.DirExists(m.fs, genPath)
 	if err != nil {
@@ -141,21 +159,33 @@ func (m *Manager) GenerateLibData(useVersionPath bool) error {
 
 // GetLibPath returns the absolute path pointing to the directory with the
 // metadata files for the provided k8sVersion.
-func (m *Manager) GetLibPath(useVersionPath bool) (string, error) {
-	path := filepath.Join(m.libPath, m.K8sVersion)
-	ok, err := afero.DirExists(m.fs, string(path))
+func (m *Manager) GetLibPath() (string, error) {
+	basePath := m.ksLibDir()
+
+	ok, err := afero.DirExists(m.fs, basePath)
 	if err != nil {
 		return "", err
 	}
+
 	if !ok {
 		log.Debugf("Expected lib directory '%s' but was not found", m.K8sVersion)
 
 		// create the directory
-		if err = m.GenerateLibData(useVersionPath); err != nil {
+		if err = m.GenerateLibData(); err != nil {
 			return "", err
 		}
 
-		return path, nil
 	}
-	return path, err
+	return filepath.Join(basePath, m.K8sVersion), nil
+}
+
+func (m *Manager) ksLibDir() string {
+	ksLibPath := filepath.Join(m.libPath, m.K8sVersion)
+	exists, _ := afero.IsDir(m.fs, ksLibPath)
+
+	if exists {
+		return m.libPath
+	}
+
+	return filepath.Join(m.libPath, "ksonnet-lib")
 }

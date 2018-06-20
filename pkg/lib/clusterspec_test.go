@@ -30,7 +30,7 @@ type parseSuccess struct {
 
 func TestClusterSpecParsingSuccess(t *testing.T) {
 	testFS := afero.NewMemMapFs()
-	afero.WriteFile(testFS, blankSwagger, []byte(blankSwaggerData), os.ModePerm)
+	afero.WriteFile(testFS, swaggerLocation, []byte(blankSwaggerData), os.ModePerm)
 
 	var successTests = []parseSuccess{
 		{"version:v1.7.1", &clusterSpecVersion{"v1.7.1"}},
@@ -89,7 +89,7 @@ func TestClusterSpecParsingFailure(t *testing.T) {
 
 	for _, test := range failureTests {
 		testFS := afero.NewMemMapFs()
-		afero.WriteFile(testFS, blankSwagger, []byte(blankSwaggerData), os.ModePerm)
+		afero.WriteFile(testFS, swaggerLocation, []byte(blankSwaggerData), os.ModePerm)
 		_, err := ParseClusterSpec(test.input, testFS)
 		if err == nil {
 			t.Errorf("Cluster spec parse for '%s' should have failed, but succeeded", test.input)

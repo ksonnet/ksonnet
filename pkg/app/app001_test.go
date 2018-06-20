@@ -253,7 +253,7 @@ func TestApp001_UpdateTargets(t *testing.T) {
 
 func withApp001Fs(t *testing.T, appName string, fn func(app *App001)) {
 	ogLibUpdater := LibUpdater
-	LibUpdater = func(fs afero.Fs, k8sSpecFlag string, libPath string, useVersionPath bool) (string, error) {
+	LibUpdater = func(fs afero.Fs, k8sSpecFlag string, libPath string) (string, error) {
 		path := filepath.Join(libPath, "swagger.json")
 		stageFile(t, fs, "swagger.json", path)
 		return "v1.8.7", nil

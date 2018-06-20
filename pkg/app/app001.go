@@ -73,7 +73,7 @@ func (a *App001) AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec,
 		return err
 	}
 
-	_, err = LibUpdater(a.fs, k8sSpecFlag, a.appLibPath(name), false)
+	_, err = LibUpdater(a.fs, k8sSpecFlag, a.appLibPath(name))
 	return err
 }
 
@@ -287,7 +287,7 @@ func (a *App001) convertEnvironment(envName string, dryRun bool) error {
 	}
 
 	k8sSpecFlag := fmt.Sprintf("version:%s", env.KubernetesVersion)
-	_, err = LibUpdater(a.fs, k8sSpecFlag, app010LibPath(a.root), true)
+	_, err = LibUpdater(a.fs, k8sSpecFlag, app010LibPath(a.root))
 	if err != nil {
 		return err
 	}

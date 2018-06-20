@@ -17,8 +17,10 @@ package app
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/ksonnet/ksonnet/pkg/lib"
@@ -31,6 +33,9 @@ import (
 // App010 is a ksonnet 0.1.0 application.
 type App010 struct {
 	*baseApp
+
+	out      io.Writer
+	libPaths map[string]string
 }
 
 var _ App = (*App010)(nil)
@@ -41,6 +46,9 @@ func NewApp010(fs afero.Fs, root string) *App010 {
 
 	a := &App010{
 		baseApp: ba,
+		out:     os.Stdout,
+
+		libPaths: make(map[string]string),
 	}
 
 	return a
@@ -59,7 +67,7 @@ func (a *App010) AddEnvironment(name, k8sSpecFlag string, newEnv *EnvironmentSpe
 	}
 
 	if k8sSpecFlag != "" {
-		ver, err := LibUpdater(a.fs, k8sSpecFlag, app010LibPath(a.root), true)
+		ver, err := LibUpdater(a.fs, k8sSpecFlag, app010LibPath(a.root))
 		if err != nil {
 			return err
 		}
@@ -139,6 +147,10 @@ func (a *App010) Init() error {
 
 // LibPath returns the lib path for an env environment.
 func (a *App010) LibPath(envName string) (string, error) {
+	if lp, ok := a.libPaths[envName]; ok {
+		return lp, nil
+	}
+
 	env, err := a.Environment(envName)
 	if err != nil {
 		return "", err
@@ -150,7 +162,24 @@ func (a *App010) LibPath(envName string) (string, error) {
 		return "", err
 	}
 
-	return lm.GetLibPath(true)
+	lp, err := lm.GetLibPath()
+	if err != nil {
+		return "", err
+	}
+
+	a.checkKsonnetLib(lp)
+
+	a.libPaths[envName] = lp
+	return lp, nil
+}
+
+func (a *App010) checkKsonnetLib(lp string) {
+	libRoot := filepath.Join(a.Root(), LibDirName, "ksonnet-lib")
+	if !strings.HasPrefix(lp, libRoot) {
+		logrus.Warnf("ksonnet has moved ksonnet-lib paths to %q. The current location of "+
+			"of your existing ksonnet-libs can be automatically moved by ksonnet with `ks upgrade`",
+			libRoot)
+	}
 }
 
 // Libraries returns application libraries.
@@ -239,6 +268,55 @@ func (a *App010) UpdateTargets(envName string, targets []string) error {
 
 // Upgrade upgrades the app to the latest apiVersion.
 func (a *App010) Upgrade(dryRun bool) error {
+	if err := a.checkForOldKSLibLocation(dryRun); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var (
+	// reKSLibName matches a ksonnet library directory e.g. v1.10.3.
+	reKSLibName = regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
+)
+
+func (a *App010) checkForOldKSLibLocation(dryRun bool) error {
+	libRoot := filepath.Join(a.Root(), LibDirName)
+	fis, err := afero.ReadDir(a.Fs(), libRoot)
+	if err != nil {
+		return err
+	}
+
+	if dryRun {
+		fmt.Fprintf(a.out, "[dry run] Updating ksonnet-lib paths\n")
+	}
+
+	if err = a.fs.MkdirAll(filepath.Join(libRoot, lib.KsonnetLibHome), DefaultFolderPermissions); err != nil {
+		return err
+	}
+
+	for _, fi := range fis {
+		if !fi.IsDir() {
+			continue
+		}
+
+		if reKSLibName.MatchString(fi.Name()) {
+			p := filepath.Join(libRoot, fi.Name())
+			new := filepath.Join(libRoot, lib.KsonnetLibHome, fi.Name())
+
+			if dryRun {
+				fmt.Fprintf(a.out, "[dry run] Moving %q from %s to %s\n", fi.Name(), p, new)
+				continue
+			}
+
+			fmt.Fprintf(a.out, "Moving %q from %s to %s\n", fi.Name(), p, new)
+			err = a.fs.Rename(p, new)
+			if err != nil {
+				return errors.Wrapf(err, "renaming %s to %s", p, new)
+			}
+		}
+	}
+
 	return nil
 }
 

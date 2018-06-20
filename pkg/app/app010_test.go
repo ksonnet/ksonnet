@@ -177,7 +177,7 @@ func TestApp0101_LibPath(t *testing.T) {
 		path, err := app.LibPath("default")
 		require.NoError(t, err)
 
-		expected := filepath.Join("/", "lib", "v1.7.0")
+		expected := filepath.Join("/", "lib", "ksonnet-lib", "v1.7.0")
 		require.Equal(t, expected, path)
 	})
 }
@@ -263,10 +263,81 @@ func TestApp010_RenameEnvironment(t *testing.T) {
 }
 
 func TestApp010_Upgrade(t *testing.T) {
-	withApp010Fs(t, "app010_app.yaml", func(app *App010) {
-		err := app.Upgrade(false)
-		require.NoError(t, err)
-	})
+	cases := []struct {
+		name         string
+		init         func(t *testing.T, app *App010)
+		checkUpgrade func(t *testing.T, app *App010)
+		dryRun       bool
+		isErr        bool
+	}{
+		{
+			name: "ksonnet lib doesn't need to be upgraded",
+			init: func(t *testing.T, app *App010) {
+				err := app.Fs().MkdirAll("/lib", DefaultFolderPermissions)
+				require.NoError(t, err)
+
+				p := filepath.Join(app.Root(), "lib", "ksonnet-lib", "v1.10.3")
+				err = app.Fs().MkdirAll(p, DefaultFolderPermissions)
+				require.NoError(t, err)
+			},
+			dryRun: false,
+		},
+		{
+			name: "ksonnet lib needs to be upgraded",
+			init: func(t *testing.T, app *App010) {
+				err := app.Fs().MkdirAll("/lib", DefaultFolderPermissions)
+				require.NoError(t, err)
+
+				p := filepath.Join(app.Root(), "lib", "v1.10.3")
+				err = app.Fs().MkdirAll(p, DefaultFolderPermissions)
+				require.NoError(t, err)
+			},
+			dryRun: false,
+		},
+		{
+			name: "ksonnet lib needs to be upgraded - dry run",
+			init: func(t *testing.T, app *App010) {
+				err := app.Fs().MkdirAll("/lib", DefaultFolderPermissions)
+				require.NoError(t, err)
+
+				p := filepath.Join(app.Root(), "lib", "v1.10.3")
+				err = app.Fs().MkdirAll(p, DefaultFolderPermissions)
+				require.NoError(t, err)
+			},
+			checkUpgrade: func(t *testing.T, app *App010) {
+				isDir, err := afero.IsDir(app.Fs(), filepath.Join("/lib", "v1.10.3"))
+				require.NoError(t, err)
+				require.True(t, isDir)
+			},
+			dryRun: true,
+		},
+		{
+			name:  "lib doesn't exist",
+			isErr: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			withApp010Fs(t, "app010_app.yaml", func(app *App010) {
+				if tc.init != nil {
+					tc.init(t, app)
+				}
+
+				err := app.Upgrade(tc.dryRun)
+				if tc.isErr {
+					require.Error(t, err)
+					return
+				}
+
+				require.NoError(t, err)
+
+				if tc.checkUpgrade != nil {
+					tc.checkUpgrade(t, app)
+				}
+			})
+		})
+	}
 }
 
 func TestApp0101_UpdateTargets(t *testing.T) {
@@ -284,7 +355,7 @@ func TestApp0101_UpdateTargets(t *testing.T) {
 
 func withApp010Fs(t *testing.T, appName string, fn func(app *App010)) {
 	ogLibUpdater := LibUpdater
-	LibUpdater = func(fs afero.Fs, k8sSpecFlag string, libPath string, useVersionPath bool) (string, error) {
+	LibUpdater = func(fs afero.Fs, k8sSpecFlag string, libPath string) (string, error) {
 		return "v1.8.7", nil
 	}
 

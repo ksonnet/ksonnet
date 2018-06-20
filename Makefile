@@ -16,7 +16,7 @@
 VERSION?=dev-$(shell date +%FT%T%z)
 KS_BIN?=ks
 
-APIMACHINERY_VER := $(shell grep -B1 k8s.io/apimachinery Gopkg.lock | head -n1 | cut -d'"' -f2)
+APIMACHINERY_VER := $(shell grep -A100 k8s.io/apimachinery Gopkg.lock | grep -m1 "version =" | cut -d'"' -f2)
 REVISION=$(shell git rev-parse HEAD)
 GIT_TAG=$(shell git describe --tags)
 
