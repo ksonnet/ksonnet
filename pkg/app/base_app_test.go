@@ -103,7 +103,7 @@ func Test_baseApp_AddRegistry_override(t *testing.T) {
 	err := ba.AddRegistry(reg, true)
 	require.NoError(t, err)
 
-	assertContents(t, fs, "app010_app.yaml", ba.configPath())
+	assertContents(t, fs, "app020_app.yaml", ba.configPath())
 	assertContents(t, fs, "add-registry-override.yaml", ba.overridePath())
 }
 

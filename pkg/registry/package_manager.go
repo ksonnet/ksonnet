@@ -16,6 +16,8 @@
 package registry
 
 import (
+	"fmt"
+
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/parts"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
@@ -29,6 +31,10 @@ type PackageManager interface {
 
 	// Packages lists packages.
 	Packages() ([]pkg.Package, error)
+
+	// PackagesForEnv returns a list of Packages defined in the application, from the context
+	// of the specified environment.
+	PackagesForEnv(e *app.EnvironmentConfig) ([]pkg.Package, error)
 
 	// Prototypes lists prototypes.
 	Prototypes() (prototype.Prototypes, error)
@@ -53,7 +59,7 @@ func NewPackageManager(a app.App) PackageManager {
 
 // Find finds a package by name. Package names have the format `<registry>/<library>@<version>`.
 func (m *packageManager) Find(name string) (pkg.Package, error) {
-	d, err := pkg.ParseName(name)
+	d, err := pkg.Parse(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing package name")
 	}
@@ -92,12 +98,14 @@ func (m *packageManager) Find(name string) (pkg.Package, error) {
 		return nil, errors.Wrap(err, "reading libraries defined in the configuration")
 	}
 
-	libraryConfig, ok := libraryConfigs[d.Part]
+	libraryConfig, ok := libraryConfigs[d.Name]
 	if ok {
-		return m.loadPackage(registry.MakeRegistryConfig(), d.Part, d.Registry, libraryConfig.Version)
+		return m.loadPackage(registry.MakeRegistryConfig(), d.Name, d.Registry, libraryConfig.Version)
 	}
 
-	partConfig, err := registry.ResolveLibrarySpec(d.Part, d.Version)
+	// TODO - Check libraries configured under environments
+
+	partConfig, err := registry.ResolveLibrarySpec(d.Name, d.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -114,14 +122,30 @@ type remotePackage struct {
 var _ pkg.Package = (*remotePackage)(nil)
 
 func (p *remotePackage) Name() string {
+	if p == nil || p.partConfig == nil {
+		return ""
+	}
 	return p.partConfig.Name
 }
 
 func (p *remotePackage) RegistryName() string {
+	if p == nil {
+		return ""
+	}
 	return p.registryName
 }
 
+func (p *remotePackage) Version() string {
+	if p == nil || p.partConfig == nil {
+		return ""
+	}
+	return p.partConfig.Version
+}
+
 func (p *remotePackage) Description() string {
+	if p == nil || p.partConfig == nil {
+		return ""
+	}
 	return p.partConfig.Description
 }
 
@@ -131,6 +155,17 @@ func (p *remotePackage) IsInstalled() (bool, error) {
 
 func (p *remotePackage) Prototypes() (prototype.Prototypes, error) {
 	return prototype.Prototypes{}, nil
+}
+
+func (p *remotePackage) Path() string {
+	return ""
+}
+
+func (p *remotePackage) String() string {
+	if p == nil || p.partConfig == nil {
+		return "nil"
+	}
+	return fmt.Sprintf("%s/%s@%s", p.registryName, p.partConfig.Name, p.partConfig.Version)
 }
 
 // Packages returns a list of Packages defined in the application.
@@ -143,6 +178,8 @@ func (m *packageManager) Packages() ([]pkg.Package, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "reading libraries defined in the configuration")
 	}
+
+	// TODO - Check libraries configured under environments?
 
 	registryConfigs, err := m.app.Registries()
 	if err != nil {
@@ -169,6 +206,58 @@ func (m *packageManager) Packages() ([]pkg.Package, error) {
 	return packages, nil
 }
 
+// PackagesForEnv returns a list of Packages defined in the application, from the context
+// of the specified environment.
+func (m *packageManager) PackagesForEnv(e *app.EnvironmentConfig) ([]pkg.Package, error) {
+	if m.app == nil {
+		return nil, errors.New("nil app")
+	}
+	if e == nil {
+		return nil, errors.New("nil environment")
+	}
+
+	globalLibs, err := m.app.Libraries()
+	if err != nil {
+		return nil, errors.Wrap(err, "reading libraries defined in the configuration")
+	}
+
+	registryConfigs, err := m.app.Registries()
+	if err != nil {
+		return nil, errors.Wrap(err, "reading registries defined in the configuration")
+	}
+
+	packages := make([]pkg.Package, 0)
+
+	combined := make(map[string]*app.LibraryConfig)
+	// Environment-specific libraries. These take precedence.
+	for k, cfg := range e.Libraries {
+		combined[k] = cfg
+	}
+	for k, cfg := range globalLibs {
+		if _, ok := combined[k]; ok {
+			continue
+		}
+		combined[k] = cfg
+	}
+
+	for k, libraryConfig := range combined {
+		registryConfig, ok := registryConfigs[libraryConfig.Registry]
+		if !ok {
+			return nil, errors.Errorf("registry %q required by library %q is not defined in the configuration",
+				libraryConfig.Registry, k)
+		}
+
+		p, err := m.loadPackage(registryConfig, k, libraryConfig.Registry, libraryConfig.Version)
+		if err != nil {
+			return nil, err
+		}
+
+		packages = append(packages, p)
+	}
+
+	return packages, nil
+}
+
 func (m *packageManager) loadPackage(registryConfig *app.RegistryConfig, pkgName, registryName, version string) (pkg.Package, error) {
 	switch protocol := registryConfig.Protocol; Protocol(protocol) {
 	case ProtocolHelm:
@@ -178,15 +267,15 @@ func (m *packageManager) loadPackage(registryConfig *app.RegistryConfig, pkgName
 		}
 		return h, nil
 	case ProtocolFilesystem, ProtocolGitHub:
-		l, err := pkg.NewLocal(m.app, pkgName, registryName, m.InstallChecker)
+		l, err := pkg.NewLocal(m.app, pkgName, registryName, version, m.InstallChecker)
 		if err != nil {
 			return nil, errors.Wrapf(err, "loading %q package", protocol)
 		}
 
 		return l, nil
 	default:
-		return nil, errors.Errorf("library %q has a reference to unknown prototypes %q",
-			pkgName, protocol)
+		return nil, errors.Errorf("package %q - registry uses unknown protocol: %q",
+			fmt.Sprintf("%s/%s", registryName, pkgName), protocol)
 	}
 }
 

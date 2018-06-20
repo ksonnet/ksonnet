@@ -21,6 +21,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
@@ -70,8 +71,19 @@ func (ba *baseApp) overridePath() string {
 }
 
 func (ba *baseApp) save() error {
+	log := log.WithField("action", "baseApp.save")
+	log.Debugf("called [%p]", ba)
+
 	ba.mu.Lock()
 	defer ba.mu.Unlock()
+
+	if ba.config == nil {
+		return errors.Errorf("cannot save nil app configuration")
+	}
+
+	// Signal we have converted to new app version
+	ba.config.APIVersion = DefaultAPIVersion
+	log.Debugf("saving app version %v", ba.config.APIVersion)
 
 	configData, err := yaml.Marshal(ba.config)
 	if err != nil {
@@ -94,6 +106,9 @@ func (ba *baseApp) save() error {
 }
 
 func (ba *baseApp) load() error {
+	log := log.WithField("action", "baseApp.load")
+	log.Debugf("called [%p]", ba)
+
 	ba.mu.Lock()
 	defer ba.mu.Unlock()
 

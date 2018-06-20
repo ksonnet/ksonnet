@@ -86,9 +86,7 @@ func TestVM_EvaluateSnippet_memory_importer(t *testing.T) {
 		return "evaluated", nil
 	}
 
-	vm := NewVM(stubVMOpt(), stubVMEvalOpt(fn))
-	vm.UseMemoryImporter = true
-	vm.Fs = fs
+	vm := NewVM(stubVMOpt(), stubVMEvalOpt(fn), AferoImporterOpt(fs))
 	vm.AddJPath("/lib")
 
 	vm.TLAVar("key", "value")

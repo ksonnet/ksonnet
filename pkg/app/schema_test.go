@@ -188,7 +188,7 @@ func TestGetEnvironmentConfigs(t *testing.T) {
 // Verifies that EnvironmentConfig.Name fields are injected at unmarshal time.
 func TestEnvironmentConfigHasName(t *testing.T) {
 	b := []byte(`
-apiVersion: 0.1.0
+apiVersion: 0.2.0
 environments:
   default:
     destination:
@@ -382,7 +382,7 @@ func Test_write(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	spec := &Spec{
-		APIVersion: "0.1.0",
+		APIVersion: "0.2.0",
 		Environments: EnvironmentConfigs{
 			"a": &EnvironmentConfig{},
 			"b": &EnvironmentConfig{isOverride: true},
@@ -407,7 +407,7 @@ func Test_write_no_override(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	spec := &Spec{
-		APIVersion: "0.1.0",
+		APIVersion: "0.2.0",
 		Environments: EnvironmentConfigs{
 			"a": &EnvironmentConfig{},
 		},
@@ -435,7 +435,7 @@ func Test_read(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := &Spec{
-		APIVersion:   "0.1.0",
+		APIVersion:   "0.2.0",
 		Contributors: ContributorSpecs{},
 		Environments: EnvironmentConfigs{
 			"a": &EnvironmentConfig{Name: "a"},
@@ -463,9 +463,17 @@ func TestEnvironmentSpec_MakePath(t *testing.T) {
 }
 
 // Test that RegistryConfigs are properly deserialized, specifically
-// their Name fields, which are handler by customer UnmarshalJSON code.
+// their Name fields, which are handler by custom UnmarshalJSON code.
 func TestUnmarshalRegistryConfigs(t *testing.T) {
-	input := []byte(`
+	tests := []struct {
+		name               string
+		input              string
+		expectedRegistries int
+	}{
+		{
+			name:               "0.1.0",
+			expectedRegistries: 3,
+			input: `
 apiVersion: 0.1.0
 registries:
   incubator:
@@ -481,15 +489,38 @@ registries:
     protocol: github
     uri: github.com/ksonnet/parts/tree/next/incubator
 version: 0.0.1
-`)
-	var spec Spec
+`,
+		},
+		{
+			name:               "0.2.0",
+			expectedRegistries: 3,
+			input: `
+apiVersion: 0.2.0
+registries:
+  incubator:
+    protocol: github
+    uri: github.com/ksonnet/parts/tree/master/incubator
+  helm-stable:
+    protocol: helm
+    uri: https://kubernetes-charts.storage.googleapis.com
+  otherRegistry:
+    protocol: github
+    uri: github.com/ksonnet/parts/tree/next/incubator
+version: 0.0.1
+`,
+		},
+	}
 
-	err := yaml.Unmarshal(input, &spec)
-	assert.NoError(t, err)
-	assert.Equal(t, 3, len(spec.Registries))
+	for _, tc := range tests {
+		var spec Spec
 
-	for k, v := range spec.Registries {
-		assert.Equal(t, k, v.Name)
+		err := yaml.Unmarshal([]byte(tc.input), &spec)
+		assert.NoError(t, err, tc.name)
+		assert.Equal(t, tc.expectedRegistries, len(spec.Registries), tc.name)
+
+		for k, v := range spec.Registries {
+			assert.Equal(t, k, v.Name, tc.name)
+		}
 	}
 }
 

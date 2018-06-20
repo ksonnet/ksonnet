@@ -34,11 +34,8 @@ type chartConfig struct {
 
 // Helm is a package based on a Helm chart.
 type Helm struct {
-	a              app.App
-	name           string
-	registryName   string
-	config         chartConfig
-	installChecker InstallChecker
+	pkg
+	config chartConfig
 }
 
 var _ Package = (*Helm)(nil)
@@ -65,15 +62,20 @@ func NewHelm(a app.App, name, registryName, version string, installChecker Insta
 	}
 
 	return &Helm{
-		a:              a,
-		name:           name,
-		registryName:   registryName,
-		config:         cc,
-		installChecker: installChecker,
+		pkg: pkg{
+			registryName: registryName,
+			name:         name,
+			version:      version,
+
+			a:              a,
+			installChecker: installChecker,
+		},
+		config: cc,
 	}, nil
 }
 
-func chartConfigPath(a app.App, name, registryName, version string) (string, error) {
+// chartConfigPath returns directory containing vendored chart manifest (Chart.yaml)
+func chartConfigDir(a app.App, name, registryName, version string) (string, error) {
 	var err error
 	if version == "" {
 		version, err = latestChartRelease(a, name, registryName)
@@ -82,7 +84,19 @@ func chartConfigPath(a app.App, name, registryName, version string) (string, err
 		}
 	}
 
-	chartConfigPath := filepath.Join(a.VendorPath(), registryName, name, "helm", version, name, "Chart.yaml")
+	// Construct path: `vendor/<registry>/<pkg>/helm/<version>/<pkg>`
+	chartConfigPath := filepath.Join(a.VendorPath(), registryName, name, "helm", version, name)
+	return chartConfigPath, nil
+}
+
+// chartConfigPath returns path to vendored chart manifest (Chart.yaml)
+func chartConfigPath(a app.App, name, registryName, version string) (string, error) {
+	dir, err := chartConfigDir(a, name, registryName, version)
+	if err != nil {
+		return "", err
+	}
+
+	chartConfigPath := filepath.Join(dir, "Chart.yaml")
 	return chartConfigPath, nil
 }
 
@@ -112,21 +126,6 @@ func latestChartRelease(a app.App, name, registryName string) (string, error) {
 
 	semver.Sort(versions)
 	return versions[0].String(), nil
-}
-
-// Name returns the name for the Helm chart.
-func (h *Helm) Name() string {
-	return h.name
-}
-
-// RegistryName returns the registry name for the Helm chart.
-func (h *Helm) RegistryName() string {
-	return h.registryName
-}
-
-// IsInstalled returns true if the package is installed.
-func (h *Helm) IsInstalled() (bool, error) {
-	return h.installChecker.IsInstalled(h.Name())
 }
 
 // Description returns the description for the Helm chart. The description
@@ -171,4 +170,20 @@ func (h *Helm) Prototypes() (prototype.Prototypes, error) {
 	}
 
 	return prototype.Prototypes{p}, nil
+}
+
+// Path returns local directory for vendoring the package.
+func (h *Helm) Path() string {
+	if h == nil {
+		return ""
+	}
+	if h.a == nil {
+		return ""
+	}
+
+	path, err := chartConfigDir(h.a, h.name, h.registryName, h.version)
+	if err != nil {
+		return ""
+	}
+	return path
 }

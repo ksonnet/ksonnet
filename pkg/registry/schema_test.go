@@ -30,7 +30,7 @@ import (
 var (
 	// reference registry spec used in package tests
 	registrySpec = &Spec{
-		APIVersion: "0.1.0",
+		APIVersion: DefaultAPIVersion,
 		Kind:       "ksonnet.io/registry",
 		Version:    "40285d8a14f1ac5787e405e1023cf0c07f6aa28c",
 		Libraries: LibraryConfigs{

@@ -33,7 +33,7 @@ func TestPkgInstall(t *testing.T) {
 		dc := func(a app.App, d pkg.Descriptor, cn string) error {
 			expectedD := pkg.Descriptor{
 				Registry: "incubator",
-				Part:     "apache",
+				Name:     "apache",
 			}
 			require.Equal(t, expectedD, d)
 			require.Equal(t, "customName", cn)

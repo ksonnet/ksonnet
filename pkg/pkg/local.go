@@ -16,6 +16,7 @@
 package pkg
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -24,30 +25,50 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
 // Local is a package based on vendored contents.
 type Local struct {
-	a              app.App
-	name           string
-	registryName   string
-	config         *parts.Spec
-	installChecker InstallChecker
+	pkg
+	config *parts.Spec
 }
 
 var _ Package = (*Local)(nil)
 
 // NewLocal creates an instance of Local.
-func NewLocal(a app.App, name, registryName string, installChecker InstallChecker) (*Local, error) {
+func NewLocal(a app.App, name, registryName string, version string, installChecker InstallChecker) (*Local, error) {
+	log := log.WithField("action", "pkg.NewLocal")
+
 	if installChecker == nil {
 		installChecker = &DefaultInstallChecker{App: a}
 	}
 
-	partsPath := filepath.Join(a.VendorPath(), registryName, name, "parts.yaml")
+	versionedDir := buildPath(a, registryName, name, version)
+	partsPath := filepath.Join(versionedDir, partsYAML)
 	b, err := afero.ReadFile(a.Fs(), partsPath)
+	if err != nil && version != "" {
+		// Fallback and retry with unversioned path
+		unversionedDir := buildPath(a, registryName, name, "")
+		unversionedPartsPath := filepath.Join(unversionedDir, partsYAML)
+
+		var err2 error
+		b, err2 = afero.ReadFile(a.Fs(), unversionedPartsPath)
+
+		if err2 != nil {
+			// Both paths failed, combine the errors and give up
+			return nil, errors.Wrapf(err, "reading package configuration from paths: %v, %v", partsPath, unversionedPartsPath)
+		}
+
+		// Fallback succeeded - clear out original error to allow processing to continue
+		err = nil
+
+		// Alert the user that the application should be upgraded
+		log.Warnf("Versioned package %s/%s@%s stored in unversioned path - please run `ks upgrade` to correct.", registryName, name, version)
+	}
 	if err != nil {
-		return nil, errors.Wrap(err, "reading package configuration")
+		return nil, errors.Wrapf(err, "reading package configuration from path: %v", partsPath)
 	}
 
 	config, err := parts.Unmarshal(b)
@@ -56,27 +77,16 @@ func NewLocal(a app.App, name, registryName string, installChecker InstallChecke
 	}
 
 	return &Local{
-		a:              a,
-		name:           name,
-		registryName:   registryName,
-		config:         config,
-		installChecker: installChecker,
+		pkg: pkg{
+			registryName: registryName,
+			name:         name,
+			version:      version,
+
+			a:              a,
+			installChecker: installChecker,
+		},
+		config: config,
 	}, nil
-}
-
-// Name returns the name for the package.
-func (l *Local) Name() string {
-	return l.name
-}
-
-// RegistryName returns the registry name for the package.
-func (l *Local) RegistryName() string {
-	return l.registryName
-}
-
-// IsInstalled returns true if the package is installed.
-func (l *Local) IsInstalled() (bool, error) {
-	return l.installChecker.IsInstalled(l.Name())
 }
 
 // Description returns the description for the package. The description
@@ -90,7 +100,7 @@ func (l *Local) Description() string {
 func (l *Local) Prototypes() (prototype.Prototypes, error) {
 	var prototypes prototype.Prototypes
 
-	protoPath := filepath.Join(l.a.VendorPath(), l.registryName, l.name, "prototypes")
+	protoPath := filepath.Join(l.Path(), "prototypes")
 	exists, err := afero.DirExists(l.a.Fs(), protoPath)
 	if err != nil {
 		return nil, err
@@ -124,4 +134,37 @@ func (l *Local) Prototypes() (prototype.Prototypes, error) {
 	}
 
 	return prototypes, nil
+}
+
+// buildPath returns local directory for vendoring a package.
+// This function supports both versioned and unversioned packages.
+//
+// Versioned pacakges use the following path template: `vendor/<registry>/<pkg>@<version>`
+// ...while unversioned packages use this: `vendor/<registry>/<pkg>`
+func buildPath(a app.App, registry string, name string, version string) string {
+	if a == nil || registry == "" || name == "" {
+		return ""
+	}
+
+	// For unversioned packages, fall back to old-style naming convension.
+	if version == "" {
+		return filepath.Join(a.VendorPath(), registry, name)
+	}
+
+	// Construct package path: `vendor/<registry>/<pkg>@<version>`
+	versionedDir := fmt.Sprintf("%v@%v", name, version)
+	path := filepath.Join(a.VendorPath(), registry, versionedDir)
+	return path
+}
+
+// Path returns local directory for vendoring the package.
+func (l *Local) Path() string {
+	if l == nil {
+		return ""
+	}
+	if l.a == nil {
+		return ""
+	}
+
+	return buildPath(l.a, l.registryName, l.name, l.version)
 }

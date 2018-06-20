@@ -56,7 +56,7 @@ type Pipeline struct {
 	envName             string
 	cm                  component.Manager
 	buildObjectsFn      func(*Pipeline, []string) ([]*unstructured.Unstructured, error)
-	evaluateEnvFn       func(app.App, string, string, string) (string, error)
+	evaluateEnvFn       func(app.App, string, string, string, ...jsonnet.VMOpt) (string, error)
 	evaluateEnvParamsFn func(app.App, string, string, string) (string, error)
 }
 

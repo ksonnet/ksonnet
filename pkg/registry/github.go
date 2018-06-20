@@ -304,31 +304,74 @@ func (gh *GitHub) ResolveLibrarySpec(partName, libRefSpec string) (*parts.Spec, 
 	return parts, nil
 }
 
+// chrootOnFile is a ResolveFile decorator that rebases paths to be relative to the registry root
+// (as opposed to the repo root).
+// Example:
+//   uri: github.com/ksonnet/parts/tree/master/nested/registry/incubator
+//   relPath: nested/registry/incubator/registry.yaml
+//   chrootedPath: registry.yaml
+func (gh *GitHub) chrootOnFile(onFile ResolveFile) ResolveFile {
+	return func(relPath string, contents []byte) error {
+		chrootedPath, err := gh.rebaseToRoot(relPath)
+		if err != nil {
+			return errors.Wrapf(err, "chrooting path %v relative to registry root %v", relPath, gh.URI)
+		}
+		return onFile(chrootedPath, contents)
+	}
+}
+
+// chrootOnDir is a ResolveDirectory decorator that rebases paths to be relative to the registry root
+// (as opposed to the repo root).
+// Example:
+//   uri: github.com/ksonnet/parts/tree/master/nested/registry/incubator
+//   relPath: nested/registry/incubator/dir
+//   chrootedPath: dir
+func (gh *GitHub) chrootOnDir(onDir ResolveDirectory) ResolveDirectory {
+	return func(relPath string) error {
+		chrootedPath, err := gh.rebaseToRoot(relPath)
+		if err != nil {
+			return errors.Wrapf(err, "chrooting path %v relative to registry root %v", relPath, gh.URI)
+		}
+		return onDir(chrootedPath)
+	}
+}
+
 // ResolveLibrary fetches the part and creates a parts spec and library ref spec.
 func (gh *GitHub) ResolveLibrary(partName, partAlias, libRefSpec string, onFile ResolveFile, onDir ResolveDirectory) (*parts.Spec, *app.LibraryConfig, error) {
-	defaultRefSpec := "master"
-
-	// Resolve `version` (a git refspec) to a specific SHA.
-	ctx := context.Background()
-	if len(libRefSpec) == 0 {
-		libRefSpec = defaultRefSpec
+	//log := log.WithField("action", "GitHub.ResolveLibrary")
+	if gh == nil {
+		return nil, nil, errors.Errorf("nil receiver")
 	}
 
-	resolvedSHA, err := gh.ghClient.CommitSHA1(ctx, gh.hd.Repo(), libRefSpec)
-	if err != nil {
-		return nil, nil, err
+	var err error
+	var resolvedSHA string
+	ctx := context.Background()
+
+	if libRefSpec == "" {
+		// Resolve the commit based on the registry uri
+		resolvedSHA, err = gh.resolveLatestSHA()
+		if err != nil || resolvedSHA == "" {
+			return nil, nil, errors.Wrapf(err, "unable to resolve commit for refspec: %v", gh.hd.refSpec)
+		}
+	} else {
+		// Resolve `version` (a git refspec) to a specific SHA.
+		// TODO if it is already a SHA, don't resolve again
+		resolvedSHA, err = gh.ghClient.CommitSHA1(ctx, gh.hd.Repo(), libRefSpec)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	// Resolve directories and files.
 	path := strings.Join([]string{gh.hd.regRepoPath, partName}, "/")
-	err = gh.resolveDir(partName, path, resolvedSHA, onFile, onDir)
+	err = gh.resolveDir(partName, path, resolvedSHA, gh.chrootOnFile(onFile), gh.chrootOnDir(onDir))
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Resolve app spec.
+	// TODO we just downloaded this above - why download again?
 	appSpecPath := strings.Join([]string{path, partsYAMLFile}, "/")
-	ctx = context.Background()
 	file, directory, err := gh.ghClient.Contents(ctx, gh.hd.Repo(), appSpecPath, resolvedSHA)
 
 	if err != nil {
@@ -354,10 +397,7 @@ func (gh *GitHub) ResolveLibrary(partName, partAlias, libRefSpec string, onFile 
 	refSpec := app.LibraryConfig{
 		Name:     partAlias,
 		Registry: gh.Name(),
-		GitVersion: &app.GitVersionSpec{
-			RefSpec:   libRefSpec,
-			CommitSHA: resolvedSHA,
-		},
+		Version:  resolvedSHA,
 	}
 
 	return parts, &refSpec, nil
@@ -516,28 +556,44 @@ func parseGitHubURI(uri string) (hd *hubDescriptor, err error) {
 	}
 }
 
-// CacheRoot returns the root for caching.
+// Rebase a path to *registry* root (not repo root)
+// Example:
+//  uri:    github.com/ksonnet/parts/tree/master/long/path/incubator
+//  path:   long/path/incubator/parts.yaml
+//  output: parts.yaml
+func (gh *GitHub) rebaseToRoot(path string) (string, error) {
+	if gh == nil {
+		return "", errors.Errorf("nil receiver")
+	}
+	if gh.hd == nil {
+		return "", errors.Errorf("registry %v not correctly initialized - missing hubDescriptor", gh.name)
+	}
+
+	root := gh.hd.regRepoPath
+	rebasedAbs := strings.TrimPrefix(strings.TrimPrefix(path, "/"), root)
+	rebased := strings.TrimPrefix(rebasedAbs, "/")
+
+	return rebased, nil
+}
+
+// CacheRoot returns the root for caching - it removes any leading path segments
+// from a provided path, leaving just the relative path under the registry name.
+// Example:
+//  uri:    github.com/ksonnet/parts/tree/master/long/path/incubator
+//  path:   long/path/incubator/parts.yaml
+//  output: incubator/parts.yaml
 func (gh *GitHub) CacheRoot(name, path string) (string, error) {
-	u, err := url.Parse("https://" + gh.URI())
-	if err != nil {
-		return "", errors.Errorf("unknown URL: %q", gh.URI())
+	if gh == nil {
+		return "", errors.Errorf("nil receiver")
+	}
+	if gh.hd == nil {
+		return "", errors.Errorf("registry %v not correctly initialized - missing hubDescriptor", gh.name)
 	}
 
-	var root string
-
-	parts := strings.Split(strings.TrimPrefix(u.Path, "/"), "/")
-	switch {
-	case len(parts) == 2:
-		// org/repo - use empty root prefix
-	case len(parts) > 3:
-		// org/repo/tree/branch/path/subpath
-		root = strings.Join(parts[4:], "/")
-	default:
-		return "", errors.Errorf("unknown path %q", u.Path)
-	}
-
-	relPath := strings.TrimPrefix(path, "/")
-	return filepath.Join(name, strings.TrimPrefix(relPath, root)), nil
+	root := gh.hd.regRepoPath
+	rebasedAbs := strings.TrimPrefix(strings.TrimPrefix(path, "/"), root)
+	rebased := strings.TrimPrefix(rebasedAbs, "/")
+	return filepath.Join(name, rebased), nil
 }
 
 func (gh *GitHub) fetchRemoteAndSave(cs github.ContentSpec, w io.Writer) error {

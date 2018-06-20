@@ -16,10 +16,68 @@
 package pkg
 
 import (
+	"fmt"
+
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/pkg/errors"
 )
+
+const (
+	partsYAML = "parts.yaml"
+)
+
+type pkg struct {
+	a              app.App
+	name           string
+	registryName   string
+	version        string
+	installChecker InstallChecker
+}
+
+// Name returns the name for the package.
+func (p *pkg) Name() string {
+	if p == nil {
+		return ""
+	}
+	return p.name
+}
+
+// RegistryName returns the registry name for the package.
+func (p *pkg) RegistryName() string {
+	if p == nil {
+		return ""
+	}
+	return p.registryName
+}
+
+// Version returns the package version, or empty string if the package is unversioned.
+func (p *pkg) Version() string {
+	if p == nil {
+		return ""
+	}
+	return p.version
+}
+
+// IsInstalled returns true if the package is installed.
+func (p *pkg) IsInstalled() (bool, error) {
+	if p == nil {
+		return false, errors.Errorf("nil receiver")
+	}
+	if p.installChecker == nil {
+		return false, errors.Errorf("nil installChecker")
+	}
+	return p.installChecker.IsInstalled(p.name)
+}
+
+// String implements Stringer
+func (p *pkg) String() string {
+	if p == nil {
+		return "nil"
+	}
+
+	return fmt.Sprintf("%v/%v@%v", p.registryName, p.name, p.version)
+}
 
 // InstallChecker checks if a package is installed.
 type InstallChecker interface {
@@ -33,7 +91,7 @@ type DefaultInstallChecker struct {
 }
 
 // IsInstalled returns true if the package is installed. a package is installed if it
-// has a libraries entry in app.yaml.
+// has a libraries entry in app.yaml (globally or under an environment)
 func (ic *DefaultInstallChecker) IsInstalled(name string) (bool, error) {
 	if ic.App == nil {
 		return false, errors.New("app is nil")
@@ -44,7 +102,22 @@ func (ic *DefaultInstallChecker) IsInstalled(name string) (bool, error) {
 		return false, errors.Wrapf(err, "checking if package %q is installed", name)
 	}
 
-	_, isInstalled := libs[name]
+	_, isGlobal := libs[name]
+
+	envs, err := ic.App.Environments()
+	if err != nil {
+		return false, errors.Wrapf(err, "checking for package %q references in environments", name)
+	}
+
+	var isLocal bool
+	for _, e := range envs {
+		_, isLocal = e.Libraries[name]
+		if isLocal {
+			break
+		}
+	}
+
+	isInstalled := isGlobal || isLocal
 	return isInstalled, nil
 }
 
@@ -56,6 +129,9 @@ type Package interface {
 	// RegistryName returns the registry name of the package.
 	RegistryName() string
 
+	// Version returns the package version, or empty string if the package is unversioned.
+	Version() string
+
 	// IsInstalled returns true if the package is installed.
 	IsInstalled() (bool, error)
 
@@ -64,4 +140,9 @@ type Package interface {
 
 	// Prototypes returns prototypes defined in the package.
 	Prototypes() (prototype.Prototypes, error)
+
+	// Path returns local directory for vendoring the package.
+	Path() string
+
+	fmt.Stringer
 }

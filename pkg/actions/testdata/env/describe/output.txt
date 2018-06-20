@@ -3,3 +3,4 @@ kubernetesversion: v1.7.0
 path: ""
 destination: null
 targets: []
+libraries: {}

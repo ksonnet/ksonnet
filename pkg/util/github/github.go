@@ -121,7 +121,7 @@ func (dg *defaultGitHub) CommitSHA1(ctx context.Context, repo Repo, refSpec stri
 }
 
 func (dg *defaultGitHub) Contents(ctx context.Context, repo Repo, path, ref string) (*github.RepositoryContent, []*github.RepositoryContent, error) {
-	log := log.WithField("action", "defaultGitHub.CommitSHA1")
+	log := log.WithField("action", "defaultGitHub.Contents")
 	log.Debugf("fetching contents for %s/%s@%s", repo, path, ref)
 	opts := &github.RepositoryContentGetOptions{Ref: ref}
 

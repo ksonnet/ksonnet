@@ -28,10 +28,26 @@ import (
 
 const (
 	// DefaultAPIVersion is the default version of the registry API.
-	DefaultAPIVersion = "0.1.0"
+	DefaultAPIVersion = "0.2.0"
 	// DefaultKind is the default kind of the registry API.
 	DefaultKind = "ksonnet.io/registry"
 )
+
+var (
+	compatibleAPIRangeStrings = []string{
+		">=0.1.0 <0.2.0",
+		">=0.2.0 <0.3.0",
+	}
+	compatibleAPIRanges = mustCompileRanges()
+)
+
+func mustCompileRanges() []semver.Range {
+	result := make([]semver.Range, 0, len(compatibleAPIRangeStrings))
+	for _, s := range compatibleAPIRangeStrings {
+		result = append(result, semver.MustParseRange(s))
+	}
+	return result
+}
 
 // Spec describes how a registry is stored.
 type Spec struct {
@@ -93,6 +109,9 @@ func Unmarshal(bytes []byte) (*Spec, error) {
 		return nil, err
 	}
 
+	// If we made it this far, reflect the fact that the api version has been upgraded
+	schema.APIVersion = DefaultAPIVersion
+
 	return &schema, nil
 }
 
@@ -108,15 +127,23 @@ func (s *Spec) validate() error {
 		s.APIVersion = "0.1.0"
 	}
 
-	compatVer, _ := semver.Make(DefaultAPIVersion)
 	ver, err := semver.Make(s.APIVersion)
 	if err != nil {
 		return errors.Wrap(err, "Failed to parse version in app spec")
-	} else if compatVer.Compare(ver) != 0 {
+	}
+
+	var compatible bool
+	for _, compatRange := range compatibleAPIRanges {
+		if compatRange(ver) {
+			compatible = true
+		}
+	}
+
+	if !compatible {
 		return fmt.Errorf(
-			"Registry uses unsupported spec version '%s' (this client only supports %s)",
+			"Registry uses unsupported spec version '%s' (this client only supports %v)",
 			s.APIVersion,
-			DefaultAPIVersion)
+			compatibleAPIRangeStrings)
 	}
 
 	return nil
