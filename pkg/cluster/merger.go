@@ -53,20 +53,32 @@ const (
 	triesBeforeBackOff = 1
 )
 
-type objectMerger struct {
+// objectMerger merges an object with an object already in the cluster. This
+// will ensure that important cluster values aren't overwritten.
+type objectMerger interface {
+	Merge(namespace string, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
+}
+
+// defaultObjectMerger merges an object with an object already in the cluster. This
+// will ensure that important cluster values aren't overwritten.
+type defaultObjectMerger struct {
 	factory cmdutil.Factory
 }
 
-func newObjectMerger(factory cmdutil.Factory) *objectMerger {
-	p := &objectMerger{
+var _ objectMerger = (*defaultObjectMerger)(nil)
+
+// newDefaultObjectMerger creates an instance of objectMerge.
+func newDefaultObjectMerger(factory cmdutil.Factory) *defaultObjectMerger {
+	p := &defaultObjectMerger{
 		factory: factory,
 	}
 
 	return p
 }
 
-func (p *objectMerger) merge(namespace string, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
-	file, err := p.stage(obj)
+// Merge merges an object in a given namespace. It returns the merged object.
+func (p *defaultObjectMerger) Merge(namespace string, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	file, err := p.stageInTempFile(obj)
 	if err != nil {
 		return nil, errors.Wrapf(err, "staging %s/%s",
 			obj.GroupVersionKind().GroupVersion().String(), obj.GetName())
@@ -147,7 +159,9 @@ func (p *objectMerger) merge(namespace string, obj *unstructured.Unstructured) (
 	return u, nil
 }
 
-func (p *objectMerger) stage(obj *unstructured.Unstructured) (*os.File, error) {
+// stageInTempFile stages an object in a temp file. The file will have to be
+// manaully removed once it is no longer needed.
+func (p *defaultObjectMerger) stageInTempFile(obj *unstructured.Unstructured) (*os.File, error) {
 	encoded, err := runtime.Encode(scheme.DefaultJSONEncoder(), obj)
 	if err != nil {
 		return nil, errors.Wrap(err, "encoding input")
@@ -304,7 +318,7 @@ func (p *patcher) deleteAndCreate(original runtime.Object, modified []byte, name
 		// but still propagate and advertise error to user
 		recreated, recreateErr := p.helper.Create(namespace, true, original)
 		if recreateErr != nil {
-			err = fmt.Errorf("An error occurred force-replacing the existing object with the newly provided one:\n\n%v.\n\nAdditionally, an error occurred attempting to restore the original object:\n\n%v\n", err, recreateErr)
+			err = fmt.Errorf("an error occurred force-replacing the existing object with the newly provided one:\n\n%v.\n\nAdditionally, an error occurred attempting to restore the original object:\n\n%v\n", err, recreateErr)
 		} else {
 			createdObject = recreated
 		}

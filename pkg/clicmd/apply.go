@@ -16,8 +16,6 @@
 package clicmd
 
 import (
-	"fmt"
-
 	"github.com/ksonnet/ksonnet/pkg/actions"
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
@@ -107,7 +105,6 @@ func newApplyCmd(a app.App) *cobra.Command {
 				actions.OptionSkipGc:         viper.GetBool(vApplySkipGc),
 			}
 
-			fmt.Println("extract jsonnet flag")
 			if err := extractJsonnetFlags(a, "apply"); err != nil {
 				return errors.Wrap(err, "handle jsonnet flags")
 			}
