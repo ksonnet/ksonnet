@@ -97,7 +97,7 @@ func Delete(a app.App, name string) error {
 }
 
 // collectEnvParams collects environment params in
-func collectEnvParams(a app.App, env *app.EnvironmentSpec, componentName, envName string) (string, error) {
+func collectEnvParams(a app.App, env *app.EnvironmentConfig, componentName, envName string) (string, error) {
 	log.Debugf("collecting params for environment %s", envName)
 	path := filepath.Join(a.Root(), "environments", envName, "params.libsonnet")
 	var envParamsFile []byte
@@ -112,7 +112,7 @@ func collectEnvParams(a app.App, env *app.EnvironmentSpec, componentName, envNam
 
 /// updateEnvParam removes the component references in each environment's
 // paramss.libsonnet.
-func updateEnvParam(a app.App, envs app.EnvironmentSpecs, envParams map[string]string) error {
+func updateEnvParam(a app.App, envs app.EnvironmentConfigs, envParams map[string]string) error {
 	for envName := range envs {
 		path := filepath.Join(a.Root(), "environments", envName, "params.libsonnet")
 		log.Debugf("... deleting references in %s", path)

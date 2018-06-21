@@ -33,8 +33,8 @@ func TestEnvSet(t *testing.T) {
 	server := "new_server"
 	newk8sAPISpec := "version:new_api_spec"
 
-	environmentMockFn := func(name string) *app.EnvironmentSpec {
-		return &app.EnvironmentSpec{
+	environmentMockFn := func(name string) *app.EnvironmentConfig {
+		return &app.EnvironmentConfig{
 			Destination: &app.EnvironmentDestinationSpec{
 				Namespace: oldNamespace,
 				Server:    oldServer,
@@ -46,7 +46,7 @@ func TestEnvSet(t *testing.T) {
 		cases := []struct {
 			name        string
 			in          map[string]interface{}
-			spec        *app.EnvironmentSpec
+			spec        *app.EnvironmentConfig
 			envRenameFn func(t *testing.T) envRenameFn
 			updateEnvFn func(t *testing.T) updateEnvFn
 		}{
@@ -75,8 +75,8 @@ func TestEnvSet(t *testing.T) {
 					OptionNamespace: namespace,
 				},
 				updateEnvFn: func(t *testing.T) updateEnvFn {
-					return func(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentSpec, override bool) error {
-						assert.Equal(t, spec, &app.EnvironmentSpec{
+					return func(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentConfig, override bool) error {
+						assert.Equal(t, spec, &app.EnvironmentConfig{
 							Destination: &app.EnvironmentDestinationSpec{
 								Namespace: namespace,
 								Server:    oldServer,
@@ -94,8 +94,8 @@ func TestEnvSet(t *testing.T) {
 					OptionServer:  server,
 				},
 				updateEnvFn: func(t *testing.T) updateEnvFn {
-					return func(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentSpec, override bool) error {
-						assert.Equal(t, spec, &app.EnvironmentSpec{
+					return func(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentConfig, override bool) error {
+						assert.Equal(t, spec, &app.EnvironmentConfig{
 							Destination: &app.EnvironmentDestinationSpec{
 								Namespace: oldNamespace,
 								Server:    server,
@@ -113,7 +113,7 @@ func TestEnvSet(t *testing.T) {
 					OptionSpecFlag: newk8sAPISpec,
 				},
 				updateEnvFn: func(t *testing.T) updateEnvFn {
-					return func(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentSpec, override bool) error {
+					return func(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentConfig, override bool) error {
 						assert.Equal(t, newk8sAPISpec, k8sAPISpec)
 						return nil
 					}
@@ -130,8 +130,8 @@ func TestEnvSet(t *testing.T) {
 					OptionSpecFlag:   newk8sAPISpec,
 				},
 				updateEnvFn: func(t *testing.T) updateEnvFn {
-					return func(a app.App, newName, k8sAPISpec string, spec *app.EnvironmentSpec, override bool) error {
-						assert.Equal(t, spec, &app.EnvironmentSpec{
+					return func(a app.App, newName, k8sAPISpec string, spec *app.EnvironmentConfig, override bool) error {
+						assert.Equal(t, spec, &app.EnvironmentConfig{
 							Destination: &app.EnvironmentDestinationSpec{
 								Namespace: namespace,
 								Server:    server,

@@ -145,7 +145,7 @@ func generateAppYAMLData(name string, refs ...*app.RegistryConfig) ([]byte, erro
 		Name:         name,
 		Version:      app.DefaultVersion,
 		Registries:   app.RegistryConfigs{},
-		Environments: app.EnvironmentSpecs{},
+		Environments: app.EnvironmentConfigs{},
 	}
 
 	for _, ref := range refs {

@@ -54,7 +54,7 @@ func NewApp001(fs afero.Fs, root string) *App001 {
 
 // AddEnvironment adds an environment spec to the app spec. If the spec already exists,
 // it is overwritten.
-func (a *App001) AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec, isOverride bool) error {
+func (a *App001) AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentConfig, isOverride bool) error {
 	// if it is an override, write the destination to override file. If not, do the normal thing.
 
 	envPath := filepath.Join(a.root, EnvironmentDirName, name)
@@ -77,21 +77,21 @@ func (a *App001) AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentSpec,
 	return err
 }
 
-func (a *App001) overrideDestintation(name string, envSpec *EnvironmentSpec) error {
+func (a *App001) overrideDestintation(name string, envSpec *EnvironmentConfig) error {
 	return nil
 }
 
 // Environment returns the spec for an environment. In 0.1.0, the file lives in
 // /environments/name/spec.json.
-func (a *App001) Environment(name string) (*EnvironmentSpec, error) {
+func (a *App001) Environment(name string) (*EnvironmentConfig, error) {
 	path := filepath.Join(a.root, EnvironmentDirName, name, app001specJSON)
 	return read001EnvSpec(a.fs, name, path)
 }
 
 // Environments returns specs for all environments. In 0.1.0, the environment spec
 // lives in spec.json files.
-func (a *App001) Environments() (EnvironmentSpecs, error) {
-	specs := EnvironmentSpecs{}
+func (a *App001) Environments() (EnvironmentConfigs, error) {
+	specs := EnvironmentConfigs{}
 
 	root := filepath.Join(a.root, EnvironmentDirName)
 
@@ -222,7 +222,7 @@ type k8sSchema struct {
 	} `json:"info,omitempty"`
 }
 
-func read001EnvSpec(fs afero.Fs, name, path string) (*EnvironmentSpec, error) {
+func read001EnvSpec(fs afero.Fs, name, path string) (*EnvironmentConfig, error) {
 	b, err := afero.ReadFile(fs, path)
 	if err != nil {
 		return nil, err
@@ -254,7 +254,7 @@ func read001EnvSpec(fs afero.Fs, name, path string) (*EnvironmentSpec, error) {
 		return nil, errors.New("unable to determine environment Kubernetes version")
 	}
 
-	spec := EnvironmentSpec{
+	spec := EnvironmentConfig{
 		Path:              name,
 		Destination:       &s,
 		KubernetesVersion: ks.Info.Version,

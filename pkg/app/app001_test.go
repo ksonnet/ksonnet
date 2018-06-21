@@ -89,8 +89,8 @@ func TestApp001_RenameEnvironment(t *testing.T) {
 
 func TestApp001_Environments(t *testing.T) {
 	withApp001Fs(t, "app001_app.yaml", func(app *App001) {
-		expected := EnvironmentSpecs{
-			"default": &EnvironmentSpec{
+		expected := EnvironmentConfigs{
+			"default": &EnvironmentConfig{
 				Destination: &EnvironmentDestinationSpec{
 					Namespace: "some-namespace",
 					Server:    "http://example.com",
@@ -98,7 +98,7 @@ func TestApp001_Environments(t *testing.T) {
 				KubernetesVersion: "v1.7.0",
 				Path:              "default",
 			},
-			"us-east/test": &EnvironmentSpec{
+			"us-east/test": &EnvironmentConfig{
 				Destination: &EnvironmentDestinationSpec{
 					Namespace: "some-namespace",
 					Server:    "http://example.com",
@@ -106,7 +106,7 @@ func TestApp001_Environments(t *testing.T) {
 				KubernetesVersion: "v1.7.0",
 				Path:              "us-east/test",
 			},
-			"us-west/test": &EnvironmentSpec{
+			"us-west/test": &EnvironmentConfig{
 				Destination: &EnvironmentDestinationSpec{
 					Namespace: "some-namespace",
 					Server:    "http://example.com",
@@ -114,7 +114,7 @@ func TestApp001_Environments(t *testing.T) {
 				KubernetesVersion: "v1.7.0",
 				Path:              "us-west/test",
 			},
-			"us-west/prod": &EnvironmentSpec{
+			"us-west/prod": &EnvironmentConfig{
 				Destination: &EnvironmentDestinationSpec{
 					Namespace: "some-namespace",
 					Server:    "http://example.com",
@@ -164,7 +164,7 @@ func TestApp001_Environment(t *testing.T) {
 
 func TestApp001_AddEnvironment(t *testing.T) {
 	withApp001Fs(t, "app001_app.yaml", func(app *App001) {
-		newEnv := &EnvironmentSpec{
+		newEnv := &EnvironmentConfig{
 			Destination: &EnvironmentDestinationSpec{
 				Namespace: "some-namespace",
 				Server:    "http://example.com",

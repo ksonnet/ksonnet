@@ -125,7 +125,7 @@ func Test_yamlLocal(t *testing.T) {
 
 func Test_yamlRemote(t *testing.T) {
 	validAppSetup := func(a *mocks.App) {
-		myEnv := &app.EnvironmentSpec{
+		myEnv := &app.EnvironmentConfig{
 			Destination: &app.EnvironmentDestinationSpec{
 				Namespace: "default",
 			},

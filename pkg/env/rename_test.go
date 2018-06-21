@@ -29,7 +29,7 @@ func TestRename(t *testing.T) {
 	withEnv(t, func(appMock *mocks.App, fs afero.Fs) {
 		appMock.On("RenameEnvironment", "env1", "env1-updated", false).Return(nil)
 
-		envSpec := &app.EnvironmentSpec{Path: "env1-updated"}
+		envSpec := &app.EnvironmentConfig{Path: "env1-updated"}
 		appMock.On("Environment", "env1-updated").Return(envSpec, nil)
 
 		err := Rename(appMock, "env1", "env1-updated", false)

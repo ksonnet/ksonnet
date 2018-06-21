@@ -56,7 +56,7 @@ func NewApp010(fs afero.Fs, root string) *App010 {
 
 // AddEnvironment adds an environment spec to the app spec. If the spec already exists,
 // it is overwritten.
-func (a *App010) AddEnvironment(name, k8sSpecFlag string, newEnv *EnvironmentSpec, isOverride bool) error {
+func (a *App010) AddEnvironment(name, k8sSpecFlag string, newEnv *EnvironmentConfig, isOverride bool) error {
 	logrus.WithFields(logrus.Fields{
 		"k8s-spec-flag": k8sSpecFlag,
 		"name":          name,
@@ -87,7 +87,7 @@ func (a *App010) AddEnvironment(name, k8sSpecFlag string, newEnv *EnvironmentSpe
 }
 
 // Environment returns the spec for an environment.
-func (a *App010) Environment(name string) (*EnvironmentSpec, error) {
+func (a *App010) Environment(name string) (*EnvironmentConfig, error) {
 	if err := a.load(); err != nil {
 		return nil, errors.Wrap(err, "load configuration")
 	}
@@ -108,12 +108,12 @@ func (a *App010) Environment(name string) (*EnvironmentSpec, error) {
 }
 
 // Environments returns all environment specs.
-func (a *App010) Environments() (EnvironmentSpecs, error) {
+func (a *App010) Environments() (EnvironmentConfigs, error) {
 	if err := a.load(); err != nil {
 		return nil, errors.Wrap(err, "load configuration")
 	}
 
-	environments := EnvironmentSpecs{}
+	environments := EnvironmentConfigs{}
 	for k, v := range a.config.Environments {
 		environments[k] = v
 	}

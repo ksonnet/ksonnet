@@ -52,20 +52,20 @@ var (
 // Spec defines all the ksonnet project metadata. This includes details such as
 // the project name, authors, environments, and registries.
 type Spec struct {
-	APIVersion   string           `json:"apiVersion,omitempty"`
-	Kind         string           `json:"kind,omitempty"`
-	Name         string           `json:"name,omitempty"`
-	Version      string           `json:"version,omitempty"`
-	Description  string           `json:"description,omitempty"`
-	Authors      []string         `json:"authors,omitempty"`
-	Contributors ContributorSpecs `json:"contributors,omitempty"`
-	Repository   *RepositorySpec  `json:"repository,omitempty"`
-	Bugs         string           `json:"bugs,omitempty"`
-	Keywords     []string         `json:"keywords,omitempty"`
-	Registries   RegistryConfigs  `json:"registries,omitempty"`
-	Environments EnvironmentSpecs `json:"environments,omitempty"`
-	Libraries    LibraryConfigs   `json:"libraries,omitempty"`
-	License      string           `json:"license,omitempty"`
+	APIVersion   string             `json:"apiVersion,omitempty"`
+	Kind         string             `json:"kind,omitempty"`
+	Name         string             `json:"name,omitempty"`
+	Version      string             `json:"version,omitempty"`
+	Description  string             `json:"description,omitempty"`
+	Authors      []string           `json:"authors,omitempty"`
+	Contributors ContributorSpecs   `json:"contributors,omitempty"`
+	Repository   *RepositorySpec    `json:"repository,omitempty"`
+	Bugs         string             `json:"bugs,omitempty"`
+	Keywords     []string           `json:"keywords,omitempty"`
+	Registries   RegistryConfigs    `json:"registries,omitempty"`
+	Environments EnvironmentConfigs `json:"environments,omitempty"`
+	Libraries    LibraryConfigs     `json:"libraries,omitempty"`
+	License      string             `json:"license,omitempty"`
 }
 
 // Read will return the specification for a ksonnet application. It will navigate up directories
@@ -130,7 +130,7 @@ func write(fs afero.Fs, appRoot string, spec *Spec) error {
 	o := Override{
 		Kind:         overrideKind,
 		APIVersion:   overrideVersion,
-		Environments: EnvironmentSpecs{},
+		Environments: EnvironmentConfigs{},
 		Registries:   RegistryConfigs{},
 	}
 
@@ -248,11 +248,29 @@ func (r *RegistryConfigs) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// EnvironmentSpecs contains one or more EnvironmentSpec.
-type EnvironmentSpecs map[string]*EnvironmentSpec
+// EnvironmentConfigs contains one or more EnvironmentConfig.
+type EnvironmentConfigs map[string]*EnvironmentConfig
 
-// EnvironmentSpec contains the specification for ksonnet environments.
-type EnvironmentSpec struct {
+// UnmarshalJSON implements the json.Unmarshaler interface.
+// Our goal is to populate the Name field of EnvironmentConfig
+// objects according to they key name in the environments map.
+func (e *EnvironmentConfigs) UnmarshalJSON(b []byte) error {
+	envs := make(map[string]*EnvironmentConfig)
+	if err := json.Unmarshal(b, &envs); err != nil {
+		return err
+	}
+
+	// Set Name fields according to map keys
+	for k, v := range envs {
+		v.Name = k
+	}
+
+	*e = EnvironmentConfigs(envs)
+	return nil
+}
+
+// EnvironmentConfig contains the specification for ksonnet environments.
+type EnvironmentConfig struct {
 	// Name is the user defined name of an environment
 	Name string `json:"-"`
 	// KubernetesVersion is the kubernetes version the targeted cluster is
@@ -271,15 +289,15 @@ type EnvironmentSpec struct {
 }
 
 // MakePath return the absolute path to the environment directory.
-func (e *EnvironmentSpec) MakePath(rootPath string) string {
+func (e *EnvironmentConfig) MakePath(rootPath string) string {
 	return filepath.Join(
 		rootPath,
 		EnvironmentDirName,
 		filepath.FromSlash(e.Path))
 }
 
-// IsOverride is true if this EnvironmentSpec is an override.
-func (e *EnvironmentSpec) IsOverride() bool {
+// IsOverride is true if this EnvironmentConfig is an override.
+func (e *EnvironmentConfig) IsOverride() bool {
 	return e.isOverride
 }
 
@@ -338,16 +356,16 @@ func (s *Spec) RegistryConfig(name string) (*RegistryConfig, bool) {
 }
 
 // AddRegistryConfig adds the RegistryConfig to the app spec.
-func (s *Spec) AddRegistryConfig(RegistryConfig *RegistryConfig) error {
-	if RegistryConfig.Name == "" {
+func (s *Spec) AddRegistryConfig(cfg *RegistryConfig) error {
+	if cfg.Name == "" {
 		return ErrRegistryNameInvalid
 	}
 
-	if _, exists := s.Registries[RegistryConfig.Name]; exists {
+	if _, exists := s.Registries[cfg.Name]; exists {
 		return ErrRegistryExists
 	}
 
-	s.Registries[RegistryConfig.Name] = RegistryConfig
+	s.Registries[cfg.Name] = cfg
 	return nil
 }
 
@@ -365,7 +383,7 @@ func (s *Spec) validate() error {
 	}
 
 	if s.Environments == nil {
-		s.Environments = EnvironmentSpecs{}
+		s.Environments = EnvironmentConfigs{}
 	}
 
 	if s.APIVersion == "0.0.0" {
@@ -388,9 +406,9 @@ func (s *Spec) validate() error {
 	return nil
 }
 
-// GetEnvironmentSpecs returns all environment specifications.
-// We need to pre-populate th EnvironmentSpec name before returning.
-func (s *Spec) GetEnvironmentSpecs() EnvironmentSpecs {
+// GetEnvironmentConfigs returns all environment specifications.
+// TODO: Consider returning copies instead of originals
+func (s *Spec) GetEnvironmentConfigs() EnvironmentConfigs {
 	for k, v := range s.Environments {
 		v.Name = k
 	}
@@ -398,55 +416,55 @@ func (s *Spec) GetEnvironmentSpecs() EnvironmentSpecs {
 	return s.Environments
 }
 
-// GetEnvironmentSpec returns the environment specification for the environment.
-func (s *Spec) GetEnvironmentSpec(name string) (*EnvironmentSpec, bool) {
-	environmentSpec, ok := s.Environments[name]
+// GetEnvironmentConfig returns the environment specification for the environment.
+// TODO: Consider returning copies instead of originals
+func (s *Spec) GetEnvironmentConfig(name string) (*EnvironmentConfig, bool) {
+	env, ok := s.Environments[name]
 	if ok {
-		environmentSpec.Name = name
+		env.Name = name
 	}
-	return environmentSpec, ok
+	return env, ok
 }
 
-// AddEnvironmentSpec adds an EnvironmentSpec to the list of EnvironmentSpecs.
+// AddEnvironmentConfig adds an EnvironmentConfig to the list of EnvironmentConfigs.
 // This is equivalent to registering the environment for a ksonnet app.
-func (s *Spec) AddEnvironmentSpec(spec *EnvironmentSpec) error {
-	if spec.Name == "" {
+func (s *Spec) AddEnvironmentConfig(env *EnvironmentConfig) error {
+	if env.Name == "" {
 		return ErrEnvironmentNameInvalid
 	}
 
-	_, environmentSpecExists := s.Environments[spec.Name]
-	if environmentSpecExists {
+	if _, ok := s.Environments[env.Name]; ok {
 		return ErrEnvironmentExists
 	}
 
-	s.Environments[spec.Name] = spec
+	s.Environments[env.Name] = env
 	return nil
 }
 
-// DeleteEnvironmentSpec removes the environment specification from the app spec.
-func (s *Spec) DeleteEnvironmentSpec(name string) error {
+// DeleteEnvironmentConfig removes the environment specification from the app spec.
+func (s *Spec) DeleteEnvironmentConfig(name string) error {
 	delete(s.Environments, name)
 	return nil
 }
 
-// UpdateEnvironmentSpec updates the environment with the provided name to the
+// UpdateEnvironmentConfig updates the environment with the provided name to the
 // specified spec.
-func (s *Spec) UpdateEnvironmentSpec(name string, spec *EnvironmentSpec) error {
-	if spec.Name == "" {
+func (s *Spec) UpdateEnvironmentConfig(name string, env *EnvironmentConfig) error {
+	if env.Name == "" {
 		return ErrEnvironmentNameInvalid
 	}
 
-	_, environmentSpecExists := s.Environments[name]
-	if !environmentSpecExists {
+	_, ok := s.Environments[name]
+	if !ok {
 		return errors.Errorf("Environment with name %q does not exist", name)
 	}
 
-	if name != spec.Name {
-		if err := s.DeleteEnvironmentSpec(name); err != nil {
+	if name != env.Name {
+		if err := s.DeleteEnvironmentConfig(name); err != nil {
 			return err
 		}
 	}
 
-	s.Environments[spec.Name] = spec
+	s.Environments[env.Name] = env
 	return nil
 }

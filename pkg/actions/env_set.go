@@ -50,7 +50,7 @@ func RunEnvSet(m map[string]interface{}) error {
 
 // func types for renaming and updating environments
 type envRenameFn func(a app.App, from, to string, override bool) error
-type updateEnvFn func(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentSpec, override bool) error
+type updateEnvFn func(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentConfig, override bool) error
 
 // EnvSet sets targets for an environment.
 type EnvSet struct {
@@ -99,7 +99,7 @@ func (es *EnvSet) Run() error {
 		return err
 	}
 
-	if err := es.updateEnvSpec(env); err != nil {
+	if err := es.updateEnvConfig(env); err != nil {
 		return err
 	}
 
@@ -118,7 +118,7 @@ func (es *EnvSet) updateName(isOverride bool) error {
 	return nil
 }
 
-func (es *EnvSet) updateEnvSpec(env *app.EnvironmentSpec) error {
+func (es *EnvSet) updateEnvConfig(env *app.EnvironmentConfig) error {
 	if es.newNsName == "" && es.newServer == "" && es.newAPISpec == "" {
 		return nil
 	}
@@ -134,6 +134,6 @@ func (es *EnvSet) updateEnvSpec(env *app.EnvironmentSpec) error {
 	return es.updateEnvFn(es.app, es.envName, es.newAPISpec, env, env.IsOverride())
 }
 
-func updateEnv(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentSpec, override bool) error {
-	return a.AddEnvironment(envName, k8sAPISpec, spec, override)
+func updateEnv(a app.App, envName, k8sAPISpec string, env *app.EnvironmentConfig, override bool) error {
+	return a.AddEnvironment(envName, k8sAPISpec, env, override)
 }

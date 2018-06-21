@@ -32,7 +32,7 @@ func TestEnvTargets(t *testing.T) {
 		envName := "default"
 		modules := []string{"foo"}
 
-		env := &app.EnvironmentSpec{}
+		env := &app.EnvironmentConfig{}
 		appMock.On("Environment", "default").Return(env, nil)
 		appMock.On("UpdateTargets", envName, modules).Return(nil)
 
@@ -62,7 +62,7 @@ func TestEnvTargets_invalid_module(t *testing.T) {
 		envName := "default"
 		modules := []string{"foo"}
 
-		env := &app.EnvironmentSpec{}
+		env := &app.EnvironmentConfig{}
 		appMock.On("Environment", "default").Return(env, nil)
 		appMock.On("UpdateTargets", envName, modules).Return(nil)
 
@@ -92,7 +92,7 @@ func TestEnvTargets_invalid_environment(t *testing.T) {
 		envName := "invalid"
 		modules := []string{"foo"}
 
-		env := &app.EnvironmentSpec{}
+		env := &app.EnvironmentConfig{}
 		envErr := errors.New("environment invalid was not found")
 		appMock.On("Environment", "invalid").Return(env, envErr)
 

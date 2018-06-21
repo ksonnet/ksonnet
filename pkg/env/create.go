@@ -114,7 +114,7 @@ func (c *creator) Create() error {
 	}
 
 	// update app.yaml
-	err = c.app.AddEnvironment(c.name, c.k8sSpecFlag, &app.EnvironmentSpec{
+	err = c.app.AddEnvironment(c.name, c.k8sSpecFlag, &app.EnvironmentConfig{
 		Path: c.name,
 		Destination: &app.EnvironmentDestinationSpec{
 			Server:    c.d.Server(),
