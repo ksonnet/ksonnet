@@ -34,6 +34,7 @@ func EvaluateEnv(a app.App, sourcePath, paramsStr, envName string) (string, erro
 
 	vm.AddJPath(
 		libPath,
+		filepath.Join(a.Root(), "lib"),
 		filepath.Join(a.Root(), "vendor"),
 	)
 	vm.ExtCode("__ksonnet/params", paramsStr)

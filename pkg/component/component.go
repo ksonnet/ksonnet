@@ -194,6 +194,7 @@ func envParams(a app.App, moduleName, envName string) (string, error) {
 	vm.AddJPath(
 		libPath,
 		env.MakePath(a.Root()),
+		filepath.Join(a.Root(), "lib"),
 		filepath.Join(a.Root(), "vendor"),
 	)
 	vm.ExtCode("__ksonnet/params", paramsStr)
