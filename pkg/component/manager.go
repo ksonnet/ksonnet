@@ -24,37 +24,38 @@ import (
 	"github.com/spf13/afero"
 )
 
+// ResolvePath resolves a given path to a module and a component.
 func ResolvePath(ksApp app.App, path string) (Module, Component, error) {
 	isDir, err := isComponentDir2(ksApp, path)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "check for namespace directory")
+		return nil, nil, errors.Wrap(err, "checking for module directory")
 	}
 
 	if isDir {
-		ns, err := GetModule(ksApp, path)
+		m, err := GetModule(ksApp, path)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, errors.Wrapf(err, "retrieving module %s", path)
 		}
 
-		return ns, nil, nil
+		return m, nil, nil
 	}
 
-	module, cName, err := checkComponent(ksApp, path)
+	moduleName, componentName, err := extractPathParts(ksApp, path)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrapf(err, "extracting module and component names from %s", path)
 	}
 
-	ns, err := GetModule(ksApp, module)
+	m, err := GetModule(ksApp, moduleName)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrapf(err, "retrieving module %s", path)
 	}
 
-	c, err := LocateComponent(ksApp, module, cName)
+	c, err := LocateComponent(ksApp, moduleName, componentName)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrapf(err, "locating component %q in module %q", componentName, moduleName)
 	}
 
-	return ns, c, nil
+	return m, c, nil
 }
 
 var (
@@ -116,9 +117,14 @@ func isComponentDir2(ksApp app.App, path string) (bool, error) {
 	return afero.DirExists(ksApp.Fs(), dir)
 }
 
-func checkComponent(ksApp app.App, name string) (string, string, error) {
-	module, componentName := ExtractModuleComponent(ksApp, name)
+// extractPathParts extracts the module and component name from a path.
+func extractPathParts(ksApp app.App, path string) (string, string, error) {
+	if strings.Contains(path, "/") {
+		return "", "", errors.New("component can't contain a /")
+	}
 
+	path = strings.Replace(path, ".", string(filepath.Separator), -1)
+	module, componentName := ExtractModuleComponent(ksApp, path)
 	base := filepath.Join(module.Dir(), componentName)
 
 	exts := []string{".yaml", ".jsonnet", ".json"}
@@ -133,5 +139,5 @@ func checkComponent(ksApp app.App, name string) (string, string, error) {
 		}
 	}
 
-	return "", "", errors.Errorf("%q is not a component or a module", name)
+	return "", "", errors.Errorf("%q is not a component or a module", path)
 }
