@@ -111,6 +111,7 @@ func (p *Pipeline) EnvParameters(module string) (string, error) {
 	vm := jsonnet.NewVM()
 	vm.AddJPath(
 		env.MakePath(p.app.Root()),
+		filepath.Join(p.app.Root(), "lib"),
 		filepath.Join(p.app.Root(), "vendor"),
 	)
 	vm.ExtCode("__ksonnet/params", paramsStr)

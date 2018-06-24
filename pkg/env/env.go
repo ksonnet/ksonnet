@@ -125,6 +125,7 @@ func evaluateMain(a app.App, envName, snippet, components, paramsStr string) (st
 		filepath.Join(a.Root(), envRootName),
 		filepath.Join(a.Root(), envRootName, appEnv.Path),
 		filepath.Join(a.Root(), "vendor"),
+		filepath.Join(a.Root(), "lib"),
 		libPath,
 	)
 
