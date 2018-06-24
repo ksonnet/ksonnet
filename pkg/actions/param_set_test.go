@@ -108,6 +108,39 @@ func TestParamSet_asString(t *testing.T) {
 	})
 }
 
+func TestParamSet_resolveImage(t *testing.T) {
+	withApp(t, func(appMock *amocks.App) {
+		componentName := "deployment"
+		path := "image"
+		value := "foo/bar:latest"
+
+		c := &cmocks.Component{}
+		c.On("SetParam", []string{"image"}, "foo/bar@sha256:abcde").Return(nil)
+
+		in := map[string]interface{}{
+			OptionApp:          appMock,
+			OptionName:         componentName,
+			OptionPath:         path,
+			OptionValue:        value,
+			OptionResolveImage: true,
+		}
+
+		a, err := NewParamSet(in)
+		require.NoError(t, err)
+
+		a.resolvePathFn = func(app.App, string) (component.Module, component.Component, error) {
+			return nil, c, nil
+		}
+
+		a.resolveImageFn = func(string) (string, error) {
+			return "foo/bar@sha256:abcde", nil
+		}
+
+		err = a.Run()
+		require.NoError(t, err)
+	})
+}
+
 func TestParamSet_global(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		module := "/"
@@ -162,6 +195,41 @@ func TestParamSet_env(t *testing.T) {
 			return nil
 		}
 		a.setEnvFn = envSetter
+
+		err = a.Run()
+		require.NoError(t, err)
+	})
+}
+
+func TestParamSet_env_resolveImage(t *testing.T) {
+	withApp(t, func(appMock *amocks.App) {
+		name := "deployment"
+		path := "image"
+		value := "foo/bar:latest"
+
+		in := map[string]interface{}{
+			OptionApp:          appMock,
+			OptionName:         name,
+			OptionPath:         path,
+			OptionValue:        value,
+			OptionEnvName:      "default",
+			OptionResolveImage: true,
+		}
+
+		a, err := NewParamSet(in)
+		require.NoError(t, err)
+
+		envSetter := func(ksApp app.App, envName, name, pName, value string) error {
+			assert.Equal(t, "default", envName)
+			assert.Equal(t, "deployment", name)
+			assert.Equal(t, "image", pName)
+			assert.Equal(t, "foo/bar@sha256:abcde", value)
+			return nil
+		}
+		a.setEnvFn = envSetter
+		a.resolveImageFn = func(string) (string, error) {
+			return "foo/bar@sha256:abcde", nil
+		}
 
 		err = a.Run()
 		require.NoError(t, err)

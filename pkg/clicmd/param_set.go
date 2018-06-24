@@ -24,9 +24,11 @@ import (
 )
 
 var (
-	vParamSetEnv      = "param-set-env"
-	vParamSetAsString = "param-set-as-string"
-	paramSetLong      = `
+	vParamSetEnv          = "param-set-env"
+	vParamSetAsString     = "param-set-as-string"
+	vParamSetResolveImage = "param-set-resolve-image"
+
+	paramSetLong = `
 The ` + "`set`" + ` command sets component or environment parameters such as replica count
 or name. Parameters are set individually, one at a time. All of these changes are
 reflected in the ` + "`params.libsonnet`" + ` files.
@@ -78,12 +80,13 @@ func newParamSetCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:      a,
-				actions.OptionName:     name,
-				actions.OptionPath:     path,
-				actions.OptionValue:    value,
-				actions.OptionEnvName:  viper.GetString(vParamSetEnv),
-				actions.OptionAsString: viper.GetBool(vParamSetAsString),
+				actions.OptionApp:          a,
+				actions.OptionName:         name,
+				actions.OptionPath:         path,
+				actions.OptionValue:        value,
+				actions.OptionEnvName:      viper.GetString(vParamSetEnv),
+				actions.OptionAsString:     viper.GetBool(vParamSetAsString),
+				actions.OptionResolveImage: viper.GetBool(vParamSetResolveImage),
 			}
 
 			return runAction(actionParamSet, m)
@@ -95,6 +98,9 @@ func newParamSetCmd(a app.App) *cobra.Command {
 
 	paramSetCmd.Flags().Bool(flagAsString, false, "Force value to be interpreted as string")
 	viper.BindPFlag(vParamSetAsString, paramSetCmd.Flags().Lookup(flagAsString))
+
+	paramSetCmd.Flags().Bool(flagResolveImage, false, "Resolve Docker image tag to reference")
+	viper.BindPFlag(vParamSetResolveImage, paramSetCmd.Flags().Lookup(flagResolveImage))
 
 	return paramSetCmd
 }

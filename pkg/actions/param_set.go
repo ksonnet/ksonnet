@@ -22,6 +22,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/component"
 	"github.com/ksonnet/ksonnet/pkg/env"
+	"github.com/ksonnet/ksonnet/pkg/util/dockerregistry"
 	"github.com/ksonnet/ksonnet/pkg/util/jsonnet"
 	"github.com/pkg/errors"
 )
@@ -38,18 +39,20 @@ func RunParamSet(m map[string]interface{}) error {
 
 // ParamSet sets a parameter for a component.
 type ParamSet struct {
-	app      app.App
-	name     string
-	rawPath  string
-	rawValue string
-	global   bool
-	envName  string
-	asString bool
+	app          app.App
+	name         string
+	rawPath      string
+	rawValue     string
+	global       bool
+	envName      string
+	asString     bool
+	resolveImage bool
 
 	getModuleFn    getModuleFn
 	resolvePathFn  func(a app.App, path string) (component.Module, component.Component, error)
 	setEnvFn       func(ksApp app.App, envName, name, pName, value string) error
 	setGlobalEnvFn func(ksApp app.App, envName, pName, value string) error
+	resolveImageFn func(image string) (string, error)
 }
 
 // NewParamSet creates an instance of ParamSet.
@@ -57,18 +60,20 @@ func NewParamSet(m map[string]interface{}) (*ParamSet, error) {
 	ol := newOptionLoader(m)
 
 	ps := &ParamSet{
-		app:      ol.LoadApp(),
-		name:     ol.LoadOptionalString(OptionName),
-		rawPath:  ol.LoadString(OptionPath),
-		rawValue: ol.LoadString(OptionValue),
-		global:   ol.LoadOptionalBool(OptionGlobal),
-		envName:  ol.LoadOptionalString(OptionEnvName),
-		asString: ol.LoadOptionalBool(OptionAsString),
+		app:          ol.LoadApp(),
+		name:         ol.LoadOptionalString(OptionName),
+		rawPath:      ol.LoadString(OptionPath),
+		rawValue:     ol.LoadString(OptionValue),
+		global:       ol.LoadOptionalBool(OptionGlobal),
+		envName:      ol.LoadOptionalString(OptionEnvName),
+		asString:     ol.LoadOptionalBool(OptionAsString),
+		resolveImage: ol.LoadOptionalBool(OptionResolveImage),
 
 		getModuleFn:    component.GetModule,
 		resolvePathFn:  component.ResolvePath,
 		setEnvFn:       setEnv,
 		setGlobalEnvFn: setGlobalEnv,
+		resolveImageFn: dockerregistry.ResolveImage,
 	}
 
 	if ol.err != nil {
@@ -97,13 +102,36 @@ func (ps *ParamSet) Run() error {
 	}
 
 	if ps.envName != "" {
-		if ps.name != "" {
-			return ps.setEnvFn(ps.app, ps.envName, ps.name, ps.rawPath, ps.rawValue)
+		value := ps.rawValue
+		if ps.resolveImage {
+			digest, err := ps.resolveImageFn(value)
+			if err != nil {
+				return errors.Wrap(err, "resolving docker image reference")
+			}
+
+			value = digest
 		}
-		return ps.setGlobalEnvFn(ps.app, ps.envName, ps.rawPath, ps.rawValue)
+
+		if ps.name != "" {
+			return ps.setEnvFn(ps.app, ps.envName, ps.name, ps.rawPath, value)
+		}
+		return ps.setGlobalEnvFn(ps.app, ps.envName, ps.rawPath, value)
 	}
 
 	path := strings.Split(ps.rawPath, ".")
+
+	if ps.resolveImage {
+		s, ok := value.(string)
+		if !ok {
+			return errors.New("value is not a string, so it can't be resolved as a docker image")
+		}
+		digest, err := ps.resolveImageFn(s)
+		if err != nil {
+			return errors.Wrap(err, "resolving docker image reference")
+		}
+
+		value = digest
+	}
 
 	if ps.global {
 		return ps.setGlobal(path, value)

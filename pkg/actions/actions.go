@@ -85,6 +85,9 @@ const (
 	OptionPath = "path"
 	// OptionQuery is query option.
 	OptionQuery = "query"
+	// OptionResolveImage is resolve image option. It is used to resolve docker image references
+	// when setting parameters.
+	OptionResolveImage = "resolve-image"
 	// OptionRootPath is path option.
 	OptionRootPath = "root-path"
 	// OptionServer is server option.

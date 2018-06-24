@@ -35,6 +35,7 @@ const (
 	flagJpath                 = "jpath"
 	flagModule                = "module"
 	flagNamespace             = "namespace"
+	flagResolveImage          = "resolve-image"
 	flagServer                = "server"
 	flagSet                   = "set"
 	flagSkipDefaultRegistries = "skip-default-registries"

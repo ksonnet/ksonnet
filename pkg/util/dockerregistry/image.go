@@ -1,4 +1,4 @@
-// Copyright 2017 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,25 +13,32 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package utils
+package dockerregistry
 
 import (
 	"bytes"
 	"fmt"
-	"net/http"
 	"strings"
 )
 
-const defaultRegistry = "registry-1.docker.io"
+const (
+	// defaultRegistry is the default Docker registry
+	defaultRegistry = "registry-1.docker.io"
+)
 
 // ImageName represents the parts of a docker image name
+// eg: "myregistryhost:5000/fedora/httpd:version1.0"
 type ImageName struct {
-	// eg: "myregistryhost:5000/fedora/httpd:version1.0"
-	Registry   string // "myregistryhost:5000"
-	Repository string // "fedora"
-	Name       string // "httpd"
-	Tag        string // "version1.0"
-	Digest     string
+	// Registry is the registry api address
+	Registry string
+	// Repository is the repository name
+	Repository string
+	// Name is the name of the image
+	Name string
+	// Tag is the image tag
+	Tag string
+	// Digest is the image digest
+	Digest string
 }
 
 // String implements the Stringer interface
@@ -105,57 +112,4 @@ func ParseImageName(image string) (ImageName, error) {
 	}
 
 	return ret, nil
-}
-
-// Resolver is able to resolve docker image names into more specific forms
-type Resolver interface {
-	Resolve(image *ImageName) error
-}
-
-// NewIdentityResolver returns a resolver that does only trivial
-// :latest canonicalisation
-func NewIdentityResolver() Resolver {
-	return identityResolver{}
-}
-
-type identityResolver struct{}
-
-func (r identityResolver) Resolve(image *ImageName) error {
-	return nil
-}
-
-// NewRegistryResolver returns a resolver that looks up a docker
-// registry to resolve digests
-func NewRegistryResolver(httpClient *http.Client) Resolver {
-	return &registryResolver{
-		Client: httpClient,
-		cache:  make(map[string]string),
-	}
-}
-
-type registryResolver struct {
-	Client *http.Client
-	cache  map[string]string
-}
-
-func (r *registryResolver) Resolve(n *ImageName) error {
-	if n.Digest != "" {
-		// Already has explicit digest
-		return nil
-	}
-
-	if digest, ok := r.cache[n.String()]; ok {
-		n.Digest = digest
-		return nil
-	}
-
-	c := NewRegistryClient(r.Client, n.RegistryURL())
-	digest, err := c.ManifestDigest(n.RegistryRepoName(), n.Tag)
-	if err != nil {
-		return fmt.Errorf("Unable to fetch digest for %s: %v", n, err)
-	}
-
-	r.cache[n.String()] = digest
-	n.Digest = digest
-	return nil
 }
