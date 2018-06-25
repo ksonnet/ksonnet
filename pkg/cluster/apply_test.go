@@ -18,29 +18,107 @@ package cluster
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/ksonnet/ksonnet/pkg/app"
+	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/client"
+	"github.com/ksonnet/ksonnet/pkg/util/test"
+	"github.com/pkg/errors"
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Test_tagManaged(t *testing.T) {
-	obj := &unstructured.Unstructured{
-		Object: genObject(),
+type conflictError struct{}
+
+var _ kerrors.APIStatus = (*conflictError)(nil)
+var _ error = (*notFoundError)(nil)
+
+func (e *conflictError) Status() metav1.Status {
+	return metav1.Status{
+		Reason: metav1.StatusReasonConflict,
 	}
+}
 
-	err := tagManaged(obj)
-	require.NoError(t, err)
+func (e *conflictError) Error() string {
+	return "conflict"
+}
 
-	metadata, ok := obj.Object["metadata"].(map[string]interface{})
-	require.True(t, ok)
+func Test_Apply(t *testing.T) {
+	test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
+		applyConfig := ApplyConfig{
+			App:          a,
+			ClientConfig: &client.Config{},
+		}
 
-	annotations, ok := metadata["annotations"].(map[string]interface{})
-	require.True(t, ok)
+		setupApp := func(apply *Apply) {
+			obj := &unstructured.Unstructured{Object: genObject()}
 
-	managed, ok := annotations["ksonnet.io/managed"].(string)
-	require.True(t, ok)
+			apply.clientOpts = &clientOpts{}
 
-	expected := "{\"pristine\":\"H4sIAAAAAAAA/1yPzWrsMAyF9/cxzjrzk93F6z5AV92UWSiJSE1iSdhKYQh+9+IMlNCV8RH6vqMdZPGDc4kqCCCzcvvuB3bq0WGJMiHgjW3VZ2JxdEjsNJETwg4SUSePKqV9l6Ii7Neot2lL6YmA11s7CCVGwLzFrOotKcZj28psaxypIPQdnJOt5NwGZ9NKA6+HhMzOnBNoVHGKwrkgfO6IieZDOebW6IvNo16OtNyWcpk3Lj6oLpeJk4b7tV38p2YH0+wv3i/+XbMj/L/XR33UWuu/HwAAAP//AQAA///Dx6kERQEAAA==\"}"
-	require.Equal(t, expected, managed)
+			apply.findObjectsFn = func(a app.App, envName string, componentNames []string) ([]*unstructured.Unstructured, error) {
+				objects := []*unstructured.Unstructured{obj}
+
+				return objects, nil
+			}
+
+			apply.ksonnetObjectFactory = func() ksonnetObject {
+				return &fakeKsonnetObject{
+					obj: obj,
+				}
+			}
+
+			apply.upserterFactory = func() Upserter {
+				return &fakeUpserter{
+					upsertID: "12345",
+				}
+			}
+		}
+
+		err := RunApply(applyConfig, setupApp)
+		require.NoError(t, err)
+	})
+}
+
+func Test_Apply_retry_on_conflict(t *testing.T) {
+	test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
+		applyConfig := ApplyConfig{
+			App:          a,
+			ClientConfig: &client.Config{},
+		}
+
+		setupApp := func(apply *Apply) {
+			obj := &unstructured.Unstructured{Object: genObject()}
+
+			apply.clientOpts = &clientOpts{}
+
+			apply.findObjectsFn = func(a app.App, envName string, componentNames []string) ([]*unstructured.Unstructured, error) {
+				objects := []*unstructured.Unstructured{obj}
+
+				return objects, nil
+			}
+
+			apply.ksonnetObjectFactory = func() ksonnetObject {
+				return &fakeKsonnetObject{
+					obj: obj,
+				}
+			}
+
+			apply.upserterFactory = func() Upserter {
+				return &fakeUpserter{
+					upsertErr: &conflictError{},
+				}
+			}
+
+			apply.conflictTimeout = 0
+		}
+
+		err := RunApply(applyConfig, setupApp)
+		cause := errors.Cause(err)
+		require.Equal(t, errApplyConflict, cause)
+	})
 }
 
 func genObject() map[string]interface{} {

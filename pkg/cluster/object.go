@@ -128,7 +128,7 @@ func RebuildObject(m map[string]interface{}) (map[string]interface{}, error) {
 		return m, nil
 	}
 
-	var mm managedMetadata
+	var mm managedAnnotation
 	if err := json.Unmarshal([]byte(descriptor), &mm); err != nil {
 		return nil, errors.WithStack(err)
 	}

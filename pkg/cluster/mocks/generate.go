@@ -18,3 +18,4 @@ package mocks
 //go:generate mockery -dir ../../../vendor/k8s.io/client-go/discovery -output . -name=DiscoveryInterface
 //go:generate mockery -dir .. -output . -name=ObjectInfo
 //go:generate mockery -dir .. -output . -name=ResourceClient
+//go:generate mockery -dir ../../../vendor/k8s.io/kubernetes/pkg/kubectl/cmd/util/ -output . -name=Factory

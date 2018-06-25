@@ -95,7 +95,7 @@ func Test_merger_merge(t *testing.T) {
 		}),
 	}
 
-	om := newObjectMerger(tf)
+	om := newDefaultObjectMerger(tf)
 
 	obj := &unstructured.Unstructured{
 		Object: map[string]interface{}{
@@ -123,8 +123,17 @@ func Test_merger_merge(t *testing.T) {
 		},
 	}
 
-	_, err := om.merge("test", obj)
+	_, err := om.Merge("test", obj)
 	require.NoError(t, err)
 
 	require.True(t, isPatched)
+}
+
+type fakeObjectMerger struct {
+	mergeObj *unstructured.Unstructured
+	mergeErr error
+}
+
+func (om *fakeObjectMerger) Merge(string, *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	return om.mergeObj, om.mergeErr
 }
