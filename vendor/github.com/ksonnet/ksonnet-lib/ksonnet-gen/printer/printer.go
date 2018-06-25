@@ -448,6 +448,7 @@ func (p *printer) print(n interface{}) {
 		}
 
 	case *ast.LiteralNumber:
+
 		p.writeString(t.OriginalString)
 	case *ast.Parens:
 		p.writeString("(")
@@ -665,6 +666,9 @@ var reID = regexp.MustCompile(`^[_a-zA-Z][_a-zA-Z0-9]*$`)
 func (p *printer) fieldID(kind ast.ObjectFieldKind, expr1 ast.Node, id *ast.Identifier) {
 	if expr1 != nil {
 		switch t := expr1.(type) {
+		default:
+			p.print(t)
+			return
 		case *ast.LiteralString:
 			qm := detectQuoteMode(t.Value, t.Kind)
 			useSingle := (qm == quoteModeSingle)
@@ -701,12 +705,6 @@ func (p *printer) fieldID(kind ast.ObjectFieldKind, expr1 ast.Node, id *ast.Iden
 			// Example where quotes are needed: kind==ObjectFieldExpr
 			p.writeString(quoted)
 			return
-
-		case *ast.Var:
-			p.print(t)
-			return
-		default:
-			panic(fmt.Sprintf("unknown Expr1 type %T", t))
 		}
 	}
 
