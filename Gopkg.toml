@@ -52,7 +52,7 @@ required = ["k8s.io/kubernetes/pkg/kubectl/cmd/util"]
 
 [[constraint]]
   name = "github.com/ksonnet/ksonnet-lib"
-  version = "v0.1.8"
+  version = "v0.1.9"
 
 [[constraint]]
   name = "github.com/onsi/ginkgo"
