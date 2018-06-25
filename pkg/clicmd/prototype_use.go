@@ -75,7 +75,13 @@ ks prototype use io.ksonnet.pkg.single-port-deployment nginx-depl \
 # (due to --name).
 ks prototype use deployment nginx-depl \
   --name=nginx                         \
-  --image=nginx`
+  --image=nginx
+
+# Instantiate prototype 'io.ksonnet.pkg.single-port-deployment' using the
+# 'nginx' image with values from 'ks-value'.
+ks prototype use single-port-deployment nginx-depl \
+  --values-file=ks-value
+`
 )
 
 func newGenerateCmd(a app.App) *cobra.Command {

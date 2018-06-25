@@ -27,6 +27,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
 	"github.com/spf13/pflag"
 )
 
@@ -42,12 +43,13 @@ func RunPrototypeUse(m map[string]interface{}) error {
 
 // PrototypeUse generates a component from a prototype.
 type PrototypeUse struct {
-	app               app.App
-	args              []string
-	out               io.Writer
-	packageManager    registry.PackageManager
-	createComponentFn func(app.App, string, string, string, param.Params, prototype.TemplateType) (string, error)
-	bindFlagsFn       func(p *prototype.Prototype) (*pflag.FlagSet, error)
+	app                 app.App
+	args                []string
+	out                 io.Writer
+	packageManager      registry.PackageManager
+	createComponentFn   func(app.App, string, string, string, param.Params, prototype.TemplateType) (string, error)
+	bindFlagsFn         func(p *prototype.Prototype) (*pflag.FlagSet, error)
+	extractParametersFn func(fs afero.Fs, p *prototype.Prototype, f *pflag.FlagSet) (map[string]string, error)
 }
 
 // NewPrototypeUse creates an instance of PrototypeUse
@@ -59,10 +61,11 @@ func NewPrototypeUse(m map[string]interface{}) (*PrototypeUse, error) {
 		app:  app,
 		args: ol.LoadStringSlice(OptionArguments),
 
-		out:               os.Stdout,
-		packageManager:    registry.NewPackageManager(app),
-		createComponentFn: component.Create,
-		bindFlagsFn:       prototype.BindFlags,
+		out:                 os.Stdout,
+		packageManager:      registry.NewPackageManager(app),
+		createComponentFn:   component.Create,
+		bindFlagsFn:         prototype.BindFlags,
+		extractParametersFn: prototype.ExtractParameters,
 	}
 
 	if ol.err != nil {
@@ -154,7 +157,7 @@ func (pl *PrototypeUse) Run() error {
 		}
 	}
 
-	rawParams, err := getParameters(p, flags)
+	rawParams, err := pl.extractParametersFn(pl.app.Fs(), p, flags)
 	if err != nil {
 		return err
 	}
