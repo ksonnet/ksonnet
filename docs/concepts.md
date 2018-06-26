@@ -133,11 +133,11 @@ Modules provide a way for you to share components across environments. More conc
 
 For example, `ks module create <module-name>` creates `components/<module-name>/params.libsonnet`.
 
-ksonnet will use the components defined in `components/` by default. If you want to use another set of components, modules provides a way to do this without initializing another ksonnet app.
+ksonnet will use the components defined in `components/` by default. Modules provide a clean way to make your configurations more modular. If you want to use another set of components or use specific components, modules provides a way to do this without initializing another ksonnet app.
 
 A module can:
 
-* used across multiple [environments](#environment) similar to components.
+* be used across multiple [environments](#environment) similar to components.
 * have a nested structure to group components in a more selective way.
 * be used in conjunction with additional modules for a given environment.
 
