@@ -216,6 +216,10 @@ func (a *App010) RemoveEnvironment(envName string, override bool) error {
 		return errors.Wrap(err, "load configuration")
 	}
 
+	if _, ok := a.config.Environments[envName]; !ok {
+		return errors.Errorf("environment %q does not exist", envName)
+	}
+
 	if override {
 		delete(a.overrides.Environments, envName)
 	} else {
