@@ -8,6 +8,7 @@ The ksonnet framework is centered around a couple of key concepts and terms. Thi
   * [Component](#component)
   * [Prototype](#prototype)
   * [Parameter](#parameter)
+  * [Module](#module)
   * [Part](#part)
   * [Package](#package)
   * [Registry](#registry)
@@ -123,6 +124,22 @@ Under the hood, the `ks param` commands update a couple of local [*Jsonnet*](#js
    * **Component-specific params** only
 
 For example, you can use params to ensure that you have 3 Redis replicas in your *prod* environment and 1 in *dev*, because prod needs to handle higher traffic.
+
+---
+
+### Module
+
+Modules provide a way for you to share components across environments. More concisely, a module refers to a subdirectory in `components/` containing its own `params.libsonnet`.
+
+For example, `ks module create <module-name>` creates `components/<module-name>/params.libsonnet`.
+
+ksonnet will use the components defined in `components/` by default. Modules provide a clean way to make your configurations more modular. If you want to use another set of components or use specific components, modules provides a way to do this without initializing another ksonnet app.
+
+A module can:
+
+* be used across multiple [environments](#environment) similar to components.
+* have a nested structure to group components in a more selective way.
+* be used in conjunction with additional modules for a given environment.
 
 ---
 
