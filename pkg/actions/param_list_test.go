@@ -17,13 +17,17 @@ package actions
 
 import (
 	"bytes"
+	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/component"
 	cmocks "github.com/ksonnet/ksonnet/pkg/component/mocks"
+	"github.com/ksonnet/ksonnet/pkg/params"
+	paramsTesting "github.com/ksonnet/ksonnet/pkg/params/testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -34,20 +38,31 @@ func TestParamList(t *testing.T) {
 	}
 
 	module := &cmocks.Module{}
-	module.On("Params", "envName").Return(moduleParams, nil)
-	module.On("Params", "").Return(moduleParams, nil)
+
+	p := `{components:{deployment:{key:"value"}}}`
+	paramsFile := ioutil.NopCloser(strings.NewReader(p))
+	module.On("ParamsSource").Return(paramsFile, nil)
 
 	c := &cmocks.Component{}
 	c.On("Params", "").Return(moduleParams, nil)
 
+	fakeLister := &paramsTesting.FakeLister{
+		Entries: []params.Entry{
+			{ComponentName: "deployment", ParamName: "key", Value: `'value'`},
+		},
+	}
+
 	withApp(t, func(appMock *amocks.App) {
+		ec := &app.EnvironmentConfig{}
+		appMock.On("Environment", "envName").Return(ec, nil)
+
 		cases := []struct {
-			name            string
-			in              map[string]interface{}
-			findModulesFn   func(t *testing.T) findModulesFn
-			findModuleFn    func(t *testing.T) findModuleFn
-			findComponentFn func(t *testing.T) findComponentFn
-			outputFile      string
+			name         string
+			in           map[string]interface{}
+			findModuleFn func(t *testing.T) findModuleFn
+			modulesFn    func() ([]component.Module, error)
+			lister       paramsLister
+			outputFile   string
 		}{
 			{
 				name: "component name",
@@ -62,13 +77,7 @@ func TestParamList(t *testing.T) {
 						return module, nil
 					}
 				},
-				findComponentFn: func(t *testing.T) findComponentFn {
-					return func(a app.App, moduleName, componentName string) (component.Component, error) {
-						assert.Equal(t, "module", moduleName)
-						assert.Equal(t, "deployment", componentName)
-						return c, nil
-					}
-				},
+				lister:     fakeLister,
 				outputFile: filepath.Join("param", "list", "with_component.txt"),
 			},
 			{
@@ -83,13 +92,7 @@ func TestParamList(t *testing.T) {
 						return module, nil
 					}
 				},
-				findComponentFn: func(t *testing.T) findComponentFn {
-					return func(a app.App, moduleName, componentName string) (component.Component, error) {
-						assert.Equal(t, "module", moduleName)
-						assert.Equal(t, "deployment", componentName)
-						return c, nil
-					}
-				},
+				lister:     fakeLister,
 				outputFile: filepath.Join("param", "list", "without_component.txt"),
 			},
 			{
@@ -98,32 +101,32 @@ func TestParamList(t *testing.T) {
 					OptionApp:     appMock,
 					OptionEnvName: "envName",
 				},
-				findModulesFn: func(t *testing.T) findModulesFn {
-					return func(a app.App, envName string) ([]component.Module, error) {
-						assert.Equal(t, "envName", envName)
-						return []component.Module{module}, nil
-					}
+				modulesFn: func() ([]component.Module, error) {
+					module.On("Name").Return("/")
+					return []component.Module{module}, nil
 				},
+				lister:     fakeLister,
 				outputFile: filepath.Join("param", "list", "env.txt"),
 			},
 		}
 
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
-
 				a, err := NewParamList(tc.in)
 				require.NoError(t, err)
 
-				if tc.findModulesFn != nil {
-					a.findModulesFn = tc.findModulesFn(t)
-				}
+				a.lister = tc.lister
 
 				if tc.findModuleFn != nil {
 					a.findModuleFn = tc.findModuleFn(t)
 				}
 
-				if tc.findComponentFn != nil {
-					a.findComponentFn = tc.findComponentFn(t)
+				if tc.modulesFn != nil {
+					a.modulesFn = tc.modulesFn
+				}
+
+				a.envParametersFn = func(string) (string, error) {
+					return "{}", nil
 				}
 
 				var buf bytes.Buffer

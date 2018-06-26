@@ -1,3 +1,3 @@
 COMPONENT  PARAM VALUE
 =========  ===== =====
-deployment key   "value"
+deployment key   'value'

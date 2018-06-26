@@ -18,16 +18,18 @@ package actions
 import (
 	"io"
 	"os"
+	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/component"
+	"github.com/ksonnet/ksonnet/pkg/params"
+	"github.com/ksonnet/ksonnet/pkg/pipeline"
 	"github.com/ksonnet/ksonnet/pkg/util/table"
-	"github.com/pkg/errors"
 )
 
-type findModulesFn func(a app.App, envName string) ([]component.Module, error)
 type findModuleFn func(a app.App, moduleName string) (component.Module, error)
-type findComponentFn func(a app.App, moduleName, componentName string) (component.Component, error)
 
 // RunParamList runs `param list`.
 func RunParamList(m map[string]interface{}) error {
@@ -39,6 +41,12 @@ func RunParamList(m map[string]interface{}) error {
 	return pl.Run()
 }
 
+// paramsLister list params
+type paramsLister interface {
+	// List lists params given a source and optional component name.
+	List(r io.Reader, componentName string) ([]params.Entry, error)
+}
+
 // ParamList lists parameters for a component.
 type ParamList struct {
 	app           app.App
@@ -46,10 +54,12 @@ type ParamList struct {
 	componentName string
 	envName       string
 
-	out             io.Writer
-	findModulesFn   findModulesFn
-	findModuleFn    findModuleFn
-	findComponentFn findComponentFn
+	out          io.Writer
+	findModuleFn findModuleFn
+
+	modulesFn       func() ([]component.Module, error)
+	envParametersFn func(string) (string, error)
+	lister          paramsLister
 }
 
 // NewParamList creates an instances of ParamList.
@@ -62,10 +72,17 @@ func NewParamList(m map[string]interface{}) (*ParamList, error) {
 		componentName: ol.LoadOptionalString(OptionComponentName),
 		envName:       ol.LoadOptionalString(OptionEnvName),
 
-		out:             os.Stdout,
-		findModulesFn:   component.ModulesFromEnv,
-		findModuleFn:    component.GetModule,
-		findComponentFn: component.LocateComponent,
+		out:          os.Stdout,
+		findModuleFn: component.GetModule,
+	}
+
+	if pl.app != nil {
+		p := pipeline.New(pl.app, pl.envName)
+		pl.modulesFn = p.Modules
+		pl.envParametersFn = p.EnvParameters
+
+		dest := app.EnvironmentDestinationSpec{}
+		pl.lister = params.NewLister(pl.app.Root(), dest)
 	}
 
 	if ol.err != nil {
@@ -86,58 +103,53 @@ func (pl *ParamList) Run() error {
 		return errors.Wrap(err, "could not find module")
 	}
 
-	params, err := pl.collectParams(module)
+	r, err := module.ParamsSource()
+	if err != nil {
+		return errors.Wrap(err, "reading module parameters")
+	}
+	defer r.Close()
+
+	entries, err := pl.lister.List(r, pl.componentName)
 	if err != nil {
 		return err
 	}
 
-	return pl.print(params)
+	return pl.print(entries)
+}
+
+func (pl *ParamList) print(entries []params.Entry) error {
+	table := table.New(pl.out)
+
+	table.SetHeader([]string{"COMPONENT", "PARAM", "VALUE"})
+	for _, entry := range entries {
+		table.Append([]string{entry.ComponentName, entry.ParamName, entry.Value})
+	}
+
+	return table.Render()
 }
 
 func (pl *ParamList) handleEnvParams() error {
-	modules, err := pl.findModulesFn(pl.app, pl.envName)
+	modules, err := pl.modulesFn()
 	if err != nil {
 		return err
 	}
 
-	var params []component.ModuleParameter
-
-	for _, module := range modules {
-		moduleParams, err := pl.collectParams(module)
+	var entries []params.Entry
+	for _, m := range modules {
+		source, err := pl.envParametersFn(m.Name())
 		if err != nil {
 			return err
 		}
 
-		if pl.moduleName != "" && module.Name() != pl.moduleName {
-			continue
+		r := strings.NewReader(source)
+
+		moduleEntries, err := pl.lister.List(r, pl.componentName)
+		if err != nil {
+			return err
 		}
-		params = append(params, moduleParams...)
+
+		entries = append(entries, moduleEntries...)
 	}
 
-	return pl.print(params)
-
-}
-
-func (pl *ParamList) collectParams(module component.Module) ([]component.ModuleParameter, error) {
-	if pl.componentName == "" {
-		return module.Params(pl.envName)
-	}
-
-	c, err := pl.findComponentFn(pl.app, pl.moduleName, pl.componentName)
-	if err != nil {
-		return nil, err
-	}
-
-	return c.Params(pl.envName)
-}
-
-func (pl *ParamList) print(params []component.ModuleParameter) error {
-	table := table.New(pl.out)
-
-	table.SetHeader([]string{"COMPONENT", "PARAM", "VALUE"})
-	for _, data := range params {
-		table.Append([]string{data.Component, data.Key, data.Value})
-	}
-
-	return table.Render()
+	return pl.print(entries)
 }

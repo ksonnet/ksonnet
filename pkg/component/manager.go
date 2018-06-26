@@ -70,7 +70,6 @@ type Manager interface {
 	CreateModule(ksApp app.App, name string) error
 	Module(ksApp app.App, moduleName string) (Module, error)
 	Modules(ksApp app.App, envName string) ([]Module, error)
-	NSResolveParams(ns Module) (string, error)
 }
 
 type defaultManager struct{}
@@ -83,10 +82,6 @@ func (dm *defaultManager) Modules(ksApp app.App, envName string) ([]Module, erro
 
 func (dm *defaultManager) Module(ksApp app.App, module string) (Module, error) {
 	return GetModule(ksApp, module)
-}
-
-func (dm *defaultManager) NSResolveParams(ns Module) (string, error) {
-	return ns.ResolvedParams()
 }
 
 func (dm *defaultManager) Components(ns Module) ([]Component, error) {

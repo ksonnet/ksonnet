@@ -18,6 +18,7 @@ package component
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -46,14 +47,25 @@ func moduleErrorMsg(format, module string) string {
 
 // Module is a component module
 type Module interface {
+	// Components returns a slice of components in this module.
 	Components() ([]Component, error)
+	// DeleteParam deletes a parameter.
 	DeleteParam(path []string) error
+	// Dir returns the directory for the module.
 	Dir() string
+	// Name is the name of the module.
 	Name() string
+	// Params returns parameters defined in this module.
 	Params(envName string) ([]ModuleParameter, error)
+	// ParamsPath returns the path of the parameters for this module
 	ParamsPath() string
+	// paramsSource returns the source of the params for this module.
+	ParamsSource() (io.ReadCloser, error)
+	// Render renders the components in the module to a Jsonnet object.
 	Render(envName string, componentNames ...string) (*astext.Object, map[string]string, error)
-	ResolvedParams() (string, error)
+	// ResolvedParams evaluates the parameters for a module within an environment.
+	ResolvedParams(envName string) (string, error)
+	// SetParam sets a parameter for module.
 	SetParam(path []string, value interface{}) error
 }
 
@@ -201,6 +213,17 @@ func (m *FilesystemModule) Dir() string {
 	return filepath.Join(m.app.Root(), componentsRoot, moduleToDir(m.path))
 }
 
+// ParamsSource returns the source of params for a module as a reader.
+func (m *FilesystemModule) ParamsSource() (io.ReadCloser, error) {
+	path := filepath.Join(m.Dir(), paramsFile)
+	f, err := m.app.Fs().Open(path)
+	if err != nil {
+		return nil, errors.Wrapf(err, "opening %q", path)
+	}
+
+	return f, nil
+}
+
 // ModuleParameter is a module parameter.
 type ModuleParameter struct {
 	Component string
@@ -217,15 +240,38 @@ func (mp *ModuleParameter) IsSameType(other ModuleParameter) bool {
 
 // ResolvedParams resolves paramaters for a module. It returns a JSON encoded
 // string of component parameters.
-func (m *FilesystemModule) ResolvedParams() (string, error) {
+func (m *FilesystemModule) ResolvedParams(envName string) (string, error) {
 	s, err := m.readParams()
 	if err != nil {
 		return "", err
 	}
 
-	object, err := jsonnet.Parse("params.libsonnet", s)
+	envCode, err := params.JsonnetEnvObject(m.app, envName)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "building environment argument")
+	}
+
+	vm := jsonnet.NewVM()
+	vm.AddJPath(
+		filepath.Join(m.app.Root(), "vendor"),
+		filepath.Join(m.app.Root(), "lib"),
+	)
+
+	vm.ExtCode("__ksonnet/environments", envCode)
+
+	output, err := vm.EvaluateSnippet("params.libsonnet", s)
+	if err != nil {
+		return "", errors.Wrap(err, "evaluating params.libsonnet")
+	}
+
+	n, err := jsonnet.ParseNode("params.libsonnet", output)
+	if err != nil {
+		return "", errors.Wrap(err, "parsing parameters")
+	}
+
+	object, ok := n.(*astext.Object)
+	if !ok {
+		return "", errors.Errorf("params.libsonnet did not evaluate to an object (%T)", n)
 	}
 
 	var componentsObject *astext.Object
