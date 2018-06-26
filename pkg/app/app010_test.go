@@ -196,6 +196,9 @@ func TestApp010_RemoveEnvironment(t *testing.T) {
 
 		_, err = app.Environment("default")
 		require.Error(t, err)
+
+		err = app.RemoveEnvironment("invalid", false)
+		require.Error(t, err)
 	})
 }
 
