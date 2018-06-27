@@ -52,29 +52,32 @@ func Test_ResolvePath(t *testing.T) {
 		test.StageFile(t, fs, "deployment.yaml", "/app/components/nested/deployment.yaml")
 
 		cases := []struct {
-			name   string
-			cName  string
-			module string
-			isErr  bool
+			name              string
+			expectedComponent string
+			expectedModule    string
+			isErr             bool
 		}{
 			{
-				name:   "/",
-				module: "/",
+				name:           "/",
+				expectedModule: "/",
 			},
 			{
-				name:   "deployment",
-				module: "/",
-				cName:  "deployment",
+				name:              "deployment",
+				expectedModule:    "/",
+				expectedComponent: "deployment",
 			},
 			{
-				name:   "deployment",
-				module: "/",
-				cName:  "deployment",
+				name:              "nested.deployment",
+				expectedModule:    "nested",
+				expectedComponent: "deployment",
 			},
 			{
-				name:   "nested/deployment",
-				module: "nested",
-				cName:  "deployment",
+				name:           "nested",
+				expectedModule: "nested",
+			},
+			{
+				name:  "nested/deployment",
+				isErr: true,
 			},
 			{
 				name:  "nested/invalid",
@@ -88,7 +91,7 @@ func Test_ResolvePath(t *testing.T) {
 
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
-				ns, c, err := ResolvePath(a, tc.name)
+				m, c, err := ResolvePath(a, tc.name)
 
 				if tc.isErr {
 					require.Error(t, err)
@@ -97,14 +100,14 @@ func Test_ResolvePath(t *testing.T) {
 
 				require.NoError(t, err)
 
-				if tc.cName == "" {
+				if tc.expectedComponent == "" {
 					assert.Nil(t, c)
 				} else {
 					require.NotNil(t, c)
-					assert.Equal(t, tc.cName, c.Name(false))
+					assert.Equal(t, tc.expectedComponent, c.Name(false))
 				}
 
-				assert.Equal(t, tc.module, ns.Name())
+				assert.Equal(t, tc.expectedModule, m.Name())
 			})
 		}
 	})
