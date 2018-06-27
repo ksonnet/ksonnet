@@ -22,6 +22,7 @@ import (
 
 	"github.com/ksonnet/ksonnet/pkg/lib"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
@@ -100,6 +101,7 @@ type App interface {
 
 // Load loads the application configuration.
 func Load(fs afero.Fs, cwd string, skipFindRoot bool) (App, error) {
+	log := log.WithField("action", "app.Load")
 	appRoot := cwd
 	if !skipFindRoot {
 		var err error
@@ -109,9 +111,15 @@ func Load(fs afero.Fs, cwd string, skipFindRoot bool) (App, error) {
 		}
 	}
 
+	log.Debugf("called")
+
 	spec, err := read(fs, appRoot)
-	if err != nil {
+	if os.IsNotExist(err) {
+		// During `ks init`, app.yaml will not yet exist - generate a new one.
 		return NewApp010(fs, appRoot), nil
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "reading app configuration")
 	}
 
 	switch spec.APIVersion {
@@ -119,8 +127,16 @@ func Load(fs afero.Fs, cwd string, skipFindRoot bool) (App, error) {
 		return nil, errors.Errorf("unknown apiVersion %q in %s", spec.APIVersion, appYamlName)
 	case "0.0.1":
 		return NewApp001(fs, appRoot), nil
-	case "0.1.0":
-		return NewApp010(fs, appRoot), nil
+	case "0.1.0", "0.2.0":
+		// TODO TODO
+		// 0.1.0 will auto-upgraded to 0.2.0. 0.1.0 is read-compatible with
+		// 0.2.0, but will be persisted back as 0.2.0. This behavior will be
+		// subsequently changed with new upgrade framework.
+		a := NewApp010(fs, appRoot)
+		log.Debugf("Upgrading app [%p] version to latest (0.2.0)", a.baseApp)
+		a.config.APIVersion = "0.2.0"
+		a.baseApp.config.APIVersion = "0.2.0"
+		return a, nil
 	}
 }
 

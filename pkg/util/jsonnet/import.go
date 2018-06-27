@@ -16,6 +16,11 @@
 package jsonnet
 
 import (
+	"fmt"
+	"os"
+	"path"
+
+	jsonnet "github.com/google/go-jsonnet"
 	"github.com/google/go-jsonnet/ast"
 	"github.com/ksonnet/ksonnet-lib/ksonnet-gen/astext"
 	"github.com/ksonnet/ksonnet/pkg/docparser"
@@ -89,4 +94,75 @@ func ParseNode(filename, src string) (ast.Node, error) {
 	}
 
 	return node, nil
+}
+
+// Importer extends jsonnet.Importer to support setting import paths.
+type Importer interface {
+	jsonnet.Importer
+
+	AddJPath(paths ...string)
+}
+
+// FileImporter extends jsonnet.FileImporter to allow incrementally adding import paths.
+type FileImporter struct {
+	jsonnet.FileImporter
+}
+
+// AddJPath adds the provided paths to the importer.
+func (f *FileImporter) AddJPath(paths ...string) {
+	f.JPaths = append(f.JPaths, paths...)
+}
+
+// AferoImporter implements Importer using an afero Fs interface.
+type AferoImporter struct {
+	FileImporter
+	Fs afero.Fs
+}
+
+func (ai *AferoImporter) tryPath(dir, importedPath string) (found bool, content []byte, foundHere string, err error) {
+	var absPath string
+	if path.IsAbs(importedPath) {
+		absPath = importedPath
+	} else {
+		absPath = path.Join(dir, importedPath)
+	}
+	content, err = afero.ReadFile(ai.Fs, absPath)
+	if os.IsNotExist(err) {
+		return false, nil, "", nil
+	}
+	return true, content, absPath, err
+}
+
+// Import imports a file.
+func (ai *AferoImporter) Import(dir, importedPath string) (*jsonnet.ImportedData, error) {
+	found, content, foundHere, err := ai.tryPath(dir, importedPath)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := len(ai.JPaths) - 1; !found && i >= 0; i-- {
+		found, content, foundHere, err = ai.tryPath(ai.JPaths[i], importedPath)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if !found {
+		return nil, fmt.Errorf("couldn't open import %#v: no match locally or in the Jsonnet library paths", importedPath)
+	}
+	return &jsonnet.ImportedData{Content: string(content), FoundHere: foundHere}, nil
+}
+
+// ImporterOpt configures a VM with a jsonnet.Importer
+func ImporterOpt(importer Importer) VMOpt {
+	return func(vm *VM) {
+		vm.importer = importer
+	}
+}
+
+// AferoImporterOpt configures a VM with a jsonnet.Importer
+func AferoImporterOpt(fs afero.Fs) VMOpt {
+	return func(vm *VM) {
+		vm.importer = &AferoImporter{Fs: fs}
+	}
 }

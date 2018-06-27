@@ -24,7 +24,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ksonnet/ksonnet/pkg/app/mocks"
+	"github.com/pkg/errors"
 	godiff "github.com/shazow/go-diff"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/mock"
@@ -118,6 +121,7 @@ func AssertOutput(t *testing.T, filename, actual string) {
 	path := filepath.Join("testdata", filepath.FromSlash(filename))
 	f, err := os.Open(path)
 	require.NoError(t, err)
+	defer f.Close()
 
 	rActual := strings.NewReader(actual)
 
@@ -125,4 +129,118 @@ func AssertOutput(t *testing.T, filename, actual string) {
 	err = godiff.DefaultDiffer().Diff(&buf, f, rActual)
 	require.NoError(t, err)
 	require.Empty(t, buf.String())
+}
+
+// dumpFs logs the contents of an afero.Fs virtual filesystem interface.
+func DumpFs(t *testing.T, fs afero.Fs) {
+	if fs == nil {
+		return
+	}
+
+	err := afero.Walk(fs, "/", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			t.Logf("%v", err)
+			return err
+		}
+
+		t.Logf("%s", path)
+
+		return nil
+	})
+	if err != nil {
+		t.Logf("%v", err)
+	}
+}
+
+// AssertDirectoriesMatch compares the contents of two directories (recursively) and asserts they are equivelent.
+func AssertDirectoriesMatch(t *testing.T, fs afero.Fs, rootA string, rootB string) {
+	// Map a path from root a to root b
+	// e.g. rootA == /foo, rootB == /bar, mapAToB(/foo/something/nice) -> /bar/something/nice
+	// Returns error if path is not rooted under rootA.
+	type mapFunc func(string) (string, error)
+	mapper := func(s, rootA, rootB string) (string, error) {
+		a := filepath.Clean(rootA)
+		b := filepath.Clean(rootB)
+		p := filepath.Clean(s)
+
+		if !strings.HasPrefix(p, a) { // TODO compare actual path segments
+			return "", errors.Errorf("%v not rooted under %v", s, rootA)
+		}
+
+		unrooted := strings.TrimPrefix(p, a)
+		return filepath.Join(b, unrooted), nil
+	}
+	mapAToB := func(s string) (string, error) {
+		return mapper(s, rootA, rootB)
+	}
+	mapBToA := func(s string) (string, error) {
+		return mapper(s, rootB, rootA)
+	}
+	walker := func(mapper mapFunc, diffSet map[string]struct{}, compareFiles bool, path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return errors.Wrap(err, "bad root path")
+		}
+		pathB, err := mapper(path)
+		if err != nil {
+			return errors.Wrapf(err, "mapping %v", path)
+		}
+
+		ok, err := afero.Exists(fs, pathB)
+		if err != nil {
+			return errors.Wrapf(err, "checking existence: %v", pathB)
+		}
+		if !ok {
+			diffSet[path] = struct{}{}
+			return nil
+		}
+
+		// For contents, only compare files
+		if info.IsDir() {
+			return nil
+		}
+
+		// Exists in both trees, compare file contents
+		fileA, err := fs.Open(path)
+		defer func(f io.Closer) {
+			if f != nil {
+				f.Close()
+			}
+		}(fileA)
+		if err != nil {
+			return errors.Wrapf(err, "opening file %v", path)
+		}
+		fileB, err := fs.Open(pathB)
+		defer func(f io.Closer) {
+			if f != nil {
+				f.Close()
+			}
+		}(fileB)
+		if err != nil {
+			return errors.Wrapf(err, "opening file %v", pathB)
+		}
+
+		var buf bytes.Buffer
+		err = godiff.DefaultDiffer().Diff(&buf, fileA, fileB)
+		if err != nil {
+			return errors.Wrapf(err, "comparing %v and %v", path, pathB)
+		}
+
+		// Assert files matched
+		assert.Empty(t, buf.String())
+		return nil
+	} // end walker
+
+	diffSet := make(map[string]struct{})
+
+	err := afero.Walk(fs, rootA, func(path string, info os.FileInfo, err error) error {
+		return walker(mapAToB, diffSet, true, path, info, err)
+	})
+	assert.NoError(t, err, "walking %v", rootA)
+
+	err = afero.Walk(fs, rootB, func(path string, info os.FileInfo, err error) error {
+		return walker(mapBToA, diffSet, false, path, info, err)
+	})
+	assert.NoError(t, err, "walking %v", rootB)
+
+	assert.Empty(t, diffSet, "file set symmetric_difference")
 }

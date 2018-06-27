@@ -30,28 +30,29 @@ var (
 // Descriptor describes a package.
 type Descriptor struct {
 	Registry string
-	Part     string
+	Name     string
 	Version  string
 }
 
-// ParseName parses a package name into its components
-func ParseName(name string) (Descriptor, error) {
-	matches := reDescriptor.FindStringSubmatch(name)
+// Parse parses a package identifier into its components
+// <registry>/<name>@<version>
+func Parse(id string) (Descriptor, error) {
+	matches := reDescriptor.FindStringSubmatch(id)
 	if len(matches) == 0 {
 		return Descriptor{}, errInvalidSpec
 	}
 
 	if matches[2] == "" {
-		return Descriptor{Part: strings.TrimPrefix(matches[1], "/")}, nil
+		return Descriptor{Name: strings.TrimPrefix(matches[1], "/")}, nil
 	}
 
 	registry := matches[1]
-	partName := strings.TrimPrefix(matches[2], "/")
+	name := strings.TrimPrefix(matches[2], "/")
 	version := strings.TrimPrefix(matches[3], "@")
 
 	return Descriptor{
 		Registry: registry,
-		Part:     partName,
+		Name:     name,
 		Version:  version,
 	}, nil
 }

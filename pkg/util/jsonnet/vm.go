@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -28,9 +27,7 @@ import (
 	"github.com/google/go-jsonnet"
 	"github.com/google/go-jsonnet/ast"
 	"github.com/ksonnet/ksonnet/pkg/log"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/afero"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
@@ -42,11 +39,6 @@ type VMOpt func(*VM)
 
 // VM is a ksonnet wrapper for the jsonnet VM.
 type VM struct {
-	// UseMemoryImporter forces the vm to use a memory importer rather than the
-	// file import.
-	UseMemoryImporter bool
-	Fs                afero.Fs
-
 	jPaths   []string
 	extCodes map[string]string
 	extVars  map[string]string
@@ -55,6 +47,9 @@ type VM struct {
 
 	makeVMFn          makeVMFn
 	evaluateSnippetFn evaluateSnippetFn
+
+	// importer is used by the jsonnet vm to resolve imports
+	importer Importer
 }
 
 // NewVM creates an instance of VM.
@@ -68,6 +63,7 @@ func NewVM(opts ...VMOpt) *VM {
 
 		makeVMFn:          jsonnet.MakeVM,
 		evaluateSnippetFn: evaluateSnippet,
+		importer:          new(FileImporter),
 	}
 
 	for _, opt := range opts {
@@ -122,11 +118,9 @@ func (vm *VM) EvaluateSnippet(name, snippet string) (string, error) {
 	jvm := jsonnet.MakeVM()
 	jvm.ErrorFormatter.SetMaxStackTraceSize(40)
 	registerNativeFuncs(jvm)
-	importer, err := vm.createImporter()
-	if err != nil {
-		return "", errors.Wrap(err, "create jsonnet importer")
-	}
-	jvm.Importer(importer)
+
+	vm.importer.AddJPath(vm.jPaths...)
+	jvm.Importer(vm.importer)
 
 	for k, v := range vm.extCodes {
 		jvm.ExtCode(k, v)
@@ -166,55 +160,6 @@ func (vm *VM) EvaluateSnippet(name, snippet string) (string, error) {
 	}()
 
 	return vm.evaluateSnippetFn(jvm, name, snippet)
-}
-
-func (vm *VM) createImporter() (jsonnet.Importer, error) {
-	if !vm.UseMemoryImporter {
-		return &jsonnet.FileImporter{
-			JPaths: vm.jPaths,
-		}, nil
-	}
-
-	if vm.Fs == nil {
-		return nil, errors.New("unable to use memory importer without fs")
-	}
-
-	importer := &jsonnet.MemoryImporter{
-		Data: make(map[string]string),
-	}
-
-	for _, jPath := range vm.jPaths {
-		fis, err := afero.ReadDir(vm.Fs, jPath)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, fi := range fis {
-			if fi.IsDir() {
-				continue
-			}
-
-			s, err := vm.readString(filepath.Join(jPath, fi.Name()))
-			if err != nil {
-				return nil, err
-			}
-
-			importer.Data[fi.Name()] = s
-		}
-	}
-
-	return importer, nil
-}
-
-func (vm *VM) readString(path string) (string, error) {
-	var b []byte
-
-	b, err := afero.ReadFile(vm.Fs, path)
-	if err != nil {
-		return "", err
-	}
-
-	return string(b), nil
 }
 
 func registerNativeFuncs(vm *jsonnet.VM) {

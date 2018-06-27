@@ -72,14 +72,14 @@ func (pi *PkgInstall) Run() error {
 }
 
 func (pi *PkgInstall) parseDepSpec() (pkg.Descriptor, string, error) {
-	d, err := pkg.ParseName(pi.libName)
+	d, err := pkg.Parse(pi.libName)
 	if err != nil {
 		return pkg.Descriptor{}, "", err
 	}
 
 	customName := pi.customName
 	if customName == "" {
-		customName = d.Part
+		customName = d.Name
 	}
 
 	return d, customName, nil

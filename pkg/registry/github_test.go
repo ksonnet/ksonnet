@@ -211,7 +211,7 @@ func TestGithub_FetchRegistrySpec_nocache(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := &Spec{
-		APIVersion: "0.1.0",
+		APIVersion: DefaultAPIVersion,
 		Kind:       "ksonnet.io/registry",
 		Version:    "12345",
 		Libraries: LibraryConfigs{
@@ -492,26 +492,23 @@ func TestGithub_ResolveLibrary(t *testing.T) {
 	expectedLibRefSpec := &app.LibraryConfig{
 		Name:     "alias",
 		Registry: "incubator",
-		GitVersion: &app.GitVersionSpec{
-			RefSpec:   "54321",
-			CommitSHA: "54321",
-		},
+		Version:  "54321",
 	}
 	assert.Equal(t, expectedLibRefSpec, libRefSpec)
 
 	expectedFiles := []string{
-		"incubator/apache/README.md",
-		"incubator/apache/apache.libsonnet",
-		"incubator/apache/examples/apache.jsonnet",
-		"incubator/apache/examples/generated.yaml",
-		"incubator/apache/parts.yaml",
-		"incubator/apache/prototypes/apache-simple.jsonnet",
+		"apache/README.md",
+		"apache/apache.libsonnet",
+		"apache/examples/apache.jsonnet",
+		"apache/examples/generated.yaml",
+		"apache/parts.yaml",
+		"apache/prototypes/apache-simple.jsonnet",
 	}
 	assert.Equal(t, expectedFiles, files)
 
 	expectedDirs := []string{
-		"incubator/apache/examples",
-		"incubator/apache/prototypes",
+		"apache/examples",
+		"apache/prototypes",
 	}
 	assert.Equal(t, expectedDirs, directories)
 }

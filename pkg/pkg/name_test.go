@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_ParseName(t *testing.T) {
+func Test_Parse(t *testing.T) {
 	cases := []struct {
 		name     string
 		expected Descriptor
@@ -29,15 +29,15 @@ func Test_ParseName(t *testing.T) {
 	}{
 		{
 			name:     "parts-infra/contour",
-			expected: Descriptor{Registry: "parts-infra", Part: "contour"},
+			expected: Descriptor{Registry: "parts-infra", Name: "contour"},
 		},
 		{
 			name:     "contour",
-			expected: Descriptor{Part: "contour"},
+			expected: Descriptor{Name: "contour"},
 		},
 		{
 			name:     "parts-infra/contour@0.1.0",
-			expected: Descriptor{Registry: "parts-infra", Part: "contour", Version: "0.1.0"},
+			expected: Descriptor{Registry: "parts-infra", Name: "contour", Version: "0.1.0"},
 		},
 		{
 			name:  "@foo/bar@baz@doh",
@@ -47,7 +47,7 @@ func Test_ParseName(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			d, err := ParseName(tc.name)
+			d, err := Parse(tc.name)
 			if tc.isErr {
 				require.Error(t, err)
 				return

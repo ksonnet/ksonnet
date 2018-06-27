@@ -24,11 +24,14 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/util/test"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_CacheDependency(t *testing.T) {
 	withApp(t, func(a *amocks.App, fs afero.Fs) {
+		a.On("VendorPath").Return("/app/vendor")
+
 		test.StageDir(t, fs, "incubator", filepath.Join("/work", "incubator"))
 
 		libraries := app.LibraryConfigs{}
@@ -43,17 +46,70 @@ func Test_CacheDependency(t *testing.T) {
 		}
 		a.On("Registries").Return(registries, nil)
 
-		library := &app.LibraryConfig{
-			Name:     "apache",
-			Registry: "incubator",
+		libs := []*app.LibraryConfig{
+			&app.LibraryConfig{
+				Name:     "apache",
+				Registry: "incubator",
+			},
+			&app.LibraryConfig{
+				Name:     "nginx",
+				Registry: "incubator",
+				Version:  "", // TODO inject custom registry resolver so we can test versioned packages too
+			},
 		}
-		a.On("UpdateLib", "apache", library).Return(nil)
+		for _, lib := range libs {
+			a.On("UpdateLib", lib.Name, lib).Return(nil)
+			d := pkg.Descriptor{Registry: lib.Registry, Name: lib.Name}
 
-		d := pkg.Descriptor{Registry: "incubator", Part: "apache"}
+			err := CacheDependency(a, d, "")
+			require.NoError(t, err)
 
-		err := CacheDependency(a, d, "")
-		require.NoError(t, err)
-
-		test.AssertExists(t, fs, filepath.Join(a.Root(), "vendor", "incubator", "apache", "parts.yaml"))
+			test.AssertExists(t, fs, filepath.Join(a.Root(), "vendor", lib.Registry, lib.Name, "parts.yaml"))
+		}
 	})
+}
+
+func Test_versionAndVendorRelPath(t *testing.T) {
+	tests := []struct {
+		name     string
+		lib      app.LibraryConfig
+		relPath  string
+		expected string
+	}{
+		{
+			name: "",
+			lib: app.LibraryConfig{
+				Name:     "nginx",
+				Registry: "incubator",
+				Version:  "1.2.3",
+			},
+			relPath:  "nginx/parts.yaml",
+			expected: "/app/vendor/incubator/nginx@1.2.3/parts.yaml",
+		},
+		{
+			name: "",
+			lib: app.LibraryConfig{
+				Name:     "nginx",
+				Registry: "incubator",
+				Version:  "",
+			},
+			relPath:  "nginx/parts.yaml",
+			expected: "/app/vendor/incubator/nginx/parts.yaml",
+		},
+		{
+			name: "",
+			lib: app.LibraryConfig{
+				Name:     "nginx",
+				Registry: "incubator",
+				Version:  "1.2.3",
+			},
+			relPath:  "nginx/longer/path",
+			expected: "/app/vendor/incubator/nginx@1.2.3/longer/path",
+		},
+	}
+
+	for _, tc := range tests {
+		actual := versionAndVendorRelPath(&tc.lib, "/app/vendor", tc.relPath)
+		assert.Equal(t, tc.expected, actual, tc.name)
+	}
 }

@@ -139,7 +139,7 @@ func (a *App010) Init() error {
 	}
 
 	msg := "Your application's apiVersion is 0.1.0, but legacy environment declarations " +
-		"where found in environments: %s. In order to proceed, you will have to run `ks upgrade` to " +
+		"were found in environments: %s. In order to proceed, you will have to run `ks upgrade` to " +
 		"upgrade your application. <see url>"
 
 	return errors.Errorf(msg, strings.Join(legacyEnvs, ", "))

@@ -209,7 +209,7 @@ func (a *App001) Upgrade(dryRun bool) error {
 		}
 
 		fmt.Fprintf(a.out, "\n[dry run] Upgraded app.yaml:\n%s\n", string(data))
-		fmt.Fprintf(a.out, "[dry run] You can preform the migration by running `ks upgrade`.\n")
+		fmt.Fprintf(a.out, "[dry run] You can perform the migration by running `ks upgrade`.\n")
 		return nil
 	}
 

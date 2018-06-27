@@ -17,10 +17,16 @@ package env
 
 import (
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 
+	utilio "github.com/ksonnet/ksonnet/pkg/util/io"
+
 	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/ksonnet/ksonnet/pkg/util/jsonnet"
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
@@ -93,14 +99,14 @@ func MainFile(a app.App, envName string) (string, error) {
 }
 
 // Evaluate evaluates an environment.
-func Evaluate(a app.App, envName, components, paramsStr string) (string, error) {
+func Evaluate(a app.App, envName, components, paramsStr string, opts ...jsonnet.VMOpt) (string, error) {
 
 	snippet, err := MainFile(a, envName)
 	if err != nil {
 		return "", err
 	}
 
-	evaluated, err := evaluateMain(a, envName, snippet, components, paramsStr)
+	evaluated, err := evaluateMain(a, envName, snippet, components, paramsStr, opts...)
 	if err != nil {
 		return "", err
 	}
@@ -108,7 +114,7 @@ func Evaluate(a app.App, envName, components, paramsStr string) (string, error) 
 	return upgradeArray(evaluated)
 }
 
-func evaluateMain(a app.App, envName, snippet, components, paramsStr string) (string, error) {
+func evaluateMain(a app.App, envName, snippet, components, paramsStr string, opts ...jsonnet.VMOpt) (string, error) {
 	libPath, err := a.LibPath(envName)
 	if err != nil {
 		return "", err
@@ -119,7 +125,7 @@ func evaluateMain(a app.App, envName, snippet, components, paramsStr string) (st
 		return "", err
 	}
 
-	vm := jsonnet.NewVM()
+	vm := jsonnet.NewVM(opts...)
 	vm.AddJPath(componentJPaths...)
 	vm.AddJPath(
 		filepath.Join(a.Root(), envRootName),
@@ -128,6 +134,17 @@ func evaluateMain(a app.App, envName, snippet, components, paramsStr string) (st
 		filepath.Join(a.Root(), "lib"),
 		libPath,
 	)
+
+	// Re-vendor versioned packages, such that import paths will remain path-agnostic.
+	// TODO Where should packagemanager come from?
+	pm := registry.NewPackageManager(a)
+	revendoredPath, cleanup, err := revendorPackages(a, pm, appEnv)
+	if err != nil {
+		return "", errors.Wrapf(err, "revendoring packages for environment: %v", envName)
+	}
+	defer cleanup()
+	vm.AddJPath(revendoredPath) // TODO does precedence matter?
+	// end re-vendor
 
 	if len(appEnv.Targets) == 0 {
 		vm.AddJPath(filepath.Join(a.Root(), "components"))
@@ -215,4 +232,120 @@ func environmentsCode(a app.App, envName string) (string, error) {
 	}
 
 	return string(marshalledDestination), nil
+}
+
+// buildPackagePaths builds a set of version-specific package paths that
+// should be made available when applying an environment.
+// NOTE: we currently exclude unversioned packages, they can be picked
+//       up in the legacy location under the vendor directory.
+// Return map keys are qualified package names (<registry>/<package>).
+func buildPackagePaths(pm registry.PackageManager, e *app.EnvironmentConfig) (map[string]string, error) {
+	log := log.WithField("action", "env.buildPackagePaths")
+
+	if pm == nil {
+		return nil, errors.Errorf("nil package manager")
+	}
+	if e == nil {
+		return nil, errors.Errorf("nil environment")
+	}
+
+	result := make(map[string]string)
+
+	pkgList, err := pm.PackagesForEnv(e)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range pkgList {
+		if v.Version() == "" {
+			log.Debugf("skipping unversioned packaged: %v", v)
+			continue
+		}
+		k := fmt.Sprintf("%s/%s", v.RegistryName(), v.Name())
+		result[k] = v.Path()
+	}
+	return result, nil
+}
+
+// Builds a vendor import path with the correct versions of referenced packages for
+// the specified environment.
+// The caller is responsible for calling the returned cleanup function to release
+// and temporary resources.
+func revendorPackages(a app.App, pm registry.PackageManager, e *app.EnvironmentConfig) (path string, cleanup func() error, err error) {
+	log := log.WithField("action", "env.revendorPackages")
+
+	noop := func() error { return nil }
+
+	if a == nil {
+		return "", noop, errors.Errorf("nil app")
+	}
+	if pm == nil {
+		return "", nil, errors.Errorf("nil package manager")
+	}
+	if e == nil {
+		return "", noop, errors.Errorf("nil environment")
+	}
+	fs := a.Fs()
+	if fs == nil {
+		return "", noop, errors.Errorf("nil filesystem interface")
+	}
+
+	// Enumerate packages
+	pathByPkg, err := buildPackagePaths(pm, e)
+	if err != nil {
+		return "", noop, err
+	}
+
+	// Build our temporary space
+	tmpDir, err := afero.TempDir(fs, "", "ksvendor")
+	if err != nil {
+		return "", noop, errors.Wrap(err, "creating temporary vendor path")
+	}
+	shouldCleanup := true // Used to decide whether we should cleanup in our defer or handoff responsibility to our callers
+	internalCleanFunc := func() error {
+		if !shouldCleanup {
+			return nil
+		}
+
+		return fs.RemoveAll(tmpDir)
+	}
+	defer internalCleanFunc()
+
+	// Copy each package to our temp directory destined for import,
+	// removing version information from the path.
+	// This allows our consumers to import the package with a version-agnostic import specifier.
+	for k, srcPath := range pathByPkg {
+		if srcPath == "" {
+			log.Warnf("skipping package %v", k)
+			continue
+		}
+		// Check for missing package.
+		// There are two common causes:
+		// 1. It is installed but in an unversioned path - the app hasn't been upgraded.
+		// 2. It is actually missing - the vendor cache needs to be refreshed.
+		// Currently we assume #1 and skip revendoring - it can be imported from the legacy path.
+		ok, err := afero.Exists(fs, srcPath)
+		if err != nil {
+			return "", noop, err
+		}
+		if !ok {
+			// TODO differentiate between above cases #1 and #2.
+			log.Warnf("skipping missing path %v. Please run `ks upgrade`.", srcPath)
+			continue
+		}
+
+		dstPath := filepath.Join(tmpDir, filepath.FromSlash(k))
+		log.Debugf("preparing package %v->%v", srcPath, dstPath)
+		if err := utilio.CopyRecursive(fs, dstPath, srcPath, app.DefaultFilePermissions, app.DefaultFolderPermissions); err != nil {
+			return "", noop, errors.Wrapf(err, "copying package %v->%v", srcPath, dstPath)
+		}
+	}
+
+	// Signal to our deferred cleanup function that our caller is now
+	// the responsible party for cleaning up the temp directory.
+	shouldCleanup = false
+	callerCleanFunc := func() error {
+		return fs.RemoveAll(tmpDir)
+	}
+	return tmpDir, callerCleanFunc, nil
 }

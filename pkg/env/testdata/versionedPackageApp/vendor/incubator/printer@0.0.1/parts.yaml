@@ -1,0 +1,21 @@
+{
+  "name": "printer",
+  "apiVersion": "0.0.1",
+  "kind": "ksonnet.io/parts",
+  "description": "Printer prints hopeful messages",
+  "author": "ksonnet team <ksonnet-help@heptio.com>",
+  "contributors": [
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ksonnet/mixins"
+  },
+  "bugs": {
+    "url": "https://github.com/ksonnet/mixins/issues"
+  },
+  "keywords": [
+  ],
+  "quickStart": {},
+  "license": "Apache 2.0"
+}
+

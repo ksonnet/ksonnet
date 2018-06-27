@@ -149,7 +149,7 @@ func TestFs_FetchRegistrySpec(t *testing.T) {
 				require.NoError(t, err)
 
 				expected := &Spec{
-					APIVersion: "0.1.0",
+					APIVersion: DefaultAPIVersion,
 					Kind:       "ksonnet.io/registry",
 					Libraries: LibraryConfigs{
 						"apache": &LibaryConfig{

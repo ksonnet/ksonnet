@@ -29,7 +29,7 @@ import (
 
 const (
 	// DefaultAPIVersion is the default ks API version to use if not specified.
-	DefaultAPIVersion = "0.1.0"
+	DefaultAPIVersion = "0.2.0"
 	// Kind is the schema resource type.
 	Kind = "ksonnet.io/app"
 	// DefaultVersion is the default version of the app schema.
@@ -48,6 +48,21 @@ var (
 	// ErrEnvironmentNotExists is the error when trying to update an environment that doesn't exist.
 	ErrEnvironmentNotExists = fmt.Errorf("Environment with name doesn't exist")
 )
+
+var (
+	compatibleAPIRangeStrings = []string{
+		">= 0.0.1 <= 0.2.0",
+	}
+	compatibleAPIRanges = mustCompileRanges()
+)
+
+func mustCompileRanges() []semver.Range {
+	result := make([]semver.Range, 0, len(compatibleAPIRangeStrings))
+	for _, s := range compatibleAPIRangeStrings {
+		result = append(result, semver.MustParseRange(s))
+	}
+	return result
+}
 
 // Spec defines all the ksonnet project metadata. This includes details such as
 // the project name, authors, environments, and registries.
@@ -240,11 +255,16 @@ func (r *RegistryConfigs) UnmarshalJSON(b []byte) error {
 	}
 
 	// Set Name fields according to map keys
+	result := RegistryConfigs{}
 	for k, v := range registries {
+		if v == nil {
+			continue
+		}
 		v.Name = k
+		result[k] = v
 	}
 
-	*r = RegistryConfigs(registries)
+	*r = result
 	return nil
 }
 
@@ -261,11 +281,16 @@ func (e *EnvironmentConfigs) UnmarshalJSON(b []byte) error {
 	}
 
 	// Set Name fields according to map keys
+	result := EnvironmentConfigs{}
 	for k, v := range envs {
+		if v == nil {
+			continue
+		}
 		v.Name = k
+		result[k] = v
 	}
 
-	*e = EnvironmentConfigs(envs)
+	*e = result
 	return nil
 }
 
@@ -284,6 +309,8 @@ type EnvironmentConfig struct {
 	// Targets contain the relative component paths that this environment
 	// wishes to deploy on it's destination.
 	Targets []string `json:"targets,omitempty"`
+	// Libraries specifies versioned libraries specifically used by this environment.
+	Libraries LibraryConfigs `json:"libraries,omitempty"`
 
 	isOverride bool
 }
@@ -313,6 +340,13 @@ type EnvironmentDestinationSpec struct {
 
 // LibraryConfig is the specification for a library part.
 type LibraryConfig struct {
+	Name     string `json:"name"`
+	Registry string `json:"registry"`
+	Version  string `json:"version"`
+}
+
+// 0.1.0 version of LibraryConfig
+type libraryConfigDeprecated struct {
 	Name       string          `json:"name"`
 	Registry   string          `json:"registry"`
 	Version    string          `json:"version"`
@@ -327,6 +361,61 @@ type GitVersionSpec struct {
 
 // LibraryConfigs is a mapping of a library configurations by name.
 type LibraryConfigs map[string]*LibraryConfig
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+// We implement some compatibility conversions.
+func (l *LibraryConfigs) UnmarshalJSON(b []byte) error {
+	var cfgs map[string]*LibraryConfig
+
+	if err := json.Unmarshal(b, &cfgs); err != nil {
+		return err
+	}
+
+	result := LibraryConfigs{}
+	for k, v := range cfgs {
+		if v == nil {
+			continue
+		}
+
+		v.Name = k
+		result[k] = v
+	}
+
+	*l = result
+	return nil
+}
+
+// libraryConfig is an alias that allows us to leverage default JSON decoding
+// in our custom UnmarshalJSON handler without triggering infinite recursion.
+type libraryConfig LibraryConfig
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+// We implement some compatibility conversions.
+func (l *LibraryConfig) UnmarshalJSON(b []byte) error {
+	var cfg libraryConfig
+
+	if err := json.Unmarshal(b, &cfg); err != nil {
+		return err
+	}
+	*l = LibraryConfig(cfg)
+
+	// Check if there's any need for conversions
+	if cfg.Version != "" {
+		return nil
+	}
+
+	// Try to convert deprecated fields
+	var oldStyle libraryConfigDeprecated
+	if err := json.Unmarshal(b, &oldStyle); err != nil {
+		// This is best-effort, not an error
+		return nil
+	}
+	if oldStyle.GitVersion != nil {
+		l.Version = oldStyle.GitVersion.CommitSHA
+	}
+
+	return nil
+}
 
 // ContributorSpec is a specification for the project contributors.
 type ContributorSpec struct {
@@ -390,17 +479,23 @@ func (s *Spec) validate() error {
 		return errors.New("invalid version")
 	}
 
-	compatVer, _ := semver.Make(DefaultAPIVersion)
 	ver, err := semver.Make(s.APIVersion)
 	if err != nil {
 		return errors.Wrap(err, "Failed to parse version in app spec")
 	}
 
-	if compatVer.Compare(ver) < 0 {
+	var compatible bool
+	for _, compatRange := range compatibleAPIRanges {
+		if compatRange(ver) {
+			compatible = true
+		}
+	}
+
+	if !compatible {
 		return fmt.Errorf(
 			"Current app uses unsupported spec version '%s' (this client only supports %s)",
 			s.APIVersion,
-			DefaultAPIVersion)
+			compatibleAPIRangeStrings)
 	}
 
 	return nil

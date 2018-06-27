@@ -34,13 +34,14 @@ func Test_DefaultInstallChecker_isInstalled(t *testing.T) {
 		isErr          bool
 	}{
 		{
-			name: "is installed",
+			name: "is installed globally",
 			setupLibraries: func(a *amocks.App) {
 				libraries := app.LibraryConfigs{
 					"redis": &app.LibraryConfig{},
 				}
 
 				a.On("Libraries").Return(libraries, nil)
+				a.On("Environments").Return(app.EnvironmentConfigs{}, nil)
 			},
 			isInstalled: true,
 		},
@@ -48,14 +49,50 @@ func Test_DefaultInstallChecker_isInstalled(t *testing.T) {
 			name: "not installed",
 			setupLibraries: func(a *amocks.App) {
 				a.On("Libraries").Return(nil, nil)
+				a.On("Environments").Return(app.EnvironmentConfigs{}, nil)
 			},
 		},
 		{
 			name: "libraries error",
 			setupLibraries: func(a *amocks.App) {
 				a.On("Libraries").Return(nil, errors.New("failed"))
+				a.On("Environments").Return(app.EnvironmentConfigs{}, nil)
 			},
 			isErr: true,
+		},
+		{
+			name: "is installed in an environment",
+			setupLibraries: func(a *amocks.App) {
+				libraries := app.LibraryConfigs{
+					"redis": &app.LibraryConfig{},
+				}
+
+				a.On("Libraries").Return(app.LibraryConfigs{}, nil)
+				a.On("Environments").Return(app.EnvironmentConfigs{
+					"default": &app.EnvironmentConfig{
+						Name:      "default",
+						Libraries: libraries,
+					},
+				}, nil)
+			},
+			isInstalled: true,
+		},
+		{
+			name: "is installed both globally and in environment",
+			setupLibraries: func(a *amocks.App) {
+				libraries := app.LibraryConfigs{
+					"redis": &app.LibraryConfig{},
+				}
+
+				a.On("Libraries").Return(libraries, nil)
+				a.On("Environments").Return(app.EnvironmentConfigs{
+					"default": &app.EnvironmentConfig{
+						Name:      "default",
+						Libraries: libraries,
+					},
+				}, nil)
+			},
+			isInstalled: true,
 		},
 	}
 

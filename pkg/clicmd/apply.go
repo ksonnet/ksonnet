@@ -73,7 +73,7 @@ ks apply dev --dry-run
 ks apply dev -c guestbook-ui
 
 # Create or update multiple components in a ksonnet application (e.g. 'guestbook-ui'
-# and 'ngin-depl') for the 'dev' environment. Does not create resources that are
+# and 'nginx-depl') for the 'dev' environment. Does not create resources that are
 # not already present on the cluster.
 #
 # This essentially deploys 'components/guestbook-ui.jsonnet' and

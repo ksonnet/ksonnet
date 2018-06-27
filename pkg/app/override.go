@@ -26,7 +26,7 @@ const (
 	// overrideKind is the override resource type.
 	overrideKind = "ksonnet.io/app-override"
 	// overrideVersion is the version of the override resource.
-	overrideVersion = "0.1.0"
+	overrideVersion = "0.2.0"
 )
 
 // Override defines overrides to ksonnet project configurations.
@@ -52,7 +52,7 @@ func (o *Override) Validate() error {
 
 // IsDefined returns true if the override has environments or registries defined.
 func (o *Override) IsDefined() bool {
-	return len(o.Environments) > 0 || len(o.Registries) > 0
+	return o != nil && (len(o.Environments) > 0 || len(o.Registries) > 0)
 }
 
 // SaveOverride saves the override to the filesystem.
