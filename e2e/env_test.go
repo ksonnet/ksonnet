@@ -110,6 +110,16 @@ var _ = Describe("ks env", func() {
 		})
 	})
 
+	Describe("rm", func() {
+		It("attempt to remove an invalid environment", func() {
+			o := a.envAdd("default", false)
+
+			o = a.runKs("env", "rm", "invalid")
+			assertExitStatus(o, 1)
+			assertOutput("env/rm/invalid-output.txt", o.stdout)
+		})
+	})
+
 	Describe("set", func() {
 		Context("updating env name", func() {
 			It("updates the name of an environment", func() {
