@@ -13,23 +13,41 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package utils
+package dockerregistry
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+)
+
+const (
+	mimeTypeDockerManifest = "application/vnd.docker.distribution.manifest.v2+json"
 )
 
 var (
 	commaRegexp = regexp.MustCompile(", *")
 )
+
+// imageNotFoundError is an image not found error.
+type imageNotFoundError struct {
+	name string
+}
+
+func (e *imageNotFoundError) Error() string {
+	return fmt.Sprintf("image %q was not found", e.name)
+}
+
+// NotFound returns true because this error signifies an image was not found.
+func (e *imageNotFoundError) NotFound() bool {
+	return true
+}
 
 // Registry is a *crazy limited* Docker registry client.
 type Registry struct {
@@ -50,21 +68,22 @@ func NewRegistryClient(client *http.Client, url string) *Registry {
 func (r *Registry) ManifestDigest(reponame, tag string) (string, error) {
 	url := fmt.Sprintf("%s/v2/%s/manifests/%s", r.URL, reponame, tag)
 
-	log.Debugf("HEAD %s", url)
-
 	req, err := http.NewRequest(http.MethodHead, url, nil)
 	if err != nil {
 		return "", err
 	}
-	req.Header.Add("Accept", "application/vnd.docker.distribution.manifest.v2+json")
+	req.Header.Add("Accept", mimeTypeDockerManifest)
 	resp, err := r.Client.Do(req)
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("Request failed: %s", resp.Status)
+	switch resp.StatusCode {
+	case http.StatusOK:
+	case http.StatusNotFound:
+		return "", &imageNotFoundError{name: fmt.Sprintf("%s:%s", reponame, tag)}
+	default:
+		return "", errors.Errorf("request failed with %s", resp.Status)
 	}
 
 	digest := resp.Header.Get("Docker-Content-Digest")
@@ -72,7 +91,6 @@ func (r *Registry) ManifestDigest(reponame, tag string) (string, error) {
 		return "", errors.New("No digest in response")
 	}
 
-	log.Debugf("Found digest %s", digest)
 	return digest, nil
 }
 
@@ -198,6 +216,10 @@ func (t *authTransport) bearerAuth(realm, service, scope string) (string, error)
 	url.RawQuery = q.Encode()
 
 	req, err := http.NewRequest(http.MethodGet, url.String(), nil)
+	if err != nil {
+		return "", err
+	}
+
 	if t.Username != "" || t.Password != "" {
 		req.SetBasicAuth(t.Username, t.Password)
 	}
@@ -210,7 +232,7 @@ func (t *authTransport) bearerAuth(realm, service, scope string) (string, error)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("Auth request returned %s", resp.Status)
+		return "", errors.Errorf("Auth request returned %s", resp.Status)
 	}
 
 	type authToken struct {

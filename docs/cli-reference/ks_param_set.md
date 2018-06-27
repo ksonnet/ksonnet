@@ -43,9 +43,10 @@ ks param set guestbook replicas 2 --env=dev
 ### Options
 
 ```
-      --as-string    Force value to be interpreted as string
-      --env string   Specify environment to set parameters for
-  -h, --help         help for set
+      --as-string       Force value to be interpreted as string
+      --env string      Specify environment to set parameters for
+  -h, --help            help for set
+      --resolve-image   Resolve Docker image tag to reference
 ```
 
 ### Options inherited from parent commands
