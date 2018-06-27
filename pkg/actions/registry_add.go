@@ -112,6 +112,17 @@ func (ra *RegistryAdd) protocol() (registryDetails, error) {
 		return rd, nil
 	}
 
+	_, err := url.Parse(ra.uri)
+	if err == nil {
+		// assuming uri is a helm repository URL
+		rd := registryDetails{
+			URI:      ra.uri,
+			Protocol: registry.ProtocolHelm,
+		}
+
+		return rd, nil
+	}
+
 	return registryDetails{}, errors.Errorf("could not detect registry type for %s", ra.uri)
 }
 

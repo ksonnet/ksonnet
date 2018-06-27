@@ -68,6 +68,12 @@ func TestRegistryAdd(t *testing.T) {
 				expectedURI: "/path",
 				protocol:    registry.ProtocolFilesystem,
 			},
+			{
+				name:        "URL",
+				uri:         "https://kubernetes-charts.storage.googleapis.com",
+				expectedURI: "https://kubernetes-charts.storage.googleapis.com",
+				protocol:    registry.ProtocolHelm,
+			},
 		}
 
 		for _, tc := range cases {

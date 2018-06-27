@@ -1,0 +1,9 @@
+apiVersion: v1
+entries:
+  chart:
+  - apiversion: v1
+    appVersion: 1.0.0
+    name: chart
+    urls:
+    - http://example.com/chart.tgz
+    version: 2.0.0

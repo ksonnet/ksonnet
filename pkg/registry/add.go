@@ -17,6 +17,7 @@ package registry
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/ksonnet/ksonnet/pkg/helm"
 	"github.com/pkg/errors"
 )
 
@@ -37,13 +38,19 @@ func Add(a app.App, protocol Protocol, name string, uri string, isOverride bool)
 		r, err = githubFactory(a, initSpec)
 	case ProtocolFilesystem:
 		r, err = NewFs(a, initSpec)
-	// TODO Helm
+	case ProtocolHelm:
+		var hc *helm.HTTPClient
+		hc, err = helm.NewHTTPClient(initSpec.URI, nil)
+		if err != nil {
+			return nil, errors.Wrap(err, "initializing helm HTTP client")
+		}
+		r, err = helmFactory(a, initSpec, hc)
 	default:
 		return nil, errors.Errorf("invalid registry protocol %q", protocol)
 	}
 
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to add registry")
+		return nil, errors.Wrap(err, "adding registry")
 	}
 
 	if ok, err := r.ValidateURI(uri); err != nil || !ok {
@@ -58,7 +65,7 @@ func Add(a app.App, protocol Protocol, name string, uri string, isOverride bool)
 	// Retrieve the contents of registry.
 	registrySpec, err := r.FetchRegistrySpec()
 	if err != nil {
-		return nil, errors.Wrap(err, "cache registry")
+		return nil, errors.Wrap(err, "caching registry")
 	}
 
 	return registrySpec, nil

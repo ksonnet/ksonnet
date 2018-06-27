@@ -114,3 +114,16 @@ func TestHelm_Prototypes(t *testing.T) {
 		require.Equal(t, "io.ksonnet.pkg.helm-stable-redis", proto.Name)
 	})
 }
+
+func TestHelm_Path(t *testing.T) {
+	withHelmChart(t, func(a *amocks.App, fs afero.Fs) {
+		h, err := NewHelm(a, "redis", "helm-stable", "3.3.6", nil)
+		require.NoError(t, err)
+
+		got := h.Path()
+
+		expected := "/app/vendor/helm-stable/redis/helm/3.3.6/redis"
+		require.Equal(t, expected, got)
+	})
+
+}
