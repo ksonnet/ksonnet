@@ -19,6 +19,8 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/spf13/afero"
+
 	"github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -54,9 +56,10 @@ func TestBindFlags(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedFlags := map[string]string{
-		"name":     "description",
-		"module":   "Component module",
-		"optional": "optional",
+		"name":        "description",
+		"module":      "Component module",
+		"optional":    "optional",
+		"values-file": "Prototype values file (file returns a Jsonnet object)",
 	}
 
 	var seenFlags []string
@@ -108,4 +111,195 @@ func TestBindFlags_duplicate_optional_param(t *testing.T) {
 
 	_, err := BindFlags(p)
 	require.Error(t, err)
+}
+
+func TestExtractParameters(t *testing.T) {
+	validPrototype := &Prototype{
+		APIVersion: "0.1",
+		Name:       "io.ksonnet.pkg.configMap",
+		Params: ParamSchemas{
+			{
+				Name:        "name",
+				Description: "Name to give the configMap",
+				Type:        String,
+			},
+			{
+				Name:        "data",
+				Description: "Data for the configMap",
+				Default:     strings.Ptr("{}"),
+				Type:        Object,
+			},
+			{
+				Name:        "val",
+				Description: "Value",
+				Default:     strings.Ptr("9"),
+				Type:        Number,
+			},
+		},
+	}
+
+	cases := []struct {
+		name      string
+		p         *Prototype
+		initFlags func(*testing.T, *Prototype, []string) *pflag.FlagSet
+		initFs    func(t *testing.T, fs afero.Fs)
+		args      []string
+		expected  map[string]string
+		isErr     bool
+	}{
+		{
+			name: "with valid flags",
+			p:    validPrototype,
+			initFlags: func(t *testing.T, p *Prototype, args []string) *pflag.FlagSet {
+				flags, err := BindFlags(p)
+				require.NoError(t, err)
+
+				err = flags.Parse(args)
+				require.NoError(t, err)
+
+				return flags
+			},
+			args: []string{
+				"--name=name",
+			},
+			expected: map[string]string{
+				"data": `{}`,
+				"name": `"name"`,
+				"val":  `9`,
+			},
+		},
+		{
+			name: "values from file",
+			p:    validPrototype,
+			initFlags: func(t *testing.T, p *Prototype, args []string) *pflag.FlagSet {
+				flags, err := BindFlags(p)
+				require.NoError(t, err)
+
+				err = flags.Parse(args)
+				require.NoError(t, err)
+
+				return flags
+			},
+			initFs: func(t *testing.T, fs afero.Fs) {
+				data := []byte(`{name: "name"}`)
+				afero.WriteFile(fs, "/values-file", data, 0644)
+			},
+			args: []string{
+				"--values-file=/values-file",
+			},
+			expected: map[string]string{
+				"data": `{}`,
+				"name": `"name"`,
+				"val":  `9`,
+			},
+		},
+		{
+			name: "missing a required flag",
+			p:    validPrototype,
+			initFlags: func(t *testing.T, p *Prototype, args []string) *pflag.FlagSet {
+				flags, err := BindFlags(p)
+				require.NoError(t, err)
+
+				err = flags.Parse(args)
+				require.NoError(t, err)
+
+				return flags
+			},
+			args:  []string{},
+			isErr: true,
+		},
+		{
+			name: "flag not defined",
+			p:    validPrototype,
+			initFlags: func(t *testing.T, p *Prototype, args []string) *pflag.FlagSet {
+				flags := pflag.NewFlagSet("prototype-flags", pflag.ContinueOnError)
+				return flags
+			},
+			args: []string{
+				"--name=name",
+				"--undefined=a",
+			},
+			isErr: true,
+		},
+		{
+			name: "missing values file",
+			p:    validPrototype,
+			initFlags: func(t *testing.T, p *Prototype, args []string) *pflag.FlagSet {
+				flags, err := BindFlags(p)
+				require.NoError(t, err)
+
+				err = flags.Parse(args)
+				require.NoError(t, err)
+
+				return flags
+			},
+			args: []string{
+				"--values-file=/missing-values-file",
+			},
+			isErr: true,
+		},
+		{
+			name: "valid file does not parse as valid jsonnet",
+			p:    validPrototype,
+			initFlags: func(t *testing.T, p *Prototype, args []string) *pflag.FlagSet {
+				flags, err := BindFlags(p)
+				require.NoError(t, err)
+
+				err = flags.Parse(args)
+				require.NoError(t, err)
+
+				return flags
+			},
+			initFs: func(t *testing.T, fs afero.Fs) {
+				data := []byte(`{`)
+				afero.WriteFile(fs, "/values-file", data, 0644)
+			},
+			args: []string{
+				"--values-file=/values-file",
+			},
+			isErr: true,
+		},
+		{
+			name: "valid file does not contain object",
+			p:    validPrototype,
+			initFlags: func(t *testing.T, p *Prototype, args []string) *pflag.FlagSet {
+				flags, err := BindFlags(p)
+				require.NoError(t, err)
+
+				err = flags.Parse(args)
+				require.NoError(t, err)
+
+				return flags
+			},
+			initFs: func(t *testing.T, fs afero.Fs) {
+				data := []byte(`[]`)
+				afero.WriteFile(fs, "/values-file", data, 0644)
+			},
+			args: []string{
+				"--values-file=/values-file",
+			},
+			isErr: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			flags := tc.initFlags(t, tc.p, tc.args)
+			fs := afero.NewMemMapFs()
+
+			if tc.initFs != nil {
+				tc.initFs(t, fs)
+			}
+
+			m, err := ExtractParameters(fs, tc.p, flags)
+			if tc.isErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.expected, m)
+		})
+	}
 }

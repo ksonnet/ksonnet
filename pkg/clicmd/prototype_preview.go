@@ -44,7 +44,21 @@ a component with ` + "`ks generate`" + ` and then use ` + "`ks show`" + `.
 ks prototype preview single-port-deployment \
   --name=nginx                              \
   --image=nginx                             \
-  --port=80`
+  --port=80
+
+# Preview prototype 'io.ksonnet.pkg.single-port-deployment', using the
+# 'nginx' image, and port 80 exposed with a values file.
+ks prototype preview simple-port-deployment \
+  --name=nginx                              \
+  --values-file=ks-values
+
+Where 'ks-values' is a jsonnet file with the contents:
+
+{
+	image: "nginx",
+	port: 80,
+}
+`
 )
 
 func newPrototypePreviewCmd(a app.App) *cobra.Command {
