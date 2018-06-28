@@ -30,7 +30,7 @@ import (
 // CacheDependency vendors registry dependencies.
 // TODO: create unit tests for this once mocks for this package are
 // worked out.
-func CacheDependency(a app.App, d pkg.Descriptor, customName string) error {
+func CacheDependency(a app.App, checker InstalledChecker, d pkg.Descriptor, customName string) error {
 	logger := log.WithFields(log.Fields{
 		"action":      "registry.CacheDependency",
 		"part":        d.Name,
@@ -39,17 +39,14 @@ func CacheDependency(a app.App, d pkg.Descriptor, customName string) error {
 		"custom-name": customName,
 	})
 
+	if a == nil {
+		return errors.Errorf("nil receiver")
+	}
+	if checker == nil {
+		return errors.Errorf("nil installation checker")
+	}
+
 	logger.Debug("caching dependency")
-
-	libs, err := a.Libraries()
-	if err != nil {
-		return err
-	}
-
-	if _, ok := libs[customName]; ok {
-		return errors.Errorf("package '%s' already exists. Use the --name flag to install this package with a unique identifier",
-			customName)
-	}
 
 	registries, err := a.Registries()
 	if err != nil {
@@ -88,6 +85,18 @@ func CacheDependency(a app.App, d pkg.Descriptor, customName string) error {
 
 	// Make triple-sure the library references the correct registry, as it is known in this app.
 	libRef.Registry = d.Registry
+
+	// Check whether this library version is already installed
+	var qualified = d
+	qualified.Version = libRef.Version
+	ok, err := checker.IsInstalled(qualified)
+	if err != nil {
+		return errors.Wrapf(err, "checking package installed status")
+	}
+	if ok {
+		return errors.Errorf("package '%s/%s@%s' already exists.",
+			libRef.Registry, libRef.Name, libRef.Version)
+	}
 
 	// Add library to app specification, but wait to write it out until
 	// the end, in case one of the network calls fails.

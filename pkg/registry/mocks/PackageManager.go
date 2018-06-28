@@ -49,6 +49,27 @@ func (_m *PackageManager) Find(_a0 string) (pkg.Package, error) {
 	return r0, r1
 }
 
+// IsInstalled provides a mock function with given fields: d
+func (_m *PackageManager) IsInstalled(d pkg.Descriptor) (bool, error) {
+	ret := _m.Called(d)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(pkg.Descriptor) bool); ok {
+		r0 = rf(d)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(pkg.Descriptor) error); ok {
+		r1 = rf(d)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Packages provides a mock function with given fields:
 func (_m *PackageManager) Packages() ([]pkg.Package, error) {
 	ret := _m.Called()

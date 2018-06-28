@@ -30,7 +30,7 @@ func TestPkgInstall(t *testing.T) {
 		libName := "incubator/apache"
 		customName := "customName"
 
-		dc := func(a app.App, d pkg.Descriptor, cn string) error {
+		dc := func(a app.App, checker registry.InstalledChecker, d pkg.Descriptor, cn string) error {
 			expectedD := pkg.Descriptor{
 				Registry: "incubator",
 				Name:     "apache",

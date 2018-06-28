@@ -18,3 +18,4 @@ package mocks
 //go:generate mockery -dir .. -output . -name=Registry
 //go:generate mockery -dir .. -output . -name=Setter
 //go:generate mockery -dir .. -output . -name=PackageManager
+//go:generate mockery -dir .. -output . -name=InstalledChecker

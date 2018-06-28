@@ -28,6 +28,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// We can't currently import registry/mocks due to a cycle.
+// Implement simple mock registry.InstalledChecker.
+type installedChecker struct{}
+
+func (_m *installedChecker) IsInstalled(d pkg.Descriptor) (bool, error) {
+	return false, nil
+}
+
 func Test_CacheDependency(t *testing.T) {
 	withApp(t, func(a *amocks.App, fs afero.Fs) {
 		a.On("VendorPath").Return("/app/vendor")
@@ -59,9 +67,11 @@ func Test_CacheDependency(t *testing.T) {
 		}
 		for _, lib := range libs {
 			a.On("UpdateLib", lib.Name, lib).Return(nil)
+
+			var checker installedChecker
 			d := pkg.Descriptor{Registry: lib.Registry, Name: lib.Name}
 
-			err := CacheDependency(a, d, "")
+			err := CacheDependency(a, &checker, d, "")
 			require.NoError(t, err)
 
 			test.AssertExists(t, fs, filepath.Join(a.Root(), "vendor", lib.Registry, lib.Name, "parts.yaml"))
