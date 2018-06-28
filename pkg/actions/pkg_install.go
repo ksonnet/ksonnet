@@ -22,7 +22,7 @@ import (
 )
 
 // DepCacher is a function that caches a dependency.j
-type DepCacher func(app.App, pkg.Descriptor, string) error
+type DepCacher func(app.App, registry.InstalledChecker, pkg.Descriptor, string) error
 
 // RunPkgInstall runs `pkg install`
 func RunPkgInstall(m map[string]interface{}) error {
@@ -39,6 +39,7 @@ type PkgInstall struct {
 	app         app.App
 	libName     string
 	customName  string
+	checker     registry.InstalledChecker
 	depCacherFn DepCacher
 }
 
@@ -46,10 +47,16 @@ type PkgInstall struct {
 func NewPkgInstall(m map[string]interface{}) (*PkgInstall, error) {
 	ol := newOptionLoader(m)
 
+	a := ol.LoadApp()
+	if ol.err != nil {
+		return nil, ol.err
+	}
+
 	nl := &PkgInstall{
-		app:        ol.LoadApp(),
+		app:        a,
 		libName:    ol.LoadString(OptionLibName),
 		customName: ol.LoadString(OptionName),
+		checker:    registry.NewPackageManager(a),
 
 		depCacherFn: registry.CacheDependency,
 	}
@@ -68,7 +75,7 @@ func (pi *PkgInstall) Run() error {
 		return err
 	}
 
-	return pi.depCacherFn(pi.app, d, customName)
+	return pi.depCacherFn(pi.app, pi.checker, d, customName)
 }
 
 func (pi *PkgInstall) parseDepSpec() (pkg.Descriptor, string, error) {

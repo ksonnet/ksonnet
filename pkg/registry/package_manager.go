@@ -25,6 +25,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+// InstalledChecker checks if a package is installed, based on app config.
+type InstalledChecker interface {
+	// IsInstalled checks whether a package is installed.
+	// Supports fuzzy searches: Name, Name/Version, Registry/Name/Version, Registry/Version
+	IsInstalled(d pkg.Descriptor) (bool, error)
+}
+
 // PackageManager is a package manager.
 type PackageManager interface {
 	Find(string) (pkg.Package, error)
@@ -38,6 +45,8 @@ type PackageManager interface {
 
 	// Prototypes lists prototypes.
 	Prototypes() (prototype.Prototypes, error)
+
+	InstalledChecker
 }
 
 // packageManager is an implementation of PackageManager.
@@ -58,6 +67,7 @@ func NewPackageManager(a app.App) PackageManager {
 }
 
 // Find finds a package by name. Package names have the format `<registry>/<library>@<version>`.
+// Remote registries may be consulted if the package is not installed locally.
 func (m *packageManager) Find(name string) (pkg.Package, error) {
 	d, err := pkg.Parse(name)
 	if err != nil {
@@ -297,4 +307,94 @@ func (m *packageManager) Prototypes() (prototype.Prototypes, error) {
 	}
 
 	return prototypes, nil
+}
+
+type libraryByVersion map[string]*app.LibraryConfig
+
+// Index libraries by descriptor, each can have multiple distinct versions.
+// The same library can be indexed under multiple permutations of its fully-qualified descriptor
+type libraryByDesc map[pkg.Descriptor]libraryByVersion
+
+func indexLibrary(index libraryByDesc, d pkg.Descriptor, l *app.LibraryConfig) {
+	byVer, ok := index[d]
+	if !ok {
+		byVer = libraryByVersion{}
+		index[d] = byVer
+	}
+
+	byVer[d.Version] = l
+}
+
+func indexLibraryPermutations(index libraryByDesc, l *app.LibraryConfig) {
+	if l == nil {
+		return
+	}
+
+	d := pkg.Descriptor{Name: l.Name, Registry: l.Registry, Version: l.Version}
+	indexLibrary(index, d, l)
+
+	d = pkg.Descriptor{Name: l.Name, Registry: "", Version: l.Version}
+	indexLibrary(index, d, l)
+
+	d = pkg.Descriptor{Name: l.Name, Registry: l.Registry, Version: ""}
+	indexLibrary(index, d, l)
+
+	d = pkg.Descriptor{Name: l.Name, Registry: "", Version: ""}
+	indexLibrary(index, d, l)
+}
+
+// Returns index of library configurations for the app.
+// Libraries are indexed using multiple permutations to aid
+// in search using partial keys.
+func allLibraries(a app.App) (libraryByDesc, error) {
+	if a == nil {
+		return nil, errors.Errorf("nil receiver")
+	}
+
+	index := libraryByDesc{}
+
+	libs, err := a.Libraries()
+	if err != nil {
+		return nil, errors.Wrapf(err, "checking libraries")
+	}
+	for _, l := range libs {
+		indexLibraryPermutations(index, l)
+	}
+
+	envs, err := a.Environments()
+	if err != nil {
+		return nil, errors.Wrapf(err, "checking environments")
+	}
+	for _, env := range envs {
+		for _, l := range env.Libraries {
+			indexLibraryPermutations(index, l)
+		}
+	}
+
+	return index, nil
+}
+
+// IsInstalled determines whether the specified package is installed.
+// Only Name is required in the descriptor, Registry and Version are inferred as "any"
+// if missing. IsInstalled will make as specific a match as possible.
+func (m *packageManager) IsInstalled(d pkg.Descriptor) (bool, error) {
+	if m == nil {
+		return false, errors.Errorf("nil receiver")
+	}
+	a := m.app
+	if a == nil {
+		return false, errors.Errorf("nil app")
+	}
+
+	if d.Name == "" {
+		return false, errors.Errorf("name required")
+	}
+
+	index, err := allLibraries(a)
+	if err != nil {
+		return false, errors.Wrapf(err, "indexing libraries")
+	}
+
+	byVer := index[d]
+	return len(byVer) > 0, nil
 }
