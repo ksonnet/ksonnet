@@ -629,6 +629,12 @@
   revision = "b6b7b6733b8c9589e2452df9345ddaf75badd0db"
 
 [[projects]]
+  branch = "fix-unknown-flag-panic"
+  name = "github.com/shomron/pflag"
+  packages = ["."]
+  revision = "2c9c3172bde8c8557c4326e31b116d3e2d092da8"
+
+[[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   revision = "778f2e774c725116edbc3d039dc0dfc1cc62aae8"
@@ -1279,6 +1285,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a0e18a8650b05f21e8ad9881447b6120617cd8cd49806453ffc4ed7c127dcbda"
+  inputs-digest = "c79acd827b8e16b3a1264cf7353d7db258679b814a76244679e42192eb0af60a"
   solver-name = "gps-cdcl"
   solver-version = 1
