@@ -653,7 +653,7 @@
     ".",
     "doc"
   ]
-  revision = "a1e4933ab784095895e33dbe9f001ba10cfe2060"
+  revision = "v0.0.3"
 
 [[projects]]
   branch = "master"
@@ -664,7 +664,7 @@
 [[projects]]
   name = "github.com/spf13/pflag"
   packages = ["."]
-  revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
+  revision = "v1.0.1"
 
 [[projects]]
   name = "github.com/spf13/viper"
@@ -1279,6 +1279,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a0e18a8650b05f21e8ad9881447b6120617cd8cd49806453ffc4ed7c127dcbda"
+  inputs-digest = "66642238ac5efd88ac40bd74b36ae0d9717426159f554981b213dd42f76edcb4"
   solver-name = "gps-cdcl"
   solver-version = 1
