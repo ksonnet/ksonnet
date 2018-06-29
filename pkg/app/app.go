@@ -70,8 +70,8 @@ type App interface {
 	EnvironmentParams(name string) (string, error)
 	// Fs is the app's afero Fs.
 	Fs() afero.Fs
-	// Init inits an environment.
-	Init() error
+	// CheckUpgrade checks whether an app should be upgraded.
+	CheckUpgrade() (bool, error)
 	// LibPath returns the path of the lib for an environment.
 	LibPath(envName string) (string, error)
 	// Libraries returns all environments.
@@ -111,8 +111,6 @@ func Load(fs afero.Fs, cwd string, skipFindRoot bool) (App, error) {
 		}
 	}
 
-	log.Debugf("called")
-
 	spec, err := read(fs, appRoot)
 	if os.IsNotExist(err) {
 		// During `ks init`, app.yaml will not yet exist - generate a new one.
@@ -133,7 +131,7 @@ func Load(fs afero.Fs, cwd string, skipFindRoot bool) (App, error) {
 		// 0.2.0, but will be persisted back as 0.2.0. This behavior will be
 		// subsequently changed with new upgrade framework.
 		a := NewApp010(fs, appRoot)
-		log.Debugf("Upgrading app [%p] version to latest (0.2.0)", a.baseApp)
+		log.Debugf("Interpreting app version as latest (0.2.0)", a.baseApp)
 		a.config.APIVersion = "0.2.0"
 		a.baseApp.config.APIVersion = "0.2.0"
 		return a, nil

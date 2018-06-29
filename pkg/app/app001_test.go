@@ -237,10 +237,11 @@ func TestApp001_RemoveEnvironment(t *testing.T) {
 	})
 }
 
-func TestApp001_Init(t *testing.T) {
+func TestApp001_CheckUpgrade(t *testing.T) {
 	withApp001Fs(t, "app001_app.yaml", func(app *App001) {
-		err := app.Init()
+		needUpgrade, err := app.CheckUpgrade()
 		require.NoError(t, err)
+		assert.True(t, needUpgrade)
 	})
 }
 

@@ -20,7 +20,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/ksonnet/ksonnet/pkg/lib"
@@ -125,24 +124,44 @@ func (a *App010) Environments() (EnvironmentConfigs, error) {
 	return environments, nil
 }
 
-// Init initializes the App.
-func (a *App010) Init() error {
-	// check to see if there are spec.json files.
+// CheckUpgrade initializes the App.
+func (a *App010) CheckUpgrade() (bool, error) {
+	if a == nil {
+		return false, errors.Errorf("nil reciever")
+	}
 
+	var needUpgrade bool
+
+	legacyLibs, err := a.checkUpgradeVendoredPackages()
+	if err != nil {
+		return false, err
+	}
+
+	if len(legacyLibs) > 0 {
+		logrus.Warnf("Versioned packages stored in unversioned paths - please run `ks upgrade` to correct.")
+		needUpgrade = true
+	}
+
+	// check to see if there are spec.json files.
 	legacyEnvs, err := a.findLegacySpec()
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	if len(legacyEnvs) == 0 {
-		return nil
+		return needUpgrade, nil
 	}
 
-	msg := "Your application's apiVersion is 0.1.0, but legacy environment declarations " +
-		"were found in environments: %s. In order to proceed, you will have to run `ks upgrade` to " +
-		"upgrade your application. <see url>"
+	needUpgrade = true
+	apiVersion := "0.1.0"
+	if a.config != nil {
+		apiVersion = a.config.APIVersion
+	}
+	logrus.Warnf("Your application's apiVersion is %s, but legacy environment declarations "+
+		"were found in environments: %s. In order to proceed, you will have to run `ks upgrade` to "+
+		"upgrade your application. <see url>", apiVersion, strings.Join(legacyEnvs, ", "))
 
-	return errors.Errorf(msg, strings.Join(legacyEnvs, ", "))
+	return needUpgrade, nil
 }
 
 // LibPath returns the lib path for an env environment.
@@ -272,56 +291,14 @@ func (a *App010) UpdateTargets(envName string, targets []string) error {
 
 // Upgrade upgrades the app to the latest apiVersion.
 func (a *App010) Upgrade(dryRun bool) error {
-	if err := a.checkForOldKSLibLocation(dryRun); err != nil {
-		return err
+	if a == nil {
+		return errors.Errorf("nil receiver")
 	}
-
-	return nil
-}
-
-var (
-	// reKSLibName matches a ksonnet library directory e.g. v1.10.3.
-	reKSLibName = regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
-)
-
-func (a *App010) checkForOldKSLibLocation(dryRun bool) error {
-	libRoot := filepath.Join(a.Root(), LibDirName)
-	fis, err := afero.ReadDir(a.Fs(), libRoot)
-	if err != nil {
-		return err
+	if a.config == nil {
+		return errors.Errorf("invalid app - config is nil")
 	}
-
-	if dryRun {
-		fmt.Fprintf(a.out, "[dry run] Updating ksonnet-lib paths\n")
-	}
-
-	if err = a.fs.MkdirAll(filepath.Join(libRoot, lib.KsonnetLibHome), DefaultFolderPermissions); err != nil {
-		return err
-	}
-
-	for _, fi := range fis {
-		if !fi.IsDir() {
-			continue
-		}
-
-		if reKSLibName.MatchString(fi.Name()) {
-			p := filepath.Join(libRoot, fi.Name())
-			new := filepath.Join(libRoot, lib.KsonnetLibHome, fi.Name())
-
-			if dryRun {
-				fmt.Fprintf(a.out, "[dry run] Moving %q from %s to %s\n", fi.Name(), p, new)
-				continue
-			}
-
-			fmt.Fprintf(a.out, "Moving %q from %s to %s\n", fi.Name(), p, new)
-			err = a.fs.Rename(p, new)
-			if err != nil {
-				return errors.Wrapf(err, "renaming %s to %s", p, new)
-			}
-		}
-	}
-
-	return nil
+	a.config.APIVersion = "0.2.0"
+	return a.save()
 }
 
 func (a *App010) findLegacySpec() ([]string, error) {
@@ -350,4 +327,69 @@ func (a *App010) findLegacySpec() ([]string, error) {
 	}
 
 	return found, nil
+}
+
+// Returns library configurations for the app, whether they are global or environment-scoped.
+func (a *App010) allLibraries() (LibraryConfigs, error) {
+	if a == nil {
+		return nil, errors.Errorf("nil receiver")
+	}
+
+	combined := LibraryConfigs{}
+
+	libs, err := a.Libraries()
+	if err != nil {
+		return nil, errors.Wrapf(err, "checking libraries")
+	}
+	for _, lib := range libs {
+		combined[lib.Name] = lib
+	}
+
+	envs, err := a.Environments()
+	if err != nil {
+		return nil, errors.Wrapf(err, "checking environments")
+	}
+	for _, env := range envs {
+		for _, lib := range env.Libraries {
+			// NOTE We do not check for collisions at this time
+			combined[lib.Name] = lib
+		}
+	}
+
+	return combined, nil
+}
+
+// checkUpgradeVendoredPackages checks whether vendored packages need to be upgraded.
+// Upgrades are necessary if a versioned package is stored in pre-ksonnet 0.12.0, unversioned directory.
+func (a *App010) checkUpgradeVendoredPackages() ([]*LibraryConfig, error) {
+	if a == nil {
+		return nil, errors.Errorf("nil receiver")
+	}
+	fs := a.Fs()
+	if fs == nil {
+		return nil, errors.Errorf("nil filesystem interface")
+	}
+
+	combined, err := a.allLibraries()
+	if err != nil {
+		return nil, errors.Wrapf(err, "retrieving libraries")
+	}
+
+	results := make([]*LibraryConfig, 0)
+	for _, l := range combined {
+		if l.Version == "" {
+			continue
+		}
+
+		path := filepath.Join(a.VendorPath(), l.Registry, l.Name)
+		ok, err := afero.DirExists(fs, path)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			results = append(results, l)
+		}
+	}
+
+	return results, nil
 }

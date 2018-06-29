@@ -64,8 +64,7 @@ func NewLocal(a app.App, name, registryName string, version string, installCheck
 		// Fallback succeeded - clear out original error to allow processing to continue
 		err = nil
 
-		// Alert the user that the application should be upgraded
-		log.Warnf("Versioned package %s/%s@%s stored in unversioned path - please run `ks upgrade` to correct.", registryName, name, version)
+		log.Debugf("Using legacy path for versioned package %s/%s@%s", registryName, name, version)
 	}
 	if err != nil {
 		return nil, errors.Wrapf(err, "reading package configuration from path: %v", partsPath)

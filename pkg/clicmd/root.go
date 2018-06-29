@@ -23,6 +23,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/log"
 	"github.com/ksonnet/ksonnet/pkg/plugin"
+	"github.com/pkg/errors"
 	"github.com/shomron/pflag"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -93,6 +94,26 @@ func parseCommand(args []string) (string, error) {
 	return fset.Args()[0], nil
 }
 
+// checkUpgrade runs upgrade validations unless the user is running an excluded command.
+// If upgrades are found to be necessary, they will be reported to the user.
+func checkUpgrade(a app.App, cmd string) error {
+	skip := map[string]struct{}{
+		"init":    struct{}{},
+		"upgrade": struct{}{},
+		"help":    struct{}{},
+		"":        struct{}{},
+	}
+	if _, ok := skip[cmd]; ok {
+		return nil
+	}
+
+	if a == nil {
+		return errors.Errorf("nil receiver")
+	}
+	_, _ = a.CheckUpgrade() // NOTE we're surpressing any validation errors here
+	return nil
+}
+
 func NewRoot(appFs afero.Fs, wd string, args []string) (*cobra.Command, error) {
 	if appFs == nil {
 		appFs = afero.NewOsFs()
@@ -111,6 +132,11 @@ func NewRoot(appFs afero.Fs, wd string, args []string) (*cobra.Command, error) {
 		if err != nil {
 			return nil, err
 		}
+
+	}
+
+	if err := checkUpgrade(a, cmdName); err != nil {
+		return nil, errors.Wrap(err, "checking if app needs upgrade")
 	}
 
 	rootCmd := &cobra.Command{

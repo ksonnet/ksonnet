@@ -120,13 +120,13 @@ func (a *App001) Environments() (EnvironmentConfigs, error) {
 	return specs, nil
 }
 
-// Init initializes the App.
-func (a *App001) Init() error {
+// CheckUpgrade initializes the App.
+func (a *App001) CheckUpgrade() (bool, error) {
 	msg := "Your application's apiVersion is below 0.1.0. In order to use all ks features, you " +
 		"can upgrade your application using `ks upgrade`."
 	log.Warn(msg)
 
-	return nil
+	return true, nil
 }
 
 // LibPath returns the lib path for an env environment.
