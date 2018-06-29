@@ -41,7 +41,17 @@ func TestConfig_GetAPISpec(t *testing.T) {
 		{
 			name:    "in general",
 			version: "version:v1.9.3",
-			disc:    &fakeDiscovery{},
+			disc:    &fakeDiscovery{withVersion: "v1.9.3"},
+		},
+		{
+			name:    "with dev version",
+			version: "version:v1.9.3",
+			disc:    &fakeDiscovery{withVersion: "v1.9.3-fadecafe"},
+		},
+		{
+			name:    "with dev version",
+			version: "version:v1.9.3",
+			disc:    &fakeDiscovery{withVersion: "v1.9.3+facade"},
 		},
 		{
 			name:      "unable to create discovery client",
@@ -51,7 +61,7 @@ func TestConfig_GetAPISpec(t *testing.T) {
 		{
 			name:    "retrieve open api schema error",
 			version: "version:v1.8.0",
-			disc:    &fakeDiscovery{withOpenAPISchemaError: true},
+			disc:    &fakeDiscovery{withError: true},
 		},
 	}
 
@@ -96,7 +106,8 @@ func (c *clientConfig) ConfigAccess() clientcmd.ConfigAccess {
 }
 
 type fakeDiscovery struct {
-	withOpenAPISchemaError bool
+	withError   bool
+	withVersion string
 }
 
 var _ discovery.DiscoveryInterface = (*fakeDiscovery)(nil)
@@ -122,19 +133,17 @@ func (c *fakeDiscovery) ServerGroups() (*metav1.APIGroupList, error) {
 }
 
 func (c *fakeDiscovery) ServerVersion() (*version.Info, error) {
-	return nil, errors.New("not implemented")
+	if c.withError {
+		return nil, errors.New("server version error")
+	}
+
+	return &version.Info{
+		GitVersion: c.withVersion,
+	}, nil
 }
 
 func (c *fakeDiscovery) OpenAPISchema() (*openapi_v2.Document, error) {
-	if c.withOpenAPISchemaError {
-		return nil, errors.New("schema error")
-	}
-
-	return &openapi_v2.Document{
-		Info: &openapi_v2.Info{
-			Version: "v1.9.3",
-		},
-	}, nil
+	return nil, errors.New("not implemented")
 }
 
 func (c *fakeDiscovery) SwaggerSchema(version schema.GroupVersion) (*swagger.ApiDeclaration, error) {

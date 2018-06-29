@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"regexp"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	str "github.com/ksonnet/ksonnet/pkg/util/strings"
@@ -32,7 +33,11 @@ import (
 )
 
 const (
-	defaultVersion = "version:v1.8.0"
+	defaultSpec = "version:v1.8.0"
+)
+
+var (
+	versionPattern = regexp.MustCompile(`v\d+\.\d+\.\d+`)
 )
 
 // Config is a wrapper around client-go's ClientConfig
@@ -90,16 +95,18 @@ func (c *Config) GetAPISpec() string {
 	dc, err := c.discoveryClient()
 	if err != nil {
 		log.WithError(err).Debug("Failed to create discovery client")
-		return defaultVersion
+		return defaultSpec
 	}
 
-	openAPIDoc, err := dc.OpenAPISchema()
+	serverVersion, err := dc.ServerVersion()
 	if err != nil {
-		log.WithError(err).Debug("Failed to retrieve OpenAPI schema")
-		return defaultVersion
+		log.WithError(err).Debug("Failed to retrieve kubernetes server version")
+		return defaultSpec
 	}
 
-	return fmt.Sprintf("version:%s", openAPIDoc.Info.Version)
+	k8sVersion := versionPattern.FindString(fmt.Sprint(serverVersion))
+	k8sAPISpec := fmt.Sprintf("version:%s", k8sVersion)
+	return k8sAPISpec
 }
 
 // Namespace returns the namespace for the provided ClientConfig.
