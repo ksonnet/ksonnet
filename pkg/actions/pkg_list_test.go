@@ -35,8 +35,8 @@ func TestPkgList(t *testing.T) {
 
 		spec := &registry.Spec{
 			Libraries: registry.LibraryConfigs{
-				"lib1": &registry.LibaryConfig{},
-				"lib2": &registry.LibaryConfig{},
+				"lib1": &registry.LibaryConfig{Version: "0.0.1"},
+				"lib2": &registry.LibaryConfig{Version: "master"},
 			},
 		}
 

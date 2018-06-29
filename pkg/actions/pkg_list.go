@@ -89,14 +89,14 @@ func (pl *PkgList) Run() error {
 			return err
 		}
 
-		for libName := range spec.Libraries {
+		for libName, config := range spec.Libraries {
 			_, isInstalled := appLibraries[libName]
 
 			if pl.onlyInstalled && !isInstalled {
 				continue
 			}
 
-			rows = append(rows, pl.addRow(r.Name(), libName, isInstalled))
+			rows = append(rows, pl.addRow(r.Name(), libName, config.Version, isInstalled))
 		}
 	}
 
@@ -108,13 +108,13 @@ func (pl *PkgList) Run() error {
 	})
 
 	t := table.New(pl.out)
-	t.SetHeader([]string{"registry", "name", "installed"})
+	t.SetHeader([]string{"registry", "name", "version", "installed"})
 	t.AppendBulk(rows)
 	return t.Render()
 }
 
-func (pl *PkgList) addRow(regName, libName string, isInstalled bool) []string {
-	row := []string{regName, libName}
+func (pl *PkgList) addRow(regName, libName, version string, isInstalled bool) []string {
+	row := []string{regName, libName, version}
 	if isInstalled {
 		row = append(row, pkgInstalled)
 	}
