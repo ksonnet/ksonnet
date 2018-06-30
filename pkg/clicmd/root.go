@@ -16,7 +16,6 @@
 package clicmd
 
 import (
-	goflag "flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -24,6 +23,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/log"
 	"github.com/ksonnet/ksonnet/pkg/plugin"
+	"github.com/shomron/pflag"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
@@ -77,6 +77,22 @@ func appRoot() (string, error) {
 	return os.Getwd()
 }
 
+// parseCommand does an early parse of the command line and returns
+// what will ultimately be recognized as the command by cobra.
+func parseCommand(args []string) (string, error) {
+	fset := pflag.NewFlagSet("", pflag.ContinueOnError)
+	fset.ParseErrorsWhitelist.UnknownFlags = true
+	fset.BoolP("help", "h", false, "") // Needed to avoid pflag.ErrHelp
+	if err := fset.Parse(args); err != nil {
+		return "", err
+	}
+	if len(fset.Args()) == 0 {
+		return "", nil
+	}
+
+	return fset.Args()[0], nil
+}
+
 func NewRoot(appFs afero.Fs, wd string, args []string) (*cobra.Command, error) {
 	if appFs == nil {
 		appFs = afero.NewOsFs()
@@ -85,7 +101,12 @@ func NewRoot(appFs afero.Fs, wd string, args []string) (*cobra.Command, error) {
 	var a app.App
 	var err error
 
-	if len(args) > 0 && args[0] != "init" {
+	cmdName, err := parseCommand(args)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(args) > 0 && cmdName != "init" {
 		a, err = app.Load(appFs, wd, false)
 		if err != nil {
 			return nil, err
@@ -99,9 +120,7 @@ func NewRoot(appFs afero.Fs, wd string, args []string) (*cobra.Command, error) {
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			goflag.CommandLine.Parse([]string{})
 			flags := cmd.Flags()
-
 			verbosity, err := flags.GetCount(flagVerbose)
 			if err != nil {
 				return err

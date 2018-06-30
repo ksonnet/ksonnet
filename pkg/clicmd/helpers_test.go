@@ -67,7 +67,9 @@ func runTestCmd(t *testing.T, cases []cmdTestCase) {
 				fs := afero.NewMemMapFs()
 
 				wd := "/"
-				if len(tc.args) > 0 && tc.args[0] != "init" {
+				cmdName, err := parseCommand(tc.args)
+				require.NoError(t, err)
+				if len(tc.args) > 0 && cmdName != "init" {
 					wd = "/app"
 					test.StageFile(t, fs, "app.yaml", "/app/app.yaml")
 				}
