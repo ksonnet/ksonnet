@@ -182,6 +182,7 @@ type GetParamsConfig struct {
 }
 
 // GetParams gets all parameters for an environment.
+// TODO: this isn't referenced anywhere
 func GetParams(envName, module string, config GetParamsConfig) (map[string]param.Params, error) {
 	if err := ensureEnvExists(config.App, envName); err != nil {
 		return nil, err

@@ -20,11 +20,64 @@ import (
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/util/jsonnet"
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
 
-// EvaluateEnv evaluates an env with jsonnet.
-func EvaluateEnv(a app.App, sourcePath, paramsStr, envName string) (string, error) {
+// EvaluateEnv evaluates environment parameters.
+func EvaluateEnv(a app.App, sourcePath, paramsStr, envName, moduleName string) (string, error) {
+	snippet, err := afero.ReadFile(a.Fs(), sourcePath)
+	if err != nil {
+		return "", err
+	}
+
+	paramsStr, err = modularizeParameters(a, envName, moduleName, paramsStr)
+	if err != nil {
+		return "", errors.Wrap(err, "modularizing parameters")
+	}
+
+	moduleParams, err := BuildEnvParamsForModule(moduleName, string(snippet), paramsStr)
+	if err != nil {
+		return "", errors.Wrapf(err, "selecting params for module %q in environment %q", moduleName, envName)
+	}
+
+	envParams, err := evaluateEnvInVM(a, envName, sourcePath, moduleParams, paramsStr)
+	if err != nil {
+		return "", errors.Wrapf(err, "evaluating parameters for module %q in environment %q", moduleName, envName)
+	}
+
+	return envParams, nil
+}
+
+// modularizeParameters adds a module prefix to component parameters.
+// * Given a root module, it will not update the component name
+// * Given a module nested under root, it will prepend the module: eg: `module apps -> apps.component`
+func modularizeParameters(a app.App, envName, moduleName, paramsStr string) (string, error) {
+	script, err := loadScript("modularize_params.libsonnet")
+	if err != nil {
+		return "", errors.Wrap(err, "loading script")
+	}
+
+	envCode, err := JsonnetEnvObject(a, envName)
+	if err != nil {
+		return "", errors.Wrap(err, "generating environments object")
+	}
+
+	vm := jsonnet.NewVM()
+	vm.ExtCode("__ksonnet/environments", envCode)
+	vm.TLAVar("moduleName", moduleName)
+	vm.TLACode("params", paramsStr)
+
+	output, err := vm.EvaluateSnippet("modularize-params", script)
+	if err != nil {
+		return "", errors.Wrap(err, "adding module to params")
+	}
+
+	return output, nil
+}
+
+// evaluateEnvInVM evaluates the environment parameters in a Jsonnet VM.
+func evaluateEnvInVM(a app.App, envName, sourcePath, snippet, paramsStr string) (string, error) {
 	libPath, err := a.LibPath(envName)
 	if err != nil {
 		return "", err
@@ -39,10 +92,5 @@ func EvaluateEnv(a app.App, sourcePath, paramsStr, envName string) (string, erro
 	)
 	vm.ExtCode("__ksonnet/params", paramsStr)
 
-	snippet, err := afero.ReadFile(a.Fs(), sourcePath)
-	if err != nil {
-		return "", err
-	}
-
-	return vm.EvaluateSnippet(sourcePath, string(snippet))
+	return vm.EvaluateSnippet(sourcePath, snippet)
 }

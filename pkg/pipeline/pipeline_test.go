@@ -161,7 +161,7 @@ func TestPipeline_Objects(t *testing.T) {
 			return string(serviceJSON), nil
 		}
 
-		p.evaluateEnvParamsFn = func(_ app.App, paramsPath, paramData, envName string) (string, error) {
+		p.evaluateEnvParamsFn = func(_ app.App, paramsPath, paramData, envName, moduleName string) (string, error) {
 			return `{"components": {}}`, nil
 		}
 
