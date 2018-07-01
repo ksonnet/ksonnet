@@ -32,7 +32,7 @@ func TestComponentList(t *testing.T) {
 		output := ""
 
 		c := &cmocks.Component{}
-		c.On("Name", false).Return("c1")
+		c.On("Name", true).Return("c1")
 
 		cs := []component.Component{c}
 

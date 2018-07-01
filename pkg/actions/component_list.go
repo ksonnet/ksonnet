@@ -95,7 +95,7 @@ func (cl *ComponentList) Run() error {
 func (cl *ComponentList) listComponents(components []component.Component) {
 	var list []string
 	for _, c := range components {
-		list = append(list, c.Name(false))
+		list = append(list, c.Name(true))
 	}
 
 	sort.Strings(list)

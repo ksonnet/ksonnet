@@ -286,7 +286,7 @@ func (y *YAML) Summarize() (Summary, error) {
 	}
 
 	return Summary{
-		ComponentName: y.Name(false),
+		ComponentName: y.Name(true),
 		Type:          y.ext(),
 		APIVersion:    ts.APIVersion,
 		Kind:          ts.RawKind,
