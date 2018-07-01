@@ -138,7 +138,7 @@ func (j *Jsonnet) Params(envName string) ([]ModuleParameter, error) {
 			return nil, err
 		}
 		np := ModuleParameter{
-			Component: j.Name(false),
+			Component: j.Name(true),
 			Key:       k,
 			Value:     vStr,
 		}
