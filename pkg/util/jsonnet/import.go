@@ -134,23 +134,23 @@ func (ai *AferoImporter) tryPath(dir, importedPath string) (found bool, content 
 }
 
 // Import imports a file.
-func (ai *AferoImporter) Import(dir, importedPath string) (*jsonnet.ImportedData, error) {
+func (ai *AferoImporter) Import(dir, importedPath string) (contents jsonnet.Contents, foundHere string, err error) {
 	found, content, foundHere, err := ai.tryPath(dir, importedPath)
 	if err != nil {
-		return nil, err
+		return jsonnet.MakeContents(""), "", err
 	}
 
 	for i := len(ai.JPaths) - 1; !found && i >= 0; i-- {
 		found, content, foundHere, err = ai.tryPath(ai.JPaths[i], importedPath)
 		if err != nil {
-			return nil, err
+			return jsonnet.MakeContents(""), "", err
 		}
 	}
 
 	if !found {
-		return nil, fmt.Errorf("couldn't open import %#v: no match locally or in the Jsonnet library paths", importedPath)
+		return jsonnet.MakeContents(""), "", fmt.Errorf("couldn't open import %#v: no match locally or in the Jsonnet library paths", importedPath)
 	}
-	return &jsonnet.ImportedData{Content: string(content), FoundHere: foundHere}, nil
+	return jsonnet.MakeContents(string(content)), foundHere, nil
 }
 
 // ImporterOpt configures a VM with a jsonnet.Importer
