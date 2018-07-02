@@ -76,18 +76,16 @@ func NewParamList(m map[string]interface{}) (*ParamList, error) {
 		findModuleFn: component.GetModule,
 	}
 
-	if pl.app != nil {
-		p := pipeline.New(pl.app, pl.envName)
-		pl.modulesFn = p.Modules
-		pl.envParametersFn = p.EnvParameters
-
-		dest := app.EnvironmentDestinationSpec{}
-		pl.lister = params.NewLister(pl.app.Root(), dest)
-	}
-
 	if ol.err != nil {
 		return nil, ol.err
 	}
+
+	p := pipeline.New(pl.app, pl.envName)
+	pl.modulesFn = p.Modules
+	pl.envParametersFn = p.EnvParameters
+
+	dest := app.EnvironmentDestinationSpec{}
+	pl.lister = params.NewLister(pl.app.Root(), dest)
 
 	return pl, nil
 }
