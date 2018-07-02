@@ -127,8 +127,8 @@ func NewRoot(appFs afero.Fs, wd string, args []string) (*cobra.Command, error) {
 		return nil, err
 	}
 
-	if len(args) > 0 && cmdName != "init" {
-		a, err = app.Load(appFs, wd, false)
+	if cmdName == "version" {
+		a, err = app.Load(appFs, wd, true)
 		if err != nil {
 			return nil, err
 		}
