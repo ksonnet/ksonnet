@@ -23,6 +23,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/log"
 	"github.com/ksonnet/ksonnet/pkg/plugin"
+	"github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/pkg/errors"
 	"github.com/shomron/pflag"
 	"github.com/spf13/afero"
@@ -114,6 +115,16 @@ func checkUpgrade(a app.App, cmd string) error {
 	return nil
 }
 
+func containsHelp(args []string) bool {
+	flags := []string{"-h", "--help"}
+	for _, f := range flags {
+		if strings.InSlice(f, args) {
+			return true
+		}
+	}
+	return false
+}
+
 func NewRoot(appFs afero.Fs, wd string, args []string) (*cobra.Command, error) {
 	if appFs == nil {
 		appFs = afero.NewOsFs()
@@ -127,8 +138,9 @@ func NewRoot(appFs afero.Fs, wd string, args []string) (*cobra.Command, error) {
 		return nil, err
 	}
 
-	if cmdName == "version" {
-		a, err = app.Load(appFs, wd, true)
+	cmds := []string{"init", "version"}
+	if len(args) > 0 && !(strings.InSlice(cmdName, cmds) || containsHelp(args)) {
+		a, err = app.Load(appFs, wd, false)
 		if err != nil {
 			return nil, err
 		}
