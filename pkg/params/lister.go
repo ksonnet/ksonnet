@@ -64,7 +64,7 @@ func NewLister(appRoot string, destination app.EnvironmentDestinationSpec) *List
 	}
 }
 
-// List lists parameters in a slice of Entry.
+// List lists parameters in a slice of Entry given parameters source in a reader.
 func (l *Lister) List(r io.Reader, componentName string) ([]Entry, error) {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
