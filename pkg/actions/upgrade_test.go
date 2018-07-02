@@ -16,26 +16,34 @@
 package actions
 
 import (
+	"io"
 	"testing"
 
+	"github.com/ksonnet/ksonnet/pkg/app"
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/upgrade"
 	"github.com/stretchr/testify/require"
 )
 
 func TestUpgrade(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		appMock.On("Upgrade", true).Return(nil)
-
 		in := map[string]interface{}{
 			OptionApp:    appMock,
 			OptionDryRun: true,
 		}
 
-		a, err := newUpgrade(in)
+		var called bool
+		u, err := newUpgrade(in)
+		u.upgradeFn = func(a app.App, out io.Writer, pl upgrade.PackageLister, dryRun bool) error {
+			called = true
+			return nil
+		}
+
 		require.NoError(t, err)
 
-		err = a.run()
+		err = u.run()
 		require.NoError(t, err)
+		require.True(t, called)
 	})
 }
 

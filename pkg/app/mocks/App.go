@@ -53,6 +53,27 @@ func (_m *App) AddRegistry(spec *app.RegistryConfig, isOverride bool) error {
 	return r0
 }
 
+// CheckUpgrade provides a mock function with given fields:
+func (_m *App) CheckUpgrade() (bool, error) {
+	ret := _m.Called()
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // CurrentEnvironment provides a mock function with given fields:
 func (_m *App) CurrentEnvironment() string {
 	ret := _m.Called()
@@ -145,20 +166,6 @@ func (_m *App) Fs() afero.Fs {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(afero.Fs)
 		}
-	}
-
-	return r0
-}
-
-// Init provides a mock function with given fields:
-func (_m *App) Init() error {
-	ret := _m.Called()
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Error(0)
 	}
 
 	return r0

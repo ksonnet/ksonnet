@@ -15,7 +15,14 @@
 
 package actions
 
-import "github.com/ksonnet/ksonnet/pkg/app"
+import (
+	"io"
+	"os"
+
+	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/ksonnet/ksonnet/pkg/registry"
+	"github.com/ksonnet/ksonnet/pkg/upgrade"
+)
 
 // RunUpgrade runs `upgrade`.
 func RunUpgrade(m map[string]interface{}) error {
@@ -29,26 +36,36 @@ func RunUpgrade(m map[string]interface{}) error {
 
 // Upgrade upgrades an application.
 type Upgrade struct {
-	app    app.App
-	dryRun bool
+	app       app.App
+	pm        registry.PackageManager
+	upgradeFn func(a app.App, out io.Writer, pl upgrade.PackageLister, dryRun bool) error
+	dryRun    bool
 }
 
 func newUpgrade(m map[string]interface{}) (*Upgrade, error) {
 	ol := newOptionLoader(m)
 
-	a := &Upgrade{
-		app:    ol.LoadApp(),
-		dryRun: ol.LoadBool(OptionDryRun),
+	a := ol.LoadApp()
+	if ol.err != nil {
+		return nil, ol.err
+	}
+	pm := registry.NewPackageManager(a)
+
+	u := &Upgrade{
+		app:       a,
+		pm:        pm,
+		upgradeFn: upgrade.Upgrade,
+		dryRun:    ol.LoadBool(OptionDryRun),
 	}
 
 	if ol.err != nil {
 		return nil, ol.err
 	}
 
-	return a, nil
+	return u, nil
 }
 
 // Upgrade upgrades a ksonnet application.
 func (u *Upgrade) run() error {
-	return u.app.Upgrade(u.dryRun)
+	return u.upgradeFn(u.app, os.Stdout, u.pm, u.dryRun)
 }
