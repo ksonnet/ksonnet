@@ -117,6 +117,10 @@ func (l *Lister) List(r io.Reader, componentName string) ([]Entry, error) {
 			return true
 		}
 
+		if entries[i].ComponentName > entries[j].ComponentName {
+			return false
+		}
+
 		return entries[i].ParamName < entries[j].ParamName
 	})
 
