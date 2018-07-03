@@ -28,6 +28,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+var (
+	// helmFactory creates Helm registry instances.
+	helmFactory = func(a app.App, registryConfig *app.RegistryConfig, httpClient *helm.HTTPClient) (*Helm, error) {
+		return NewHelm(a, registryConfig, httpClient, nil)
+	}
+)
+
+type helmFactoryFn func(a app.App, registryConfig *app.RegistryConfig, httpClient *helm.HTTPClient) (*Helm, error)
+
 // Helm is a Helm repository.
 type Helm struct {
 	app              app.App
@@ -72,7 +81,9 @@ func (h *Helm) RegistrySpecFilePath() string {
 // of registry.yaml
 func (h *Helm) FetchRegistrySpec() (*Spec, error) {
 	spec := &Spec{
-		Libraries: LibraryConfigs{},
+		APIVersion: DefaultAPIVersion,
+		Kind:       DefaultKind,
+		Libraries:  LibraryConfigs{},
 	}
 
 	repository, err := h.repositoryClient.Repository()

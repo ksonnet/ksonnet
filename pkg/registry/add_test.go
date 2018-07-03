@@ -16,12 +16,18 @@
 package registry
 
 import (
+	"io/ioutil"
+	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/spf13/afero"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
+	"github.com/ksonnet/ksonnet/pkg/helm"
+	helmmocks "github.com/ksonnet/ksonnet/pkg/helm/mocks"
 	ghutil "github.com/ksonnet/ksonnet/pkg/util/github"
 	"github.com/ksonnet/ksonnet/pkg/util/github/mocks"
 	"github.com/ksonnet/ksonnet/pkg/util/test"
@@ -35,6 +41,11 @@ func withApp(t *testing.T, fn func(*amocks.App, afero.Fs)) {
 	defer func(fn ghFactoryFn) {
 		githubFactory = fn
 	}(ogGHF)
+
+	ogHF := helmFactory
+	defer func(fn helmFactoryFn) {
+		helmFactory = fn
+	}(ogHF)
 
 	test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
 		fn(a, fs)
@@ -75,6 +86,51 @@ func TestAdd_GitHub(t *testing.T) {
 
 		require.Equal(t, registrySpec, spec)
 
+	})
+}
+
+func TestAdd_Helm(t *testing.T) {
+	withApp(t, func(appMock *amocks.App, fs afero.Fs) {
+		expectedRegistryConfig := &app.RegistryConfig{
+			Name:     "new",
+			Protocol: string(ProtocolHelm),
+			URI:      "http://example.com",
+		}
+
+		appMock.On("AddRegistry", expectedRegistryConfig, false).Return(nil)
+
+		f, err := os.Open(filepath.Join("testdata", "helm-index.yaml"))
+		require.NoError(t, err)
+
+		getterMock := &helmmocks.Getter{}
+		resp := &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(f),
+		}
+		getterMock.On("Get", "http://example.com/index.yaml").Return(resp, nil)
+
+		httpClient, err := helm.NewHTTPClient("http://example.com", getterMock)
+		require.NoError(t, err)
+
+		helmFactory = func(a app.App, registryConfig *app.RegistryConfig, _ *helm.HTTPClient) (*Helm, error) {
+			return NewHelm(a, registryConfig, httpClient, nil)
+		}
+
+		spec, err := Add(appMock, ProtocolHelm, "new", "http://example.com", false)
+		require.NoError(t, err)
+
+		expected := &Spec{
+			APIVersion: DefaultAPIVersion,
+			Kind:       DefaultKind,
+			Libraries: LibraryConfigs{
+				"chart": &LibaryConfig{
+					Version: "2.0.0",
+					Path:    "chart",
+				},
+			},
+		}
+
+		require.Equal(t, expected, spec)
 	})
 }
 

@@ -39,11 +39,12 @@ type VMOpt func(*VM)
 
 // VM is a ksonnet wrapper for the jsonnet VM.
 type VM struct {
-	jPaths   []string
-	extCodes map[string]string
-	extVars  map[string]string
-	tlaCodes map[string]string
-	tlaVars  map[string]string
+	jPaths          []string
+	nativeFunctions []*jsonnet.NativeFunction
+	extCodes        map[string]string
+	extVars         map[string]string
+	tlaCodes        map[string]string
+	tlaVars         map[string]string
 
 	makeVMFn          makeVMFn
 	evaluateSnippetFn evaluateSnippetFn
@@ -55,11 +56,12 @@ type VM struct {
 // NewVM creates an instance of VM.
 func NewVM(opts ...VMOpt) *VM {
 	vm := &VM{
-		jPaths:   make([]string, 0),
-		extCodes: make(map[string]string),
-		extVars:  make(map[string]string),
-		tlaCodes: make(map[string]string),
-		tlaVars:  make(map[string]string),
+		jPaths:          make([]string, 0),
+		nativeFunctions: make([]*jsonnet.NativeFunction, 0),
+		extCodes:        make(map[string]string),
+		extVars:         make(map[string]string),
+		tlaCodes:        make(map[string]string),
+		tlaVars:         make(map[string]string),
 
 		makeVMFn:          jsonnet.MakeVM,
 		evaluateSnippetFn: evaluateSnippet,
@@ -71,6 +73,11 @@ func NewVM(opts ...VMOpt) *VM {
 	}
 
 	return vm
+}
+
+// AddFunctions adds native functions to the Jsonnet VM.
+func (vm *VM) AddFunctions(fns ...*jsonnet.NativeFunction) {
+	vm.nativeFunctions = append(vm.nativeFunctions, fns...)
 }
 
 // AddJPath adds JPaths to the jsonnet VM.
@@ -117,6 +124,11 @@ func (vm *VM) EvaluateSnippet(name, snippet string) (string, error) {
 
 	jvm := jsonnet.MakeVM()
 	jvm.ErrorFormatter.SetMaxStackTraceSize(40)
+
+	for _, fn := range vm.nativeFunctions {
+		jvm.NativeFunction(fn)
+	}
+
 	registerNativeFuncs(jvm)
 
 	vm.importer.AddJPath(vm.jPaths...)

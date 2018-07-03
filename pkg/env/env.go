@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/ksonnet/ksonnet/pkg/helm"
 	utilio "github.com/ksonnet/ksonnet/pkg/util/io"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
@@ -127,6 +128,7 @@ func evaluateMain(a app.App, envName, snippet, components, paramsStr string, opt
 	}
 
 	vm := jsonnet.NewVM(opts...)
+
 	vm.AddJPath(componentJPaths...)
 	vm.AddJPath(
 		filepath.Join(a.Root(), envRootName),
@@ -135,6 +137,9 @@ func evaluateMain(a app.App, envName, snippet, components, paramsStr string, opt
 		filepath.Join(a.Root(), "lib"),
 		libPath,
 	)
+
+	helmRenderer := helm.NewRenderer(a)
+	vm.AddFunctions(helmRenderer.JsonnetNativeFunc())
 
 	// Re-vendor versioned packages, such that import paths will remain path-agnostic.
 	// TODO Where should packagemanager come from?
@@ -260,7 +265,7 @@ func buildPackagePaths(pm registry.PackageManager, e *app.EnvironmentConfig) (ma
 
 	for _, v := range pkgList {
 		if v.Version() == "" {
-			log.Debugf("skipping unversioned packaged: %v", v)
+			log.Debugf("skipping unversioned packaged: %s/%s", v.RegistryName(), v.Name())
 			continue
 		}
 		k := fmt.Sprintf("%s/%s", v.RegistryName(), v.Name())

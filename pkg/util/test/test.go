@@ -63,16 +63,16 @@ func StageFile(t *testing.T, fs afero.Fs, src, dest string) {
 // testdata.
 func StageDir(t *testing.T, fs afero.Fs, src, dest string) {
 	root, err := filepath.Abs(filepath.Join("testdata", src))
-	require.NoError(t, err)
+	require.NoError(t, err, "finding absolute path")
 
 	err = filepath.Walk(root, func(path string, fi os.FileInfo, err error) error {
 		if err != nil {
-			return err
+			return errors.Wrap(err, "walk received an error")
 		}
 
 		cur := filepath.Join(dest, strings.TrimPrefix(path, root))
 		if fi.IsDir() {
-			return fs.Mkdir(cur, 0755)
+			return fs.MkdirAll(cur, 0755)
 		}
 
 		copyFile(fs, path, cur)
@@ -85,13 +85,13 @@ func StageDir(t *testing.T, fs afero.Fs, src, dest string) {
 func copyFile(fs afero.Fs, src, dest string) error {
 	from, err := os.Open(src)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "opening %q for copy", src)
 	}
 	defer from.Close()
 
 	to, err := fs.OpenFile(dest, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "opening %q for write", dest)
 	}
 	defer to.Close()
 

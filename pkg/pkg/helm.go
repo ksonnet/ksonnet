@@ -16,11 +16,13 @@
 package pkg
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
 	"path/filepath"
 
-	"github.com/blang/semver"
 	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/ksonnet/ksonnet/pkg/helm"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	ksstrings "github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/pkg/errors"
@@ -78,7 +80,7 @@ func NewHelm(a app.App, name, registryName, version string, installChecker Insta
 func chartConfigDir(a app.App, name, registryName, version string) (string, error) {
 	var err error
 	if version == "" {
-		version, err = latestChartRelease(a, name, registryName)
+		version, err = helm.LatestChartVersion(a, registryName, name)
 		if err != nil {
 			return "", errors.Wrapf(err, "finding latest %s chart release", name)
 		}
@@ -100,34 +102,6 @@ func chartConfigPath(a app.App, name, registryName, version string) (string, err
 	return chartConfigPath, nil
 }
 
-func latestChartRelease(a app.App, name, registryName string) (string, error) {
-	chartPath := filepath.Join(a.VendorPath(), registryName, name, "helm")
-
-	fis, err := afero.ReadDir(a.Fs(), chartPath)
-	if err != nil {
-		return "", err
-	}
-
-	var versions []semver.Version
-	for _, fi := range fis {
-		if fi.IsDir() {
-			v, err := semver.Make(fi.Name())
-			if err != nil {
-				return "", err
-			}
-
-			versions = append(versions, v)
-		}
-	}
-
-	if len(versions) == 0 {
-		return "", errors.Errorf("chart %q doesn't have any releases", name)
-	}
-
-	semver.Sort(versions)
-	return versions[0].String(), nil
-}
-
 // Description returns the description for the Helm chart. The description
 // is retrieved from the chart's Chart.yaml file.
 func (h *Helm) Description() string {
@@ -140,9 +114,28 @@ func (h *Helm) prototypeName() string {
 
 // Prototypes returns prototypes for this package. Currently, it returns a single prototype.
 func (h *Helm) Prototypes() (prototype.Prototypes, error) {
-
 	shortDescription := fmt.Sprintf("Helm Chart %s from the %s registry",
 		h.name, h.registryName)
+
+	latestVersion, err := helm.LatestChartVersion(h.a, h.registryName, h.name)
+	if err != nil {
+		return nil, errors.Wrap(err, "finding latest release")
+	}
+
+	tmpl, err := template.New("prototype").Parse(helmPrototypeTemplate)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing prototype template")
+	}
+
+	data := map[string]string{
+		"RegistryName": h.registryName,
+		"ChartName":    h.name,
+	}
+
+	var buf bytes.Buffer
+	if err = tmpl.Execute(&buf, data); err != nil {
+		return nil, errors.Wrap(err, "executing prototype template")
+	}
 
 	p := &prototype.Prototype{
 		APIVersion: prototype.DefaultAPIVersion,
@@ -151,7 +144,7 @@ func (h *Helm) Prototypes() (prototype.Prototypes, error) {
 		Template: prototype.SnippetSchema{
 			Description:      shortDescription,
 			ShortDescription: shortDescription,
-			JsonnetBody:      []string{"{}"},
+			JsonnetBody:      []string{buf.String()},
 		},
 		Params: prototype.ParamSchemas{
 			{
@@ -161,10 +154,15 @@ func (h *Helm) Prototypes() (prototype.Prototypes, error) {
 			},
 			{
 				Name:        "version",
-				Description: "Version of the Helm chart",
-				// TODO: find the latest version of the helm chart
-				Default: ksstrings.Ptr("1.2.3"),
-				Type:    prototype.String,
+				Description: "Version of the Helm chart. If blank, it will use latest installed version",
+				Default:     ksstrings.Ptr(latestVersion),
+				Type:        prototype.String,
+			},
+			{
+				Name:        "values",
+				Description: "Helm values",
+				Default:     ksstrings.Ptr(`{}`),
+				Type:        prototype.Object,
 			},
 		},
 	}
@@ -172,11 +170,23 @@ func (h *Helm) Prototypes() (prototype.Prototypes, error) {
 	return prototype.Prototypes{p}, nil
 }
 
+var helmPrototypeTemplate = `
+std.prune(std.native("renderHelmChart")(
+   // registry name
+   "{{ .RegistryName }}",
+   // chart name
+   "{{ .ChartName }}",
+   // chart version
+   params.version,
+   // chart values overrides
+   params.values,
+   // component name
+   params.name,
+ ))
+`
+
 // Path returns local directory for vendoring the package.
 func (h *Helm) Path() string {
-	if h == nil {
-		return ""
-	}
 	if h.a == nil {
 		return ""
 	}

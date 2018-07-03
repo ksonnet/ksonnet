@@ -147,6 +147,8 @@ func TestHelm_FetchRegistrySpec(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := &Spec{
+			APIVersion: DefaultAPIVersion,
+			Kind:       DefaultKind,
 			Libraries: LibraryConfigs{
 				"app-a": &LibaryConfig{
 					Path:    "app-a",

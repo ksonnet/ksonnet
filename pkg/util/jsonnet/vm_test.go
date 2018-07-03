@@ -55,6 +55,13 @@ func TestVM_TLAVar(t *testing.T) {
 	require.Equal(t, "value", vm.tlaVars["key"])
 }
 
+func TestVM_AddFunctions(t *testing.T) {
+	vm := NewVM(stubVMOpt())
+	require.Len(t, vm.nativeFunctions, 0)
+	vm.AddFunctions(&jsonnet.NativeFunction{})
+	require.Len(t, vm.nativeFunctions, 1)
+}
+
 func TestVM_EvaluateSnippet(t *testing.T) {
 
 	fn := func(vm *jsonnet.VM, name, snippet string) (string, error) {
@@ -68,6 +75,7 @@ func TestVM_EvaluateSnippet(t *testing.T) {
 	vm.TLAVar("key", "value")
 	vm.TLACode("key", "value")
 	vm.ExtCode("key", "value")
+	vm.AddFunctions(&jsonnet.NativeFunction{})
 
 	out, err := vm.EvaluateSnippet("snippet", "code")
 	require.NoError(t, err)
