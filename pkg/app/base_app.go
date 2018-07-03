@@ -204,12 +204,46 @@ func (ba *baseApp) AddRegistry(newReg *RegistryConfig, isOverride bool) error {
 	return ba.save()
 }
 
-func (ba *baseApp) UpdateLib(name string, libSpec *LibraryConfig) error {
+// UpdateLib adds or updates a library reference.
+// env is optional - if provided the reference is scoped under the environment,
+// otherwise it is globally scoped.
+func (ba *baseApp) UpdateLib(name string, env string, libSpec *LibraryConfig) error {
 	if err := ba.load(); err != nil {
 		return errors.Wrap(err, "load configuration")
 	}
 
-	ba.config.Libraries[name] = libSpec
+	if ba.config == nil {
+		return errors.Errorf("invalid app - configuration is nil")
+	}
+
+	if libSpec.Name != name {
+		return errors.Errorf("library name mismatch: %v vs %v", libSpec.Name, name)
+	}
+
+	// TODO support app overrides
+
+	switch env {
+	case "":
+		// Globally scoped
+		ba.config.Libraries[name] = libSpec
+	default:
+		// Scoped by environment
+		e, ok := ba.config.GetEnvironmentConfig(env)
+		if !ok {
+			return errors.Errorf("invalid environment: %v", env)
+		}
+
+		if e.Libraries == nil {
+			// We may want to move this into EnvrionmentConfig unmarshaling code.
+			e.Libraries = LibraryConfigs{}
+		}
+		e.Libraries[name] = libSpec
+
+		if err := ba.config.UpdateEnvironmentConfig(env, e); err != nil {
+			return errors.Wrapf(err, "updating environment %v", env)
+		}
+	}
+
 	return ba.save()
 }
 
@@ -272,4 +306,43 @@ func (ba *baseApp) EnvironmentParams(envName string) (string, error) {
 
 func (ba *baseApp) VendorPath() string {
 	return filepath.Join(ba.Root(), "vendor")
+}
+
+// Environment returns the spec for an environment.
+func (ba *baseApp) Environment(name string) (*EnvironmentConfig, error) {
+	if err := ba.load(); err != nil {
+		return nil, errors.Wrap(err, "load configuration")
+	}
+
+	for k, v := range ba.overrides.Environments {
+		if k == name {
+			return v, nil
+		}
+	}
+
+	for k, v := range ba.config.Environments {
+		if k == name {
+			return v, nil
+		}
+	}
+
+	return nil, errors.Errorf("environment %q was not found", name)
+}
+
+// Environments returns all environment specs.
+func (ba *baseApp) Environments() (EnvironmentConfigs, error) {
+	if err := ba.load(); err != nil {
+		return nil, errors.Wrap(err, "load configuration")
+	}
+
+	environments := EnvironmentConfigs{}
+	for k, v := range ba.config.Environments {
+		environments[k] = v
+	}
+
+	for k, v := range ba.overrides.Environments {
+		environments[k] = v
+	}
+
+	return environments, nil
 }

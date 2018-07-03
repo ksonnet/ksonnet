@@ -30,7 +30,7 @@ import (
 // CacheDependency vendors registry dependencies.
 // TODO: create unit tests for this once mocks for this package are
 // worked out.
-func CacheDependency(a app.App, checker InstalledChecker, d pkg.Descriptor, customName string) error {
+func CacheDependency(a app.App, checker InstalledChecker, d pkg.Descriptor, customName string) (*app.LibraryConfig, error) {
 	logger := log.WithFields(log.Fields{
 		"action":      "registry.CacheDependency",
 		"part":        d.Name,
@@ -40,27 +40,27 @@ func CacheDependency(a app.App, checker InstalledChecker, d pkg.Descriptor, cust
 	})
 
 	if a == nil {
-		return errors.Errorf("nil receiver")
+		return nil, errors.Errorf("nil receiver")
 	}
 	if checker == nil {
-		return errors.Errorf("nil installation checker")
+		return nil, errors.Errorf("nil installation checker")
 	}
 
 	logger.Debug("caching dependency")
 
 	registries, err := a.Registries()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	regRefSpec, exists := registries[d.Registry]
 	if !exists {
-		return fmt.Errorf("registry '%s' does not exist", d.Registry)
+		return nil, fmt.Errorf("registry '%s' does not exist", d.Registry)
 	}
 
 	r, err := Locate(a, regRefSpec)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Get all directories and files first, then write to disk. This
@@ -80,7 +80,7 @@ func CacheDependency(a app.App, checker InstalledChecker, d pkg.Descriptor, cust
 			return nil
 		})
 	if err != nil {
-		return errors.Wrap(err, "resolve registry library")
+		return nil, errors.Wrap(err, "resolve registry library")
 	}
 
 	// Make triple-sure the library references the correct registry, as it is known in this app.
@@ -91,10 +91,10 @@ func CacheDependency(a app.App, checker InstalledChecker, d pkg.Descriptor, cust
 	qualified.Version = libRef.Version
 	ok, err := checker.IsInstalled(qualified)
 	if err != nil {
-		return errors.Wrapf(err, "checking package installed status")
+		return nil, errors.Wrapf(err, "checking package installed status")
 	}
 	if ok {
-		return errors.Errorf("package '%s/%s@%s' already exists.",
+		return nil, errors.Errorf("package '%s/%s@%s' already exists.",
 			libRef.Registry, libRef.Name, libRef.Version)
 	}
 
@@ -104,7 +104,7 @@ func CacheDependency(a app.App, checker InstalledChecker, d pkg.Descriptor, cust
 
 	for _, dir := range directories {
 		if err = a.Fs().MkdirAll(dir, app.DefaultFolderPermissions); err != nil {
-			return errors.Wrap(err, "unable to create directory")
+			return nil, errors.Wrap(err, "unable to create directory")
 		}
 	}
 
@@ -119,15 +119,15 @@ func CacheDependency(a app.App, checker InstalledChecker, d pkg.Descriptor, cust
 
 		log.Debugf("onFile: vendoring file to path: %v", vendoredPath)
 		if err = a.Fs().MkdirAll(dir, app.DefaultFolderPermissions); err != nil {
-			return errors.Wrap(err, "unable to create directory")
+			return nil, errors.Wrap(err, "unable to create directory")
 		}
 
 		if err = afero.WriteFile(a.Fs(), vendoredPath, content, app.DefaultFilePermissions); err != nil {
-			return errors.Wrap(err, "unable to create file")
+			return nil, errors.Wrap(err, "unable to create file")
 		}
 	}
 
-	return a.UpdateLib(libRef.Name, libRef)
+	return libRef, nil
 }
 
 // Convert a relative path like `mysql/parts.yaml` to a versioned, vendored path,

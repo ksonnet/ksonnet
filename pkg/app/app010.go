@@ -85,45 +85,6 @@ func (a *App010) AddEnvironment(name, k8sSpecFlag string, newEnv *EnvironmentCon
 	return a.save()
 }
 
-// Environment returns the spec for an environment.
-func (a *App010) Environment(name string) (*EnvironmentConfig, error) {
-	if err := a.load(); err != nil {
-		return nil, errors.Wrap(err, "load configuration")
-	}
-
-	for k, v := range a.overrides.Environments {
-		if k == name {
-			return v, nil
-		}
-	}
-
-	for k, v := range a.config.Environments {
-		if k == name {
-			return v, nil
-		}
-	}
-
-	return nil, errors.Errorf("environment %q was not found", name)
-}
-
-// Environments returns all environment specs.
-func (a *App010) Environments() (EnvironmentConfigs, error) {
-	if err := a.load(); err != nil {
-		return nil, errors.Wrap(err, "load configuration")
-	}
-
-	environments := EnvironmentConfigs{}
-	for k, v := range a.config.Environments {
-		environments[k] = v
-	}
-
-	for k, v := range a.overrides.Environments {
-		environments[k] = v
-	}
-
-	return environments, nil
-}
-
 // CheckUpgrade initializes the App.
 func (a *App010) CheckUpgrade() (bool, error) {
 	if a == nil {

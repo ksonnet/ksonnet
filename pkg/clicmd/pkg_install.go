@@ -27,6 +27,7 @@ import (
 
 var (
 	vPkgInstallName = "pkg-install-name"
+	vPkgInstallEnv  = "pkg-install-env"
 
 	pkgInstallLong = `
 The ` + "`install`" + ` command caches a ksonnet library locally, and makes it available
@@ -46,7 +47,7 @@ channels for official ksonnet libraries.
 ### Syntax
 `
 	pkgInstallExample = `
-# Install an nginx dependency, based on the latest branch.
+# Install an nginx dependency, based on the tip defined by the registry URI.
 # In a ksonnet source file, this can be referenced as:
 #   local nginx = import "incubator/nginx/nginx.libsonnet";
 ks pkg install incubator/nginx
@@ -55,6 +56,11 @@ ks pkg install incubator/nginx
 # In a ksonnet source file, this can be referenced as:
 #   local nginx = import "incubator/nginx/nginx.libsonnet";
 ks pkg install incubator/nginx@master
+
+# Install a specific nginx version into the stage environment.
+# In a ksonnet source file, this can be referenced as:
+#   local nginx = import "incubator/nginx/nginx.libsonnet";
+ks pkg install --env stage incubator/nginx@40285d8a14f1ac5787e405e1023cf0c07f6aa28c
 `
 )
 
@@ -75,6 +81,7 @@ func newPkgInstallCmd(a app.App) *cobra.Command {
 				actions.OptionApp:     a,
 				actions.OptionLibName: args[0],
 				actions.OptionName:    viper.GetString(vPkgInstallName),
+				actions.OptionEnvName: viper.GetString(vPkgInstallEnv),
 			}
 
 			return runAction(actionPkgInstall, m)
@@ -82,7 +89,9 @@ func newPkgInstallCmd(a app.App) *cobra.Command {
 	}
 
 	pkgInstallCmd.Flags().String(flagName, "", "Name to give the dependency, to use within the ksonnet app")
+	pkgInstallCmd.Flags().String(flagEnv, "", "Environment to install package into (optional)")
 	viper.BindPFlag(vPkgInstallName, pkgInstallCmd.Flags().Lookup(flagName))
+	viper.BindPFlag(vPkgInstallEnv, pkgInstallCmd.Flags().Lookup(flagEnv))
 
 	return pkgInstallCmd
 }

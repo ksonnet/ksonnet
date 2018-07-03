@@ -22,6 +22,7 @@ import (
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/registry"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,16 +30,6 @@ func TestPkgInstall(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		libName := "incubator/apache"
 		customName := "customName"
-
-		dc := func(a app.App, checker registry.InstalledChecker, d pkg.Descriptor, cn string) error {
-			expectedD := pkg.Descriptor{
-				Registry: "incubator",
-				Name:     "apache",
-			}
-			require.Equal(t, expectedD, d)
-			require.Equal(t, "customName", cn)
-			return nil
-		}
 
 		in := map[string]interface{}{
 			OptionApp:     appMock,
@@ -49,10 +40,40 @@ func TestPkgInstall(t *testing.T) {
 		a, err := NewPkgInstall(in)
 		require.NoError(t, err)
 
-		a.depCacherFn = dc
+		newLibCfg := &app.LibraryConfig{
+			Registry: "incubator",
+			Name:     "apache",
+		}
+		expectedD := pkg.Descriptor{
+			Registry: "incubator",
+			Name:     "apache",
+		}
 
-		libaries := app.LibraryConfigs{}
-		appMock.On("Libraries").Return(libaries, nil)
+		var cacherCalled bool
+		fakeCacher := func(a app.App, checker registry.InstalledChecker, d pkg.Descriptor, cn string) (*app.LibraryConfig, error) {
+			cacherCalled = true
+			require.Equal(t, expectedD, d)
+			require.Equal(t, "customName", cn)
+			return newLibCfg, nil
+		}
+
+		var updaterCalled bool
+		fakeUpdater := func(name string, env string, spec *app.LibraryConfig) error {
+			updaterCalled = true
+			assert.Equal(t, newLibCfg.Name, name, "unexpected library name")
+			assert.Equal(t, a.envName, env, "unexpected environment name")
+			assert.Equal(t, newLibCfg, spec, "unexpected library configuration object")
+			if spec != nil {
+				assert.Equal(t, expectedD.Name, spec.Name, "unexpected library name in configuration object")
+			}
+			return nil
+		}
+
+		a.libCacherFn = fakeCacher
+		a.libUpdateFn = fakeUpdater
+
+		libraries := app.LibraryConfigs{}
+		appMock.On("Libraries").Return(libraries, nil)
 
 		registries := app.RegistryConfigs{
 			"incubator": &app.RegistryConfig{
@@ -64,6 +85,8 @@ func TestPkgInstall(t *testing.T) {
 
 		err = a.Run()
 		require.NoError(t, err)
+		assert.True(t, cacherCalled, "dependency cacher not called")
+		assert.True(t, updaterCalled, "library reference updater not called")
 	})
 }
 

@@ -21,8 +21,9 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/registry"
 )
 
-// DepCacher is a function that caches a dependency.j
-type DepCacher func(app.App, registry.InstalledChecker, pkg.Descriptor, string) error
+type libCacher func(app.App, registry.InstalledChecker, pkg.Descriptor, string) (*app.LibraryConfig, error)
+
+type libUpdater func(name string, env string, spec *app.LibraryConfig) error
 
 // RunPkgInstall runs `pkg install`
 func RunPkgInstall(m map[string]interface{}) error {
@@ -39,8 +40,10 @@ type PkgInstall struct {
 	app         app.App
 	libName     string
 	customName  string
+	envName     string
 	checker     registry.InstalledChecker
-	depCacherFn DepCacher
+	libCacherFn libCacher
+	libUpdateFn libUpdater
 }
 
 // NewPkgInstall creates an instance of PkgInstall.
@@ -56,9 +59,11 @@ func NewPkgInstall(m map[string]interface{}) (*PkgInstall, error) {
 		app:        a,
 		libName:    ol.LoadString(OptionLibName),
 		customName: ol.LoadString(OptionName),
+		envName:    ol.LoadOptionalString(OptionEnvName),
 		checker:    registry.NewPackageManager(a),
 
-		depCacherFn: registry.CacheDependency,
+		libCacherFn: registry.CacheDependency,
+		libUpdateFn: a.UpdateLib,
 	}
 
 	if ol.err != nil {
@@ -75,7 +80,17 @@ func (pi *PkgInstall) Run() error {
 		return err
 	}
 
-	return pi.depCacherFn(pi.app, pi.checker, d, customName)
+	libCfg, err := pi.libCacherFn(pi.app, pi.checker, d, customName)
+	if err != nil {
+		return err
+	}
+
+	err = pi.libUpdateFn(d.Name, pi.envName, libCfg)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (pi *PkgInstall) parseDepSpec() (pkg.Descriptor, string, error) {

@@ -294,13 +294,13 @@ func (_m *App) SetCurrentEnvironment(name string) error {
 	return r0
 }
 
-// UpdateLib provides a mock function with given fields: name, spec
-func (_m *App) UpdateLib(name string, spec *app.LibraryConfig) error {
-	ret := _m.Called(name, spec)
+// UpdateLib provides a mock function with given fields: name, env, spec
+func (_m *App) UpdateLib(name string, env string, spec *app.LibraryConfig) error {
+	ret := _m.Called(name, env, spec)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, *app.LibraryConfig) error); ok {
-		r0 = rf(name, spec)
+	if rf, ok := ret.Get(0).(func(string, string, *app.LibraryConfig) error); ok {
+		r0 = rf(name, env, spec)
 	} else {
 		r0 = ret.Error(0)
 	}
