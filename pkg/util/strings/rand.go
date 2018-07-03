@@ -28,14 +28,20 @@ const (
 	letterIdxMax  = 63 / letterIdxBits   // number of letter indices fitting in 63 bits
 )
 
-var randSrc = rand.NewSource(time.Now().UnixNano())
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 // Rand generates a random string of lower and upper case letters n characters long.
 func Rand(n int) string {
+	if n < 1 {
+		return ""
+	}
+
 	b := make([]byte, n)
-	for i, cache, remain := n-1, randSrc.Int63(), letterIdxMax; i >= 0; {
+	for i, cache, remain := n-1, rand.Int63(), letterIdxMax; i >= 0; {
 		if remain == 0 {
-			cache, remain = randSrc.Int63(), letterIdxMax
+			cache, remain = rand.Int63(), letterIdxMax
 		}
 		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
 			b[i] = letterBytes[idx]
@@ -50,10 +56,14 @@ func Rand(n int) string {
 
 // LowerRand generates a random string of lower case letters n characters long.
 func LowerRand(n int) string {
+	if n < 1 {
+		return ""
+	}
+
 	b := make([]byte, n)
-	for i, cache, remain := n-1, randSrc.Int63(), letterIdxMax; i >= 0; {
+	for i, cache, remain := n-1, rand.Int63(), letterIdxMax; i >= 0; {
 		if remain == 0 {
-			cache, remain = randSrc.Int63(), letterIdxMax
+			cache, remain = rand.Int63(), letterIdxMax
 		}
 		if idx := int(cache & letterIdxMask); idx < len(letterLowerBytes) {
 			b[i] = letterLowerBytes[idx]
