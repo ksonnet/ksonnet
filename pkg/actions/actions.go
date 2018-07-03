@@ -324,7 +324,7 @@ func (o *optionLoader) LoadClientConfig() *client.Config {
 func (o *optionLoader) LoadApp() app.App {
 	i := o.load(OptionApp)
 	if i == nil {
-		o.err = ErrInvalidApp
+		o.err = errors.Wrap(ErrInvalidApp, "found app.yaml but cannot load app")
 		return nil
 	}
 

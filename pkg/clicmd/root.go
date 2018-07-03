@@ -81,18 +81,25 @@ func appRoot() (string, error) {
 
 // parseCommand does an early parse of the command line and returns
 // what will ultimately be recognized as the command by cobra.
-func parseCommand(args []string) (string, error) {
+func parseCommand(args []string) (string, bool, error) {
 	fset := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fset.ParseErrorsWhitelist.UnknownFlags = true
 	fset.BoolP("help", "h", false, "") // Needed to avoid pflag.ErrHelp
 	if err := fset.Parse(args); err != nil {
-		return "", err
+		return "", false, err
 	}
 	if len(fset.Args()) == 0 {
-		return "", nil
+		return "", false, nil
 	}
 
-	return fset.Args()[0], nil
+	flags := []string{"-h", "--help"}
+	containsHelp := false
+	for _, f := range flags {
+		if strings.InSlice(f, args) {
+			containsHelp = true
+		}
+	}
+	return fset.Args()[0], containsHelp, nil
 }
 
 // checkUpgrade runs upgrade validations unless the user is running an excluded command.
@@ -102,6 +109,7 @@ func checkUpgrade(a app.App, cmd string) error {
 		"init":    struct{}{},
 		"upgrade": struct{}{},
 		"help":    struct{}{},
+		"version": struct{}{},
 		"":        struct{}{},
 	}
 	if _, ok := skip[cmd]; ok {
@@ -115,16 +123,6 @@ func checkUpgrade(a app.App, cmd string) error {
 	return nil
 }
 
-func containsHelp(args []string) bool {
-	flags := []string{"-h", "--help"}
-	for _, f := range flags {
-		if strings.InSlice(f, args) {
-			return true
-		}
-	}
-	return false
-}
-
 func NewRoot(appFs afero.Fs, wd string, args []string) (*cobra.Command, error) {
 	if appFs == nil {
 		appFs = afero.NewOsFs()
@@ -133,18 +131,24 @@ func NewRoot(appFs afero.Fs, wd string, args []string) (*cobra.Command, error) {
 	var a app.App
 	var err error
 
-	cmdName, err := parseCommand(args)
+	cmdName, hasHelpFlag, err := parseCommand(args)
 	if err != nil {
 		return nil, err
 	}
 
-	cmds := []string{"init", "version"}
-	if len(args) > 0 && !(strings.InSlice(cmdName, cmds) || containsHelp(args)) {
+	cmds := []string{"init", "version", "help"}
+	switch {
+	// Commands that do not require a ksonnet application
+	case strings.InSlice(cmdName, cmds) || hasHelpFlag:
+		a, err = app.Load(appFs, wd, true)
+	case len(args) > 0:
 		a, err = app.Load(appFs, wd, false)
-		if err != nil {
-			return nil, err
-		}
+	default:
+		// noop
+	}
 
+	if err != nil {
+		return nil, err
 	}
 
 	if err := checkUpgrade(a, cmdName); err != nil {

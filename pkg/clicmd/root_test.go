@@ -46,7 +46,7 @@ func Test_parseCommand(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		cmd, err := parseCommand(tc.args)
+		cmd, _, err := parseCommand(tc.args)
 		require.NoError(t, err)
 		assert.Equal(t, tc.expected, cmd, tc.name)
 
