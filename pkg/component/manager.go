@@ -63,7 +63,7 @@ var (
 	DefaultManager = &defaultManager{}
 )
 
-// Manager is an interface for interating with components.
+// Manager is an interface for interacting with components.
 type Manager interface {
 	Components(ns Module) ([]Component, error)
 	Component(ksApp app.App, module, componentName string) (Component, error)

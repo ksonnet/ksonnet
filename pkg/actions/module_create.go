@@ -56,7 +56,7 @@ func NewModuleCreate(m map[string]interface{}) (*ModuleCreate, error) {
 	return mc, nil
 }
 
-// Run runs that ns create action.
+// Run runs the module create action.
 func (mc *ModuleCreate) Run() error {
 	_, err := mc.cm.Module(mc.app, mc.module)
 	if err == nil {

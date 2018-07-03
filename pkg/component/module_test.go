@@ -16,8 +16,10 @@
 package component
 
 import (
+	"path/filepath"
 	"testing"
 
+	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/util/test"
 	"github.com/spf13/afero"
@@ -74,6 +76,7 @@ func Test_GetModule(t *testing.T) {
 			test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
 				if tc.dir != "" {
 					err := fs.MkdirAll(tc.dir, 0755)
+					afero.WriteFile(fs, filepath.Join(tc.dir, paramsFile), []byte("{}"), app.DefaultFolderPermissions)
 					require.NoError(t, err)
 				}
 
@@ -93,8 +96,8 @@ func Test_GetModule(t *testing.T) {
 
 func TestModule_Components(t *testing.T) {
 	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
-		test.StageFile(t, fs, "certificate-crd.yaml", "/app/components/ns1/certificate-crd.yaml")
-		test.StageFile(t, fs, "params-with-entry.libsonnet", "/app/components/ns1/params.libsonnet")
+		test.StageFile(t, fs, "certificate-crd.yaml", "/app/components/module1/certificate-crd.yaml")
+		test.StageFile(t, fs, "params-with-entry.libsonnet", "/app/components/module1/params.libsonnet")
 		test.StageFile(t, fs, "params-no-entry.libsonnet", "/app/components/params.libsonnet")
 
 		cases := []struct {
@@ -108,7 +111,7 @@ func TestModule_Components(t *testing.T) {
 			},
 			{
 				name:   "with components",
-				module: "ns1",
+				module: "module1",
 				count:  1,
 			},
 		}
