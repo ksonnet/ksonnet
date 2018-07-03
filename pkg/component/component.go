@@ -173,7 +173,7 @@ func envParams(a app.App, moduleName, envName string) (string, error) {
 		return "", err
 	}
 
-	paramsStr, err := ns.ResolvedParams()
+	paramsStr, err := ns.ResolvedParams(envName)
 	if err != nil {
 		return "", err
 	}

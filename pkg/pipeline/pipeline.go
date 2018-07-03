@@ -85,15 +85,15 @@ func (p *Pipeline) Modules() ([]component.Module, error) {
 }
 
 // EnvParameters creates parameters for a namespace given an environment.
-func (p *Pipeline) EnvParameters(module string) (string, error) {
-	ns, err := p.cm.Module(p.app, module)
+func (p *Pipeline) EnvParameters(moduleName string) (string, error) {
+	module, err := p.cm.Module(p.app, moduleName)
 	if err != nil {
-		return "", errors.Wrapf(err, "load module %s", module)
+		return "", errors.Wrapf(err, "load module %s", moduleName)
 	}
 
-	paramsStr, err := p.cm.NSResolveParams(ns)
+	paramsStr, err := module.ResolvedParams(p.envName)
 	if err != nil {
-		return "", errors.Wrapf(err, "resolve params for %s", module)
+		return "", errors.Wrapf(err, "resolve params for %s", moduleName)
 	}
 
 	data, err := p.app.EnvironmentParams(p.envName)
@@ -156,7 +156,7 @@ func (p *Pipeline) moduleObjects(module component.Module, filter []string) ([]*u
 	doc.Fields = append(doc.Fields, object.Fields...)
 
 	// apply environment parameters
-	moduleParamData, err := module.ResolvedParams()
+	moduleParamData, err := module.ResolvedParams(p.envName)
 	if err != nil {
 		return nil, err
 	}

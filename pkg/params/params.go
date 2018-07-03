@@ -19,7 +19,6 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
-	"regexp"
 	"strings"
 
 	"github.com/google/go-jsonnet/ast"
@@ -34,7 +33,7 @@ var (
 	convertObjectToMapFn = jsonnetutil.ConvertObjectToMap
 	jsonnetFieldIDFn     = jsonnetutil.FieldID
 	jsonnetFindObjectFn  = jsonnetutil.FindObject
-	jsonnetParseFn       = jsonnetutil.Parse
+	jsonnetParseFn       = jsonnetutil.ParseNode
 	jsonnetPrinterFn     = printer.Fprint
 	jsonnetSetFn         = jsonnetutil.Set
 	nmKVFromMapFn        = nm.KVFromMap
@@ -109,9 +108,14 @@ func DeleteFromObject(fieldPath []string, paramsData, key, root string) (string,
 
 // update updates a params file with the params for a component.
 func update(path []string, src string, params map[string]interface{}) (string, error) {
-	obj, err := jsonnetParseFn("params.libsonnet", src)
+	n, err := jsonnetParseFn("params.libsonnet", src)
 	if err != nil {
 		return "", errors.Wrap(err, "parse jsonnet")
+	}
+
+	obj, ok := n.(*astext.Object)
+	if !ok {
+		return "", errors.Errorf("jsonnet node is not an object")
 	}
 
 	paramsObject, err := nmKVFromMapFn(params)
@@ -159,13 +163,6 @@ func ToMap(componentName, src, root string) (map[string]interface{}, error) {
 
 	return paramsMap, nil
 }
-
-var (
-	reFloat = regexp.MustCompile(`^[-+]?[0-9]*\.?[0-9]+$`)
-	reInt   = regexp.MustCompile(`^([+-]?[1-9]\d*|0)$`)
-	reArray = regexp.MustCompile(`^\[`)
-	reMap   = regexp.MustCompile(`^\{`)
-)
 
 func mergeMaps(m1 map[string]interface{}, m2 map[string]interface{}, path []string) error {
 	for k := range m2 {

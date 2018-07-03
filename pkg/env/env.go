@@ -23,6 +23,7 @@ import (
 	utilio "github.com/ksonnet/ksonnet/pkg/util/io"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/ksonnet/ksonnet/pkg/params"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/ksonnet/ksonnet/pkg/util/jsonnet"
 	"github.com/pkg/errors"
@@ -155,7 +156,7 @@ func evaluateMain(a app.App, envName, snippet, components, paramsStr string, opt
 		}
 	}
 
-	envCode, err := environmentsCode(a, envName)
+	envCode, err := params.JsonnetEnvObject(a, envName)
 	if err != nil {
 		return "", err
 	}
@@ -206,6 +207,7 @@ func envRoot(a app.App, envName string) (string, error) {
 
 }
 
+// Path constructs a path to a file or directory in an environment.
 func Path(a app.App, envName string, path ...string) (string, error) {
 	base, err := envRoot(a, envName)
 	if err != nil {

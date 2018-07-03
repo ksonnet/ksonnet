@@ -45,11 +45,12 @@ func TestPipeline_Namespaces(t *testing.T) {
 
 func TestPipeline_EnvParameters(t *testing.T) {
 	withPipeline(t, func(p *Pipeline, m *cmocks.Manager, a *appmocks.App) {
-		ns := component.NewModule(p.app, "/")
-		namespaces := []component.Module{ns}
+		module := &cmocks.Module{}
+		module.On("ResolvedParams", "default").Return("{}", nil)
+
+		namespaces := []component.Module{module}
 		m.On("Modules", p.app, "default").Return(namespaces, nil)
-		m.On("Module", p.app, "/").Return(ns, nil)
-		m.On("NSResolveParams", ns).Return("", nil)
+		m.On("Module", p.app, "/").Return(module, nil)
 		a.On("EnvironmentParams", "default").Return("{}", nil)
 
 		env := &app.EnvironmentConfig{Path: "default"}
@@ -143,7 +144,7 @@ func TestPipeline_Objects(t *testing.T) {
 		object := &astext.Object{}
 		componentMap := map[string]string{"service": "yaml"}
 		module.On("Render", "default").Return(object, componentMap, nil)
-		module.On("ResolvedParams").Return("", nil)
+		module.On("ResolvedParams", "default").Return("", nil)
 
 		modules := []component.Module{module}
 		m.On("Modules", p.app, "default").Return(modules, nil)

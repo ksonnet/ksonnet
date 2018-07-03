@@ -72,7 +72,6 @@ func Test_SetInObject(t *testing.T) {
 			fieldPath     []string
 			value         interface{}
 			updateFn      func([]string, string, map[string]interface{}) (string, error)
-			isErr         bool
 		}{
 			{
 				name:          "update existing field",
@@ -169,7 +168,6 @@ func Test_DeleteFromObject(t *testing.T) {
 			componentName string
 			fieldPath     []string
 			updateFn      func([]string, string, map[string]interface{}) (string, error)
-			isErr         bool
 		}{
 			{
 				name:          "delete existing field",
@@ -251,7 +249,7 @@ func Test_update(t *testing.T) {
 		{
 			name: "invalid source",
 			init: func() {
-				jsonnetParseFn = func(string, string) (*astext.Object, error) {
+				jsonnetParseFn = func(string, string) (ast.Node, error) {
 					return nil, errors.New("failed")
 				}
 			},
@@ -260,7 +258,7 @@ func Test_update(t *testing.T) {
 		{
 			name: "invalid params",
 			init: func() {
-				jsonnetParseFn = func(string, string) (*astext.Object, error) {
+				jsonnetParseFn = func(string, string) (ast.Node, error) {
 					return &astext.Object{}, nil
 				}
 				nmKVFromMapFn = func(map[string]interface{}) (*nm.Object, error) {
@@ -272,7 +270,7 @@ func Test_update(t *testing.T) {
 		{
 			name: "unable to set in jsonnet",
 			init: func() {
-				jsonnetParseFn = func(string, string) (*astext.Object, error) {
+				jsonnetParseFn = func(string, string) (ast.Node, error) {
 					return &astext.Object{}, nil
 				}
 				nmKVFromMapFn = func(map[string]interface{}) (*nm.Object, error) {
@@ -287,7 +285,7 @@ func Test_update(t *testing.T) {
 		{
 			name: "unable to print",
 			init: func() {
-				jsonnetParseFn = func(string, string) (*astext.Object, error) {
+				jsonnetParseFn = func(string, string) (ast.Node, error) {
 					return &astext.Object{}, nil
 				}
 				nmKVFromMapFn = func(map[string]interface{}) (*nm.Object, error) {
@@ -391,7 +389,7 @@ func TestToMap(t *testing.T) {
 		{
 			name: "invalid source",
 			init: func() {
-				jsonnetParseFn = func(string, string) (*astext.Object, error) {
+				jsonnetParseFn = func(string, string) (ast.Node, error) {
 					return nil, errors.New("failed")
 				}
 			},

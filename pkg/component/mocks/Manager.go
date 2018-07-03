@@ -130,24 +130,3 @@ func (_m *Manager) Modules(ksApp app.App, envName string) ([]component.Module, e
 
 	return r0, r1
 }
-
-// NSResolveParams provides a mock function with given fields: ns
-func (_m *Manager) NSResolveParams(ns component.Module) (string, error) {
-	ret := _m.Called(ns)
-
-	var r0 string
-	if rf, ok := ret.Get(0).(func(component.Module) string); ok {
-		r0 = rf(ns)
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(component.Module) error); ok {
-		r1 = rf(ns)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
