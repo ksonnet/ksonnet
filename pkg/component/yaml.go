@@ -294,7 +294,7 @@ func (y *YAML) Summarize() (Summary, error) {
 	}, nil
 }
 
-// ToNode converts a YAML component to a Jonnet node.
+// ToNode converts a YAML component to a Jsonnet node.
 func (y *YAML) ToNode(envName string) (string, ast.Node, error) {
 	key := y.Name(false)
 	data, err := afero.ReadFile(y.app.Fs(), y.source)

@@ -192,7 +192,7 @@ func stringQuote(s string, useSingle bool) string {
 	sb := strings.Builder{}
 	sb.WriteByte(singleQuote)
 	flipped := strings.Replace(quoted[1:len(quoted)-1], "'", "\\'", -1)
-	flipped = strings.Replace(quoted[1:len(quoted)-1], "\\\"", "\"", -1) // TODO use Replacer
+	flipped = strings.Replace(flipped, "\\\"", "\"", -1) // TODO use Replacer
 	sb.WriteString(flipped)
 	sb.WriteByte(singleQuote)
 
@@ -428,7 +428,13 @@ func (p *printer) print(n interface{}) {
 			return
 		case ast.StringSingle, ast.StringDouble:
 			useSingle := (qm != quoteModeDouble)
-			quoted := stringQuote(t.Value, useSingle)
+
+			// Unescape newlines and tabs. The jsonnet parser will escape
+			// these during parsing.
+			val := strings.Replace(t.Value, "\\n", "\n", -1)
+			val = strings.Replace(val, "\\t", "\t", -1)
+
+			quoted := stringQuote(val, useSingle)
 			p.writeString(quoted)
 		case ast.StringBlock:
 			p.writeString("|||")
