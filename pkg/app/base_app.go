@@ -72,7 +72,6 @@ func (ba *baseApp) overridePath() string {
 
 func (ba *baseApp) save() error {
 	log := log.WithField("action", "baseApp.save")
-	log.Debugf("called [%p]", ba)
 
 	ba.mu.Lock()
 	defer ba.mu.Unlock()
@@ -106,9 +105,6 @@ func (ba *baseApp) save() error {
 }
 
 func (ba *baseApp) load() error {
-	log := log.WithField("action", "baseApp.load")
-	log.Debugf("called [%p]", ba)
-
 	ba.mu.Lock()
 	defer ba.mu.Unlock()
 
