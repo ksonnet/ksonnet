@@ -56,8 +56,8 @@ type Pipeline struct {
 	envName             string
 	cm                  component.Manager
 	buildObjectsFn      func(*Pipeline, []string) ([]*unstructured.Unstructured, error)
-	evaluateEnvFn       func(app.App, string, string, string, ...jsonnet.VMOpt) (string, error)
-	evaluateEnvParamsFn func(app.App, string, string, string) (string, error)
+	evaluateEnvFn       func(a app.App, envName, components, paramsStr string, opts ...jsonnet.VMOpt) (string, error)
+	evaluateEnvParamsFn func(a app.App, sourcePath, paramsStr, envName, moduleName string) (string, error)
 }
 
 // New creates an instance of Pipeline.
@@ -166,7 +166,7 @@ func (p *Pipeline) moduleObjects(module component.Module, filter []string) ([]*u
 		return nil, err
 	}
 
-	envParamData, err := p.evaluateEnvParamsFn(p.app, envParamsPath, moduleParamData, p.envName)
+	envParamData, err := p.evaluateEnvParamsFn(p.app, envParamsPath, moduleParamData, p.envName, module.Name())
 	if err != nil {
 		return nil, err
 	}

@@ -113,7 +113,7 @@ func (y *YAML) Params(envName string) ([]ModuleParameter, error) {
 		return nil, err
 	}
 
-	return y.paramValues(y.Name(false), valueMap, componentParams, nil)
+	return y.paramValues(y.Name(true), valueMap, componentParams, nil)
 }
 
 func isLeaf(path []string, key string, valueMap map[string]schema.Values) (string, bool) {
@@ -286,7 +286,7 @@ func (y *YAML) Summarize() (Summary, error) {
 	}
 
 	return Summary{
-		ComponentName: y.Name(false),
+		ComponentName: y.Name(true),
 		Type:          y.ext(),
 		APIVersion:    ts.APIVersion,
 		Kind:          ts.RawKind,

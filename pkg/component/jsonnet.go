@@ -138,7 +138,7 @@ func (j *Jsonnet) Params(envName string) ([]ModuleParameter, error) {
 			return nil, err
 		}
 		np := ModuleParameter{
-			Component: j.Name(false),
+			Component: j.Name(true),
 			Key:       k,
 			Value:     vStr,
 		}
@@ -174,7 +174,7 @@ func (j *Jsonnet) paramValue(v interface{}) (string, error) {
 // Summarize creates a summary for the component.
 func (j *Jsonnet) Summarize() (Summary, error) {
 	return Summary{
-		ComponentName: j.Name(false),
+		ComponentName: j.Name(true),
 		Type:          "jsonnet",
 	}, nil
 }
