@@ -26,29 +26,62 @@ import (
 )
 
 func TestPrototypeList(t *testing.T) {
-	withApp(t, func(appMock *amocks.App) {
-		prototypes := prototype.Prototypes{}
+	cases := []struct {
+		name       string
+		outputType string
+		outputFile string
+		isErr      bool
+	}{
+		{
+			name:       "table output",
+			outputType: "table",
+			outputFile: "prototype/list/output.txt",
+		},
+		{
+			name:       "json output",
+			outputType: "json",
+			outputFile: "prototype/list/output.json",
+		},
+		{
+			name:       "invalid output type",
+			outputType: "invalid",
+			isErr:      true,
+		},
+	}
 
-		manager := &registrymocks.PackageManager{}
-		manager.On("Prototypes").Return(prototypes, nil)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			withApp(t, func(appMock *amocks.App) {
+				prototypes := prototype.Prototypes{}
 
-		in := map[string]interface{}{
-			OptionApp: appMock,
-		}
+				manager := &registrymocks.PackageManager{}
+				manager.On("Prototypes").Return(prototypes, nil)
 
-		a, err := NewPrototypeList(in)
-		require.NoError(t, err)
+				in := map[string]interface{}{
+					OptionApp:    appMock,
+					OptionOutput: tc.outputType,
+				}
 
-		a.packageManager = manager
+				a, err := NewPrototypeList(in)
+				require.NoError(t, err)
 
-		var buf bytes.Buffer
-		a.out = &buf
+				a.packageManager = manager
 
-		err = a.Run()
-		require.NoError(t, err)
+				var buf bytes.Buffer
+				a.out = &buf
 
-		assertOutput(t, "prototype/list/output.txt", buf.String())
-	})
+				err = a.Run()
+				if tc.isErr {
+					require.Error(t, err)
+					return
+				}
+				require.NoError(t, err)
+
+				assertOutput(t, tc.outputFile, buf.String())
+			})
+		})
+	}
+
 }
 
 func TestPrototypeList_requires_app(t *testing.T) {

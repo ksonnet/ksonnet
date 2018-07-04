@@ -59,8 +59,7 @@ func newComponentListCmd(a app.App) *cobra.Command {
 		},
 	}
 
-	componentListCmd.Flags().StringP(flagOutput, shortOutput, "", "Output format. Valid options: wide")
-	viper.BindPFlag(vComponentListOutput, componentListCmd.Flags().Lookup(flagOutput))
+	addCmdOutput(componentListCmd, vComponentListOutput)
 	componentListCmd.Flags().String(flagModule, "", "Component module")
 	viper.BindPFlag(vComponentListNamespace, componentListCmd.Flags().Lookup(flagModule))
 

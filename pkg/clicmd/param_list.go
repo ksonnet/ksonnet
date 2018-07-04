@@ -21,6 +21,11 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+const (
+	vParamListOutput = "param-list-output"
 )
 
 var (
@@ -83,12 +88,14 @@ func newParamListCmd(a app.App) *cobra.Command {
 				actions.OptionComponentName: component,
 				actions.OptionEnvName:       env,
 				actions.OptionModule:        module,
+				actions.OptionOutput:        viper.GetString(vParamListOutput),
 			}
 
 			return runAction(actionParamList, m)
 		},
 	}
 
+	addCmdOutput(paramListCmd, vParamListOutput)
 	paramListCmd.PersistentFlags().String(flagEnv, "", "Specify environment to list parameters for")
 	paramListCmd.Flags().String(flagModule, "", "Specify module to list parameters for")
 

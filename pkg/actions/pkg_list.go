@@ -24,6 +24,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/ksonnet/ksonnet/pkg/util/table"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -45,6 +46,7 @@ func RunPkgList(m map[string]interface{}) error {
 type PkgList struct {
 	app           app.App
 	onlyInstalled bool
+	outputType    string
 
 	registryListFn func(ksApp app.App) ([]registry.Registry, error)
 	out            io.Writer
@@ -57,6 +59,7 @@ func NewPkgList(m map[string]interface{}) (*PkgList, error) {
 	rl := &PkgList{
 		app:           ol.LoadApp(),
 		onlyInstalled: ol.LoadBool(OptionInstalled),
+		outputType:    ol.LoadOptionalString(OptionOutput),
 
 		registryListFn: registry.List,
 		out:            os.Stdout,
@@ -107,7 +110,14 @@ func (pl *PkgList) Run() error {
 		return nameI < nameJ
 	})
 
-	t := table.New(pl.out)
+	t := table.New("pkgList", pl.out)
+
+	f, err := table.DetectFormat(pl.outputType)
+	if err != nil {
+		return errors.Wrap(err, "detecting output format")
+	}
+	t.SetFormat(f)
+
 	t.SetHeader([]string{"registry", "name", "version", "installed"})
 	t.AppendBulk(rows)
 	return t.Render()
@@ -115,9 +125,12 @@ func (pl *PkgList) Run() error {
 
 func (pl *PkgList) addRow(regName, libName, version string, isInstalled bool) []string {
 	row := []string{regName, libName, version}
+	installedText := ""
 	if isInstalled {
-		row = append(row, pkgInstalled)
+		installedText = pkgInstalled
 	}
+
+	row = append(row, installedText)
 
 	return row
 }

@@ -32,6 +32,19 @@ func Test_paramListCmd(t *testing.T) {
 				actions.OptionEnvName:       "",
 				actions.OptionModule:        "",
 				actions.OptionComponentName: "",
+				actions.OptionOutput:        "",
+			},
+		},
+		{
+			name:   "with output",
+			args:   []string{"param", "list", "-o", "json"},
+			action: actionParamList,
+			expected: map[string]interface{}{
+				actions.OptionApp:           nil,
+				actions.OptionEnvName:       "",
+				actions.OptionModule:        "",
+				actions.OptionComponentName: "",
+				actions.OptionOutput:        "json",
 			},
 		},
 		{
@@ -43,6 +56,7 @@ func Test_paramListCmd(t *testing.T) {
 				actions.OptionEnvName:       "",
 				actions.OptionModule:        "",
 				actions.OptionComponentName: "component",
+				actions.OptionOutput:        "",
 			},
 		},
 		{
@@ -54,6 +68,7 @@ func Test_paramListCmd(t *testing.T) {
 				actions.OptionEnvName:       "",
 				actions.OptionModule:        "module",
 				actions.OptionComponentName: "",
+				actions.OptionOutput:        "",
 			},
 		},
 		{
@@ -65,6 +80,7 @@ func Test_paramListCmd(t *testing.T) {
 				actions.OptionEnvName:       "env",
 				actions.OptionModule:        "",
 				actions.OptionComponentName: "",
+				actions.OptionOutput:        "",
 			},
 		},
 	}

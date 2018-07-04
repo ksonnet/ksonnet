@@ -23,54 +23,82 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/util/test"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
 func TestEnvList(t *testing.T) {
-	withApp(t, func(appMock *amocks.App) {
 
-		env := &app.EnvironmentConfig{
+	setupValidApp := func(appMock *amocks.App) {
+		defaultEnv := &app.EnvironmentConfig{
 			KubernetesVersion: "v1.7.0",
 			Destination: &app.EnvironmentDestinationSpec{
 				Namespace: "default",
 				Server:    "http://example.com",
 			},
 		}
+
+		prodEnv := &app.EnvironmentConfig{
+			KubernetesVersion: "v1.7.0",
+			Destination: &app.EnvironmentDestinationSpec{
+				Namespace: "prod",
+				Server:    "http://example.com",
+			},
+		}
+
 		envs := app.EnvironmentConfigs{
-			"default": env,
+			"default": defaultEnv,
+			"prod":    prodEnv,
 		}
 
 		appMock.On("Environments").Return(envs, nil)
+	}
 
-		cases := []struct {
-			name         string
-			outputType   string
-			expectedFile string
-			isErr        bool
-		}{
-			{
-				name:         "no format specified",
-				expectedFile: filepath.Join("env", "list", "output.txt"),
-			},
-			{
-				name:         "wide output",
-				outputType:   OutputWide,
-				expectedFile: filepath.Join("env", "list", "output.txt"),
-			},
-			{
-				name:         "json output",
-				outputType:   OutputJSON,
-				expectedFile: filepath.Join("env", "list", "output.json"),
-			},
-			{
-				name:       "invalid output format",
-				outputType: "invalid",
-				isErr:      true,
-			},
-		}
+	envListFail := func(appMock *amocks.App) {
+		appMock.On("Environments").Return(nil, errors.New("failed"))
+	}
 
-		for _, tc := range cases {
-			t.Run(tc.name, func(t *testing.T) {
+	cases := []struct {
+		name         string
+		initApp      func(*amocks.App)
+		outputType   string
+		expectedFile string
+		isErr        bool
+	}{
+		{
+			name:         "table output",
+			initApp:      setupValidApp,
+			outputType:   "table",
+			expectedFile: filepath.Join("env", "list", "output.txt"),
+		},
+		{
+			name:         "no format specified",
+			initApp:      setupValidApp,
+			expectedFile: filepath.Join("env", "list", "output.txt"),
+		},
+		{
+			name:         "json output",
+			initApp:      setupValidApp,
+			outputType:   "json",
+			expectedFile: filepath.Join("env", "list", "output.json"),
+		},
+		{
+			name:       "invalid output format",
+			initApp:    setupValidApp,
+			outputType: "invalid",
+			isErr:      true,
+		},
+		{
+			name:    "environment list failed",
+			initApp: envListFail,
+			isErr:   true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			withApp(t, func(appMock *amocks.App) {
+				tc.initApp(appMock)
 				in := map[string]interface{}{
 					OptionApp:    appMock,
 					OptionOutput: tc.outputType,
@@ -91,9 +119,8 @@ func TestEnvList(t *testing.T) {
 				require.NoError(t, err)
 				test.AssertOutput(t, tc.expectedFile, buf.String())
 			})
-		}
-
-	})
+		})
+	}
 }
 
 func TestEnvList_requires_app(t *testing.T) {

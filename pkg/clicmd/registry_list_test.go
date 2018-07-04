@@ -28,7 +28,17 @@ func Test_registryListCmd(t *testing.T) {
 			args:   []string{"registry", "list"},
 			action: actionRegistryList,
 			expected: map[string]interface{}{
-				actions.OptionApp: nil,
+				actions.OptionApp:    nil,
+				actions.OptionOutput: "",
+			},
+		},
+		{
+			name:   "with output flag",
+			args:   []string{"registry", "list", "-o", "json"},
+			action: actionRegistryList,
+			expected: map[string]interface{}{
+				actions.OptionApp:    nil,
+				actions.OptionOutput: "json",
 			},
 		},
 		{

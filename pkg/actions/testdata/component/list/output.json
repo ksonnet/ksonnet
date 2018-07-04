@@ -1,0 +1,19 @@
+{
+	"kind": "componentList",
+	"data": [
+		{
+			"apiversion": "",
+			"component": "deployment",
+			"kind": "",
+			"name": "",
+			"type": ""
+		},
+		{
+			"apiversion": "",
+			"component": "ingress",
+			"kind": "",
+			"name": "",
+			"type": ""
+		}
+	]
+}

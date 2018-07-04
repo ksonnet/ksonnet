@@ -26,7 +26,7 @@ ks env list [flags]
 
 ```
   -h, --help            help for list
-  -o, --output string   Output format. One of: json|wide
+  -o, --output string   Output format. Valid options: table|json
 ```
 
 ### Options inherited from parent commands

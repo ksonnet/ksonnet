@@ -24,6 +24,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/ksonnet/ksonnet/pkg/util/table"
+	"github.com/pkg/errors"
 )
 
 // RunPrototypeList runs `prototype list`
@@ -38,8 +39,10 @@ func RunPrototypeList(m map[string]interface{}) error {
 
 // PrototypeList lists available prototypes.
 type PrototypeList struct {
-	app            app.App
-	out            io.Writer
+	app        app.App
+	out        io.Writer
+	outputType string
+
 	packageManager registry.PackageManager
 }
 
@@ -49,8 +52,10 @@ func NewPrototypeList(m map[string]interface{}) (*PrototypeList, error) {
 
 	app := ol.LoadApp()
 	pl := &PrototypeList{
-		app:            app,
-		out:            os.Stdout,
+		app:        app,
+		out:        os.Stdout,
+		outputType: ol.LoadOptionalString(OptionOutput),
+
 		packageManager: registry.NewPackageManager(app),
 	}
 
@@ -83,8 +88,14 @@ func (pl *PrototypeList) Run() error {
 		rows = append(rows, []string{p.Name, p.Template.ShortDescription})
 	}
 
-	t := table.New(pl.out)
+	t := table.New("prototypeList", pl.out)
 	t.SetHeader([]string{"name", "description"})
+
+	f, err := table.DetectFormat(pl.outputType)
+	if err != nil {
+		return errors.Wrap(err, "detecting output format")
+	}
+	t.SetFormat(f)
 
 	sort.Slice(rows, func(i, j int) bool {
 		return rows[i][0] < rows[j][0]

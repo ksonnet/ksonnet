@@ -21,6 +21,11 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+const (
+	vPrototypeSearchOutput = "prototype-search-output"
 )
 
 var (
@@ -52,13 +57,15 @@ func newPrototypeSearchCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:   a,
-				actions.OptionQuery: args[0],
+				actions.OptionApp:    a,
+				actions.OptionQuery:  args[0],
+				actions.OptionOutput: viper.GetString(vPrototypeSearchOutput),
 			}
 
 			return runAction(actionPrototypeSearch, m)
 		},
 	}
 
+	addCmdOutput(prototypeSearchCmd, vPrototypeSearchOutput)
 	return prototypeSearchCmd
 }

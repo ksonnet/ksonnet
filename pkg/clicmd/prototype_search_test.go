@@ -28,8 +28,19 @@ func Test_protoptypeSearchCmd(t *testing.T) {
 			args:   []string{"prototype", "search", "name"},
 			action: actionPrototypeSearch,
 			expected: map[string]interface{}{
-				actions.OptionApp:   nil,
-				actions.OptionQuery: "name",
+				actions.OptionApp:    nil,
+				actions.OptionQuery:  "name",
+				actions.OptionOutput: "",
+			},
+		},
+		{
+			name:   "set output",
+			args:   []string{"prototype", "search", "name", "-o", "json"},
+			action: actionPrototypeSearch,
+			expected: map[string]interface{}{
+				actions.OptionApp:    nil,
+				actions.OptionQuery:  "name",
+				actions.OptionOutput: "json",
 			},
 		},
 		{

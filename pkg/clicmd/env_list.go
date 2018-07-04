@@ -62,8 +62,8 @@ func newEnvListCmd(a app.App) *cobra.Command {
 			return runAction(actionEnvList, m)
 		},
 	}
-	envListCmd.Flags().StringP(flagOutput, shortOutput, "", "Output format. One of: json|wide")
-	viper.BindPFlag(vEnvListOutput, envListCmd.Flags().Lookup(flagOutput))
+
+	addCmdOutput(envListCmd, vEnvListOutput)
 
 	return envListCmd
 }

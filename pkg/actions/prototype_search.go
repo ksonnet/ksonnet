@@ -25,6 +25,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/ksonnet/ksonnet/pkg/util/table"
+	"github.com/pkg/errors"
 )
 
 // RunPrototypeSearch runs `prototype search`
@@ -39,8 +40,9 @@ func RunPrototypeSearch(m map[string]interface{}) error {
 
 // PrototypeSearch searches for prototypes by name.
 type PrototypeSearch struct {
-	app   app.App
-	query string
+	app        app.App
+	query      string
+	outputType string
 
 	out            io.Writer
 	packageManager registry.PackageManager
@@ -53,8 +55,9 @@ func NewPrototypeSearch(m map[string]interface{}) (*PrototypeSearch, error) {
 
 	app := ol.LoadApp()
 	ps := &PrototypeSearch{
-		app:   app,
-		query: ol.LoadString(OptionQuery),
+		app:        app,
+		query:      ol.LoadString(OptionQuery),
+		outputType: ol.LoadOptionalString(OptionOutput),
 
 		out:            os.Stdout,
 		packageManager: registry.NewPackageManager(app),
@@ -89,8 +92,14 @@ func (ps *PrototypeSearch) Run() error {
 		rows = append(rows, []string{p.Name, p.Template.ShortDescription})
 	}
 
-	t := table.New(ps.out)
+	t := table.New("prototypeSearch", ps.out)
 	t.SetHeader([]string{"name", "description"})
+
+	f, err := table.DetectFormat(ps.outputType)
+	if err != nil {
+		return errors.Wrap(err, "detecting output format")
+	}
+	t.SetFormat(f)
 
 	sort.Slice(rows, func(i, j int) bool {
 		return rows[i][0] < rows[j][0]

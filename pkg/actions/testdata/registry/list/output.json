@@ -1,0 +1,17 @@
+{
+	"kind": "registryList",
+	"data": [
+		{
+			"name": "incubator",
+			"override": "",
+			"protocol": "github",
+			"uri": "github.com/ksonnet/parts/tree/master/incubator"
+		},
+		{
+			"name": "override",
+			"override": "*",
+			"protocol": "github",
+			"uri": "github.com/ksonnet/parts/tree/master/incubator"
+		}
+	]
+}

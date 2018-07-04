@@ -23,6 +23,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/component"
 	"github.com/ksonnet/ksonnet/pkg/util/table"
+	"github.com/pkg/errors"
 )
 
 // RunModuleList runs `module list`
@@ -37,10 +38,11 @@ func RunModuleList(m map[string]interface{}) error {
 
 // ModuleList lists modules.
 type ModuleList struct {
-	app     app.App
-	envName string
-	out     io.Writer
-	cm      component.Manager
+	app        app.App
+	envName    string
+	outputType string
+	out        io.Writer
+	cm         component.Manager
 }
 
 // NewModuleList creates an instance of ModuleList.
@@ -48,8 +50,9 @@ func NewModuleList(m map[string]interface{}) (*ModuleList, error) {
 	ol := newOptionLoader(m)
 
 	nl := &ModuleList{
-		app:     ol.LoadApp(),
-		envName: ol.LoadString(OptionEnvName),
+		app:        ol.LoadApp(),
+		envName:    ol.LoadString(OptionEnvName),
+		outputType: ol.LoadOptionalString(OptionOutput),
 
 		out: os.Stdout,
 		cm:  component.DefaultManager,
@@ -69,8 +72,14 @@ func (nl *ModuleList) Run() error {
 		return err
 	}
 
-	t := table.New(nl.out)
+	t := table.New("moduleList", nl.out)
 	t.SetHeader([]string{"module"})
+
+	f, err := table.DetectFormat(nl.outputType)
+	if err != nil {
+		return errors.Wrap(err, "detecting output format")
+	}
+	t.SetFormat(f)
 
 	names := make([]string, len(modules))
 	for i := range modules {

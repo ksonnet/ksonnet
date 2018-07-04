@@ -26,7 +26,8 @@ ks registry list [flags]
 ### Options
 
 ```
-  -h, --help   help for list
+  -h, --help            help for list
+  -o, --output string   Output format. Valid options: table|json
 ```
 
 ### Options inherited from parent commands

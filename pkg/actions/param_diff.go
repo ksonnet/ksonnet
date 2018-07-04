@@ -22,6 +22,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/component"
 	"github.com/ksonnet/ksonnet/pkg/util/table"
+	"github.com/pkg/errors"
 )
 
 // RunParamDiff runs `param diff`.
@@ -40,6 +41,7 @@ type ParamDiff struct {
 	envName1      string
 	envName2      string
 	componentName string
+	outputType    string
 
 	modulesFromEnvFn func(app.App, string) ([]component.Module, error)
 	out              io.Writer
@@ -54,6 +56,7 @@ func NewParamDiff(m map[string]interface{}) (*ParamDiff, error) {
 		envName1:      ol.LoadString(OptionEnvName1),
 		envName2:      ol.LoadString(OptionEnvName2),
 		componentName: ol.LoadOptionalString(OptionComponentName),
+		outputType:    ol.LoadOptionalString(OptionOutput),
 
 		modulesFromEnvFn: component.ModulesFromEnv,
 		out:              os.Stdout,
@@ -119,7 +122,7 @@ func (pd *ParamDiff) checkMissing(env1, env2 []component.ModuleParameter) [][]st
 		}
 
 		if !found {
-			rows = append(rows, []string{mp1.Component, mp1.Key, mp1.Value})
+			rows = append(rows, []string{mp1.Component, mp1.Key, mp1.Value, ""})
 		}
 	}
 
@@ -162,10 +165,16 @@ func (pd *ParamDiff) moduleParams(envName string) ([]component.ModuleParameter, 
 }
 
 func (pd *ParamDiff) print(rows [][]string) error {
-	table := table.New(pd.out)
+	t := table.New("paramDiff", pd.out)
 
-	table.SetHeader([]string{"COMPONENT", "PARAM", "ENV1", "ENV2"})
-	table.AppendBulk(rows)
+	f, err := table.DetectFormat(pd.outputType)
+	if err != nil {
+		return errors.Wrap(err, "detecting output format")
+	}
+	t.SetFormat(f)
 
-	return table.Render()
+	t.SetHeader([]string{"component", "param", "env1", "env2"})
+	t.AppendBulk(rows)
+
+	return t.Render()
 }

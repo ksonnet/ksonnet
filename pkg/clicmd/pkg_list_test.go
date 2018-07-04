@@ -30,6 +30,17 @@ func Test_pkgListCmd(t *testing.T) {
 			expected: map[string]interface{}{
 				actions.OptionApp:       nil,
 				actions.OptionInstalled: false,
+				actions.OptionOutput:    "",
+			},
+		},
+		{
+			name:   "set output",
+			args:   []string{"pkg", "list", "-o", "json"},
+			action: actionPkgList,
+			expected: map[string]interface{}{
+				actions.OptionApp:       nil,
+				actions.OptionInstalled: false,
+				actions.OptionOutput:    "json",
 			},
 		},
 		{

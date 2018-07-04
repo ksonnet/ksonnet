@@ -16,7 +16,6 @@
 package actions
 
 import (
-	"encoding/json"
 	"io"
 	"os"
 	"sort"
@@ -68,47 +67,20 @@ func NewComponentList(m map[string]interface{}) (*ComponentList, error) {
 
 // Run runs the ComponentList action.
 func (cl *ComponentList) Run() error {
-	ns, err := cl.cm.Module(cl.app, cl.module)
+	module, err := cl.cm.Module(cl.app, cl.module)
 	if err != nil {
 		return err
 	}
 
-	components, err := ns.Components()
+	components, err := module.Components()
 	if err != nil {
 		return err
 	}
 
-	switch cl.output {
-	default:
-		return errors.Errorf("invalid output option %q", cl.output)
-	case "":
-		cl.listComponents(components)
-	case "wide":
-		return cl.listComponentsWide(components)
-	case "json":
-		return cl.listComponentsJSON(components)
-	}
-
-	return nil
+	return cl.listComponents(components)
 }
 
-func (cl *ComponentList) listComponents(components []component.Component) {
-	var list []string
-	for _, c := range components {
-		list = append(list, c.Name(true))
-	}
-
-	sort.Strings(list)
-
-	table := table.New(cl.out)
-	table.SetHeader([]string{"component"})
-	for _, item := range list {
-		table.Append([]string{item})
-	}
-	table.Render()
-}
-
-func (cl *ComponentList) listComponentsWide(components []component.Component) error {
+func (cl *ComponentList) listComponents(components []component.Component) error {
 	var rows [][]string
 	for _, c := range components {
 		summary, err := c.Summarize()
@@ -131,24 +103,14 @@ func (cl *ComponentList) listComponentsWide(components []component.Component) er
 		return rows[i][0] < rows[j][0]
 	})
 
-	table := table.New(cl.out)
-	table.SetHeader([]string{"component", "type", "apiversion", "kind", "name"})
-	table.AppendBulk(rows)
-	table.Render()
-
-	return nil
-}
-
-func (cl *ComponentList) listComponentsJSON(components []component.Component) error {
-	var summaries []component.Summary
-	for _, c := range components {
-		s, err := c.Summarize()
-		if err != nil {
-			return errors.Wrapf(err, "get summary for %s", c.Name(true))
-		}
-
-		summaries = append(summaries, s)
+	t := table.New("componentList", cl.out)
+	f, err := table.DetectFormat(cl.output)
+	if err != nil {
+		return errors.Wrap(err, "detecting output format")
 	}
 
-	return json.NewEncoder(cl.out).Encode(summaries)
+	t.SetFormat(f)
+	t.SetHeader([]string{"component", "type", "apiversion", "kind", "name"})
+	t.AppendBulk(rows)
+	return t.Render()
 }

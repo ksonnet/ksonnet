@@ -23,7 +23,8 @@ import (
 )
 
 const (
-	vModuleListEnv = "module-list-env"
+	vModuleListEnv    = "module-list-env"
+	vModuleListOutput = "module-list-output"
 )
 
 func newModuleListCmd(a app.App) *cobra.Command {
@@ -35,12 +36,14 @@ func newModuleListCmd(a app.App) *cobra.Command {
 			m := map[string]interface{}{
 				actions.OptionApp:     a,
 				actions.OptionEnvName: viper.GetString(vModuleListEnv),
+				actions.OptionOutput:  viper.GetString(vModuleListOutput),
 			}
 
 			return runAction(actionModuleList, m)
 		},
 	}
 
+	addCmdOutput(moduleListCmd, vModuleListOutput)
 	moduleListCmd.Flags().String(flagEnv, "", "Environment to list modules for")
 	viper.BindPFlag(vModuleListEnv, moduleListCmd.Flags().Lookup(flagEnv))
 

@@ -1,0 +1,25 @@
+{
+	"kind": "prototypeList",
+	"data": [
+		{
+			"description": "A simple config map with optional user-specified data",
+			"name": "io.ksonnet.pkg.configMap"
+		},
+		{
+			"description": "A deployment exposed with a service",
+			"name": "io.ksonnet.pkg.deployed-service"
+		},
+		{
+			"description": "Namespace with labels automatically populated from the name",
+			"name": "io.ksonnet.pkg.namespace"
+		},
+		{
+			"description": "Replicates a container n times, exposes a single port",
+			"name": "io.ksonnet.pkg.single-port-deployment"
+		},
+		{
+			"description": "Service that exposes a single port",
+			"name": "io.ksonnet.pkg.single-port-service"
+		}
+	]
+}

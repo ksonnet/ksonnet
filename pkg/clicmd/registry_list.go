@@ -21,6 +21,11 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+const (
+	vRegistryListOutput = "registry-list-output"
 )
 
 var (
@@ -51,12 +56,14 @@ func newRegistryListCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp: a,
+				actions.OptionApp:    a,
+				actions.OptionOutput: viper.GetString(vRegistryListOutput),
 			}
 
 			return runAction(actionRegistryList, m)
 		},
 	}
 
+	addCmdOutput(registryListCmd, vRegistryListOutput)
 	return registryListCmd
 }

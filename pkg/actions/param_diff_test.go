@@ -29,54 +29,86 @@ import (
 )
 
 func TestParamDiff(t *testing.T) {
-	withApp(t, func(appMock *amocks.App) {
-		env1 := "env1"
-		env2 := "env2"
+	cases := []struct {
+		name       string
+		outputType string
+		outputName string
+		isErr      bool
+	}{
+		{
+			name:       "output table",
+			outputType: "table",
+			outputName: filepath.Join("param", "diff", "output.txt"),
+		},
+		{
+			name:       "output json",
+			outputType: "json",
+			outputName: filepath.Join("param", "diff", "output.json"),
+		},
+		{
+			name:       "invalid output type",
+			outputType: "invalid",
+			isErr:      true,
+		},
+	}
 
-		moduleEnv1 := &mocks.Module{}
-		env1Params := []component.ModuleParameter{
-			{Component: "a", Key: "a", Value: "a"},
-			{Component: "a", Key: "b", Value: "b1"},
-			{Component: "c", Key: "c", Value: "c"},
-		}
-		moduleEnv1.On("Params", "env1").Return(env1Params, nil)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			withApp(t, func(appMock *amocks.App) {
+				env1 := "env1"
+				env2 := "env2"
 
-		moduleEnv2 := &mocks.Module{}
-		env2Params := []component.ModuleParameter{
-			{Component: "a", Key: "a", Value: "a"},
-			{Component: "a", Key: "b", Value: "b2"},
-			{Component: "d", Key: "d", Value: "d"},
-		}
-		moduleEnv2.On("Params", "env2").Return(env2Params, nil)
+				moduleEnv1 := &mocks.Module{}
+				env1Params := []component.ModuleParameter{
+					{Component: "a", Key: "a", Value: "a"},
+					{Component: "a", Key: "b", Value: "b1"},
+					{Component: "c", Key: "c", Value: "c"},
+				}
+				moduleEnv1.On("Params", "env1").Return(env1Params, nil)
 
-		in := map[string]interface{}{
-			OptionApp:      appMock,
-			OptionEnvName1: env1,
-			OptionEnvName2: env2,
-		}
+				moduleEnv2 := &mocks.Module{}
+				env2Params := []component.ModuleParameter{
+					{Component: "a", Key: "a", Value: "a"},
+					{Component: "a", Key: "b", Value: "b2"},
+					{Component: "d", Key: "d", Value: "d"},
+				}
+				moduleEnv2.On("Params", "env2").Return(env2Params, nil)
 
-		a, err := NewParamDiff(in)
-		require.NoError(t, err)
+				in := map[string]interface{}{
+					OptionApp:      appMock,
+					OptionEnvName1: env1,
+					OptionEnvName2: env2,
+					OptionOutput:   tc.outputType,
+				}
 
-		a.modulesFromEnvFn = func(_ app.App, envName string) ([]component.Module, error) {
-			switch envName {
-			case env1:
-				return []component.Module{moduleEnv1}, nil
-			case env2:
-				return []component.Module{moduleEnv2}, nil
-			default:
-				return nil, errors.Errorf("unknown env %s", envName)
-			}
-		}
+				a, err := NewParamDiff(in)
+				require.NoError(t, err)
 
-		var buf bytes.Buffer
-		a.out = &buf
+				a.modulesFromEnvFn = func(_ app.App, envName string) ([]component.Module, error) {
+					switch envName {
+					case env1:
+						return []component.Module{moduleEnv1}, nil
+					case env2:
+						return []component.Module{moduleEnv2}, nil
+					default:
+						return nil, errors.Errorf("unknown env %s", envName)
+					}
+				}
 
-		err = a.Run()
-		require.NoError(t, err)
+				var buf bytes.Buffer
+				a.out = &buf
 
-		assertOutput(t, filepath.Join("param", "diff", "output.txt"), buf.String())
-	})
+				err = a.Run()
+				if tc.isErr {
+					require.Error(t, err)
+					return
+				}
+				require.NoError(t, err)
+
+				assertOutput(t, tc.outputName, buf.String())
+			})
+		})
+	}
 }
 
 func TestParamDiff_requires_app(t *testing.T) {

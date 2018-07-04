@@ -16,7 +16,6 @@
 package actions
 
 import (
-	"encoding/json"
 	"io"
 	"os"
 	"sort"
@@ -36,9 +35,10 @@ func RunEnvList(m map[string]interface{}) error {
 	return nl.Run()
 }
 
-// EnvList lists available namespaces
+// EnvList lists available namespaces. To initialize EnvList,
+// use the `NewEnvList` constructor.
 type EnvList struct {
-	app        app.App
+	envListFn  func() (app.EnvironmentConfigs, error)
 	outputType string
 	out        io.Writer
 }
@@ -47,19 +47,17 @@ type EnvList struct {
 func NewEnvList(m map[string]interface{}) (*EnvList, error) {
 	ol := newOptionLoader(m)
 
-	el := &EnvList{
-		app:        ol.LoadApp(),
-		outputType: ol.LoadOptionalString(OptionOutput),
-
-		out: os.Stdout,
-	}
+	a := ol.LoadApp()
+	outputType := ol.LoadOptionalString(OptionOutput)
 
 	if ol.err != nil {
 		return nil, ol.err
 	}
 
-	if el.outputType == "" {
-		el.outputType = OutputWide
+	el := &EnvList{
+		outputType: outputType,
+		envListFn:  a.Environments,
+		out:        os.Stdout,
 	}
 
 	return el, nil
@@ -67,33 +65,19 @@ func NewEnvList(m map[string]interface{}) (*EnvList, error) {
 
 // Run runs the env list action.
 func (el *EnvList) Run() error {
-	switch el.outputType {
-	default:
-		return errors.Errorf("unknown output format %q", el.outputType)
-	case OutputWide:
-		return el.outputWide()
-	case OutputJSON:
-		return el.outputJSON()
-	}
-}
-
-func (el *EnvList) outputJSON() error {
-	environments, err := el.app.Environments()
+	environments, err := el.envListFn()
 	if err != nil {
 		return err
 	}
 
-	return json.NewEncoder(el.out).Encode(environments)
-}
+	t := table.New("envList", el.out)
+	t.SetHeader([]string{"name", "override", "kubernetes-version", "namespace", "server"})
 
-func (el *EnvList) outputWide() error {
-	environments, err := el.app.Environments()
+	f, err := table.DetectFormat(el.outputType)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "detecting output format")
 	}
-
-	table := table.New(el.out)
-	table.SetHeader([]string{"name", "override", "kubernetes-version", "namespace", "server"})
+	t.SetFormat(f)
 
 	var rows [][]string
 
@@ -116,8 +100,8 @@ func (el *EnvList) outputWide() error {
 		return rows[i][0] < rows[j][0]
 	})
 
-	table.AppendBulk(rows)
+	t.AppendBulk(rows)
 
-	table.Render()
-	return nil
+	return t.Render()
+
 }
