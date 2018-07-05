@@ -13,30 +13,22 @@ Intuitively, an environment acts as a sort of "named cluster", similar to a
 Kubernetes context. (Running `ks env add --help` provides more detail
 about the fields that you need to create an environment).
 
-**All of this environment info is cached in local files**. Environments are
+**All of this environment info is cached in local files**. Metadata such as k8s version, API server address, and namespace are found in `app.yaml`. Environments are
 represented as a hierarchy in the `environments/` directory of a ksonnet app, like
 'default' and 'us-west/staging' in the example below.
 
 ```
 ├── environments
-│   ├── base.libsonnet
-│   ├── default                      // Default generated environment ('ks init')
-│   │   ├── .metadata
-│   │   │   ├── k.libsonnet
-│   │   │   ├── k8s.libsonnet
-│   │   │   └── swagger.json
-│   │   ├── main.jsonnet
-│   │   ├── params.libsonnet
-│   │   └── spec.json
-│   └── us-west
-│       └── staging                  // Example of user-generated env ('ks env add')
-│           ├── .metadata
-│           │   ├── k.libsonnet      // Jsonnet library with Kubernetes-compatible types and definitions
-│           │   ├── k8s.libsonnet
-│           │   └── swagger.json
-│           ├── main.libsonnet       // Main file that imports all components (expanded on apply, delete, etc). Add environment-specific logic here.
-│           ├── params.libsonnet     // Customize components *per-environment* here.
-│           └── spec.json            // Contains the environment's API server address and namespace
+│   ├── base.libsonnet
+│   ├── default
+│   │   ├── globals.libsonnet        // Default generated environment ('ks init')
+│   │   ├── main.jsonnet
+│   │   └── params.libsonnet
+│   └── us-west
+│       └── staging                  // Example of user-generated env ('ks env add')
+│           ├── globals.libsonnet
+│           ├── main.jsonnet         // Main file that imports all components (expanded on apply, delete, etc). Add environment-specific logic here.
+│           └── params.libsonnet     // Customize components *per-environment* here.
 ```
 ----
 
