@@ -25,13 +25,13 @@ type App struct {
 	mock.Mock
 }
 
-// AddEnvironment provides a mock function with given fields: name, k8sSpecFlag, spec, isOverride
-func (_m *App) AddEnvironment(name string, k8sSpecFlag string, spec *app.EnvironmentConfig, isOverride bool) error {
-	ret := _m.Called(name, k8sSpecFlag, spec, isOverride)
+// AddEnvironment provides a mock function with given fields: spec, k8sSpecFlag, isOverride
+func (_m *App) AddEnvironment(spec *app.EnvironmentConfig, k8sSpecFlag string, isOverride bool) error {
+	ret := _m.Called(spec, k8sSpecFlag, isOverride)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, *app.EnvironmentConfig, bool) error); ok {
-		r0 = rf(name, k8sSpecFlag, spec, isOverride)
+	if rf, ok := ret.Get(0).(func(*app.EnvironmentConfig, string, bool) error); ok {
+		r0 = rf(spec, k8sSpecFlag, isOverride)
 	} else {
 		r0 = ret.Error(0)
 	}

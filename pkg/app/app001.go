@@ -54,17 +54,24 @@ func NewApp001(fs afero.Fs, root string) *App001 {
 
 // AddEnvironment adds an environment spec to the app spec. If the spec already exists,
 // it is overwritten.
-func (a *App001) AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentConfig, isOverride bool) error {
+func (a *App001) AddEnvironment(e *EnvironmentConfig, k8sSpecFlag string, isOverride bool) error {
+	if e == nil {
+		return errors.Errorf("nil environment configuraion")
+	}
+	if e.Name == "" {
+		return errors.Errorf("invalid environment name")
+	}
+
 	// if it is an override, write the destination to override file. If not, do the normal thing.
 
-	envPath := filepath.Join(a.root, EnvironmentDirName, name)
+	envPath := filepath.Join(a.root, EnvironmentDirName, e.Name)
 	if err := a.fs.MkdirAll(envPath, DefaultFolderPermissions); err != nil {
 		return err
 	}
 
 	specPath := filepath.Join(envPath, app001specJSON)
 
-	b, err := json.Marshal(spec.Destination)
+	b, err := json.Marshal(e.Destination)
 	if err != nil {
 		return err
 	}
@@ -73,7 +80,7 @@ func (a *App001) AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentConfi
 		return err
 	}
 
-	_, err = LibUpdater(a.fs, k8sSpecFlag, a.appLibPath(name))
+	_, err = LibUpdater(a.fs, k8sSpecFlag, a.appLibPath(e.Name))
 	return err
 }
 

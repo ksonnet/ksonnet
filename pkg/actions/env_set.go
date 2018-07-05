@@ -18,6 +18,7 @@ package actions
 import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/env"
+	"github.com/pkg/errors"
 )
 
 // EnvSetNamespace is an option for setting a new namespace name.
@@ -50,7 +51,7 @@ func RunEnvSet(m map[string]interface{}) error {
 
 // func types for renaming and updating environments
 type envRenameFn func(a app.App, from, to string, override bool) error
-type updateEnvFn func(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentConfig, override bool) error
+type saveFn func(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentConfig, override bool) error
 
 // EnvSet sets targets for an environment.
 type EnvSet struct {
@@ -62,7 +63,7 @@ type EnvSet struct {
 	newAPISpec string
 
 	envRenameFn envRenameFn
-	updateEnvFn updateEnvFn
+	saveFn      saveFn
 }
 
 // NewEnvSet creates an instance of EnvSet.
@@ -78,7 +79,7 @@ func NewEnvSet(m map[string]interface{}) (*EnvSet, error) {
 		newAPISpec: ol.LoadOptionalString(OptionSpecFlag),
 
 		envRenameFn: env.Rename,
-		updateEnvFn: updateEnv,
+		saveFn:      save,
 	}
 
 	if ol.err != nil {
@@ -99,7 +100,7 @@ func (es *EnvSet) Run() error {
 		return err
 	}
 
-	if err := es.updateEnvConfig(env); err != nil {
+	if err := es.updateEnvConfig(*env, es.newNsName, es.newServer, es.newAPISpec, env.IsOverride()); err != nil {
 		return err
 	}
 
@@ -118,22 +119,50 @@ func (es *EnvSet) updateName(isOverride bool) error {
 	return nil
 }
 
-func (es *EnvSet) updateEnvConfig(env *app.EnvironmentConfig) error {
-	if es.newNsName == "" && es.newServer == "" && es.newAPISpec == "" {
+// updateEnvConfig merges the provided environment config with optional override settings and the  creates and saves a new environment config based on the provided
+// base configuration. It will be merged with the provided configuration settings.
+// If isOverride is specified, Libaries will be filtered out of the merged configuration, as those should always be
+// managed in the primary application config.
+func (es *EnvSet) updateEnvConfig(env app.EnvironmentConfig, namespace, server, k8sAPISpec string, isOverride bool) error {
+	if env.Name == "" {
+		return errors.Errorf("empty environment name")
+	}
+	if namespace == "" && server == "" && k8sAPISpec == "" {
+		// Nothing to update
 		return nil
 	}
 
-	if es.newNsName != "" {
-		env.Destination.Namespace = es.newNsName
+	var newEnv app.EnvironmentConfig
+	newEnv = env // this is a copy
+
+	var destination *app.EnvironmentDestinationSpec
+	if env.Destination != nil {
+		var destCopy app.EnvironmentDestinationSpec
+		destCopy = *env.Destination
+		destination = &destCopy // also a copy
+	}
+	if destination == nil && (server != "" || namespace != "") {
+		destination = &app.EnvironmentDestinationSpec{}
+	}
+	if server != "" {
+		destination.Server = server
+	}
+	if namespace != "" {
+		destination.Namespace = namespace
 	}
 
-	if es.newServer != "" {
-		env.Destination.Server = es.newServer
+	newEnv.Destination = destination
+	newEnv.KubernetesVersion = k8sAPISpec
+	// isOverride will be set by app.AddEnvironment
+
+	if isOverride {
+		// Libaries will always derive from the primary app.yaml
+		newEnv.Libraries = nil
 	}
 
-	return es.updateEnvFn(es.app, es.envName, es.newAPISpec, env, env.IsOverride())
+	return es.saveFn(es.app, newEnv.Name, k8sAPISpec, &newEnv, isOverride)
 }
 
-func updateEnv(a app.App, envName, k8sAPISpec string, env *app.EnvironmentConfig, override bool) error {
-	return a.AddEnvironment(envName, k8sAPISpec, env, override)
+func save(a app.App, envName, k8sAPISpec string, env *app.EnvironmentConfig, override bool) error {
+	return a.AddEnvironment(env, k8sAPISpec, override)
 }

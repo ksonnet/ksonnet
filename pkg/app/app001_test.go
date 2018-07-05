@@ -165,6 +165,7 @@ func TestApp001_Environment(t *testing.T) {
 func TestApp001_AddEnvironment(t *testing.T) {
 	withApp001Fs(t, "app001_app.yaml", func(app *App001) {
 		newEnv := &EnvironmentConfig{
+			Name: "us-west/qa",
 			Destination: &EnvironmentDestinationSpec{
 				Namespace: "some-namespace",
 				Server:    "http://example.com",
@@ -173,7 +174,7 @@ func TestApp001_AddEnvironment(t *testing.T) {
 		}
 
 		k8sSpecFlag := "version:v1.8.7"
-		err := app.AddEnvironment("us-west/qa", k8sSpecFlag, newEnv, false)
+		err := app.AddEnvironment(newEnv, k8sSpecFlag, false)
 		require.NoError(t, err)
 
 		_, err = app.Environment("us-west/qa")
