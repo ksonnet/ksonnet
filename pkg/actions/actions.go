@@ -126,8 +126,9 @@ const (
 )
 
 var (
-	// ErrInvalidApp is an internal error when an application fails to load
-	ErrInvalidApp = errors.Errorf("ksonnet cannot recognize the application")
+	// ErrNotInApp is an error stating the user is not in a ksonnet application directory
+	// hierarchy.
+	ErrNotInApp = errors.Errorf("this command has to be run within a ksonnet application")
 )
 
 type missingOptionError struct {
@@ -324,7 +325,7 @@ func (o *optionLoader) LoadClientConfig() *client.Config {
 func (o *optionLoader) LoadApp() app.App {
 	i := o.load(OptionApp)
 	if i == nil {
-		o.err = errors.Wrap(ErrInvalidApp, "found app.yaml but cannot load app")
+		o.err = ErrNotInApp
 		return nil
 	}
 

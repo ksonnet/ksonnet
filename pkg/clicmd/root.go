@@ -80,11 +80,12 @@ func appRoot() (string, error) {
 }
 
 // parseCommand does an early parse of the command line and returns
-// what will ultimately be recognized as the command by cobra.
+// what will ultimately be recognized as the command by cobra
+// and a boolean for calling help flags.
 func parseCommand(args []string) (string, bool, error) {
 	fset := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fset.ParseErrorsWhitelist.UnknownFlags = true
-	fset.BoolP("help", "h", false, "") // Needed to avoid pflag.ErrHelp
+	containsHelp := fset.BoolP("help", "h", false, "") // Needed to avoid pflag.ErrHelp
 	if err := fset.Parse(args); err != nil {
 		return "", false, err
 	}
@@ -92,14 +93,7 @@ func parseCommand(args []string) (string, bool, error) {
 		return "", false, nil
 	}
 
-	flags := []string{"-h", "--help"}
-	containsHelp := false
-	for _, f := range flags {
-		if strings.InSlice(f, args) {
-			containsHelp = true
-		}
-	}
-	return fset.Args()[0], containsHelp, nil
+	return fset.Args()[0], *containsHelp, nil
 }
 
 // checkUpgrade runs upgrade validations unless the user is running an excluded command.
@@ -139,7 +133,7 @@ func NewRoot(appFs afero.Fs, wd string, args []string) (*cobra.Command, error) {
 	cmds := []string{"init", "version", "help"}
 	switch {
 	// Commands that do not require a ksonnet application
-	case strings.InSlice(cmdName, cmds) || hasHelpFlag:
+	case strings.InSlice(cmdName, cmds), hasHelpFlag:
 		a, err = app.Load(appFs, wd, true)
 	case len(args) > 0:
 		a, err = app.Load(appFs, wd, false)
