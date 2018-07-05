@@ -146,11 +146,7 @@ func GetModule(a app.App, moduleName string) (Module, error) {
 	parts := strings.Split(moduleName, ".")
 	moduleDir := filepath.Join(append([]string{a.Root(), componentsRoot}, parts...)...)
 
-	exists, err := afero.Exists(a.Fs(), moduleDir)
-	if err != nil {
-		return nil, err
-	}
-
+	exists, _ := afero.Exists(a.Fs(), filepath.Join(moduleDir, paramsFile))
 	if !exists {
 		return nil, errors.New(moduleErrorMsg("unable to find %s", moduleName))
 	}
@@ -238,7 +234,7 @@ func (mp *ModuleParameter) IsSameType(other ModuleParameter) bool {
 		mp.Key == other.Key
 }
 
-// ResolvedParams resolves paramaters for a module. It returns a JSON encoded
+// ResolvedParams resolves parameters for a module. It returns a JSON encoded
 // string of component parameters.
 func (m *FilesystemModule) ResolvedParams(envName string) (string, error) {
 	s, err := m.readParams()
