@@ -39,7 +39,7 @@ import (
 // 	},
 //   }
 // ```
-func BuildEnvParamsForModule(moduleName, paramsStr, componentParams string) (string, error) {
+func BuildEnvParamsForModule(moduleName, paramsStr, componentParams, envDir string) (string, error) {
 	script, err := loadScript("params_for_module.libsonnet")
 	if err != nil {
 		return "", errors.Wrap(err, "loading script")
@@ -49,6 +49,7 @@ func BuildEnvParamsForModule(moduleName, paramsStr, componentParams string) (str
 	vm.TLAVar("moduleName", moduleName)
 	vm.TLACode("input", paramsStr)
 	vm.ExtCode("__ksonnet/params", componentParams)
+	vm.AddJPath(envDir)
 
 	output, err := vm.EvaluateSnippet("params-for-module", script)
 	if err != nil {

@@ -61,7 +61,7 @@ func TestBuildEnvParamsForModule(t *testing.T) {
 			paramsStr := test.ReadTestData(t, filepath.Join("build_env_params", tc.input))
 			componentParams := test.ReadTestData(t, filepath.Join("build_env_params", tc.componentParams))
 
-			got, err := BuildEnvParamsForModule(tc.moduleName, paramsStr, componentParams)
+			got, err := BuildEnvParamsForModule(tc.moduleName, paramsStr, componentParams, ".")
 			require.NoError(t, err)
 
 			expected := test.ReadTestData(t, filepath.Join("build_env_params", tc.output))
