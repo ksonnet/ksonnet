@@ -2,7 +2,8 @@
    "components": {
       "deployment": {
          "replicas": 1,
-         "type": "nested"
+         "type": "nested",
+         "values": { }
       }
    }
 }

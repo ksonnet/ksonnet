@@ -4,6 +4,7 @@ local envParams = params + {
     "app.project-1.deployment": {
       type: "nested",
       replicas: 1,
+      values: {},
     },
     "deployment": {
       type: "root",

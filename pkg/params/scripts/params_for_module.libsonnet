@@ -24,11 +24,22 @@ function(moduleName, input)
       else findInModule(moduleName, key, value);
 
    local fn(moduleName, params) = [
-         findValue(moduleName, key, params.components[key])
-         for key in std.objectFields(params.components)
+      findValue(moduleName, key, params.components[key])
+      for key in std.objectFields(params.components)
    ];
 
-   {
-      local mash(ag, obj) = ag + obj,
-      components+: std.foldl(mash, std.prune(fn(moduleName, input)), {})
-   }
+   local foldFn(aggregate, object) =
+      local o = {
+         components+: {
+            [x]:+ object[x]
+            for x in std.objectFields(object)
+            if object[x] != null
+         },
+      };
+
+      aggregate + o;
+
+   local a = fn(moduleName, input);
+
+   std.foldl(foldFn, a, {})
+

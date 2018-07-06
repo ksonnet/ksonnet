@@ -25,19 +25,19 @@ func init() {
 	// define files
 	file2 := &embedded.EmbeddedFile{
 		Filename:    "modularize_params.libsonnet",
-		FileModTime: time.Unix(1530453707, 0),
+		FileModTime: time.Unix(1530832602, 0),
 		Content:     string("function(moduleName, params)\n    local prefix = if (moduleName == \"/\" || moduleName == \"\") then \"\" else \"%s.\" % moduleName;\n\n    local baseObject = if std.objectHas(params, \"global\")\n        then {global: params.global}\n        else {};\n\n    baseObject + {\n        components: {\n            [\"%s%s\" % [prefix, key]]: params.components[key]\n            for key in std.objectFieldsAll(params.components)\n        },\n    }"),
 	}
 	file3 := &embedded.EmbeddedFile{
 		Filename:    "params_for_module.libsonnet",
-		FileModTime: time.Unix(1530407391, 0),
-		Content:     string("function(moduleName, input)\n   local isModule(key) = std.length(std.split(key, \".\")) > 1;\n\n   local localizeKey(key) =\n      if isModule(key)\n      then\n         local parts = std.split(key, \".\");\n         parts[std.length(parts)-1]\n      else key;\n\n   local findInRoot(key, value) =\n      if isModule(key)\n      then {[key]:null}\n      else {[key]:value};\n\n   local findInModule(moduleName, key, value) =\n      if std.startsWith(key, moduleName)\n      then {[localizeKey(key)]: value}\n      else {[localizeKey(key)]: null};\n\n   local findValue(moduleName, key, value) =\n      if moduleName == \"/\"\n      then findInRoot(key, value)\n      else findInModule(moduleName, key, value);\n\n   local fn(moduleName, params) = [\n         findValue(moduleName, key, params.components[key])\n         for key in std.objectFields(params.components)\n   ];\n\n   {\n      local mash(ag, obj) = ag + obj,\n      components+: std.foldl(mash, std.prune(fn(moduleName, input)), {})\n   }\n"),
+		FileModTime: time.Unix(1530891505, 0),
+		Content:     string("function(moduleName, input)\n   local isModule(key) = std.length(std.split(key, \".\")) > 1;\n\n   local localizeKey(key) =\n      if isModule(key)\n      then\n         local parts = std.split(key, \".\");\n         parts[std.length(parts)-1]\n      else key;\n\n   local findInRoot(key, value) =\n      if isModule(key)\n      then {[key]:null}\n      else {[key]:value};\n\n   local findInModule(moduleName, key, value) =\n      if std.startsWith(key, moduleName)\n      then {[localizeKey(key)]: value}\n      else {[localizeKey(key)]: null};\n\n   local findValue(moduleName, key, value) =\n      if moduleName == \"/\"\n      then findInRoot(key, value)\n      else findInModule(moduleName, key, value);\n\n   local fn(moduleName, params) = [\n      findValue(moduleName, key, params.components[key])\n      for key in std.objectFields(params.components)\n   ];\n\n   local foldFn(aggregate, object) =\n      local o = {\n         components+: {\n            [x]:+ object[x]\n            for x in std.objectFields(object)\n            if object[x] != null\n         },\n      };\n\n      aggregate + o;\n\n   local a = fn(moduleName, input);\n\n   std.foldl(foldFn, a, {})\n\n"),
 	}
 
 	// define dirs
 	dir1 := &embedded.EmbeddedDir{
 		Filename:   "",
-		DirModTime: time.Unix(1530366356, 0),
+		DirModTime: time.Unix(1530832602, 0),
 		ChildFiles: []*embedded.EmbeddedFile{
 			file2, // "modularize_params.libsonnet"
 			file3, // "params_for_module.libsonnet"
@@ -51,7 +51,7 @@ func init() {
 	// register embeddedBox
 	embedded.RegisterEmbeddedBox(`scripts`, &embedded.EmbeddedBox{
 		Name: `scripts`,
-		Time: time.Unix(1530366356, 0),
+		Time: time.Unix(1530832602, 0),
 		Dirs: map[string]*embedded.EmbeddedDir{
 			"": dir1,
 		},
