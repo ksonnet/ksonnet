@@ -16,6 +16,7 @@
 package strings
 
 import (
+	"fmt"
 	"regexp"
 	"testing"
 
@@ -23,19 +24,37 @@ import (
 )
 
 func TestRand(t *testing.T) {
-	got := Rand(5)
+	for i := 1; i < 45; i++ {
+		t.Run(fmt.Sprintf("Rand(%d)", i), func(t *testing.T) {
+			got := Rand(i)
 
-	assert.Len(t, got, 5)
+			assert.Len(t, got, i)
 
-	re := regexp.MustCompile(`^[A-Za-z]{5}$`)
-	assert.True(t, re.MatchString(got))
+			re := regexp.MustCompile(fmt.Sprintf(`^[A-Za-z]{%d}$`, i))
+			assert.True(t, re.MatchString(got))
+		})
+	}
+}
+
+func TestRand_negative(t *testing.T) {
+	got := Rand(-1)
+	assert.Len(t, got, 0)
 }
 
 func TestLowerRand(t *testing.T) {
-	got := LowerRand(5)
+	for i := 1; i < 45; i++ {
+		t.Run(fmt.Sprintf("LowerRand(%d)", i), func(t *testing.T) {
+			got := LowerRand(i)
 
-	assert.Len(t, got, 5)
+			assert.Len(t, got, i)
 
-	re := regexp.MustCompile(`^[a-z]{5}$`)
-	assert.True(t, re.MatchString(got))
+			re := regexp.MustCompile(fmt.Sprintf(`^[a-z]{%d}$`, i))
+			assert.True(t, re.MatchString(got))
+		})
+	}
+}
+
+func TestLowerRand_negative(t *testing.T) {
+	got := LowerRand(-1)
+	assert.Len(t, got, 0)
 }
