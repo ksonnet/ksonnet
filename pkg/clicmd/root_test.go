@@ -27,28 +27,45 @@ func Test_parseCommand(t *testing.T) {
 		name     string
 		args     []string
 		expected string
+		helpFlag bool
 	}{
 		{
 			name:     "normal",
 			args:     []string{"init", "-abc", "123", "--foo", "--bar", ""},
 			expected: "init",
+			helpFlag: false,
 		},
 		{
 			name:     "flags before command",
 			args:     []string{"-abc", "123", "--foo", "--empty", "", "--bar", "arg", "init"},
 			expected: "init",
+			helpFlag: false,
 		},
 		{
 			name:     "no command",
 			args:     []string{"-abc", "123", "--foo", "--empty", "", "--bar", "arg"},
 			expected: "",
+			helpFlag: true,
+		},
+		{
+			name:     "help flag",
+			args:     []string{"init", "arg", "--help", "-h"},
+			expected: "init",
+			helpFlag: true,
+		},
+		{
+			name:     "help command",
+			args:     []string{"help", "-abc", "--foo", "--bar", ""},
+			expected: "help",
+			helpFlag: false,
 		},
 	}
 
 	for _, tc := range tests {
-		cmd, err := parseCommand(tc.args)
+		cmd, hasHelpFlag, err := parseCommand(tc.args)
 		require.NoError(t, err)
 		assert.Equal(t, tc.expected, cmd, tc.name)
+		assert.Equal(t, tc.helpFlag, hasHelpFlag, tc.name)
 
 	}
 }

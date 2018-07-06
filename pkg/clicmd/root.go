@@ -23,6 +23,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/log"
 	"github.com/ksonnet/ksonnet/pkg/plugin"
+	"github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/pkg/errors"
 	"github.com/shomron/pflag"
 	"github.com/spf13/afero"
@@ -79,19 +80,20 @@ func appRoot() (string, error) {
 }
 
 // parseCommand does an early parse of the command line and returns
-// what will ultimately be recognized as the command by cobra.
-func parseCommand(args []string) (string, error) {
+// what will ultimately be recognized as the command by cobra
+// and a boolean for calling help flags.
+func parseCommand(args []string) (string, bool, error) {
 	fset := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fset.ParseErrorsWhitelist.UnknownFlags = true
-	fset.BoolP("help", "h", false, "") // Needed to avoid pflag.ErrHelp
+	containsHelp := fset.BoolP("help", "h", false, "") // Needed to avoid pflag.ErrHelp
 	if err := fset.Parse(args); err != nil {
-		return "", err
+		return "", false, err
 	}
 	if len(fset.Args()) == 0 {
-		return "", nil
+		return "", true, nil
 	}
 
-	return fset.Args()[0], nil
+	return fset.Args()[0], *containsHelp, nil
 }
 
 // checkUpgrade runs upgrade validations unless the user is running an excluded command.
@@ -101,6 +103,7 @@ func checkUpgrade(a app.App, cmd string) error {
 		"init":    struct{}{},
 		"upgrade": struct{}{},
 		"help":    struct{}{},
+		"version": struct{}{},
 		"":        struct{}{},
 	}
 	if _, ok := skip[cmd]; ok {
@@ -122,17 +125,24 @@ func NewRoot(appFs afero.Fs, wd string, args []string) (*cobra.Command, error) {
 	var a app.App
 	var err error
 
-	cmdName, err := parseCommand(args)
+	cmdName, hasHelpFlag, err := parseCommand(args)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(args) > 0 && cmdName != "init" {
+	cmds := []string{"init", "version", "help"}
+	switch {
+	// Commands that do not require a ksonnet application
+	case strings.InSlice(cmdName, cmds), hasHelpFlag:
+		a, err = app.Load(appFs, wd, true)
+	case len(args) > 0:
 		a, err = app.Load(appFs, wd, false)
-		if err != nil {
-			return nil, err
-		}
+	default:
+		// noop
+	}
 
+	if err != nil {
+		return nil, err
 	}
 
 	if err := checkUpgrade(a, cmdName); err != nil {
