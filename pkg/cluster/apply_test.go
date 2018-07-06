@@ -82,6 +82,43 @@ func Test_Apply(t *testing.T) {
 	})
 }
 
+func Test_Apply_dry_run(t *testing.T) {
+	test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
+		applyConfig := ApplyConfig{
+			App:          a,
+			ClientConfig: &client.Config{},
+			DryRun:       true,
+		}
+
+		setupApp := func(apply *Apply) {
+			obj := &unstructured.Unstructured{Object: genObject()}
+
+			apply.clientOpts = &clientOpts{}
+
+			apply.findObjectsFn = func(a app.App, envName string, componentNames []string) ([]*unstructured.Unstructured, error) {
+				objects := []*unstructured.Unstructured{obj}
+
+				return objects, nil
+			}
+
+			apply.ksonnetObjectFactory = func() ksonnetObject {
+				return &fakeKsonnetObject{
+					obj: obj,
+				}
+			}
+
+			apply.upserterFactory = func() Upserter {
+				return &fakeUpserter{
+					upsertErr: errors.New("upsert should not run"),
+				}
+			}
+		}
+
+		err := RunApply(applyConfig, setupApp)
+		require.NoError(t, err)
+	})
+}
+
 func Test_Apply_retry_on_conflict(t *testing.T) {
 	test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
 		applyConfig := ApplyConfig{

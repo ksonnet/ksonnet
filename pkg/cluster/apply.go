@@ -176,7 +176,12 @@ func (a *Apply) handleObject(obj *unstructured.Unstructured) (string, error) {
 // preprocessObject preprocesses an object for it is applied to the cluster.
 func (a *Apply) preprocessObject(obj *unstructured.Unstructured) error {
 	dm := newDefaultManaged()
-	return errors.Wrap(dm.Tag(obj), "tagging ksonnet managed object")
+	if !a.DryRun {
+		return errors.Wrap(dm.Tag(obj), "tagging ksonnet managed object")
+	}
+
+	log.Info("tagging ksonnet managed object", a.dryRunText())
+	return nil
 }
 
 // patchFromCluster patches an object with values that may exist in the cluster.
@@ -185,6 +190,11 @@ func (a *Apply) patchFromCluster(obj *unstructured.Unstructured) (*unstructured.
 }
 
 func (a *Apply) upsert(obj *unstructured.Unstructured) (string, error) {
+	if a.DryRun {
+		log.Info("upserting object", a.dryRunText())
+		return "12345", nil
+	}
+
 	u := a.upserterFactory()
 
 	for i := applyConflictRetryCount; i > 0; i-- {
