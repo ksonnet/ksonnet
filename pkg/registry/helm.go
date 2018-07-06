@@ -16,15 +16,18 @@
 package registry
 
 import (
+	"bytes"
 	"io/ioutil"
 	"net/url"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/helm"
 	"github.com/ksonnet/ksonnet/pkg/parts"
 	"github.com/ksonnet/ksonnet/pkg/util/archive"
+	ksstrings "github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/pkg/errors"
 )
 
@@ -161,6 +164,11 @@ func (h *Helm) ResolveLibrary(partName string, partAlias string, version string,
 
 			name := path.Join(chart.Name, "helm", chart.Version, f.Name)
 
+			if containsHelmHook(name, b) {
+				// skip this file because it has a helm hook in it
+				return nil
+			}
+
 			return onFile(name, b)
 		}
 
@@ -241,4 +249,16 @@ func (h *Helm) SetURI(uri string) error {
 
 	h.spec.URI = uri
 	return nil
+}
+
+// containsHelmHook checks file contents for helm hooks. Helm hooks are denoted by
+// `helm.sh/hook`.
+func containsHelmHook(name string, b []byte) bool {
+	dir := filepath.Dir(name)
+	ext := filepath.Ext(name)
+	if strings.Contains(dir, "templates") && ksstrings.InSlice(ext, []string{".yaml", ".yml"}) {
+		return bytes.Contains(b, []byte("helm.sh/hook"))
+	}
+
+	return false
 }

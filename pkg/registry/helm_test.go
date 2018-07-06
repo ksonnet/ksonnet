@@ -333,6 +333,54 @@ func TestHelm_ValidateURI_invalid(t *testing.T) {
 	})
 }
 
+func Test_containsHelmHook(t *testing.T) {
+	cases := []struct {
+		name     string
+		path     string
+		b        []byte
+		expected bool
+	}{
+		{
+			name:     "contains helm hook",
+			path:     "templates/file.yaml",
+			b:        []byte(`"helm.sh/hook": test-success`),
+			expected: true,
+		},
+		{
+			name:     "doesn't contain helm hook",
+			path:     "templates/file.yaml",
+			b:        []byte(`"other": test-success`),
+			expected: false,
+		},
+		{
+			name:     "contains helm hook in directory under templates",
+			path:     "templates/nested/file.yaml",
+			b:        []byte(`"helm.sh/hook": test-success`),
+			expected: true,
+		},
+		{
+			name:     "contains helm hook in directory",
+			path:     "nested/file.yaml",
+			b:        []byte(`"helm.sh/hook": test-success`),
+			expected: false,
+		},
+		{
+			name:     "contains helm hook in directory under templates and not YAML",
+			path:     "templates/file.txt",
+			b:        []byte(`"helm.sh/hook": test-success`),
+			expected: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := containsHelmHook(tc.path, tc.b)
+			assert.Equal(t, tc.expected, got)
+		})
+	}
+
+}
+
 type fakeHelmRepositoryClient struct {
 	entries    *helm.Repository
 	entriesErr error
