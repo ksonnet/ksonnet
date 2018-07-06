@@ -45,7 +45,7 @@ func Test_parseCommand(t *testing.T) {
 			name:     "no command",
 			args:     []string{"-abc", "123", "--foo", "--empty", "", "--bar", "arg"},
 			expected: "",
-			helpFlag: false,
+			helpFlag: true,
 		},
 		{
 			name:     "help flag",
@@ -64,7 +64,8 @@ func Test_parseCommand(t *testing.T) {
 	for _, tc := range tests {
 		cmd, hasHelpFlag, err := parseCommand(tc.args)
 		require.NoError(t, err)
-		assert.Equal(t, tc.expected, cmd, tc.name, hasHelpFlag, tc.helpFlag)
+		assert.Equal(t, tc.expected, cmd, tc.name)
+		assert.Equal(t, tc.helpFlag, hasHelpFlag, tc.name)
 
 	}
 }

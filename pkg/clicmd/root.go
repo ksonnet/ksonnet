@@ -90,7 +90,7 @@ func parseCommand(args []string) (string, bool, error) {
 		return "", false, err
 	}
 	if len(fset.Args()) == 0 {
-		return "", false, nil
+		return "", true, nil
 	}
 
 	return fset.Args()[0], *containsHelp, nil
