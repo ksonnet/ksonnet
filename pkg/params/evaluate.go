@@ -36,7 +36,9 @@ func EvaluateEnv(a app.App, sourcePath, paramsStr, envName, moduleName string) (
 		return "", errors.Wrap(err, "modularizing parameters")
 	}
 
-	moduleParams, err := BuildEnvParamsForModule(moduleName, string(snippet), paramsStr)
+	envDir := filepath.Dir(sourcePath)
+
+	moduleParams, err := BuildEnvParamsForModule(moduleName, string(snippet), paramsStr, envDir)
 	if err != nil {
 		return "", errors.Wrapf(err, "selecting params for module %q in environment %q", moduleName, envName)
 	}
