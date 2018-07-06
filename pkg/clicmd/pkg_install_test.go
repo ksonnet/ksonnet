@@ -31,6 +31,18 @@ func Test_pkgInstallCmd(t *testing.T) {
 				actions.OptionApp:     nil,
 				actions.OptionLibName: "package-name",
 				actions.OptionName:    "",
+				actions.OptionEnvName: "",
+			},
+		},
+		{
+			name:   "with env flag",
+			args:   []string{"pkg", "install", "--env", "production", "package-name"},
+			action: actionPkgInstall,
+			expected: map[string]interface{}{
+				actions.OptionApp:     nil,
+				actions.OptionLibName: "package-name",
+				actions.OptionName:    "",
+				actions.OptionEnvName: "production",
 			},
 		},
 		{

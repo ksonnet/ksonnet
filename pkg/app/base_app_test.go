@@ -159,7 +159,78 @@ func Test_baseApp_UpdateRegistry(t *testing.T) {
 		if tc.expectFilePath != "" {
 			assertContents(t, fs, tc.expectFilePath, ba.configPath())
 		}
-		//assertNotExists(t, fs, ba.overridePath())
+	}
+
+}
+
+func Test_baseApp_UpdateLibrary(t *testing.T) {
+	//func (ba *baseApp) UpdateLib(name string, env string, libSpec *LibraryConfig) error
+
+	tests := []struct {
+		name           string
+		libCfg         LibraryConfig
+		env            string
+		appFilePath    string
+		expectFilePath string
+		expectErr      bool
+	}{
+		{
+			name: "no such environment",
+			libCfg: LibraryConfig{
+				Name:     "nginx",
+				Registry: "incubator",
+				Version:  "1.2.3",
+			},
+			env:         "no-such-environment",
+			appFilePath: "app020_app.yaml",
+			expectErr:   true,
+		},
+		{
+			name: "success - global scope",
+			libCfg: LibraryConfig{
+				Name:     "nginx",
+				Registry: "incubator",
+				Version:  "1.2.3",
+			},
+			env:            "",
+			appFilePath:    "app020_app.yaml",
+			expectFilePath: "pkg-install-global.yaml",
+			expectErr:      false,
+		},
+		{
+			name: "success - environment scope",
+			libCfg: LibraryConfig{
+				Name:     "nginx",
+				Registry: "incubator",
+				Version:  "1.2.3",
+			},
+			env:            "default",
+			appFilePath:    "app010_app.yaml",
+			expectFilePath: "pkg-install-env-scope.yaml",
+			expectErr:      false,
+		},
+	}
+
+	for _, tc := range tests {
+		fs := afero.NewMemMapFs()
+
+		if tc.appFilePath != "" {
+			stageFile(t, fs, tc.appFilePath, "/app.yaml")
+		}
+
+		ba := newBaseApp(fs, "/")
+
+		// Test updating non-existing registry
+		err := ba.UpdateLib(tc.libCfg.Name, tc.env, &tc.libCfg)
+		if tc.expectErr {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+		}
+
+		if tc.expectFilePath != "" {
+			assertContents(t, fs, tc.expectFilePath, ba.configPath())
+		}
 	}
 
 }
