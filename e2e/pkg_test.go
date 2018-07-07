@@ -1,4 +1,4 @@
-// Copyright 2018 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,57 +50,41 @@ var _ = Describe("ks pkg", func() {
 				assertOutput("pkg/describe/output.txt", o.stdout)
 			})
 		})
-		Context("library apache", func() {
-			It("describes the library package", func() {
-				a.pkgInstall("incubator/apache")
-
-				o := a.runKs("pkg", "describe", "apache")
-				assertExitStatus(o, 0)
-				assertOutput("pkg/describe/output.txt", o.stdout)
-			})
-		})
 	})
 
 	Describe("install", func() {
-		Context("github based part", func() {
+		Context("GitHub based part", func() {
 			Context("incubator/apache", func() {
 				It("describes the package", func() {
 					o := a.runKs("pkg", "install", "incubator/apache")
 					assertExitStatus(o, 0)
 
-					pkgDir := filepath.Join(a.dir, "vendor", "incubator", "apache")
-					Expect(pkgDir).To(BeADirectory())
+					a.checkInstalledPkg("incubator", "apache")
 				})
 			})
 		})
 
-		Context("fs based part", func() {
+		Context("file system based part", func() {
 			Context("local/contour", func() {
 				It("describes the package", func() {
 					path, err := filepath.Abs(filepath.Join("testdata", "registries", "parts-infra"))
 					Expect(err).ToNot(HaveOccurred())
 
 					o := a.registryAdd("local", path)
+					assertExitStatus(o, 0)
 
 					o = a.runKs("pkg", "install", "local/contour")
 					assertExitStatus(o, 0)
 
-					o = a.pkgList()
-
-					m := map[string]interface{}{}
-					tPath := filepath.Join("pkg", "install", "fs-output.txt.tmpl")
-					assertTemplate(m, tPath, o.stdout)
+					a.checkInstalledPkg("local", "contour")
 				})
 			})
 		})
-
 	})
 
 	Describe("list", func() {
 		It("lists available packages", func() {
-			o := a.runKs("pkg", "list")
-			assertExitStatus(o, 0)
-			assertOutput("pkg/list/output.txt", o.stdout)
+			a.checkPkgs(genIncubatorPkgList())
 		})
 
 		Context("git spec cache has been been deleted", func() {
@@ -110,9 +94,7 @@ var _ = Describe("ks pkg", func() {
 			})
 
 			It("generates spec cache", func() {
-				o := a.runKs("pkg", "list")
-				assertExitStatus(o, 0)
-				assertOutput("pkg/list/output.txt", o.stdout)
+				a.checkPkgs(genIncubatorPkgList())
 			})
 		})
 	})

@@ -1,4 +1,4 @@
-// Copyright 2018 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,13 +16,12 @@
 package e2e
 
 import (
-	"encoding/json"
 	"path/filepath"
 	"strings"
 
-	"github.com/ksonnet/ksonnet/pkg/component"
-
 	// gomega matchers
+	// nolint: golint
+
 	. "github.com/onsi/gomega"
 )
 
@@ -36,10 +35,77 @@ func (a *app) runKs(args ...string) *output {
 }
 
 func (a *app) componentList(opts ...string) *output {
-	o := a.runKs(append([]string{"component", "list"}, opts...)...)
+	o := a.runKs(append([]string{"component", "list", "-o", "json"}, opts...)...)
 	assertExitStatus(o, 0)
 
 	return o
+}
+
+func (a *app) checkComponents(expected []componentListRow, args ...string) {
+	o := a.componentList(args...)
+	assertExitStatus(o, 0)
+
+	tr := loadTableResponse(o.stdout)
+	got := tr.componentList()
+
+	ExpectWithOffset(1, got).To(Equal(expected))
+}
+
+func (a *app) checkComponentName(name string, args ...string) {
+	o := a.componentList(args...)
+	assertExitStatus(o, 0)
+
+	tr := loadTableResponse(o.stdout)
+	rows := tr.componentList()
+
+	found := false
+	for _, row := range rows {
+		if row.Component == name {
+			found = true
+			break
+		}
+	}
+
+	Expect(found).To(BeTrue(), "component %s was not found", name)
+}
+
+func (a *app) checkComponent(expected componentListRow, args ...string) {
+	o := a.componentList(args...)
+	assertExitStatus(o, 0)
+
+	tr := loadTableResponse(o.stdout)
+	rows := tr.componentList()
+
+	found := false
+	for _, row := range rows {
+		if row.Component == expected.Component {
+			ExpectWithOffset(1, row).To(Equal(expected))
+			found = true
+			break
+		}
+	}
+
+	Expect(found).To(BeTrue(), "component %s was not found", expected.Component)
+}
+
+func (a *app) checkComponentPrefix(expected componentListRow, prefix string, args ...string) {
+	o := a.componentList(args...)
+	assertExitStatus(o, 0)
+
+	tr := loadTableResponse(o.stdout)
+	rows := tr.componentList()
+
+	found := false
+	for _, row := range rows {
+		if strings.HasPrefix(row.Component, row.Component) {
+			expected.Component = row.Component
+			ExpectWithOffset(1, row).To(Equal(expected))
+			found = true
+			break
+		}
+	}
+
+	Expect(found).To(BeTrue(), "component with prefix %s was not found", prefix)
 }
 
 func (a *app) apply(namespace string, opts ...string) *output {
@@ -74,17 +140,37 @@ func (a *app) envDescribe(envName string) *output {
 }
 
 func (a *app) envList() *output {
-	o := a.runKs("env", "list")
+	o := a.runKs("env", "list", "-o", "json")
 	assertExitStatus(o, 0)
 
 	return o
 }
 
+func (a *app) checkEnvs(expected []envListRow) {
+	o := a.envList()
+	assertExitStatus(o, 0)
+
+	tr := loadTableResponse(o.stdout)
+	got := tr.envList()
+
+	ExpectWithOffset(1, got).To(Equal(expected))
+}
+
 func (a *app) paramList(args ...string) *output {
-	o := a.runKs(append([]string{"param", "list"}, args...)...)
+	o := a.runKs(append([]string{"param", "list", "-o", "json"}, args...)...)
 	assertExitStatus(o, 0)
 
 	return o
+}
+
+func (a *app) checkParams(expected []paramListRow, args ...string) {
+	o := a.paramList(args...)
+	assertExitStatus(o, 0)
+
+	tr := loadTableResponse(o.stdout)
+	got := tr.paramList()
+
+	ExpectWithOffset(1, got).To(Equal(expected))
 }
 
 func (a *app) pkgInstall(partName string) *output {
@@ -94,11 +180,39 @@ func (a *app) pkgInstall(partName string) *output {
 	return o
 }
 
-func (a *app) pkgList() *output {
-	o := a.runKs("pkg", "list")
+func (a *app) pkgList(args ...string) *output {
+	o := a.runKs(append([]string{"pkg", "list", "-o", "json"}, args...)...)
 	assertExitStatus(o, 0)
 
 	return o
+}
+
+func (a *app) checkPkgs(expected []pkgListRow, args ...string) {
+	o := a.pkgList(args...)
+	assertExitStatus(o, 0)
+
+	tr := loadTableResponse(o.stdout)
+	got := tr.pkgList()
+
+	ExpectWithOffset(1, got).To(Equal(expected))
+}
+
+func (a *app) checkInstalledPkg(registry, name string) {
+	o := a.pkgList()
+	assertExitStatus(o, 0)
+
+	tr := loadTableResponse(o.stdout)
+
+	found := false
+
+	for _, row := range tr.pkgList() {
+		if row.Registry == registry && row.Name == name && row.Installed == "*" {
+			found = true
+			break
+		}
+	}
+
+	ExpectWithOffset(1, found).To(Equal(true), "%s/%s is not installed", registry, name)
 }
 
 func (a *app) paramSet(key, value string, args ...string) *output {
@@ -106,6 +220,31 @@ func (a *app) paramSet(key, value string, args ...string) *output {
 	assertExitStatus(o, 0)
 
 	return o
+}
+
+func (a *app) prototypeList(args ...string) *output {
+	o := a.runKs(append([]string{"prototype", "list", "-o", "json"}, args...)...)
+	assertExitStatus(o, 0)
+
+	return o
+}
+
+func (a *app) checkPrototype(name string, args ...string) {
+	o := a.prototypeList(args...)
+	assertExitStatus(o, 0)
+
+	tr := loadTableResponse(o.stdout)
+
+	found := false
+
+	for _, row := range tr.prototypeList() {
+		if row.Name == name {
+			found = true
+			break
+		}
+	}
+
+	ExpectWithOffset(1, found).To(Equal(true), "prototype %s does not exist", name)
 }
 
 func (a *app) registryAdd(registryName, uri string) *output {
@@ -116,10 +255,47 @@ func (a *app) registryAdd(registryName, uri string) *output {
 }
 
 func (a *app) registryList(args ...string) *output {
-	o := a.runKs(append([]string{"registry", "list"}, args...)...)
+	o := a.runKs(append([]string{"registry", "list", "-o", "json"}, args...)...)
 	assertExitStatus(o, 0)
 
 	return o
+}
+
+func (a *app) checkRegistry(name, override, prototol, uri string, args ...string) {
+	o := a.registryList(args...)
+	assertExitStatus(o, 0)
+
+	tr := loadTableResponse(o.stdout)
+
+	found := false
+
+	for _, row := range tr.registryList() {
+		if row.Name == name && row.Override == override &&
+			row.Protocol == prototol && row.URI == uri {
+			found = true
+			break
+		}
+	}
+
+	ExpectWithOffset(1, found).To(Equal(true), "registry %s does not exist", name)
+}
+
+func (a *app) checkRegistryExists(name string, args ...string) {
+	o := a.registryList(args...)
+	assertExitStatus(o, 0)
+
+	tr := loadTableResponse(o.stdout)
+
+	found := false
+
+	for _, row := range tr.registryList() {
+		if row.Name == name {
+			found = true
+			break
+		}
+	}
+
+	ExpectWithOffset(1, found).To(Equal(true), "registry %s does not exist", name)
 }
 
 func (a *app) generateDeployedService() {
@@ -138,33 +314,21 @@ func (a *app) generateDeployedService() {
 	assertContents("generate/params.libsonnet", params)
 }
 
-func (a *app) findComponent(prefix string) string {
+func (a *app) findComponent(name, kind string) string {
 	o := a.componentList("-o", "json")
-	var summaries []component.Summary
-	err := json.Unmarshal([]byte(o.stdout), &summaries)
-	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 
-	var name string
-	for _, summary := range summaries {
-		if strings.HasPrefix(summary.ComponentName, "deployment") {
-			name = summary.ComponentName
+	tr := loadTableResponse(o.stdout)
+	rows := tr.componentList()
+
+	var component string
+	for _, row := range rows {
+		if name == row.Name && kind == row.Kind {
+			component = row.Component
 		}
 	}
 
-	ExpectWithOffset(1, name).ToNot(BeEmpty())
-	return name
-}
-
-func (a *app) componentNames() []string {
-	o := a.componentList("-o", "json")
-	var summaries []component.Summary
-	err := json.Unmarshal([]byte(o.stdout), &summaries)
-	ExpectWithOffset(1, err).ToNot(HaveOccurred())
-
-	var out []string
-	for _, summary := range summaries {
-		out = append(out, summary.ComponentName)
-	}
-
-	return out
+	ExpectWithOffset(1, component).
+		ToNot(BeEmpty(), "unable to find YAML component with name %q and kind %q",
+			name, kind)
+	return component
 }

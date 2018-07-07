@@ -1,4 +1,4 @@
-// Copyright 2018 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,10 +18,8 @@
 package e2e
 
 import (
-	"bytes"
 	"path/filepath"
 
-	"github.com/ksonnet/ksonnet/pkg/util/table"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -51,10 +49,13 @@ var _ = Describe("ks param", func() {
 			a.paramSet(component, env, envValue, "--env", envName)
 
 			o := a.paramList()
-			assertOutput("param/delete/pre-local.txt", o.stdout)
+			assertExitStatus(o, 0)
 
-			o = a.paramList("--env", envName)
-			assertOutput("param/delete/pre-env.txt", o.stdout)
+			componentExpected := setGuestBookRow(genGuestBookParams(), local, localValue)
+			a.checkParams(componentExpected)
+
+			envExpected := setGuestBookRow(componentExpected, env, envValue)
+			a.checkParams(envExpected, "--env", envName)
 		})
 
 		Context("at the component level", func() {
@@ -64,8 +65,8 @@ var _ = Describe("ks param", func() {
 			})
 
 			It("removes a parameter's value", func() {
-				o := a.paramList()
-				assertOutput("param/delete/local.txt", o.stdout)
+				expected := deleteGuestBookRow(genGuestBookParams(), local)
+				a.checkParams(expected)
 			})
 		})
 
@@ -76,8 +77,8 @@ var _ = Describe("ks param", func() {
 			})
 
 			It("removes a parameter's environment value", func() {
-				o := a.paramList("--env", envName)
-				assertOutput("param/delete/env.txt", o.stdout)
+				expected := setGuestBookRow(genGuestBookParams(), local, localValue)
+				a.checkParams(expected, "--env", envName)
 			})
 		})
 
@@ -93,8 +94,10 @@ var _ = Describe("ks param", func() {
 			})
 
 			It("removes the value", func() {
-				o := a.paramList("--env", "default")
-				assertOutput("param/delete/env-global.txt", o.stdout)
+				componentExpected := setGuestBookRow(genGuestBookParams(), local, localValue)
+				envExpected := setGuestBookRow(componentExpected, env, envValue)
+				a.checkParams(envExpected, "--env", envName)
+				// assertOutput("param/delete/env-global.txt", o.stdout)
 			})
 		})
 	})
@@ -151,7 +154,7 @@ var _ = Describe("ks param", func() {
 	Describe("list", func() {
 		var (
 			listOutput *output
-			listParams = []string{"param", "list", "-v"}
+			listParams = []string{"param", "list", "-o", "json"}
 		)
 
 		JustBeforeEach(func() {
@@ -168,7 +171,10 @@ var _ = Describe("ks param", func() {
 				})
 
 				It("lists the params for a module", func() {
-					assertOutput("param/list/output.txt", listOutput.stdout)
+					tr := loadTableResponse(listOutput.stdout)
+					got := tr.paramList()
+
+					Expect(got).To(Equal(genGuestBookParams()))
 				})
 			})
 
@@ -177,10 +183,10 @@ var _ = Describe("ks param", func() {
 
 				BeforeEach(func() {
 					deployment := filepath.Join(e.wd(), "testdata", "input", "import", "deployment.yaml")
-					o := a.runKs("import", "-f", deployment)
+					o := a.runKs("import", "-f", deployment, "--module", "/")
 					assertExitStatus(o, 0)
 
-					name = a.findComponent("deployment")
+					name = a.findComponent("nginx-deployment", "Deployment")
 
 					o = a.runKs("param", "set", name, "metadata.labels", `{"hello": "world"}`)
 					assertExitStatus(o, 0)
@@ -191,14 +197,9 @@ var _ = Describe("ks param", func() {
 				})
 
 				It("should list the YAML params", func() {
-					var buf bytes.Buffer
-					t := table.New(&buf)
-					t.SetHeader([]string{"component", "param", "value"})
-					t.Append([]string{name, "metadata.labels", `{"hello":"world"}`})
-					Expect(t.Render()).NotTo(HaveOccurred())
-
-					o := a.paramList()
-					Expect(o.stdout).To(Equal(buf.String()))
+					tr := loadTableResponse(listOutput.stdout)
+					list := tr.paramList()
+					Expect(list).To(HaveLen(1))
 				})
 			})
 		})
@@ -208,7 +209,7 @@ var _ = Describe("ks param", func() {
 				a.generateDeployedService()
 
 				a.paramSet("guestbook-ui", "replicas", "3", "--env", "default")
-				listParams = []string{"param", "list", "--env", "default"}
+				listParams = []string{"param", "list", "-o", "json", "--env", "default"}
 			})
 
 			It("should exit with 0", func() {
@@ -216,7 +217,11 @@ var _ = Describe("ks param", func() {
 			})
 
 			It("lists the params for a module", func() {
-				assertOutput("param/list/env.txt", listOutput.stdout)
+				tr := loadTableResponse(listOutput.stdout)
+				got := tr.paramList()
+
+				expected := setGuestBookRow(genGuestBookParams(), "replicas", "3")
+				Expect(got).To(Equal(expected))
 			})
 		})
 	})
@@ -230,8 +235,8 @@ var _ = Describe("ks param", func() {
 				o := a.runKs("param", "set", "guestbook-ui", "replicas", "3")
 				assertExitStatus(o, 0)
 
-				o = a.paramList()
-				assertOutput("param/set/output.txt", o.stdout)
+				expected := setGuestBookRow(genGuestBookParams(), "replicas", "3")
+				a.checkParams(expected)
 			})
 		})
 
@@ -240,12 +245,10 @@ var _ = Describe("ks param", func() {
 				o := a.runKs("param", "set", "guestbook-ui", "replicas", "3", "--env", "default")
 				assertExitStatus(o, 0)
 
-				o = a.paramList()
-				assertOutput("param/set/local-output.txt", o.stdout)
+				a.checkParams(genGuestBookParams())
 
-				o = a.paramList("--env", "default")
-				assertOutput("param/set/env-default-output.txt", o.stdout)
-
+				expected := setGuestBookRow(genGuestBookParams(), "replicas", "3")
+				a.checkParams(expected, "--env", "default")
 			})
 		})
 
@@ -256,8 +259,8 @@ var _ = Describe("ks param", func() {
 			})
 
 			It("sets the value", func() {
-				o := a.paramList("--env", "default")
-				assertOutput("param/set/env-global.txt", o.stdout)
+				expected := setGuestBookRow(genGuestBookParams(), "department", "'engineering'")
+				a.checkParams(expected, "--env", "default")
 			})
 		})
 	})

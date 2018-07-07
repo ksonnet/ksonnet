@@ -27,11 +27,13 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/discovery"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	// test helpers
+	// nolint: golint
 	. "github.com/onsi/gomega"
 
 	// client go auth plugins
@@ -64,6 +66,16 @@ func newE2e() *e2e {
 	}
 
 	return e
+}
+
+func (e *e2e) serverVersion() string {
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(e.restConfig)
+	Expect(err).ToNot(HaveOccurred(), "create discovery client")
+
+	versionInfo, err := discoveryClient.ServerVersion()
+	Expect(err).ToNot(HaveOccurred(), "retrieve server version info")
+
+	return versionInfo.String()
 }
 
 func (e *e2e) createNamespace() string {
@@ -129,6 +141,8 @@ func (e *e2e) buildKs() {
 		"build",
 		"-o",
 		e.ksBin(),
+		// TODO: this needs to come from elsewhere
+		`-ldflags="-X main.apimachineryVersion=kubernetes-1.10.4"`,
 		`github.com/ksonnet/ksonnet/cmd/ks`,
 	}
 

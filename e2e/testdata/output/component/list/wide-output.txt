@@ -1,3 +1,0 @@
-COMPONENT    TYPE    APIVERSION KIND NAME
-=========    ====    ========== ==== ====
-guestbook-ui jsonnet

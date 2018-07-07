@@ -1,4 +1,4 @@
-// Copyright 2018 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	// nolint: golint
 	. "github.com/onsi/gomega"
 )
 
@@ -98,6 +99,7 @@ func assertTemplate(data interface{}, name, output string) {
 
 	expected := buf.String()
 	got := output
+
 	ExpectWithOffset(1, expected).To(Equal(got),
 		"expected output to be:\n%s\nit was:\n%s\n",
 		expected, got)

@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ks init", func() {
@@ -34,8 +35,7 @@ var _ = Describe("ks init", func() {
 
 	Context("in general", func() {
 		It("doesn't generate default registries", func() {
-			o := a.registryList()
-			assertOutput(filepath.Join("init", "registry-output.txt"), o.stdout)
+			a.checkRegistryExists("incubator")
 		})
 
 		It("creates a gitignore", func() {
@@ -50,7 +50,8 @@ var _ = Describe("ks init", func() {
 
 		It("doesn't generate default registries", func() {
 			o := a.registryList()
-			assertOutput(filepath.Join("init", "skip-registry-output.txt"), o.stdout)
+			tr := loadTableResponse(o.stdout)
+			Expect(tr.registryList()).To(BeEmpty())
 		})
 	})
 
@@ -60,8 +61,17 @@ var _ = Describe("ks init", func() {
 		})
 
 		It("sets the the specified environment name", func() {
-			o := a.envList()
-			assertOutput(filepath.Join("init", "custom-env-output.txt"), o.stdout)
+			expected := []envListRow{
+				{
+					KubernetesVersion: e.serverVersion(),
+					Name:              "env-name",
+					Namespace:         "default",
+					Override:          "",
+					Server:            "http://example.com",
+				},
+			}
+
+			a.checkEnvs(expected)
 		})
 	})
 })

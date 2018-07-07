@@ -1,5 +1,5 @@
 REGISTRY NAME:
-
+incubator
 
 URI:
 github.com/ksonnet/parts/tree/master/incubator

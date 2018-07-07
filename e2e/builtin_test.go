@@ -64,7 +64,7 @@ var _ = Describe("builtin prototypes", func() {
 		namespace = e.createNamespace()
 
 		io := &initOptions{
-			context:   "docker-for-desktop",
+			context:   *kubectx,
 			namespace: namespace,
 		}
 

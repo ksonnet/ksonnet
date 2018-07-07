@@ -1,4 +1,4 @@
-// Copyright 2018 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +18,11 @@
 package e2e
 
 import (
+	ksapp "github.com/ksonnet/ksonnet/pkg/app"
+	yaml "gopkg.in/yaml.v2"
+
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ks env", func() {
@@ -33,11 +37,13 @@ var _ = Describe("ks env", func() {
 		It("adds an environment", func() {
 			o := a.runKs("env", "add", "prod",
 				"--server", "http://example.com",
-				"--module", "prod")
+				"--namespace", "prod")
 			assertExitStatus(o, 0)
 
-			o = a.envList()
-			assertOutput("env/add/output.txt", o.stdout)
+			expected := setEnvListRow(genEnvList(e.serverVersion()),
+				"prod", e.serverVersion(), "prod", "", "http://example.com")
+
+			a.checkEnvs(expected)
 		})
 
 		Context("override", func() {
@@ -45,11 +51,13 @@ var _ = Describe("ks env", func() {
 				o := a.runKs("env", "add", "prod",
 					"-o",
 					"--server", "http://example.com",
-					"--module", "prod")
+					"--namespace", "prod")
 				assertExitStatus(o, 0)
 
-				o = a.envList()
-				assertOutput("env/add/output-with-override.txt", o.stdout)
+				expected := setEnvListRow(genEnvList(e.serverVersion()),
+					"prod", e.serverVersion(), "prod", "*", "http://example.com")
+
+				a.checkEnvs(expected)
 			})
 		})
 	})
@@ -58,7 +66,21 @@ var _ = Describe("ks env", func() {
 		It("describes an environment", func() {
 			o := a.runKs("env", "describe", "default")
 			assertExitStatus(o, 0)
-			assertOutput("env/describe/output.txt", o.stdout)
+
+			envConfig := &ksapp.EnvironmentConfig{
+				Name:              "default",
+				KubernetesVersion: e.serverVersion(),
+				Path:              "default",
+				Destination: &ksapp.EnvironmentDestinationSpec{
+					Server:    "http://example.com",
+					Namespace: "default",
+				},
+			}
+
+			data, err := yaml.Marshal(envConfig)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(o.stdout).To(Equal(string(data)))
 		})
 
 		Context("with override", func() {
@@ -66,57 +88,67 @@ var _ = Describe("ks env", func() {
 				o := a.runKs("env", "add", "default",
 					"-o",
 					"--server", "http://example.com",
-					"--module", "prod")
+					"--namespace", "prod")
 				assertExitStatus(o, 0)
 
 				o = a.runKs("env", "describe", "default")
 				assertExitStatus(o, 0)
-				assertOutput("env/describe/output-with-override.txt", o.stdout)
+
+				envConfig := &ksapp.EnvironmentConfig{
+					Name:              "default",
+					KubernetesVersion: e.serverVersion(),
+					Path:              "default",
+					Destination: &ksapp.EnvironmentDestinationSpec{
+						Server:    "http://example.com",
+						Namespace: "prod",
+					},
+				}
+
+				data, err := yaml.Marshal(envConfig)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(o.stdout).To(Equal(string(data)))
 			})
 		})
 	})
 
 	Describe("list", func() {
 		It("lists environments", func() {
-			o := a.runKs("env", "list")
-			assertExitStatus(o, 0)
-			assertOutput("env/list/output.txt", o.stdout)
+			a.checkEnvs(genEnvList(e.serverVersion()))
 		})
 	})
 
 	Describe("rm", func() {
 		It("removes an environment", func() {
 			o := a.envAdd("prod", false)
+			assertExitStatus(o, 0)
 
 			o = a.runKs("env", "rm", "prod")
 			assertExitStatus(o, 0)
 
-			o = a.envList()
-			assertOutput("env/rm/output.txt", o.stdout)
+			a.checkEnvs(genEnvList(e.serverVersion()))
 		})
 
 		Context("with an override", func() {
 			It("removes an override", func() {
 				o := a.envAdd("default", true)
-				o = a.envList()
-				assertOutput("env/rm/list-with-override.txt", o.stdout)
+				assertExitStatus(o, 0)
+
+				expected := setEnvListRow(genEnvList(e.serverVersion()),
+					"default", e.serverVersion(), "default", "*", "http://example.com")
+				a.checkEnvs(expected)
 
 				o = a.runKs("env", "rm", "-o", "default")
 				assertExitStatus(o, 0)
 
-				o = a.envList()
-				assertOutput("env/rm/list-with-override-removed.txt", o.stdout)
+				a.checkEnvs(genEnvList(e.serverVersion()))
 			})
 		})
-	})
 
-	Describe("rm", func() {
 		It("attempt to remove an invalid environment", func() {
-			o := a.envAdd("default", false)
-
-			o = a.runKs("env", "rm", "invalid")
+			o := a.runKs("env", "rm", "invalid")
 			assertExitStatus(o, 1)
-			assertOutput("env/rm/invalid-output.txt", o.stdout)
+			Expect(o.stderr).To(ContainSubstring(`environment \"invalid\" does not exist`))
 		})
 	})
 
@@ -124,12 +156,29 @@ var _ = Describe("ks env", func() {
 		Context("updating env name", func() {
 			It("updates the name of an environment", func() {
 				o := a.envAdd("prod", false)
+				assertExitStatus(o, 0)
 
 				o = a.runKs("env", "set", "prod", "--name", "us-west1/prod")
 				assertExitStatus(o, 0)
 
-				o = a.envList()
-				assertOutput("env/set/rename.txt", o.stdout)
+				expected := []envListRow{
+					{
+						KubernetesVersion: e.serverVersion(),
+						Name:              "default",
+						Namespace:         "default",
+						Override:          "",
+						Server:            "http://example.com",
+					},
+					{
+						KubernetesVersion: e.serverVersion(),
+						Name:              "us-west1/prod",
+						Namespace:         "prod",
+						Override:          "",
+						Server:            "http://example.com",
+					},
+				}
+
+				a.checkEnvs(expected)
 			})
 		})
 
@@ -139,7 +188,21 @@ var _ = Describe("ks env", func() {
 				assertExitStatus(o, 0)
 
 				o = a.envDescribe("default")
-				assertOutput("env/set/rename-namespace.txt", o.stdout)
+
+				envConfig := &ksapp.EnvironmentConfig{
+					Name:              "default",
+					KubernetesVersion: e.serverVersion(),
+					Path:              "default",
+					Destination: &ksapp.EnvironmentDestinationSpec{
+						Server:    "http://example.com",
+						Namespace: "dev",
+					},
+				}
+
+				data, err := yaml.Marshal(envConfig)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(o.stdout).To(Equal(string(data)))
 			})
 		})
 
@@ -147,24 +210,51 @@ var _ = Describe("ks env", func() {
 			Context("update the namespace", func() {
 				It("updates the override namespace", func() {
 					o := a.envAdd("default", true)
+					assertExitStatus(o, 0)
 
 					o = a.runKs("env", "set", "default", "--namespace", "new-name")
 					assertExitStatus(o, 0)
 
-					o = a.envList()
-					assertOutput("env/set/rename-with-override-ns.txt", o.stdout)
+					expected := []envListRow{
+						{
+							KubernetesVersion: e.serverVersion(),
+							Name:              "default",
+							Namespace:         "new-name",
+							Override:          "*",
+							Server:            "http://example.com",
+						},
+					}
+
+					a.checkEnvs(expected)
 				})
 			})
 
 			Context("update the name", func() {
 				It("renames the environment", func() {
 					o := a.envAdd("default", true)
+					assertExitStatus(o, 0)
 
 					o = a.runKs("env", "set", "default", "--name", "new-name")
 					assertExitStatus(o, 0)
 
-					o = a.envList()
-					assertOutput("env/set/rename-with-override-name.txt", o.stdout)
+					expected := []envListRow{
+						{
+							KubernetesVersion: e.serverVersion(),
+							Name:              "default",
+							Namespace:         "default",
+							Override:          "",
+							Server:            "http://example.com",
+						},
+						{
+							KubernetesVersion: e.serverVersion(),
+							Name:              "new-name",
+							Namespace:         "default",
+							Override:          "*",
+							Server:            "http://example.com",
+						},
+					}
+
+					a.checkEnvs(expected)
 				})
 			})
 		})
@@ -178,18 +268,26 @@ var _ = Describe("ks env", func() {
 						"--module", "/")
 					assertExitStatus(o, 0)
 
-					o = a.envDescribe("default")
-					assertOutput("env/targets/updated.txt", o.stdout)
+					envConfig := &ksapp.EnvironmentConfig{
+						Name:              "default",
+						KubernetesVersion: e.serverVersion(),
+						Path:              "default",
+						Destination: &ksapp.EnvironmentDestinationSpec{
+							Server:    "http://example.com",
+							Namespace: "default",
+						},
+						Targets: []string{"/"},
+					}
 
-					o = a.runKs("env", "targets", "default")
-					assertExitStatus(o, 0)
+					data, err := yaml.Marshal(envConfig)
+					Expect(err).ToNot(HaveOccurred())
 
 					o = a.envDescribe("default")
-					assertOutput("env/targets/removed.txt", o.stdout)
+					Expect(o.stdout).To(Equal(string(data)))
 				})
 			})
 
-			Context("target namespace does not exist", func() {
+			Context("target module does not exist", func() {
 				It("return an error", func() {
 					o := a.runKs("env", "targets", "default",
 						"--module", "bad")
@@ -199,7 +297,7 @@ var _ = Describe("ks env", func() {
 			})
 		})
 
-		Context("namespace does not exist", func() {
+		Context("environment does not exist", func() {
 			It("returns an error", func() {
 				o := a.runKs("env", "targets", "invalid",
 					"--module", "/")
