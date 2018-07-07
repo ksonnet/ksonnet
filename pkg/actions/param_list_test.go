@@ -33,6 +33,7 @@ import (
 )
 
 func TestParamList(t *testing.T) {
+
 	moduleParams := []component.ModuleParameter{
 		{Component: "deployment", Key: "key", Value: `"value"`},
 	}
@@ -63,6 +64,7 @@ func TestParamList(t *testing.T) {
 			modulesFn    func() ([]component.Module, error)
 			lister       paramsLister
 			outputFile   string
+			isErr        bool
 		}{
 			{
 				name: "component name",
@@ -96,6 +98,22 @@ func TestParamList(t *testing.T) {
 				outputFile: filepath.Join("param", "list", "without_component.txt"),
 			},
 			{
+				name: "no component name",
+				in: map[string]interface{}{
+					OptionApp:    appMock,
+					OptionModule: "module",
+					OptionOutput: "json",
+				},
+				findModuleFn: func(t *testing.T) findModuleFn {
+					return func(a app.App, moduleName string) (component.Module, error) {
+						assert.Equal(t, "module", moduleName)
+						return module, nil
+					}
+				},
+				lister:     fakeLister,
+				outputFile: filepath.Join("param", "list", "without_component.json"),
+			},
+			{
 				name: "env",
 				in: map[string]interface{}{
 					OptionApp:     appMock,
@@ -107,6 +125,23 @@ func TestParamList(t *testing.T) {
 				},
 				lister:     fakeLister,
 				outputFile: filepath.Join("param", "list", "env.txt"),
+			},
+			{
+				name: "invalid output type",
+				in: map[string]interface{}{
+					OptionApp:           appMock,
+					OptionComponentName: "deployment",
+					OptionModule:        "module",
+					OptionOutput:        "invalid",
+				},
+				findModuleFn: func(t *testing.T) findModuleFn {
+					return func(a app.App, moduleName string) (component.Module, error) {
+						assert.Equal(t, "module", moduleName)
+						return module, nil
+					}
+				},
+				lister: fakeLister,
+				isErr:  true,
 			},
 		}
 
@@ -133,6 +168,10 @@ func TestParamList(t *testing.T) {
 				a.out = &buf
 
 				err = a.Run()
+				if tc.isErr {
+					require.Error(t, err)
+					return
+				}
 				require.NoError(t, err)
 
 				assertOutput(t, tc.outputFile, buf.String())

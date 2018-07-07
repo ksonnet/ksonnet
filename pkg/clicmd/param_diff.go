@@ -26,6 +26,7 @@ import (
 
 const (
 	vParamDiffComponent = "param-diff-component"
+	vParamDiffOutput    = "param-diff-output"
 )
 
 var (
@@ -68,12 +69,14 @@ func newParamDiffCmd(a app.App) *cobra.Command {
 				actions.OptionEnvName1:      args[0],
 				actions.OptionEnvName2:      args[1],
 				actions.OptionComponentName: viper.GetString(vParamDiffComponent),
+				actions.OptionOutput:        viper.GetString(vParamDiffOutput),
 			}
 
 			return runAction(actionParamDiff, m)
 		},
 	}
 
+	addCmdOutput(paramDiffCmd, vParamDiffOutput)
 	paramDiffCmd.Flags().String(flagComponent, "", "Specify the component to diff against")
 	viper.BindPFlag(vParamDiffComponent, paramDiffCmd.Flags().Lookup(flagComponent))
 

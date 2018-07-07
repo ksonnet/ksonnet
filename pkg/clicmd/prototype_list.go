@@ -21,6 +21,11 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+const (
+	vPrototypeListOutput = "prototype-list-output"
 )
 
 var (
@@ -55,12 +60,15 @@ func newPrototypeListCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp: a,
+				actions.OptionApp:    a,
+				actions.OptionOutput: viper.GetString(vPrototypeListOutput),
 			}
 
 			return runAction(actionPrototypeList, m)
 		},
 	}
+
+	addCmdOutput(prototypeListCmd, vPrototypeListOutput)
 
 	return prototypeListCmd
 }

@@ -29,8 +29,9 @@ ks pkg list [flags]
 ### Options
 
 ```
-  -h, --help        help for list
-      --installed   Only list installed packages
+  -h, --help            help for list
+      --installed       Only list installed packages
+  -o, --output string   Output format. Valid options: table|json
 ```
 
 ### Options inherited from parent commands

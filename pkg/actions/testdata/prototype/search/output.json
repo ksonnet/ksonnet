@@ -1,0 +1,13 @@
+{
+	"kind": "prototypeSearch",
+	"data": [
+		{
+			"description": "description",
+			"name": "result1"
+		},
+		{
+			"description": "description",
+			"name": "result2"
+		}
+	]
+}

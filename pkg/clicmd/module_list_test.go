@@ -30,6 +30,17 @@ func Test_moduleListCmd(t *testing.T) {
 			expected: map[string]interface{}{
 				actions.OptionApp:     nil,
 				actions.OptionEnvName: "",
+				actions.OptionOutput:  "",
+			},
+		},
+		{
+			name:   "set output",
+			args:   []string{"module", "list", "-o", "json"},
+			action: actionModuleList,
+			expected: map[string]interface{}{
+				actions.OptionApp:     nil,
+				actions.OptionEnvName: "",
+				actions.OptionOutput:  "json",
 			},
 		},
 	}

@@ -1,0 +1,23 @@
+{
+	"kind": "test",
+	"data": [
+		{
+			"Namespace": "default",
+			"SERVER": "http://default",
+			"name": "default",
+			"version": "v1.7.0"
+		},
+		{
+			"Namespace": "dev",
+			"SERVER": "http://dev",
+			"name": "dev",
+			"version": "v1.8.0"
+		},
+		{
+			"Namespace": "east/prod",
+			"SERVER": "http://east-prod",
+			"name": "east/prod",
+			"version": "v1.8.0"
+		}
+	]
+}

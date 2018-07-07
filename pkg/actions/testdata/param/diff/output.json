@@ -1,0 +1,23 @@
+{
+	"kind": "paramDiff",
+	"data": [
+		{
+			"component": "a",
+			"env1": "b1",
+			"env2": "b2",
+			"param": "b"
+		},
+		{
+			"component": "c",
+			"env1": "c",
+			"env2": "",
+			"param": "c"
+		},
+		{
+			"component": "d",
+			"env1": "",
+			"env2": "d",
+			"param": "d"
+		}
+	]
+}

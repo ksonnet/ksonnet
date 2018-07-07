@@ -27,7 +27,7 @@ ks component list
 ```
   -h, --help            help for list
       --module string   Component module
-  -o, --output string   Output format. Valid options: wide
+  -o, --output string   Output format. Valid options: table|json
 ```
 
 ### Options inherited from parent commands

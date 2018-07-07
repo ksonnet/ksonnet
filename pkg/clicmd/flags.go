@@ -15,6 +15,11 @@
 
 package clicmd
 
+import (
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
 const (
 	// For use in the commands (e.g., diff, apply, delete) that require either an
 	// environment or the -f flag.
@@ -54,3 +59,10 @@ const (
 	shortOutput    = "o"
 	shortOverride  = "o"
 )
+
+// addCmdOutput adds an output flag to a command. `name` is the name
+// of the viper assignment.
+func addCmdOutput(cmd *cobra.Command, name string) {
+	cmd.Flags().StringP(flagOutput, shortOutput, "", "Output format. Valid options: table|json")
+	viper.BindPFlag(name, cmd.Flags().Lookup(flagOutput))
+}

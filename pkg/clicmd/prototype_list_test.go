@@ -28,7 +28,17 @@ func Test_prototypeListCmd(t *testing.T) {
 			args:   []string{"prototype", "list"},
 			action: actionPrototypeList,
 			expected: map[string]interface{}{
-				actions.OptionApp: nil,
+				actions.OptionApp:    nil,
+				actions.OptionOutput: "",
+			},
+		},
+		{
+			name:   "in general",
+			args:   []string{"prototype", "list", "-o", "json"},
+			action: actionPrototypeList,
+			expected: map[string]interface{}{
+				actions.OptionApp:    nil,
+				actions.OptionOutput: "json",
 			},
 		},
 		{

@@ -40,6 +40,7 @@ ks param diff dev prod --component=guestbook
 ```
       --component string   Specify the component to diff against
   -h, --help               help for diff
+  -o, --output string      Output format. Valid options: table|json
 ```
 
 ### Options inherited from parent commands

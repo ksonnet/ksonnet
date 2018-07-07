@@ -13,8 +13,9 @@ ks module list [flags]
 ### Options
 
 ```
-      --env string   Environment to list modules for
-  -h, --help         help for list
+      --env string      Environment to list modules for
+  -h, --help            help for list
+  -o, --output string   Output format. Valid options: table|json
 ```
 
 ### Options inherited from parent commands

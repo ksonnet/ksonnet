@@ -46,16 +46,28 @@ func TestPkgList(t *testing.T) {
 		cases := []struct {
 			name          string
 			onlyInstalled bool
+			outputType    string
 			outputName    string
+			isErr         bool
 		}{
 			{
 				name:       "list all packages",
 				outputName: "pkg/list/output.txt",
 			},
 			{
+				name:       "output json",
+				outputType: "json",
+				outputName: "pkg/list/output.json",
+			},
+			{
 				name:          "installed packages",
 				onlyInstalled: true,
 				outputName:    "pkg/list/installed.txt",
+			},
+			{
+				name:       "invalid output type",
+				outputType: "invalid",
+				isErr:      true,
 			},
 		}
 
@@ -64,6 +76,7 @@ func TestPkgList(t *testing.T) {
 				in := map[string]interface{}{
 					OptionApp:       appMock,
 					OptionInstalled: tc.onlyInstalled,
+					OptionOutput:    tc.outputType,
 				}
 
 				a, err := NewPkgList(in)
@@ -78,6 +91,10 @@ func TestPkgList(t *testing.T) {
 				a.out = &buf
 
 				err = a.Run()
+				if tc.isErr {
+					require.Error(t, err)
+					return
+				}
 				require.NoError(t, err)
 
 				assertOutput(t, tc.outputName, buf.String())

@@ -53,6 +53,7 @@ type ParamList struct {
 	moduleName    string
 	componentName string
 	envName       string
+	outputType    string
 
 	out          io.Writer
 	findModuleFn findModuleFn
@@ -71,6 +72,7 @@ func NewParamList(m map[string]interface{}) (*ParamList, error) {
 		moduleName:    ol.LoadOptionalString(OptionModule),
 		componentName: ol.LoadOptionalString(OptionComponentName),
 		envName:       ol.LoadOptionalString(OptionEnvName),
+		outputType:    ol.LoadOptionalString(OptionOutput),
 
 		out:          os.Stdout,
 		findModuleFn: component.GetModule,
@@ -116,14 +118,20 @@ func (pl *ParamList) Run() error {
 }
 
 func (pl *ParamList) print(entries []params.Entry) error {
-	table := table.New(pl.out)
+	t := table.New("paramList", pl.out)
 
-	table.SetHeader([]string{"COMPONENT", "PARAM", "VALUE"})
+	f, err := table.DetectFormat(pl.outputType)
+	if err != nil {
+		return errors.Wrap(err, "detecting output format")
+	}
+	t.SetFormat(f)
+
+	t.SetHeader([]string{"component", "param", "value"})
 	for _, entry := range entries {
-		table.Append([]string{entry.ComponentName, entry.ParamName, entry.Value})
+		t.Append([]string{entry.ComponentName, entry.ParamName, entry.Value})
 	}
 
-	return table.Render()
+	return t.Render()
 }
 
 func (pl *ParamList) handleEnvParams() error {

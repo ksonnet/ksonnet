@@ -1,0 +1,11 @@
+{
+	"kind": "moduleList",
+	"data": [
+		{
+			"module": "a"
+		},
+		{
+			"module": "b"
+		}
+	]
+}

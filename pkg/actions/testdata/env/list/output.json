@@ -1,1 +1,19 @@
-{"default":{"k8sVersion":"v1.7.0","path":"","destination":{"server":"http://example.com","namespace":"default"}}}
+{
+	"kind": "envList",
+	"data": [
+		{
+			"kubernetes-version": "v1.7.0",
+			"name": "default",
+			"namespace": "default",
+			"override": "",
+			"server": "http://example.com"
+		},
+		{
+			"kubernetes-version": "v1.7.0",
+			"name": "prod",
+			"namespace": "prod",
+			"override": "",
+			"server": "http://example.com"
+		}
+	]
+}

@@ -1,0 +1,10 @@
+{
+	"kind": "paramList",
+	"data": [
+		{
+			"component": "deployment",
+			"param": "key",
+			"value": "'value'"
+		}
+	]
+}

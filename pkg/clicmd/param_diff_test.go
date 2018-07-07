@@ -32,6 +32,7 @@ func Test_paramDiffCmd(t *testing.T) {
 				actions.OptionComponentName: "component-name",
 				actions.OptionEnvName1:      "env1",
 				actions.OptionEnvName2:      "env2",
+				actions.OptionOutput:        "",
 			},
 		},
 		{
@@ -43,6 +44,19 @@ func Test_paramDiffCmd(t *testing.T) {
 				actions.OptionEnvName1:      "env1",
 				actions.OptionEnvName2:      "env2",
 				actions.OptionComponentName: "",
+				actions.OptionOutput:        "",
+			},
+		},
+		{
+			name:   "set output",
+			args:   []string{"param", "diff", "env1", "env2", "-o", "json"},
+			action: actionParamDiff,
+			expected: map[string]interface{}{
+				actions.OptionApp:           nil,
+				actions.OptionEnvName1:      "env1",
+				actions.OptionEnvName2:      "env2",
+				actions.OptionComponentName: "",
+				actions.OptionOutput:        "json",
 			},
 		},
 		{

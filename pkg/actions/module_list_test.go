@@ -22,11 +22,12 @@ import (
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/component"
 	cmocks "github.com/ksonnet/ksonnet/pkg/component/mocks"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
 func TestModuleList(t *testing.T) {
-	withApp(t, func(appMock *amocks.App) {
+	validComponentManager := func(appMock *amocks.App) component.Manager {
 		cm := &cmocks.Manager{}
 
 		modules := []component.Module{
@@ -35,24 +36,80 @@ func TestModuleList(t *testing.T) {
 		}
 		cm.On("Modules", appMock, "").Return(modules, nil)
 
-		in := map[string]interface{}{
-			OptionApp:     appMock,
-			OptionEnvName: "",
-		}
+		return cm
+	}
 
-		a, err := NewModuleList(in)
-		require.NoError(t, err)
+	cannotFindModules := func(appMock *amocks.App) component.Manager {
+		cm := &cmocks.Manager{}
 
-		a.cm = cm
+		cm.On("Modules", appMock, "").Return(nil, errors.New("fail"))
 
-		var buf bytes.Buffer
-		a.out = &buf
+		return cm
+	}
 
-		err = a.Run()
-		require.NoError(t, err)
+	cases := []struct {
+		name             string
+		outputType       string
+		outputName       string
+		componentManager func(a *amocks.App) component.Manager
+		isErr            bool
+	}{
+		{
+			name:             "output table",
+			outputType:       "table",
+			outputName:       "module/list/output.txt",
+			componentManager: validComponentManager,
+		},
+		{
+			name:             "output table",
+			outputType:       "json",
+			outputName:       "module/list/output.json",
+			componentManager: validComponentManager,
+		},
+		{
+			name:             "invalid output format",
+			outputType:       "invalid",
+			componentManager: validComponentManager,
+			isErr:            true,
+		},
+		{
+			name:             "invalid output format",
+			outputType:       "invalid",
+			componentManager: cannotFindModules,
+			isErr:            true,
+		},
+	}
 
-		assertOutput(t, "ns/list/output.txt", buf.String())
-	})
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			withApp(t, func(appMock *amocks.App) {
+
+				in := map[string]interface{}{
+					OptionApp:     appMock,
+					OptionEnvName: "",
+					OptionOutput:  tc.outputType,
+				}
+
+				a, err := NewModuleList(in)
+				require.NoError(t, err)
+
+				a.cm = tc.componentManager(appMock)
+
+				var buf bytes.Buffer
+				a.out = &buf
+
+				err = a.Run()
+				if tc.isErr {
+					require.Error(t, err)
+					return
+				}
+				require.NoError(t, err)
+
+				assertOutput(t, tc.outputName, buf.String())
+			})
+		})
+	}
+
 }
 
 func TestModuleList_requires_app(t *testing.T) {

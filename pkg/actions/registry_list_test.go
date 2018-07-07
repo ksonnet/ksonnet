@@ -26,30 +26,62 @@ import (
 )
 
 func TestRegistryList(t *testing.T) {
-	withApp(t, func(appMock *amocks.App) {
-		in := map[string]interface{}{
-			OptionApp: appMock,
-		}
+	cases := []struct {
+		name       string
+		outputType string
+		outputFile string
+		isErr      bool
+	}{
+		{
+			name:       "output table",
+			outputType: "table",
+			outputFile: "registry/list/output.txt",
+		},
+		{
+			name:       "output table",
+			outputType: "json",
+			outputFile: "registry/list/output.json",
+		},
+		{
+			name:       "invalid output",
+			outputType: "invalid",
+			isErr:      true,
+		},
+	}
 
-		a, err := NewRegistryList(in)
-		require.NoError(t, err)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			withApp(t, func(appMock *amocks.App) {
+				in := map[string]interface{}{
+					OptionApp:    appMock,
+					OptionOutput: tc.outputType,
+				}
 
-		var buf bytes.Buffer
-		a.out = &buf
+				a, err := NewRegistryList(in)
+				require.NoError(t, err)
 
-		a.registryListFn = func(app.App) ([]registry.Registry, error) {
-			registries := []registry.Registry{
-				mockRegistry("override", true),
-				mockRegistry("incubator", false),
-			}
-			return registries, nil
-		}
+				var buf bytes.Buffer
+				a.out = &buf
 
-		err = a.Run()
-		require.NoError(t, err)
+				a.registryListFn = func(app.App) ([]registry.Registry, error) {
+					registries := []registry.Registry{
+						mockRegistry("override", true),
+						mockRegistry("incubator", false),
+					}
+					return registries, nil
+				}
 
-		assertOutput(t, "registry/list/output.txt", buf.String())
-	})
+				err = a.Run()
+				if tc.isErr {
+					require.Error(t, err)
+					return
+				}
+				require.NoError(t, err)
+
+				assertOutput(t, tc.outputFile, buf.String())
+			})
+		})
+	}
 }
 
 func TestRegistryList_requires_app(t *testing.T) {

@@ -23,6 +23,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/ksonnet/ksonnet/pkg/util/table"
+	"github.com/pkg/errors"
 )
 
 // RunRegistryList runs `env list`
@@ -37,7 +38,9 @@ func RunRegistryList(m map[string]interface{}) error {
 
 // RegistryList lists available registries
 type RegistryList struct {
-	app            app.App
+	app        app.App
+	outputType string
+
 	registryListFn func(ksApp app.App) ([]registry.Registry, error)
 	out            io.Writer
 }
@@ -47,7 +50,8 @@ func NewRegistryList(m map[string]interface{}) (*RegistryList, error) {
 	ol := newOptionLoader(m)
 
 	rl := &RegistryList{
-		app: ol.LoadApp(),
+		app:        ol.LoadApp(),
+		outputType: ol.LoadOptionalString(OptionOutput),
 
 		registryListFn: registry.List,
 		out:            os.Stdout,
@@ -67,8 +71,14 @@ func (rl *RegistryList) Run() error {
 		return err
 	}
 
-	t := table.New(rl.out)
+	t := table.New("registryList", rl.out)
 	t.SetHeader([]string{"name", "override", "protocol", "uri"})
+
+	f, err := table.DetectFormat(rl.outputType)
+	if err != nil {
+		return errors.Wrap(err, "detecting output format")
+	}
+	t.SetFormat(f)
 
 	var rows [][]string
 

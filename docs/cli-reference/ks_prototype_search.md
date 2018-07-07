@@ -31,7 +31,8 @@ ks prototype search service
 ### Options
 
 ```
-  -h, --help   help for search
+  -h, --help            help for search
+  -o, --output string   Output format. Valid options: table|json
 ```
 
 ### Options inherited from parent commands

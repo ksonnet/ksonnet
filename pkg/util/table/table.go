@@ -16,6 +16,7 @@
 package table
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -28,24 +29,62 @@ const (
 	sepChar = "="
 )
 
-// Table creates an output table.
+// Format is the output format.
+type Format int
+
+const (
+	// FormatTable prints a table.
+	FormatTable Format = iota
+	// FormatJSON prints JSON.
+	FormatJSON
+)
+
+// DefaultFormat is the default format for output. It is a table.
+const DefaultFormat = FormatTable
+
+// DetectFormat detects a format from a string.
+func DetectFormat(formatName string) (Format, error) {
+	switch formatName {
+	case "json":
+		return FormatJSON, nil
+	case "", "table":
+		return FormatTable, nil
+	default:
+		return Format(-1), errors.Errorf("unknown output format %q", formatName)
+	}
+}
+
+// Table creates an output table. Use the New constructor to ensure
+// defaults are set properly.
 type Table struct {
-	w io.Writer
+	Name   string
+	Format Format
+	w      io.Writer
+
+	printf func(w io.Writer, format string, a ...interface{}) (int, error)
 
 	header []string
 	rows   [][]string
 }
 
 // New creates an instance of table.
-func New(w io.Writer) *Table {
+func New(name string, w io.Writer) *Table {
 	return &Table{
-		w: w,
+		Name:   name,
+		Format: DefaultFormat,
+		printf: fmt.Fprintf,
+		w:      w,
 	}
 }
 
 // SetHeader sets the header for the table.
 func (t *Table) SetHeader(columns []string) {
 	t.header = columns
+}
+
+// SetFormat sets sets the output format.
+func (t *Table) SetFormat(f Format) {
+	t.Format = f
 }
 
 // Append appends a row to the table.
@@ -60,6 +99,57 @@ func (t *Table) AppendBulk(rows [][]string) {
 
 // Render writes the output to the table's writer.
 func (t *Table) Render() error {
+	if t.w == nil {
+		return errors.New("writer is nil")
+	}
+
+	switch t.Format {
+	default:
+		return t.renderTable()
+	case FormatTable:
+		return t.renderTable()
+	case FormatJSON:
+		return t.renderJSON()
+	}
+}
+
+// jsonOutput is the structure for printing JSON output.
+type jsonOutput struct {
+	Kind string              `json:"kind"`
+	Data []map[string]string `json:"data"`
+}
+
+func (t *Table) renderJSON() error {
+	if len(t.header) == 0 {
+		return errors.New("headers aren't defined for output")
+	}
+
+	out := make([]map[string]string, 0)
+	for _, row := range t.rows {
+		m := make(map[string]string)
+		if len(t.header) != len(row) {
+			return errors.New("header length doesn't match row length")
+		}
+
+		for i, header := range t.header {
+			m[header] = row[i]
+		}
+
+		out = append(out, m)
+	}
+
+	encoder := json.NewEncoder(t.w)
+	encoder.SetIndent("", "\t")
+
+	jo := jsonOutput{
+		Kind: t.Name,
+		Data: out,
+	}
+
+	return encoder.Encode(&jo)
+}
+
+func (t *Table) renderTable() error {
 	var output [][]string
 
 	if len(t.header) > 0 {
@@ -81,6 +171,11 @@ func (t *Table) Render() error {
 
 	// print rows
 	for _, row := range output {
+		hl := len(t.header)
+		if hl > 0 && (hl != len(row)) {
+			return errors.New("header length doesn't match row length")
+		}
+
 		var parts []string
 		for i, col := range row {
 			val := col
@@ -92,9 +187,9 @@ func (t *Table) Render() error {
 
 		}
 
-		_, err := fmt.Fprintf(t.w, "%s\n", strings.TrimSpace(strings.Join(parts, " ")))
+		_, err := t.printf(t.w, "%s\n", strings.TrimSpace(strings.Join(parts, " ")))
 		if err != nil {
-			return errors.Wrap(err, "render table")
+			return errors.Wrap(err, "writing row to table")
 		}
 	}
 
@@ -110,7 +205,7 @@ func colLens(rows [][]string) []int {
 		}
 	}
 
-	// get the max len for each column
+	// get the max length for each column
 	counts := make([]int, colCount, colCount)
 	for _, row := range rows {
 		for i := range row {

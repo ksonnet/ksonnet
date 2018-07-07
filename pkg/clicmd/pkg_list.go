@@ -27,6 +27,7 @@ import (
 
 const (
 	vPkgListInstalled = "pkg-list-installed"
+	vPkgListOutput    = "pkg-list-output"
 )
 
 var (
@@ -62,12 +63,14 @@ func newPkgListCmd(a app.App) *cobra.Command {
 			m := map[string]interface{}{
 				actions.OptionApp:       a,
 				actions.OptionInstalled: viper.GetBool(vPkgListInstalled),
+				actions.OptionOutput:    viper.GetString(vPkgListOutput),
 			}
 
 			return runAction(actionPkgList, m)
 		},
 	}
 
+	addCmdOutput(pkgListCmd, vPkgListOutput)
 	pkgListCmd.Flags().Bool(flagInstalled, false, "Only list installed packages")
 	viper.BindPFlag(vPkgListInstalled, pkgListCmd.Flags().Lookup(flagInstalled))
 
