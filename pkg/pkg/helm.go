@@ -141,6 +141,7 @@ func (h *Helm) Prototypes() (prototype.Prototypes, error) {
 		APIVersion: prototype.DefaultAPIVersion,
 		Kind:       prototype.DefaultKind,
 		Name:       h.prototypeName(),
+		Version:    latestVersion,
 		Template: prototype.SnippetSchema{
 			Description:      shortDescription,
 			ShortDescription: shortDescription,
