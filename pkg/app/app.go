@@ -57,7 +57,7 @@ var (
 // App is a ksonnet application.
 type App interface {
 	// AddEnvironment adds an environment.
-	AddEnvironment(name, k8sSpecFlag string, spec *EnvironmentConfig, isOverride bool) error
+	AddEnvironment(spec *EnvironmentConfig, k8sSpecFlag string, isOverride bool) error
 	// AddRegistry adds a registry.
 	AddRegistry(spec *RegistryConfig, isOverride bool) error
 	// CurrentEnvironment returns the current environment name or an empty string.

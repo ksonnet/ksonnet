@@ -33,10 +33,12 @@ type baseApp struct {
 	overrides *Override
 
 	mu sync.Mutex
+
+	load func() error
 }
 
 func newBaseApp(fs afero.Fs, root string) *baseApp {
-	return &baseApp{
+	ba := &baseApp{
 		fs:     fs,
 		root:   root,
 		config: &Spec{},
@@ -45,6 +47,8 @@ func newBaseApp(fs afero.Fs, root string) *baseApp {
 			Registries:   RegistryConfigs{},
 		},
 	}
+	ba.load = ba.doLoad
+	return ba
 }
 
 func (ba *baseApp) CurrentEnvironment() string {
@@ -104,7 +108,7 @@ func (ba *baseApp) save() error {
 	return nil
 }
 
-func (ba *baseApp) load() error {
+func (ba *baseApp) doLoad() error {
 	ba.mu.Lock()
 	defer ba.mu.Unlock()
 
@@ -314,34 +318,125 @@ func (ba *baseApp) Environment(name string) (*EnvironmentConfig, error) {
 		return nil, errors.Wrap(err, "load configuration")
 	}
 
-	for k, v := range ba.overrides.Environments {
-		if k == name {
-			return v, nil
-		}
+	e := ba.mergedEnvironment(name)
+	if e == nil {
+		return nil, errors.Errorf("environment %q was not found", name)
 	}
-
-	for k, v := range ba.config.Environments {
-		if k == name {
-			return v, nil
-		}
-	}
-
-	return nil, errors.Errorf("environment %q was not found", name)
+	return e, nil
 }
 
-// Environments returns all environment specs.
+func deepCopyLibraries(src LibraryConfigs) LibraryConfigs {
+	if src == nil {
+		return LibraryConfigs(nil)
+	}
+
+	lc := LibraryConfigs{}
+	for k, v := range src {
+		c := *v
+		lc[k] = &c
+	}
+	return lc
+}
+
+func deepCopyEnvironmentConfig(src EnvironmentConfig) *EnvironmentConfig {
+	e := src
+
+	if src.Destination != nil {
+		d := *src.Destination
+		e.Destination = &d
+	}
+	if src.Targets != nil {
+		t := make([]string, len(src.Targets))
+		copy(t, src.Targets)
+		e.Targets = t
+	}
+	if src.Libraries != nil {
+		e.Libraries = deepCopyLibraries(src.Libraries)
+	}
+
+	return &e
+}
+
+// mergedEnvrionment returns a fresh copy of the named environment, merged with
+// optional overrides if present. Note overrides cannot override environment-scoped library
+// references.
+// Returns nil if the envrionment is not present and non-nil in either primary configuration
+// or overrides.
+func (ba *baseApp) mergedEnvironment(name string) *EnvironmentConfig {
+	var hasPrimary, hasOverride bool
+	var primary, override *EnvironmentConfig
+
+	if ba.config != nil {
+		primary, hasPrimary = ba.config.Environments[name]
+		if primary == nil {
+			hasPrimary = false
+		}
+	}
+	if ba.overrides != nil {
+		override, hasOverride = ba.overrides.Environments[name]
+		if override == nil {
+			hasOverride = false
+		}
+	}
+
+	switch {
+	case hasPrimary && !hasOverride:
+		e := deepCopyEnvironmentConfig(*primary)
+		e.isOverride = false
+		return e
+	case hasPrimary && hasOverride:
+		combined := deepCopyEnvironmentConfig(*primary)
+		combined.Name = override.Name
+		combined.KubernetesVersion = override.KubernetesVersion
+		combined.Path = override.Path
+		if override.Destination != nil {
+			d := *override.Destination
+			combined.Destination = &d
+		}
+		if override.Targets != nil {
+			t := make([]string, len(override.Targets))
+			copy(t, override.Targets)
+			combined.Targets = t
+		}
+		combined.isOverride = true
+		return combined
+	case hasOverride:
+		e := deepCopyEnvironmentConfig(*override)
+		e.isOverride = true
+		return e
+	default:
+		return nil
+	}
+}
+
+// Environments returns all environment specs, merged with any corresponding overrides.
+// Note overrides cannot override environment libraries.
 func (ba *baseApp) Environments() (EnvironmentConfigs, error) {
 	if err := ba.load(); err != nil {
 		return nil, errors.Wrap(err, "load configuration")
 	}
 
+	// Build merged list of keys
 	environments := EnvironmentConfigs{}
-	for k, v := range ba.config.Environments {
-		environments[k] = v
+	if ba.config != nil {
+		for k := range ba.config.Environments {
+			environments[k] = nil
+		}
+	}
+	if ba.overrides != nil {
+		for k := range ba.overrides.Environments {
+			environments[k] = nil
+		}
 	}
 
-	for k, v := range ba.overrides.Environments {
-		environments[k] = v
+	for k := range environments {
+		e := ba.mergedEnvironment(k)
+		if e == nil {
+			delete(environments, k)
+			continue
+		}
+
+		environments[k] = e
 	}
 
 	return environments, nil

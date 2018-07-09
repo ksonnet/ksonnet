@@ -34,6 +34,7 @@ func TestApp010_AddEnvironment(t *testing.T) {
 		envLen := len(envs)
 
 		newEnv := &EnvironmentConfig{
+			Name: "us-west/qa",
 			Destination: &EnvironmentDestinationSpec{
 				Namespace: "some-namespace",
 				Server:    "http://example.com",
@@ -42,7 +43,7 @@ func TestApp010_AddEnvironment(t *testing.T) {
 		}
 
 		k8sSpecFlag := "version:v1.8.7"
-		err = app.AddEnvironment("us-west/qa", k8sSpecFlag, newEnv, false)
+		err = app.AddEnvironment(newEnv, k8sSpecFlag, false)
 		require.NoError(t, err)
 
 		envs, err = app.Environments()
@@ -67,7 +68,7 @@ func TestApp010_AddEnvironment_empty_spec_flag(t *testing.T) {
 
 		env.Destination.Namespace = "updated"
 
-		err = app.AddEnvironment("default", "", env, false)
+		err = app.AddEnvironment(env, "", false)
 		require.NoError(t, err)
 
 		envs, err = app.Environments()
@@ -158,6 +159,21 @@ func TestApp010_Environment(t *testing.T) {
 			})
 		})
 	}
+}
+
+func Test_App010_Environment_returns_copy(t *testing.T) {
+	withApp010Fs(t, "app010_app.yaml", func(app *App010) {
+		e1, err := app.Environment("default")
+		require.NoError(t, err)
+
+		e1.KubernetesVersion = "v9.9.9"
+
+		e2, err := app.Environment("default")
+		require.NoError(t, err)
+		assert.False(t, e1 == e2, "expected new pointer")
+		assert.Equal(t, "v9.9.9", e1.KubernetesVersion)
+		assert.Equal(t, "v1.7.0", e2.KubernetesVersion)
+	})
 }
 
 func TestApp010_CheckUpgrade_no_legacy_environments(t *testing.T) {

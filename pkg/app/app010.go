@@ -55,11 +55,23 @@ func NewApp010(fs afero.Fs, root string) *App010 {
 
 // AddEnvironment adds an environment spec to the app spec. If the spec already exists,
 // it is overwritten.
-func (a *App010) AddEnvironment(name, k8sSpecFlag string, newEnv *EnvironmentConfig, isOverride bool) error {
+func (a *App010) AddEnvironment(newEnv *EnvironmentConfig, k8sSpecFlag string, isOverride bool) error {
 	logrus.WithFields(logrus.Fields{
 		"k8s-spec-flag": k8sSpecFlag,
-		"name":          name,
+		"name":          newEnv.Name,
 	}).Debug("adding environment")
+
+	if newEnv == nil {
+		return errors.Errorf("nil environment")
+	}
+
+	if newEnv.Name == "" {
+		return errors.Errorf("invalid environment name")
+	}
+
+	if isOverride && len(newEnv.Libraries) > 0 {
+		return errors.Errorf("library references not allowed in overrides")
+	}
 
 	if err := a.load(); err != nil {
 		return errors.Wrap(err, "load configuration")
@@ -77,9 +89,9 @@ func (a *App010) AddEnvironment(name, k8sSpecFlag string, newEnv *EnvironmentCon
 	newEnv.isOverride = isOverride
 
 	if isOverride {
-		a.overrides.Environments[name] = newEnv
+		a.overrides.Environments[newEnv.Name] = newEnv
 	} else {
-		a.config.Environments[name] = newEnv
+		a.config.Environments[newEnv.Name] = newEnv
 	}
 
 	return a.save()
@@ -196,15 +208,16 @@ func (a *App010) RemoveEnvironment(envName string, override bool) error {
 		return errors.Wrap(err, "load configuration")
 	}
 
-	if _, ok := a.config.Environments[envName]; !ok {
+	envMap := a.config.Environments
+	if override {
+		envMap = a.overrides.Environments
+	}
+
+	if _, ok := envMap[envName]; !ok {
 		return errors.Errorf("environment %q does not exist", envName)
 	}
 
-	if override {
-		delete(a.overrides.Environments, envName)
-	} else {
-		delete(a.config.Environments, envName)
-	}
+	delete(envMap, envName)
 
 	return a.save()
 }
@@ -215,21 +228,17 @@ func (a *App010) RenameEnvironment(from, to string, override bool) error {
 		return errors.Wrap(err, "load configuration")
 	}
 
+	envMap := a.config.Environments
 	if override {
-		if _, ok := a.overrides.Environments[from]; !ok {
-			return errors.Errorf("environment %q does not exist", from)
-		}
-		a.overrides.Environments[to] = a.overrides.Environments[from]
-		a.overrides.Environments[to].Path = to
-		delete(a.overrides.Environments, from)
-	} else {
-		if _, ok := a.config.Environments[from]; !ok {
-			return errors.Errorf("environment %q does not exist", from)
-		}
-		a.config.Environments[to] = a.config.Environments[from]
-		a.config.Environments[to].Path = to
-		delete(a.config.Environments, from)
+		envMap = a.overrides.Environments
 	}
+
+	if _, ok := envMap[from]; !ok {
+		return errors.Errorf("environment %q does not exist", from)
+	}
+	envMap[to] = envMap[from]
+	envMap[to].Path = to
+	delete(envMap, from)
 
 	if err := moveEnvironment(a.fs, a.root, from, to); err != nil {
 		return err
@@ -247,7 +256,7 @@ func (a *App010) UpdateTargets(envName string, targets []string) error {
 
 	spec.Targets = targets
 
-	return errors.Wrap(a.AddEnvironment(envName, "", spec, spec.isOverride), "update targets")
+	return errors.Wrap(a.AddEnvironment(spec, "", spec.isOverride), "update targets")
 }
 
 // Upgrade upgrades the app to the latest apiVersion.

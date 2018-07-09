@@ -114,13 +114,14 @@ func (c *creator) Create() error {
 	}
 
 	// update app.yaml
-	err = c.app.AddEnvironment(c.name, c.k8sSpecFlag, &app.EnvironmentConfig{
+	err = c.app.AddEnvironment(&app.EnvironmentConfig{
+		Name: c.name,
 		Path: c.name,
 		Destination: &app.EnvironmentDestinationSpec{
 			Server:    c.d.Server(),
 			Namespace: c.d.Namespace(),
 		},
-	}, c.isOverride)
+	}, c.k8sSpecFlag, c.isOverride)
 
 	return err
 }

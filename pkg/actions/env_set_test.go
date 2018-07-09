@@ -28,13 +28,14 @@ func TestEnvSet(t *testing.T) {
 	envName := "old_env_name"
 	newName := "new_env_name"
 	oldNamespace := "old_namespace"
-	namespace := "new_namesapce"
+	namespace := "new_namespace"
 	oldServer := "old_server"
 	server := "new_server"
 	newk8sAPISpec := "version:new_api_spec"
 
 	environmentMockFn := func(name string) *app.EnvironmentConfig {
 		return &app.EnvironmentConfig{
+			Name: name,
 			Destination: &app.EnvironmentDestinationSpec{
 				Namespace: oldNamespace,
 				Server:    oldServer,
@@ -48,7 +49,7 @@ func TestEnvSet(t *testing.T) {
 			in          map[string]interface{}
 			spec        *app.EnvironmentConfig
 			envRenameFn func(t *testing.T) envRenameFn
-			updateEnvFn func(t *testing.T) updateEnvFn
+			saveFn      func(t *testing.T) saveFn
 		}{
 			{
 				name: "rename environment",
@@ -74,14 +75,15 @@ func TestEnvSet(t *testing.T) {
 					OptionEnvName:   envName,
 					OptionNamespace: namespace,
 				},
-				updateEnvFn: func(t *testing.T) updateEnvFn {
+				saveFn: func(t *testing.T) saveFn {
 					return func(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentConfig, override bool) error {
-						assert.Equal(t, spec, &app.EnvironmentConfig{
+						assert.Equal(t, &app.EnvironmentConfig{
+							Name: envName,
 							Destination: &app.EnvironmentDestinationSpec{
 								Namespace: namespace,
 								Server:    oldServer,
 							},
-						})
+						}, spec)
 						return nil
 					}
 				},
@@ -93,14 +95,15 @@ func TestEnvSet(t *testing.T) {
 					OptionEnvName: envName,
 					OptionServer:  server,
 				},
-				updateEnvFn: func(t *testing.T) updateEnvFn {
+				saveFn: func(t *testing.T) saveFn {
 					return func(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentConfig, override bool) error {
-						assert.Equal(t, spec, &app.EnvironmentConfig{
+						assert.Equal(t, &app.EnvironmentConfig{
+							Name: envName,
 							Destination: &app.EnvironmentDestinationSpec{
 								Namespace: oldNamespace,
 								Server:    server,
 							},
-						})
+						}, spec)
 						return nil
 					}
 				},
@@ -112,9 +115,10 @@ func TestEnvSet(t *testing.T) {
 					OptionEnvName:  envName,
 					OptionSpecFlag: newk8sAPISpec,
 				},
-				updateEnvFn: func(t *testing.T) updateEnvFn {
+				saveFn: func(t *testing.T) saveFn {
 					return func(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentConfig, override bool) error {
 						assert.Equal(t, newk8sAPISpec, k8sAPISpec)
+						assert.Equal(t, newk8sAPISpec, spec.KubernetesVersion)
 						return nil
 					}
 				},
@@ -129,14 +133,16 @@ func TestEnvSet(t *testing.T) {
 					OptionServer:     server,
 					OptionSpecFlag:   newk8sAPISpec,
 				},
-				updateEnvFn: func(t *testing.T) updateEnvFn {
+				saveFn: func(t *testing.T) saveFn {
 					return func(a app.App, newName, k8sAPISpec string, spec *app.EnvironmentConfig, override bool) error {
-						assert.Equal(t, spec, &app.EnvironmentConfig{
+						assert.Equal(t, &app.EnvironmentConfig{
+							Name: newName,
 							Destination: &app.EnvironmentDestinationSpec{
 								Namespace: namespace,
 								Server:    server,
 							},
-						})
+							KubernetesVersion: newk8sAPISpec,
+						}, spec)
 						assert.Equal(t, newk8sAPISpec, k8sAPISpec)
 						return nil
 					}
@@ -160,10 +166,20 @@ func TestEnvSet(t *testing.T) {
 
 				if tc.envRenameFn != nil {
 					a.envRenameFn = tc.envRenameFn(t)
+				} else {
+					a.envRenameFn = func(a app.App, from, to string, override bool) error {
+						t.Errorf("unexpected call: rename")
+						return nil
+					}
 				}
 
-				if tc.updateEnvFn != nil {
-					a.updateEnvFn = tc.updateEnvFn(t)
+				if tc.saveFn != nil {
+					a.saveFn = tc.saveFn(t)
+				} else {
+					a.saveFn = func(a app.App, newName, k8sAPISpec string, spec *app.EnvironmentConfig, override bool) error {
+						t.Errorf("unexpected call: save")
+						return nil
+					}
 				}
 
 				appMock.On("Environment", tc.in[OptionEnvName]).Return(environmentMockFn, nil)

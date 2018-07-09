@@ -261,3 +261,93 @@ func Test_baseApp_load_override_invalid(t *testing.T) {
 	err := ba.load()
 	require.Error(t, err)
 }
+
+func Test_baseApp_environment_override_is_merged(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	ba := newBaseApp(fs, "/")
+	ba.load = func() error {
+		return nil
+	}
+	ba.config.Environments = EnvironmentConfigs{
+		"default": &EnvironmentConfig{
+			Name: "default",
+			Libraries: LibraryConfigs{
+				"nginx": &LibraryConfig{Name: "nginx"},
+			},
+			KubernetesVersion: "v1.7.0",
+			Destination: &EnvironmentDestinationSpec{
+				Server:    "http://server.com",
+				Namespace: "namespace",
+			},
+			Path:    "default",
+			Targets: []string{"target1", "target2"},
+		},
+	}
+	ba.overrides.Environments["default"] = &EnvironmentConfig{
+		Name:              "default",
+		KubernetesVersion: "v1.8.0",
+		Destination: &EnvironmentDestinationSpec{
+			Server:    "http://override.com",
+			Namespace: "override",
+		},
+		Path:    "overrides/path",
+		Targets: []string{"override1", "override2"},
+	}
+
+	expected := &EnvironmentConfig{
+		Name: "default",
+		Libraries: LibraryConfigs{
+			"nginx": &LibraryConfig{Name: "nginx"},
+		},
+		KubernetesVersion: "v1.8.0",
+		Destination: &EnvironmentDestinationSpec{
+			Server:    "http://override.com",
+			Namespace: "override",
+		},
+		Path:       "overrides/path",
+		Targets:    []string{"override1", "override2"},
+		isOverride: true,
+	}
+
+	e, err := ba.Environment("default")
+	assert.NoError(t, err, "fetching environment")
+
+	assert.Equal(t, expected, e)
+}
+
+func Test_baseApp_environment_just_override(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	ba := newBaseApp(fs, "/")
+	ba.load = func() error {
+		return nil
+	}
+	ba.config.Environments = EnvironmentConfigs{}
+	ba.overrides.Environments["default"] = &EnvironmentConfig{
+		Name:              "default",
+		KubernetesVersion: "v1.8.0",
+		Destination: &EnvironmentDestinationSpec{
+			Server:    "http://override.com",
+			Namespace: "override",
+		},
+		Path:       "overrides/path",
+		Targets:    []string{"override1", "override2"},
+		isOverride: false,
+	}
+
+	expected := &EnvironmentConfig{
+		Name:              "default",
+		KubernetesVersion: "v1.8.0",
+		Destination: &EnvironmentDestinationSpec{
+			Server:    "http://override.com",
+			Namespace: "override",
+		},
+		Path:       "overrides/path",
+		Targets:    []string{"override1", "override2"},
+		isOverride: true,
+	}
+
+	e, err := ba.Environment("default")
+	assert.NoError(t, err, "fetching environment")
+
+	assert.Equal(t, expected, e)
+}
