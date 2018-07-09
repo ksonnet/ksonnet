@@ -1,4 +1,4 @@
-// Copyright 2018 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +19,7 @@ package e2e
 
 import (
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ks component", func() {
@@ -31,24 +32,12 @@ var _ = Describe("ks component", func() {
 
 	Describe("list", func() {
 		It("lists the components for a namespace", func() {
-			o := a.runKs("component", "list")
-			assertExitStatus(o, 0)
-			assertOutput("component/list/output.txt", o.stdout)
+			a.checkComponentName("guestbook-ui")
 		})
 
-		Context("wide format", func() {
-			It("lists the components for a namespace in wide format", func() {
-				o := a.runKs("component", "list", "-o", "wide")
-				assertExitStatus(o, 0)
-				assertOutput("component/list/wide-output.txt", o.stdout)
-			})
-		})
-
-		Context("with a namespace", func() {
-			It("lists the components for a namespace in wide format", func() {
-				o := a.runKs("component", "list", "--module", "/")
-				assertExitStatus(o, 0)
-				assertOutput("component/list/output.txt", o.stdout)
+		Context("with a module", func() {
+			It("lists the components for a module", func() {
+				a.checkComponentName("guestbook-ui", "--module", "/")
 			})
 		})
 	})
@@ -59,10 +48,16 @@ var _ = Describe("ks component", func() {
 			assertExitStatus(o, 0)
 
 			o = a.componentList()
-			assertOutput("component/rm/output.txt", o.stdout)
+			assertExitStatus(o, 0)
+
+			tr := loadTableResponse(o.stdout)
+			Expect(tr.componentList()).To(BeEmpty())
 
 			o = a.paramList()
-			assertOutput("component/rm/params-output.txt", o.stdout)
+			assertExitStatus(o, 0)
+
+			tr = loadTableResponse(o.stdout)
+			Expect(tr.paramList()).To(BeEmpty())
 		})
 	})
 })

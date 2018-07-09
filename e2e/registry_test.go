@@ -1,4 +1,4 @@
-// Copyright 2018 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,19 +36,8 @@ var _ = Describe("ks registry", func() {
 		var (
 			uri         string
 			expectedURI string
-
-			checkForRegistry = func(templatePath string) {
-				m := map[string]interface{}{
-					"uri": expectedURI,
-				}
-
-				o := a.registryList()
-				assertTemplate(m, templatePath, o.stdout)
-			}
 		)
 		Context("global", func() {
-			var templatePath = filepath.Join("registry", "add", "output.txt.tmpl")
-
 			JustBeforeEach(func() {
 				o := a.runKs("registry", "add", "local", uri)
 				assertExitStatus(o, 0)
@@ -64,7 +53,7 @@ var _ = Describe("ks registry", func() {
 					})
 
 					It("adds a registry", func() {
-						checkForRegistry(templatePath)
+						a.checkRegistry("local", "", "fs", expectedURI)
 					})
 				})
 				Context("as a URL", func() {
@@ -76,7 +65,7 @@ var _ = Describe("ks registry", func() {
 					})
 
 					It("adds a registry", func() {
-						checkForRegistry(templatePath)
+						a.checkRegistry("local", "", "fs", expectedURI)
 					})
 				})
 			})
@@ -91,7 +80,6 @@ var _ = Describe("ks registry", func() {
 			})
 
 			Context("a filesystem based registry", func() {
-				var templatePath = filepath.Join("registry", "add", "override-output.txt.tmpl")
 
 				BeforeEach(func() {
 					registryName = "local"
@@ -106,7 +94,7 @@ var _ = Describe("ks registry", func() {
 					})
 
 					It("adds a registry", func() {
-						checkForRegistry(templatePath)
+						a.checkRegistry("local", "*", "fs", uri)
 					})
 				})
 				Context("as a URL", func() {
@@ -118,14 +106,12 @@ var _ = Describe("ks registry", func() {
 					})
 
 					It("adds a registry", func() {
-						checkForRegistry(templatePath)
+						a.checkRegistry("local", "*", "fs", expectedURI)
 					})
 				})
 			})
 
 			Context("an existing configuration", func() {
-				var templatePath = filepath.Join("registry", "add", "override-incubator.txt.tmpl")
-
 				BeforeEach(func() {
 					path, err := filepath.Abs(filepath.Join("testdata", "registries", "parts-infra"))
 					Expect(err).ToNot(HaveOccurred())
@@ -135,7 +121,7 @@ var _ = Describe("ks registry", func() {
 				})
 
 				It("adds a registry", func() {
-					checkForRegistry(templatePath)
+					a.checkRegistry(registryName, "*", "fs", expectedURI)
 				})
 			})
 		})

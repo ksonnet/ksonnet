@@ -1,4 +1,4 @@
-// Copyright 2018 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,17 +50,13 @@ var _ = Describe("ks prototype", func() {
 	Describe("list", func() {
 		Context("with system prototypes", func() {
 			It("lists available prototypes", func() {
-				o := a.runKs("prototype", "list")
-				assertExitStatus(o, 0)
-				assertOutput("prototype/list/output.txt", o.stdout)
+				a.checkPrototype("io.ksonnet.pkg.configMap")
 			})
 		})
 		Context("with a part installed", func() {
 			It("lists available prototypes", func() {
 				a.pkgInstall("incubator/apache")
-				o := a.runKs("prototype", "list")
-				assertExitStatus(o, 0)
-				assertOutput("prototype/list/output-with-addition.txt", o.stdout)
+				a.checkPrototype("io.ksonnet.pkg.apache-simple")
 			})
 		})
 	})
@@ -76,7 +72,7 @@ var _ = Describe("ks prototype", func() {
 	})
 
 	Describe("search", func() {
-		It("returns a list of prototypes whose name maches the search term", func() {
+		It("returns a list of prototypes whose name matches the search term", func() {
 			o := a.runKs("prototype", "search", "service")
 			assertExitStatus(o, 0)
 			assertOutput("prototype/search/output.txt", o.stdout)

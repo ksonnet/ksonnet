@@ -1,4 +1,4 @@
-// Copyright 2018 The kubecfg authors
+// Copyright 2018 The ksonnet authors
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,12 +18,9 @@
 package e2e
 
 import (
-	"bytes"
 	"path/filepath"
 
-	"github.com/ksonnet/ksonnet/pkg/util/table"
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ks import", func() {
@@ -41,7 +38,7 @@ var _ = Describe("ks import", func() {
 	})
 
 	JustBeforeEach(func() {
-		o = a.runKs("import", "-f", importPath)
+		o = a.runKs("import", "-f", importPath, "--module", "/")
 		if isErr {
 			assertExitStatus(o, 1)
 			return
@@ -56,18 +53,15 @@ var _ = Describe("ks import", func() {
 		})
 
 		It("imports the files in the directory", func() {
-			names := a.componentNames()
-
-			var buf bytes.Buffer
-			t := table.New(&buf)
-			t.SetHeader([]string{"component"})
-			for _, name := range names {
-				t.Append([]string{name})
+			expected := componentListRow{
+				APIVersion: "apps/v1beta1",
+				Component:  "",
+				Kind:       "Deployment",
+				Name:       "nginx-deployment",
+				Type:       "yaml",
 			}
-			Expect(t.Render()).NotTo(HaveOccurred())
 
-			o = a.componentList()
-			Expect(o.stdout).To(Equal(buf.String()))
+			a.checkComponentPrefix(expected, "deployment-nginx-deployment-")
 		})
 	})
 
@@ -77,18 +71,15 @@ var _ = Describe("ks import", func() {
 		})
 
 		It("imports the file", func() {
-			names := a.componentNames()
-
-			var buf bytes.Buffer
-			t := table.New(&buf)
-			t.SetHeader([]string{"component"})
-			for _, name := range names {
-				t.Append([]string{name})
+			expected := componentListRow{
+				APIVersion: "apps/v1beta1",
+				Component:  "",
+				Kind:       "Deployment",
+				Name:       "nginx-deployment",
+				Type:       "yaml",
 			}
-			Expect(t.Render()).NotTo(HaveOccurred())
 
-			o = a.componentList()
-			Expect(o.stdout).To(Equal(buf.String()))
+			a.checkComponentPrefix(expected, "deployment-nginx-deployment-")
 		})
 	})
 

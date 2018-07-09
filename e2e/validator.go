@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	// used for integration tests
+	// nolint: golint
 	. "github.com/onsi/gomega"
 )
 

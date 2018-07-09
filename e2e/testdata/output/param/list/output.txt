@@ -1,8 +1,0 @@
-COMPONENT    PARAM         VALUE
-=========    =====         =====
-guestbook-ui containerPort 80
-guestbook-ui image         "gcr.io/heptio-images/ks-guestbook-demo:0.1"
-guestbook-ui name          "guestbook-ui"
-guestbook-ui replicas      1
-guestbook-ui servicePort   80
-guestbook-ui type          "ClusterIP"
