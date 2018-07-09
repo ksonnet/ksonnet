@@ -138,7 +138,7 @@ func evaluateMain(a app.App, envName, snippet, components, paramsStr string, opt
 		libPath,
 	)
 
-	helmRenderer := helm.NewRenderer(a)
+	helmRenderer := helm.NewRenderer(a, envName)
 	vm.AddFunctions(helmRenderer.JsonnetNativeFunc())
 
 	// Re-vendor versioned packages, such that import paths will remain path-agnostic.

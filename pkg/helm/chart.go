@@ -17,12 +17,7 @@ package helm
 
 import (
 	"path/filepath"
-<<<<<<< HEAD
-	"strings"
-=======
->>>>>>> 4417ebd4... update version sorting
 
-	"github.com/blang/semver"
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/util/version"
 	"github.com/pkg/errors"
@@ -51,7 +46,6 @@ func LatestChartVersion(a app.App, repoName, chartName string) (string, error) {
 		}
 
 		versions = append(versions, v)
-
 	}
 
 	if len(versions) == 0 {
