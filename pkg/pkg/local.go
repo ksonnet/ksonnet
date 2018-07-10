@@ -99,7 +99,12 @@ func (l *Local) Description() string {
 func (l *Local) Prototypes() (prototype.Prototypes, error) {
 	var prototypes prototype.Prototypes
 
-	protoPath := filepath.Join(l.Path(), "prototypes")
+	pkgPath := pathWithLegacyFallback(l.a, l.registryName, l.name, l.version)
+	if pkgPath == "" {
+		return nil, errors.Errorf("cannot resolve path for package: %s/%s@%s", l.registryName, l.name, l.version)
+	}
+
+	protoPath := filepath.Join(pkgPath, "prototypes")
 	exists, err := afero.DirExists(l.a.Fs(), protoPath)
 	if err != nil {
 		return nil, err
@@ -154,6 +159,36 @@ func buildPath(a app.App, registry string, name string, version string) string {
 	versionedDir := fmt.Sprintf("%v@%v", name, version)
 	path := filepath.Join(a.VendorPath(), registry, versionedDir)
 	return path
+}
+
+// pathwithLegacyFallback will return either the effective path
+// for this package - the versioned path, or if that doesn't exist,
+// the fallback, unversioned legacy path.
+// Returns "" if an effective path cannot be found.
+func pathWithLegacyFallback(a app.App, registry string, name string, version string) string {
+	if a == nil {
+		return ""
+	}
+	fs := a.Fs()
+	if fs == nil {
+		return ""
+	}
+
+	paths := []string{
+		buildPath(a, registry, name, version),
+		buildPath(a, registry, name, ""),
+	}
+
+	for _, path := range paths {
+		ok, err := afero.DirExists(fs, path)
+		if err != nil {
+			return ""
+		}
+		if ok {
+			return path
+		}
+	}
+	return ""
 }
 
 // Path returns local directory for vendoring the package.

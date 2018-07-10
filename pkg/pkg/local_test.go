@@ -27,11 +27,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func withLocalPackage(t *testing.T, fn func(a *amocks.App, fs afero.Fs)) {
+func withLocalPackage(t *testing.T, name string, version string, useLegacyPath bool, fn func(a *amocks.App, fs afero.Fs)) {
 	test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
 		a.On("VendorPath").Return("/app/vendor")
 
-		test.StageDir(t, fs, "incubator/apache", "/app/vendor/incubator/apache")
+		var dstName = name
+		if version != "" && !useLegacyPath {
+			dstName = fmt.Sprintf("%s@%s", name, version)
+		}
+		srcPath := filepath.Join("incubator", name)
+		dstPath := filepath.Join("/app", "vendor", "incubator", dstName)
+		test.StageDir(t, fs, srcPath, dstPath)
 
 		fn(a, fs)
 	})
@@ -101,7 +107,7 @@ func TestLocal_New(t *testing.T) {
 }
 
 func TestLocal_Name(t *testing.T) {
-	withLocalPackage(t, func(a *amocks.App, fs afero.Fs) {
+	withLocalPackage(t, "apache", "", false, func(a *amocks.App, fs afero.Fs) {
 		l, err := NewLocal(a, "apache", "incubator", "", nil)
 		require.NoError(t, err)
 
@@ -110,7 +116,7 @@ func TestLocal_Name(t *testing.T) {
 }
 
 func TestLocal_RegistryName(t *testing.T) {
-	withLocalPackage(t, func(a *amocks.App, fs afero.Fs) {
+	withLocalPackage(t, "apache", "", false, func(a *amocks.App, fs afero.Fs) {
 		l, err := NewLocal(a, "apache", "incubator", "", nil)
 		require.NoError(t, err)
 
@@ -119,7 +125,7 @@ func TestLocal_RegistryName(t *testing.T) {
 }
 
 func TestLocal_IsInstalled(t *testing.T) {
-	withLocalPackage(t, func(a *amocks.App, fs afero.Fs) {
+	withLocalPackage(t, "apache", "", false, func(a *amocks.App, fs afero.Fs) {
 		ic := &fakeInstallChecker{
 			isInstalled: true,
 		}
@@ -134,7 +140,7 @@ func TestLocal_IsInstalled(t *testing.T) {
 }
 
 func TestLocal_Description(t *testing.T) {
-	withLocalPackage(t, func(a *amocks.App, fs afero.Fs) {
+	withLocalPackage(t, "apache", "", false, func(a *amocks.App, fs afero.Fs) {
 		l, err := NewLocal(a, "apache", "incubator", "", nil)
 		require.NoError(t, err)
 
@@ -143,27 +149,68 @@ func TestLocal_Description(t *testing.T) {
 }
 
 func TestLocal_Prototypes(t *testing.T) {
-	withLocalPackage(t, func(a *amocks.App, fs afero.Fs) {
-		l, err := NewLocal(a, "apache", "incubator", "", nil)
-		require.NoError(t, err)
+	tests := []struct {
+		caseName      string
+		name          string
+		version       string
+		useLegacyPath bool
+		expected      []string
+	}{
+		{
+			caseName: "versioned path",
+			name:     "apache",
+			version:  "1.2.3",
+			expected: []string{
+				"io.ksonnet.pkg.apache-simple",
+			},
+		},
+		{
+			caseName:      "legacy path",
+			name:          "apache",
+			version:       "1.2.3",
+			useLegacyPath: true,
+			expected: []string{
+				"io.ksonnet.pkg.apache-simple",
+			},
+		},
+		{
+			caseName: "unversioned",
+			name:     "apache",
+			version:  "",
+			expected: []string{
+				"io.ksonnet.pkg.apache-simple",
+			},
+		},
+	}
 
-		prototypes, err := l.Prototypes()
-		require.NoError(t, err)
+	for _, tc := range tests {
+		withLocalPackage(t, tc.name, tc.version, tc.useLegacyPath, func(a *amocks.App, fs afero.Fs) {
+			l, err := NewLocal(a, tc.name, "incubator", tc.version, nil)
+			require.NoErrorf(t, err, "[%v] NewLocal", tc.caseName)
 
-		require.Len(t, prototypes, 1)
-		proto := prototypes[0]
-		require.Equal(t, "io.ksonnet.pkg.apache-simple", proto.Name)
-	})
+			prototypes, err := l.Prototypes()
+			require.NoErrorf(t, err, "[%v] Prototypes", tc.caseName)
+
+			assert.Truef(t, len(prototypes) >= len(tc.expected), "[%v] length of prototypes was %d", tc.caseName, len(prototypes))
+
+			protoNames := make([]string, 0, len(prototypes))
+			for _, proto := range prototypes {
+				protoNames = append(protoNames, proto.Name)
+			}
+
+			assert.Subsetf(t, protoNames, tc.expected, "[%v] comparing prototype names", tc.caseName)
+		})
+	}
 }
 
 func TestLocal_Path(t *testing.T) {
-	vendorRoot := "/app/vendor" // Set in withLocalPackage
 	tests := []struct {
-		caseName string
-		registry string
-		name     string
-		version  string
-		expected string
+		caseName      string
+		registry      string
+		name          string
+		version       string
+		useLegacyPath bool
+		expected      string
 	}{
 		{
 			caseName: "versioned package",
@@ -177,20 +224,20 @@ func TestLocal_Path(t *testing.T) {
 			registry: "incubator",
 			name:     "apache",
 			version:  "",
-			expected: filepath.FromSlash("/app/vendor/incubator/apache"), // TODO should we drop the trailing @? How do we handle migration from old schema?
+			expected: filepath.FromSlash("/app/vendor/incubator/apache"),
+		},
+		{
+			caseName:      "versioned package, legacy path",
+			registry:      "incubator",
+			name:          "apache",
+			version:       "1.2.3",
+			useLegacyPath: true,
+			expected:      filepath.FromSlash("/app/vendor/incubator/apache@1.2.3"),
 		},
 	}
 
-	staged := map[string]struct{}{
-		// Empty version already staged
-		"": struct{}{},
-	}
 	for _, tc := range tests {
-		withLocalPackage(t, func(a *amocks.App, fs afero.Fs) {
-			if _, ok := staged[tc.version]; !ok {
-				test.StageDir(t, fs, filepath.Join(tc.registry, tc.name), filepath.Join(vendorRoot, tc.registry, fmt.Sprintf("%s@%s", tc.name, tc.version)))
-				staged[tc.version] = struct{}{}
-			}
+		withLocalPackage(t, tc.name, tc.version, tc.useLegacyPath, func(a *amocks.App, fs afero.Fs) {
 			l, err := NewLocal(a, tc.name, tc.registry, tc.version, nil)
 			require.NoError(t, err, tc.caseName)
 
