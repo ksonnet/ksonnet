@@ -27,6 +27,7 @@ import (
 	ksstrings "github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/engine"
 	"k8s.io/helm/pkg/proto/hapi/chart"
@@ -34,14 +35,25 @@ import (
 
 // Renderer renders helm charts.
 type Renderer struct {
-	app app.App
+	app     app.App
+	envName string
 }
 
 // NewRenderer creates an instance of Renderer.
-func NewRenderer(a app.App) *Renderer {
+func NewRenderer(a app.App, envName string) *Renderer {
 	return &Renderer{
-		app: a,
+		app:     a,
+		envName: envName,
 	}
+}
+
+func (r *Renderer) k8sVersion() (string, error) {
+	env, err := r.app.Environment(r.envName)
+	if err != nil {
+		return "", errors.Wrapf(err, "retrieving environment %q", r.envName)
+	}
+
+	return strings.TrimPrefix(env.KubernetesVersion, "v"), nil
 }
 
 // JsonnetNativeFunc is a jsonnet native function that renders helm charts.
@@ -167,7 +179,19 @@ func (r *Renderer) renderWithHelm(componentName, raw, chartPath string) (map[str
 	options := chartutil.ReleaseOptions{
 		Name: componentName,
 	}
-	vals, err := chartutil.ToRenderValuesCaps(c, config, options, nil)
+
+	kubeVersion, err := r.k8sVersion()
+	if err != nil {
+		return nil, errors.Wrap(err, "setting Kubernetes version for Helm")
+	}
+
+	caps := &chartutil.Capabilities{
+		KubeVersion: &version.Info{
+			GitVersion: kubeVersion,
+		},
+	}
+
+	vals, err := chartutil.ToRenderValuesCaps(c, config, options, caps)
 	if err != nil {
 		return nil, err
 	}

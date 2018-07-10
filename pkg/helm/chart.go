@@ -18,8 +18,8 @@ package helm
 import (
 	"path/filepath"
 
-	"github.com/blang/semver"
 	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/ksonnet/ksonnet/pkg/util/version"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
@@ -33,15 +33,16 @@ func LatestChartVersion(a app.App, repoName, chartName string) (string, error) {
 		return "", errors.Wrapf(err, "reading dir %q", path)
 	}
 
-	var versions semver.Versions
+	var versions []version.Version
 
 	for _, fi := range fis {
 		if !fi.IsDir() {
 			continue
 		}
-		v, err := semver.Make(fi.Name())
+
+		v, err := version.Make(fi.Name())
 		if err != nil {
-			continue
+			return "", err
 		}
 
 		versions = append(versions, v)
@@ -51,6 +52,7 @@ func LatestChartVersion(a app.App, repoName, chartName string) (string, error) {
 		return "", errors.Errorf("chart %s/%s doesn't have any releases", repoName, chartName)
 	}
 
-	semver.Sort(versions)
-	return versions[0].String(), nil
+	version.Sort(versions)
+	lastestVersion := versions[len(versions)-1]
+	return lastestVersion.String(), nil
 }

@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/ksonnet/ksonnet/pkg/app"
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/util/jsonnet"
 	"github.com/ksonnet/ksonnet/pkg/util/test"
@@ -61,7 +62,12 @@ func TestRenderer_Render(t *testing.T) {
 			test.WithAppFs(t, tmpDir, fs, func(a *amocks.App, fs afero.Fs) {
 				test.StageDir(t, fs, "redis", filepath.Join(a.Root(), "vendor", "helm-stable", "redis"))
 
-				r := NewRenderer(a)
+				envConfig := &app.EnvironmentConfig{
+					KubernetesVersion: "v1.10.3",
+				}
+				a.On("Environment", "default").Return(envConfig, nil)
+
+				r := NewRenderer(a, "default")
 
 				values := map[string]interface{}{}
 
@@ -107,7 +113,12 @@ func TestRenderer_JsonnetNativeFunc(t *testing.T) {
 			test.WithAppFs(t, tmpDir, fs, func(a *amocks.App, fs afero.Fs) {
 				test.StageDir(t, fs, "redis", filepath.Join(a.Root(), "vendor", "helm-stable", "redis"))
 
-				r := NewRenderer(a)
+				envConfig := &app.EnvironmentConfig{
+					KubernetesVersion: "v1.10.3",
+				}
+				a.On("Environment", "default").Return(envConfig, nil)
+
+				r := NewRenderer(a, "default")
 
 				vm := jsonnet.NewVM()
 				vm.AddFunctions(r.JsonnetNativeFunc())
