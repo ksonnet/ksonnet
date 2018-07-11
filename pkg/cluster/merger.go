@@ -118,15 +118,15 @@ func (p *defaultObjectMerger) Merge(namespace string, obj *unstructured.Unstruct
 
 	info := infos[0]
 
-	modified, err := runtime.Encode(encoder, obj)
-	if err != nil {
-		return nil, errors.Wrap(err, "encode modified object")
-	}
-
 	if err = info.Get(); err != nil {
 		if !kerrors.IsNotFound(err) {
 			return nil, cmdutil.AddSourceToErr(fmt.Sprintf("retrieving current configuration of:\n%v\nfrom server for:", info), info.Source, err)
 		}
+	}
+
+	modified, err := runtime.Encode(encoder, info.Object)
+	if err != nil {
+		return nil, errors.Wrap(err, "encode modified object")
 	}
 
 	helper := resource.NewHelper(info.Client, info.Mapping)
@@ -145,6 +145,15 @@ func (p *defaultObjectMerger) Merge(namespace string, obj *unstructured.Unstruct
 		gracePeriod:   0,
 	}
 
+	discoveryClient, err := p.factory.DiscoveryClient()
+	if err == nil {
+		openAPIGetter := openapi.NewOpenAPIGetter(discoveryClient)
+		resources, err := openAPIGetter.Get()
+		if err == nil {
+			patcher.openapiSchema = resources
+		}
+	}
+
 	patchBytes, patchedObject, err := patcher.patch(info.Object, modified, info.Source, info.Namespace, info.Name, os.Stderr)
 	if err != nil {
 		logrus.Debug("applying patch:\n%s\nto:\n%v\nfor:\n", patchBytes, info)
@@ -160,7 +169,7 @@ func (p *defaultObjectMerger) Merge(namespace string, obj *unstructured.Unstruct
 }
 
 // stageInTempFile stages an object in a temp file. The file will have to be
-// manaully removed once it is no longer needed.
+// manually removed once it is no longer needed.
 func (p *defaultObjectMerger) stageInTempFile(obj *unstructured.Unstructured) (*os.File, error) {
 	encoded, err := runtime.Encode(scheme.DefaultJSONEncoder(), obj)
 	if err != nil {
@@ -169,11 +178,11 @@ func (p *defaultObjectMerger) stageInTempFile(obj *unstructured.Unstructured) (*
 
 	tmpfile, err := ioutil.TempFile("", "ksonnet-mergepatch")
 	if err != nil {
-		return nil, errors.Wrap(err, "creating tempfile")
+		return nil, errors.Wrap(err, "creating temporary file")
 	}
 
 	if _, err = tmpfile.Write(encoded); err != nil {
-		return nil, errors.Wrap(err, "writing tempfile")
+		return nil, errors.Wrap(err, "writing temporary file")
 	}
 
 	return tmpfile, nil
@@ -207,8 +216,10 @@ func (p *patcher) patchSimple(obj runtime.Object, modified []byte, source, names
 		return nil, nil, cmdutil.AddSourceToErr(fmt.Sprintf("serializing current configuration from:\n%v\nfor:", obj), source, err)
 	}
 
+	t := newDefaultAnnotationApplier()
+
 	// Retrieve the original configuration of the object from the annotation.
-	original, err := kubectl.GetOriginalConfiguration(p.mapping, obj)
+	original, err := t.GetOriginalConfiguration(p.mapping, obj)
 	if err != nil {
 		return nil, nil, cmdutil.AddSourceToErr(fmt.Sprintf("retrieving original configuration from:\n%v\nfor:", obj), source, err)
 	}
@@ -260,6 +271,7 @@ func (p *patcher) patchSimple(obj runtime.Object, modified []byte, source, names
 			if err != nil {
 				return nil, nil, cmdutil.AddSourceToErr(fmt.Sprintf(createPatchErrFormat, original, modified, current), source, err)
 			}
+
 			patch, err = strategicpatch.CreateThreeWayMergePatch(original, modified, current, lookupPatchMeta, p.overwrite)
 			if err != nil {
 				return nil, nil, cmdutil.AddSourceToErr(fmt.Sprintf(createPatchErrFormat, original, modified, current), source, err)
@@ -272,6 +284,10 @@ func (p *patcher) patchSimple(obj runtime.Object, modified []byte, source, names
 	}
 
 	patchedObj, err := p.helper.Patch(namespace, name, patchType, patch)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "patching existing object")
+	}
+
 	return patch, patchedObj, err
 }
 

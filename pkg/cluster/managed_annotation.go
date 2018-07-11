@@ -34,8 +34,8 @@ func (mm *managedAnnotation) Marshal() ([]byte, error) {
 	return json.Marshal(mm)
 }
 
-// EncodePristine encodes a pristine copy of the object.
-func (mm *managedAnnotation) EncodePristine(m map[string]interface{}) error {
+// Encode encodes a pristine copy of the object.
+func (mm *managedAnnotation) Encode(m map[string]interface{}) error {
 	var buf bytes.Buffer
 	gz := gzip.NewWriter(&buf)
 
@@ -53,8 +53,8 @@ func (mm *managedAnnotation) EncodePristine(m map[string]interface{}) error {
 	return nil
 }
 
-// DecodePristine decodes a pristone copy of the object.
-func (mm *managedAnnotation) DecodePristine() (map[string]interface{}, error) {
+// Decode decodes a pristine copy of the object.
+func (mm *managedAnnotation) Decode() (map[string]interface{}, error) {
 	b, err := base64.StdEncoding.DecodeString(mm.Pristine)
 	if err != nil {
 		return nil, err
