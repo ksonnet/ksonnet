@@ -17,10 +17,12 @@ package prototype
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/blang/semver"
+	"github.com/ksonnet/ksonnet/pkg/util/version"
 	"github.com/pkg/errors"
 )
 
@@ -51,6 +53,7 @@ type Prototype struct {
 	Name     string        `json:"name"`
 	Params   ParamSchemas  `json:"params"`
 	Template SnippetSchema `json:"template"`
+	Version  string        `json:"-"` // Version of container package. Not serialized.
 }
 
 func (s *Prototype) validate() error {
@@ -70,6 +73,22 @@ func (s *Prototype) validate() error {
 
 // Prototypes is a slice of pointer to `SpecificationSchema`.
 type Prototypes []*Prototype
+
+// SortByVersion sorts a prototype list by package version.
+func (p Prototypes) SortByVersion() {
+	less := func(i, j int) bool {
+		vI, err := version.Make(p[i].Version)
+		vJ, err2 := version.Make(p[j].Version)
+		if err != nil || err2 != nil {
+			// Fall back to lexical sort
+			return p[i].Version < p[j].Version
+		}
+
+		return vI.LT(vJ)
+	}
+
+	sort.Slice(p, less)
+}
 
 // RequiredParams retrieves all parameters that are required by a prototype.
 func (s *Prototype) RequiredParams() ParamSchemas {

@@ -128,6 +128,7 @@ func (l *Local) Prototypes() (prototype.Prototypes, error) {
 		if err != nil {
 			return err
 		}
+		spec.Version = l.version
 
 		prototypes = append(prototypes, spec)
 		return nil

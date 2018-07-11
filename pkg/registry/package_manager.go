@@ -17,6 +17,7 @@ package registry
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/parts"
@@ -54,16 +55,20 @@ type packageManager struct {
 	app app.App
 
 	InstallChecker pkg.InstallChecker
+	packagesFn     func() ([]pkg.Package, error)
 }
 
 var _ PackageManager = (*packageManager)(nil)
 
 // NewPackageManager creates an instance of PackageManager.
 func NewPackageManager(a app.App) PackageManager {
-	return &packageManager{
+	pm := packageManager{
 		app:            a,
 		InstallChecker: &pkg.DefaultInstallChecker{App: a},
 	}
+	pm.packagesFn = pm.Packages
+
+	return &pm
 }
 
 // Find finds a package by name. Package names have the format `<registry>/<library>@<version>`.
@@ -184,12 +189,12 @@ func (m *packageManager) Packages() ([]pkg.Package, error) {
 		return nil, errors.New("app is required")
 	}
 
-	libraryConfigs, err := m.app.Libraries()
+	libIndex, err := allLibraries(m.app)
 	if err != nil {
-		return nil, errors.Wrap(err, "reading libraries defined in the configuration")
+		return nil, errors.Wrapf(err, "resolving libraries")
 	}
 
-	// TODO - Check libraries configured under environments?
+	libraryConfigs := uniqueLibsByVersion(libIndex)
 
 	registryConfigs, err := m.app.Registries()
 	if err != nil {
@@ -198,14 +203,14 @@ func (m *packageManager) Packages() ([]pkg.Package, error) {
 
 	packages := make([]pkg.Package, 0)
 
-	for k, libraryConfig := range libraryConfigs {
+	for _, libraryConfig := range libraryConfigs {
 		registryConfig, ok := registryConfigs[libraryConfig.Registry]
 		if !ok {
 			return nil, errors.Errorf("registry %q required by library %q is not defined in the configuration",
-				libraryConfig.Registry, k)
+				libraryConfig.Registry, libraryConfig.Name)
 		}
 
-		p, err := m.loadPackage(registryConfig, k, libraryConfig.Registry, libraryConfig.Version)
+		p, err := m.loadPackage(registryConfig, libraryConfig.Name, libraryConfig.Registry, libraryConfig.Version)
 		if err != nil {
 			return nil, err
 		}
@@ -290,30 +295,60 @@ func (m *packageManager) loadPackage(registryConfig *app.RegistryConfig, pkgName
 }
 
 func (m *packageManager) Prototypes() (prototype.Prototypes, error) {
-	packages, err := m.Packages()
+	packages, err := m.packagesFn()
 	if err != nil {
 		return nil, errors.Wrap(err, "loading packages")
 	}
 
-	var prototypes prototype.Prototypes
+	var result prototype.Prototypes
 
+	// Index prototypes by name
+	byName := make(map[string]prototype.Prototypes)
 	for _, p := range packages {
 		protos, err := p.Prototypes()
 		if err != nil {
 			return nil, errors.Wrap(err, "loading prototypes")
 		}
 
-		prototypes = append(prototypes, protos...)
+		for _, p := range protos {
+			lst := byName[p.Name]
+			lst = append(lst, p)
+			byName[p.Name] = lst
+		}
 	}
 
-	return prototypes, nil
+	for _, protos := range byName {
+		if len(protos) == 0 {
+			continue
+		}
+
+		p := latestPrototype(protos)
+		if p == nil {
+			continue
+		}
+
+		result = append(result, p)
+	}
+
+	return result, nil
 }
 
 type libraryByVersion map[string]*app.LibraryConfig
+type librariesByVersion map[string][]*app.LibraryConfig
 
 // Index libraries by descriptor, each can have multiple distinct versions.
 // The same library can be indexed under multiple permutations of its fully-qualified descriptor
 type libraryByDesc map[pkg.Descriptor]libraryByVersion
+
+func (index libraryByDesc) String() string {
+	var sb strings.Builder
+
+	for d, byVersion := range index {
+		sb.WriteString(fmt.Sprintf("[%v]: byVersion=%v\n", d, byVersion))
+	}
+
+	return sb.String()
+}
 
 func indexLibrary(index libraryByDesc, d pkg.Descriptor, l *app.LibraryConfig) {
 	byVer, ok := index[d]
@@ -322,7 +357,9 @@ func indexLibrary(index libraryByDesc, d pkg.Descriptor, l *app.LibraryConfig) {
 		index[d] = byVer
 	}
 
-	byVer[d.Version] = l
+	// NOTE d.Version is not always equal to l.Version - we index the same
+	// library under multiple descriptors to facilitate searching.
+	byVer[l.Version] = l
 }
 
 func indexLibraryPermutations(index libraryByDesc, l *app.LibraryConfig) {
@@ -348,7 +385,7 @@ func indexLibraryPermutations(index libraryByDesc, l *app.LibraryConfig) {
 // in search using partial keys.
 func allLibraries(a app.App) (libraryByDesc, error) {
 	if a == nil {
-		return nil, errors.Errorf("nil receiver")
+		return nil, errors.Errorf("nil app")
 	}
 
 	index := libraryByDesc{}
@@ -372,6 +409,40 @@ func allLibraries(a app.App) (libraryByDesc, error) {
 	}
 
 	return index, nil
+}
+
+// latestPrototype returns the latest prototype from the provided list.
+// The list should represent different versions of the same prototype, as defined by having
+// the same unqualified name. The list will not be modified.
+func latestPrototype(protos prototype.Prototypes) *prototype.Prototype {
+	if len(protos) == 0 {
+		return nil
+	}
+
+	sorted := make(prototype.Prototypes, len(protos))
+	copy(sorted, protos)
+	sorted.SortByVersion()
+
+	return sorted[len(sorted)-1]
+}
+
+// Given an index of libaries (as created by allLibraries),
+// return flag list of unique libraries, as distinguished by key registry:name:version.
+func uniqueLibsByVersion(libIndex libraryByDesc) []*app.LibraryConfig {
+	var result = make([]*app.LibraryConfig, 0, len(libIndex))
+
+	for d, byVersion := range libIndex {
+		// Skip overly qualified indexes (remaining packages will be unique by version)
+		if d.Name == "" || d.Registry == "" || d.Version != "" {
+			continue
+		}
+
+		for _, l := range byVersion {
+			result = append(result, l)
+		}
+	}
+
+	return result
 }
 
 // IsInstalled determines whether the specified package is installed.

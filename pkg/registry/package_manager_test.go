@@ -22,6 +22,7 @@ import (
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/parts"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
+	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/ksonnet/ksonnet/pkg/util/test"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -62,9 +63,16 @@ func Test_packageManager_Find(t *testing.T) {
 
 func Test_packageManager_Packages(t *testing.T) {
 	test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
+		makePkg := func(name, registry, version string) pkg.Package {
+			p, err := pkg.NewLocal(a, name, registry, version, &pkg.DefaultInstallChecker{App: a})
+			require.NoErrorf(t, err, "creating package %s/%s@%s", registry, name, version)
+			return p
+		}
 
 		test.StageDir(t, fs, "incubator/apache", "/work/apache")
 		test.StageDir(t, fs, "incubator/apache", "/app/vendor/incubator/apache")
+		test.StageDir(t, fs, "incubator/nginx", "/app/vendor/incubator/nginx@2.0.0")
+		test.StageDir(t, fs, "incubator/nginx", "/app/vendor/incubator/nginx@1.2.3")
 
 		a.On("VendorPath").Return("/app/vendor")
 
@@ -80,55 +88,128 @@ func Test_packageManager_Packages(t *testing.T) {
 		libraries := app.LibraryConfigs{
 			"apache": &app.LibraryConfig{
 				Registry: "incubator",
+				Name:     "apache",
+			},
+			"nginx": &app.LibraryConfig{
+				Registry: "incubator",
+				Name:     "nginx",
+				Version:  "2.0.0",
 			},
 		}
 
 		a.On("Libraries").Return(libraries, nil)
+
+		envLibraries := app.LibraryConfigs{
+			"nginx": &app.LibraryConfig{
+				Registry: "incubator",
+				Name:     "nginx",
+				Version:  "1.2.3",
+			},
+		}
+		environments := app.EnvironmentConfigs{
+			"default": &app.EnvironmentConfig{
+				Name:      "default",
+				Libraries: envLibraries,
+			},
+		}
+		a.On("Environments").Return(environments, nil)
+
+		// Expect global libraries + envLibraries
+		expected := make([]pkg.Package, 0, len(libraries)+len(envLibraries))
+		for _, l := range libraries {
+			p := makePkg(l.Name, l.Registry, l.Version)
+			expected = append(expected, p)
+		}
+		for _, l := range envLibraries {
+			p := makePkg(l.Name, l.Registry, l.Version)
+			expected = append(expected, p)
+		}
 
 		pm := NewPackageManager(a)
 
 		packages, err := pm.Packages()
 		require.NoError(t, err)
 
-		require.Len(t, packages, 1)
-		p := packages[0]
-
-		require.Equal(t, "apache", p.Name())
+		assert.Len(t, packages, len(libraries)+len(envLibraries))
+		assert.Subset(t, expected, packages)
 	})
 }
 
 func Test_packageManager_Prototypes(t *testing.T) {
 	test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
+		makePkg := func(name, registry, version string) pkg.Package {
+			p, err := pkg.NewLocal(a, name, registry, version, &pkg.DefaultInstallChecker{App: a})
+			require.NoErrorf(t, err, "creating package %s/%s@%s", registry, name, version)
+			return p
+		}
 
 		test.StageDir(t, fs, "incubator/apache", "/work/apache")
 		test.StageDir(t, fs, "incubator/apache", "/app/vendor/incubator/apache")
+		test.StageDir(t, fs, "incubator/apache", "/app/vendor/incubator/apache@1.2.3")
 
 		a.On("VendorPath").Return("/app/vendor")
 
-		registries := app.RegistryConfigs{
-			"incubator": &app.RegistryConfig{
-				Protocol: "fs",
-				URI:      "/work",
-			},
+		pkgs := []pkg.Package{
+			makePkg("apache", "incubator", ""),
+			makePkg("apache", "incubator", "2.0.1"),
+			makePkg("apache", "incubator", "1.2.3"),
 		}
 
-		a.On("Registries").Return(registries, nil)
-
-		libraries := app.LibraryConfigs{
-			"apache": &app.LibraryConfig{
-				Registry: "incubator",
+		pm := packageManager{
+			app:            a,
+			InstallChecker: &pkg.DefaultInstallChecker{App: a},
+			packagesFn: func() ([]pkg.Package, error) {
+				return pkgs, nil
 			},
 		}
-
-		a.On("Libraries").Return(libraries, nil)
-
-		pm := NewPackageManager(a)
 
 		protos, err := pm.Prototypes()
 		require.NoError(t, err)
 
+		// We expect the prototype to be retuned by only one of the packages
 		require.Len(t, protos, 1)
+		assert.Equal(t, "2.0.1", protos[0].Version)
 	})
+}
+
+func Test_latestPrototype(t *testing.T) {
+	protos := prototype.Prototypes{
+		&prototype.Prototype{
+			Version: "",
+		},
+		&prototype.Prototype{
+			Version: "2.4.5",
+		},
+		&prototype.Prototype{
+			Version: "v2.0.5",
+		},
+		&prototype.Prototype{
+			Version: "1.2.3",
+		},
+	}
+
+	p := latestPrototype(protos)
+	assert.Equal(t, "2.4.5", p.Version)
+}
+
+func Test_latestPrototype_Non_Semver(t *testing.T) {
+	protos := prototype.Prototypes{
+		&prototype.Prototype{
+			Version: "",
+		},
+		&prototype.Prototype{
+			Version: "semanticLargest",
+		},
+		&prototype.Prototype{
+			Version: "abcd",
+		},
+		&prototype.Prototype{
+			Version: "notsemver",
+		},
+	}
+
+	p := latestPrototype(protos)
+	assert.Equal(t, "semanticLargest", p.Version)
 }
 
 func Test_remotePackage(t *testing.T) {
