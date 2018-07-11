@@ -117,6 +117,10 @@ func (pd *ParamDelete) deleteLocal(path []string) error {
 		return errors.Wrap(err, "could not find component")
 	}
 
+	if c == nil {
+		return errors.New("invalid component or param key")
+	}
+
 	if err := c.DeleteParam(path); err != nil {
 		return errors.Wrap(err, "delete param")
 	}
