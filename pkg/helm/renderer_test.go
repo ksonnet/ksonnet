@@ -64,6 +64,9 @@ func TestRenderer_Render(t *testing.T) {
 
 				envConfig := &app.EnvironmentConfig{
 					KubernetesVersion: "v1.10.3",
+					Destination: &app.EnvironmentDestinationSpec{
+						Namespace: "Default",
+					},
 				}
 				a.On("Environment", "default").Return(envConfig, nil)
 
@@ -115,6 +118,9 @@ func TestRenderer_JsonnetNativeFunc(t *testing.T) {
 
 				envConfig := &app.EnvironmentConfig{
 					KubernetesVersion: "v1.10.3",
+					Destination: &app.EnvironmentDestinationSpec{
+						Namespace: "default",
+					},
 				}
 				a.On("Environment", "default").Return(envConfig, nil)
 
