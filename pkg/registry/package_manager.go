@@ -44,10 +44,17 @@ type PackageManager interface {
 	// of the specified environment.
 	PackagesForEnv(e *app.EnvironmentConfig) ([]pkg.Package, error)
 
+	// RemotePackages returns a list of remote packages.
+	RemotePackages() ([]pkg.Package, error)
+
 	// Prototypes lists prototypes.
 	Prototypes() (prototype.Prototypes, error)
 
 	InstalledChecker
+}
+
+type registryConfigLister interface {
+	Registries() (app.RegistryConfigs, error)
 }
 
 // packageManager is an implementation of PackageManager.
@@ -56,6 +63,7 @@ type packageManager struct {
 
 	InstallChecker pkg.InstallChecker
 	packagesFn     func() ([]pkg.Package, error)
+	registriesFn   func() (map[string]SpecFetcher, error)
 }
 
 var _ PackageManager = (*packageManager)(nil)
@@ -67,8 +75,34 @@ func NewPackageManager(a app.App) PackageManager {
 		InstallChecker: &pkg.DefaultInstallChecker{App: a},
 	}
 	pm.packagesFn = pm.Packages
-
+	pm.registriesFn = func() (map[string]SpecFetcher, error) {
+		return resolveRegistries(a)
+	}
 	return &pm
+}
+
+// resolveRegistries returns a list of registries from the provided app.
+// (SpecFetcher is a subset of the Registry interface)
+func resolveRegistries(a app.App) (map[string]SpecFetcher, error) {
+	if a == nil {
+		return nil, errors.New("nil app")
+	}
+
+	cfgs, err := a.Registries()
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]SpecFetcher)
+	for _, cfg := range cfgs {
+		r, err := Locate(a, cfg)
+		if err != nil {
+			return nil, errors.Wrapf(err, "resolving registry: %v", cfg.Name)
+		}
+		result[cfg.Name] = r
+	}
+
+	return result, nil
 }
 
 // Find finds a package by name. Package names have the format `<registry>/<library>@<version>`.
@@ -115,7 +149,7 @@ func (m *packageManager) Find(name string) (pkg.Package, error) {
 
 	libraryConfig, ok := libraryConfigs[d.Name]
 	if ok {
-		return m.loadPackage(registry.MakeRegistryConfig(), d.Name, d.Registry, libraryConfig.Version)
+		return m.loadPackage(registry.MakeRegistryConfig(), d.Name, d.Registry, libraryConfig.Version, m.InstallChecker)
 	}
 
 	// TODO - Check libraries configured under environments
@@ -134,50 +168,47 @@ type remotePackage struct {
 	partConfig   *parts.Spec
 }
 
-var _ pkg.Package = (*remotePackage)(nil)
+var _ pkg.Package = remotePackage{}
 
-func (p *remotePackage) Name() string {
-	if p == nil || p.partConfig == nil {
+func (p remotePackage) Name() string {
+	if p.partConfig == nil {
 		return ""
 	}
 	return p.partConfig.Name
 }
 
-func (p *remotePackage) RegistryName() string {
-	if p == nil {
-		return ""
-	}
+func (p remotePackage) RegistryName() string {
 	return p.registryName
 }
 
-func (p *remotePackage) Version() string {
-	if p == nil || p.partConfig == nil {
+func (p remotePackage) Version() string {
+	if p.partConfig == nil {
 		return ""
 	}
 	return p.partConfig.Version
 }
 
-func (p *remotePackage) Description() string {
-	if p == nil || p.partConfig == nil {
+func (p remotePackage) Description() string {
+	if p.partConfig == nil {
 		return ""
 	}
 	return p.partConfig.Description
 }
 
-func (p *remotePackage) IsInstalled() (bool, error) {
+func (p remotePackage) IsInstalled() (bool, error) {
 	return false, nil
 }
 
-func (p *remotePackage) Prototypes() (prototype.Prototypes, error) {
+func (p remotePackage) Prototypes() (prototype.Prototypes, error) {
 	return prototype.Prototypes{}, nil
 }
 
-func (p *remotePackage) Path() string {
+func (p remotePackage) Path() string {
 	return ""
 }
 
-func (p *remotePackage) String() string {
-	if p == nil || p.partConfig == nil {
+func (p remotePackage) String() string {
+	if p.partConfig == nil {
 		return "nil"
 	}
 	return fmt.Sprintf("%s/%s@%s", p.registryName, p.partConfig.Name, p.partConfig.Version)
@@ -210,7 +241,7 @@ func (m *packageManager) Packages() ([]pkg.Package, error) {
 				libraryConfig.Registry, libraryConfig.Name)
 		}
 
-		p, err := m.loadPackage(registryConfig, libraryConfig.Name, libraryConfig.Registry, libraryConfig.Version)
+		p, err := m.loadPackage(registryConfig, libraryConfig.Name, libraryConfig.Registry, libraryConfig.Version, pkg.TrueInstallChecker{})
 		if err != nil {
 			return nil, err
 		}
@@ -262,7 +293,7 @@ func (m *packageManager) PackagesForEnv(e *app.EnvironmentConfig) ([]pkg.Package
 				libraryConfig.Registry, k)
 		}
 
-		p, err := m.loadPackage(registryConfig, k, libraryConfig.Registry, libraryConfig.Version)
+		p, err := m.loadPackage(registryConfig, k, libraryConfig.Registry, libraryConfig.Version, pkg.TrueInstallChecker{})
 		if err != nil {
 			return nil, err
 		}
@@ -273,16 +304,46 @@ func (m *packageManager) PackagesForEnv(e *app.EnvironmentConfig) ([]pkg.Package
 	return packages, nil
 }
 
-func (m *packageManager) loadPackage(registryConfig *app.RegistryConfig, pkgName, registryName, version string) (pkg.Package, error) {
+func (m *packageManager) RemotePackages() ([]pkg.Package, error) {
+	registries, err := m.registriesFn()
+	if err != nil {
+		return nil, err
+	}
+
+	var pkgs []pkg.Package
+
+	for name, r := range registries {
+		spec, err := r.FetchRegistrySpec()
+		if err != nil {
+			return nil, err
+		}
+
+		for libName, config := range spec.Libraries {
+			p := remotePackage{
+				registryName: name,
+				partConfig: &parts.Spec{
+					Name:    libName,
+					Version: config.Version,
+				},
+			}
+
+			pkgs = append(pkgs, p)
+		}
+	}
+
+	return pkgs, nil
+}
+
+func (m *packageManager) loadPackage(registryConfig *app.RegistryConfig, pkgName, registryName, version string, installChecker pkg.InstallChecker) (pkg.Package, error) {
 	switch protocol := registryConfig.Protocol; Protocol(protocol) {
 	case ProtocolHelm:
-		h, err := pkg.NewHelm(m.app, pkgName, registryName, version, m.InstallChecker)
+		h, err := pkg.NewHelm(m.app, pkgName, registryName, version, installChecker)
 		if err != nil {
 			return nil, errors.Wrap(err, "loading helm package")
 		}
 		return h, nil
 	case ProtocolFilesystem, ProtocolGitHub:
-		l, err := pkg.NewLocal(m.app, pkgName, registryName, version, m.InstallChecker)
+		l, err := pkg.NewLocal(m.app, pkgName, registryName, version, installChecker)
 		if err != nil {
 			return nil, errors.Wrapf(err, "loading %q package", protocol)
 		}

@@ -1,3 +1,4 @@
 REGISTRY  NAME VERSION INSTALLED
 ========  ==== ======= =========
 incubator lib1 0.0.1   *
+incubator lib1 0.0.2   *

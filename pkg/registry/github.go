@@ -155,6 +155,17 @@ func (gh *GitHub) resolveLatestSHA() (string, error) {
 	return sha, nil
 }
 
+// updateLibVersions updates the libraries in a registry spec to present the provided version.
+func updateLibVersions(spec *Spec, version string) {
+	if spec == nil {
+		return
+	}
+
+	for _, lib := range spec.Libraries {
+		lib.Version = version
+	}
+}
+
 // FetchRegistrySpec fetches the registry spec (registry.yaml, inventory of packages)
 // This inventory may have been previously cached on disk. If the cache is not stale,
 // it will be used. Otherwise, the spec is fetched from the remote repository.
@@ -181,12 +192,14 @@ func (gh *GitHub) FetchRegistrySpec() (*Spec, error) {
 	if err != nil || sha == "" {
 		log.Warnf("%v", errors.Wrapf(err, "unable to resolve commit for refspec: %v", gh.hd.refSpec))
 		log.Warnf("falling back to cached version (%v)", cachedVersion)
+		updateLibVersions(registrySpec, gh.hd.refSpec)
 		return registrySpec, nil
 	}
 
 	// Check if cache is still current
 	if exists && cachedVersion == sha {
 		log.Debugf("using cache @%v", sha)
+		updateLibVersions(registrySpec, sha)
 		return registrySpec, nil
 	}
 
@@ -208,6 +221,7 @@ func (gh *GitHub) FetchRegistrySpec() (*Spec, error) {
 	if err != nil {
 		return nil, err
 	}
+	updateLibVersions(registrySpec, sha)
 
 	var registrySpecBytes []byte
 	registrySpecBytes, err = registrySpec.Marshal()

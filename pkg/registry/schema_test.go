@@ -34,8 +34,8 @@ var (
 		Kind:       "ksonnet.io/registry",
 		Version:    "40285d8a14f1ac5787e405e1023cf0c07f6aa28c",
 		Libraries: LibraryConfigs{
-			"apache": &LibaryConfig{
-				Version: "master",
+			"apache": &LibraryConfig{
+				Version: "40285d8a14f1ac5787e405e1023cf0c07f6aa28c",
 				Path:    "apache",
 			},
 		},
@@ -54,9 +54,9 @@ func Test_Unmarshal(t *testing.T) {
 		Kind:       DefaultKind,
 		Version:    "40285d8a14f1ac5787e405e1023cf0c07f6aa28c",
 		Libraries: LibraryConfigs{
-			"apache": &LibaryConfig{
+			"apache": &LibraryConfig{
 				Path:    "apache",
-				Version: "master",
+				Version: "40285d8a14f1ac5787e405e1023cf0c07f6aa28c",
 			},
 		},
 	}
@@ -70,9 +70,9 @@ func TestSpec_Marshal(t *testing.T) {
 		Kind:       DefaultKind,
 		Version:    "40285d8a14f1ac5787e405e1023cf0c07f6aa28c",
 		Libraries: LibraryConfigs{
-			"apache": &LibaryConfig{
+			"apache": &LibraryConfig{
 				Path:    "apache",
-				Version: "master",
+				Version: "40285d8a14f1ac5787e405e1023cf0c07f6aa28c",
 			},
 		},
 	}

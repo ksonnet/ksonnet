@@ -123,7 +123,7 @@ func TestAdd_Helm(t *testing.T) {
 			APIVersion: DefaultAPIVersion,
 			Kind:       DefaultKind,
 			Libraries: LibraryConfigs{
-				"chart": &LibaryConfig{
+				"chart": &LibraryConfig{
 					Version: "2.0.0",
 					Path:    "chart",
 				},

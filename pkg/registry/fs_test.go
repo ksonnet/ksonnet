@@ -152,7 +152,7 @@ func TestFs_FetchRegistrySpec(t *testing.T) {
 					APIVersion: DefaultAPIVersion,
 					Kind:       "ksonnet.io/registry",
 					Libraries: LibraryConfigs{
-						"apache": &LibaryConfig{
+						"apache": &LibraryConfig{
 							Path: "apache",
 						},
 					},

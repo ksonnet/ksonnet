@@ -17,31 +17,82 @@ package actions
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
-	"github.com/ksonnet/ksonnet/pkg/app"
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
-	"github.com/ksonnet/ksonnet/pkg/registry"
+	"github.com/ksonnet/ksonnet/pkg/pkg"
+	"github.com/ksonnet/ksonnet/pkg/prototype"
+	rmocks "github.com/ksonnet/ksonnet/pkg/registry/mocks"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
+type myPkg struct {
+	name        string
+	registry    string
+	version     string
+	isInstalled bool
+}
+
+func (p myPkg) Name() string {
+	return p.name
+}
+func (p myPkg) Version() string {
+	return p.version
+}
+func (p myPkg) RegistryName() string {
+	return p.registry
+}
+func (p myPkg) Description() string {
+	return ""
+}
+func (p myPkg) Path() string {
+	return p.name
+}
+func (p myPkg) String() string {
+	return fmt.Sprintf("%s/%s@%s", p.registry, p.name, p.version)
+}
+func (p myPkg) Prototypes() (prototype.Prototypes, error) {
+	return nil, errors.New("not implemented")
+}
+func (p myPkg) IsInstalled() (bool, error) {
+	return p.isInstalled, nil
+}
+
+var _ = pkg.Package(myPkg{})
+
 func TestPkgList(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
-		libaries := app.LibraryConfigs{
-			"lib1": &app.LibraryConfig{},
-		}
-
-		appMock.On("Libraries").Return(libaries, nil)
-
-		spec := &registry.Spec{
-			Libraries: registry.LibraryConfigs{
-				"lib1": &registry.LibaryConfig{Version: "0.0.1"},
-				"lib2": &registry.LibaryConfig{Version: "master"},
+		pmMock := rmocks.PackageManager{}
+		pmMock.On("Packages").Return(
+			[]pkg.Package{
+				myPkg{
+					name:        "lib1",
+					version:     "0.0.1",
+					registry:    "incubator",
+					isInstalled: true,
+				},
+				myPkg{
+					name:        "lib1",
+					version:     "0.0.2",
+					registry:    "incubator",
+					isInstalled: true,
+				},
 			},
-		}
-
-		incubator := mockRegistry("incubator", false)
-		incubator.On("FetchRegistrySpec").Return(spec, nil)
+			nil,
+		)
+		pmMock.On("RemotePackages").Return(
+			[]pkg.Package{
+				myPkg{
+					name:        "lib2",
+					version:     "master",
+					registry:    "incubator",
+					isInstalled: false,
+				},
+			},
+			nil,
+		)
 
 		cases := []struct {
 			name          string
@@ -81,11 +132,7 @@ func TestPkgList(t *testing.T) {
 
 				a, err := NewPkgList(in)
 				require.NoError(t, err)
-
-				a.registryListFn = func(app.App) ([]registry.Registry, error) {
-					registries := []registry.Registry{incubator}
-					return registries, nil
-				}
+				a.pm = &pmMock
 
 				var buf bytes.Buffer
 				a.out = &buf

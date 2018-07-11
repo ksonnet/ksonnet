@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/ksonnet/ksonnet/pkg/util/table"
 	"github.com/pkg/errors"
@@ -45,6 +46,7 @@ func RunPkgList(m map[string]interface{}) error {
 // PkgList lists available registries
 type PkgList struct {
 	app           app.App
+	pm            registry.PackageManager
 	onlyInstalled bool
 	outputType    string
 
@@ -56,8 +58,10 @@ type PkgList struct {
 func NewPkgList(m map[string]interface{}) (*PkgList, error) {
 	ol := newOptionLoader(m)
 
+	app := ol.LoadApp()
 	rl := &PkgList{
-		app:           ol.LoadApp(),
+		app:           app,
+		pm:            registry.NewPackageManager(app),
 		onlyInstalled: ol.LoadBool(OptionInstalled),
 		outputType:    ol.LoadOptionalString(OptionOutput),
 
@@ -74,38 +78,45 @@ func NewPkgList(m map[string]interface{}) (*PkgList, error) {
 
 // Run runs the env list action.
 func (pl *PkgList) Run() error {
-	registries, err := pl.registryListFn(pl.app)
+	pkgs, err := pl.pm.Packages()
 	if err != nil {
 		return err
 	}
 
-	var rows [][]string
-
-	appLibraries, err := pl.app.Libraries()
-	if err != nil {
-		return err
+	index := make(map[string]pkg.Package)
+	for _, p := range pkgs {
+		index[p.String()] = p
 	}
 
-	for _, r := range registries {
-		spec, err := r.FetchRegistrySpec()
+	if !pl.onlyInstalled {
+		// Merge in remote packages
+		remote, err := pl.pm.RemotePackages()
 		if err != nil {
-			return err
+			return errors.Wrap(err, "listing remote packages")
 		}
 
-		for libName, config := range spec.Libraries {
-			_, isInstalled := appLibraries[libName]
-
-			if pl.onlyInstalled && !isInstalled {
+		for _, p := range remote {
+			if _, ok := index[p.String()]; ok {
 				continue
 			}
 
-			rows = append(rows, pl.addRow(r.Name(), libName, config.Version, isInstalled))
+			index[p.String()] = p
 		}
 	}
 
+	// Build output
+	var rows [][]string
+	for _, p := range index {
+		isInstalled, err := p.IsInstalled()
+		if err != nil {
+			return err
+		}
+		rows = append(rows, pl.addRow(p.RegistryName(), p.Name(), p.Version(), isInstalled))
+	}
+
 	sort.Slice(rows, func(i, j int) bool {
-		nameI := strings.Join([]string{rows[i][0], rows[i][1]}, "-")
-		nameJ := strings.Join([]string{rows[j][0], rows[j][1]}, "-")
+		nameI := strings.Join([]string{rows[i][0], rows[i][1], rows[i][2]}, "-")
+		nameJ := strings.Join([]string{rows[j][0], rows[j][1], rows[j][2]}, "-")
 
 		return nameI < nameJ
 	})

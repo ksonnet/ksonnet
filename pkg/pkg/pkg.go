@@ -76,6 +76,7 @@ func (p *pkg) String() string {
 		return "nil"
 	}
 
+	// TODO exclude @ if verion is empty
 	return fmt.Sprintf("%v/%v@%v", p.registryName, p.name, p.version)
 }
 
@@ -119,6 +120,15 @@ func (ic *DefaultInstallChecker) IsInstalled(name string) (bool, error) {
 
 	isInstalled := isGlobal || isLocal
 	return isInstalled, nil
+}
+
+// TrueInstallChecker implements an always-true InstallChecker.
+type TrueInstallChecker struct{}
+
+// IsInstalled always returns true, signaling we knew the package was installed when it was
+// bound to this installChecker.
+func (ic TrueInstallChecker) IsInstalled(name string) (bool, error) {
+	return true, nil
 }
 
 // Package is a ksonnet package.

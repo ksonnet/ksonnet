@@ -150,11 +150,11 @@ func TestHelm_FetchRegistrySpec(t *testing.T) {
 			APIVersion: DefaultAPIVersion,
 			Kind:       DefaultKind,
 			Libraries: LibraryConfigs{
-				"app-a": &LibaryConfig{
+				"app-a": &LibraryConfig{
 					Path:    "app-a",
 					Version: "0.1.0",
 				},
-				"app-b": &LibaryConfig{
+				"app-b": &LibraryConfig{
 					Path:    "app-b",
 					Version: "0.2.0",
 				},

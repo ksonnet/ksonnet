@@ -74,6 +74,7 @@ func NewLocal(a app.App, name, registryName string, version string, installCheck
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshalling package configuration")
 	}
+	config.Version = version
 
 	return &Local{
 		pkg: pkg{
