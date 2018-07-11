@@ -56,6 +56,15 @@ func (r *Renderer) k8sVersion() (string, error) {
 	return strings.TrimPrefix(env.KubernetesVersion, "v"), nil
 }
 
+func (r *Renderer) namespace() (string, error) {
+	env, err := r.app.Environment(r.envName)
+	if err != nil {
+		return "", errors.Wrapf(err, "retrieving environment %q", r.envName)
+	}
+
+	return env.Destination.Namespace, nil
+}
+
 // JsonnetNativeFunc is a jsonnet native function that renders helm charts.
 func (r *Renderer) JsonnetNativeFunc() *jsonnet.NativeFunction {
 	fn := func(input []interface{}) (interface{}, error) {
@@ -176,22 +185,12 @@ func (r *Renderer) renderWithHelm(componentName, raw, chartPath string) (map[str
 		return nil, err
 	}
 
-	options := chartutil.ReleaseOptions{
-		Name: componentName,
-	}
-
-	kubeVersion, err := r.k8sVersion()
+	options, caps, err := r.extractChartComponents(componentName)
 	if err != nil {
-		return nil, errors.Wrap(err, "setting Kubernetes version for Helm")
+		return nil, err
 	}
 
-	caps := &chartutil.Capabilities{
-		KubeVersion: &version.Info{
-			GitVersion: kubeVersion,
-		},
-	}
-
-	vals, err := chartutil.ToRenderValuesCaps(c, config, options, caps)
+	vals, err := chartutil.ToRenderValuesCaps(c, config, *options, caps)
 	if err != nil {
 		return nil, err
 	}
@@ -203,6 +202,31 @@ func (r *Renderer) renderWithHelm(componentName, raw, chartPath string) (map[str
 	}
 
 	return rendered, nil
+}
+
+func (r *Renderer) extractChartComponents(componentName string) (*chartutil.ReleaseOptions, *chartutil.Capabilities, error) {
+	clusterNS, err := r.namespace()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	options := &chartutil.ReleaseOptions{
+		Name:      componentName,
+		Namespace: clusterNS,
+	}
+
+	kubeVersion, err := r.k8sVersion()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "setting Kubernetes version for Helm")
+	}
+
+	caps := &chartutil.Capabilities{
+		KubeVersion: &version.Info{
+			GitVersion: kubeVersion,
+		},
+	}
+
+	return options, caps, nil
 }
 
 func checkDependencies(ch *chart.Chart, reqs *chartutil.Requirements) error {
