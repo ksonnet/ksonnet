@@ -27,29 +27,59 @@ import (
 )
 
 func TestParamDelete(t *testing.T) {
-	withApp(t, func(appMock *amocks.App) {
-		componentName := "deployment"
-		path := "replicas"
+	cases := []struct {
+		name          string
+		componentName string
+		isErr         bool
+	}{
+		{
+			name:          "param delete",
+			componentName: "deployment",
+			isErr:         false,
+		},
+		{
+			name:          "param delete missing component or param key",
+			componentName: "",
+			isErr:         true,
+		},
+	}
 
-		c := &cmocks.Component{}
-		c.On("DeleteParam", []string{"replicas"}).Return(nil)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			withApp(t, func(appMock *amocks.App) {
+				componentName := tc.componentName
+				path := "replicas"
 
-		in := map[string]interface{}{
-			OptionApp:  appMock,
-			OptionName: componentName,
-			OptionPath: path,
-		}
+				c := &cmocks.Component{}
+				c.On("DeleteParam", []string{"replicas"}).Return(nil)
 
-		a, err := NewParamDelete(in)
-		require.NoError(t, err)
+				in := map[string]interface{}{
+					OptionApp:  appMock,
+					OptionName: componentName,
+					OptionPath: path,
+				}
 
-		a.resolvePathFn = func(app.App, string) (component.Module, component.Component, error) {
-			return nil, c, nil
-		}
+				a, err := NewParamDelete(in)
+				require.NoError(t, err)
 
-		err = a.Run()
-		require.NoError(t, err)
-	})
+				a.resolvePathFn = func(app.App, string) (component.Module, component.Component, error) {
+					switch tc.componentName {
+					case "":
+						return nil, nil, nil
+					default:
+						return nil, c, nil
+					}
+				}
+
+				err = a.Run()
+				if tc.isErr {
+					require.Error(t, err)
+					return
+				}
+				require.NoError(t, err)
+			})
+		})
+	}
 }
 
 func TestParamDelete_global(t *testing.T) {
