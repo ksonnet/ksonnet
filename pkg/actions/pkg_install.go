@@ -21,7 +21,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/registry"
 )
 
-type libCacher func(app.App, registry.InstalledChecker, pkg.Descriptor, string) (*app.LibraryConfig, error)
+type libCacher func(app.App, registry.InstalledChecker, pkg.Descriptor, string, bool) (*app.LibraryConfig, error)
 
 type libUpdater func(name string, env string, spec *app.LibraryConfig) error
 
@@ -41,6 +41,7 @@ type PkgInstall struct {
 	libName     string
 	customName  string
 	envName     string
+	force       bool
 	checker     registry.InstalledChecker
 	libCacherFn libCacher
 	libUpdateFn libUpdater
@@ -59,6 +60,7 @@ func NewPkgInstall(m map[string]interface{}) (*PkgInstall, error) {
 		app:        a,
 		libName:    ol.LoadString(OptionLibName),
 		customName: ol.LoadString(OptionName),
+		force:      ol.LoadBool(OptionForce),
 		envName:    ol.LoadOptionalString(OptionEnvName),
 		checker:    registry.NewPackageManager(a),
 
@@ -80,7 +82,7 @@ func (pi *PkgInstall) Run() error {
 		return err
 	}
 
-	libCfg, err := pi.libCacherFn(pi.app, pi.checker, d, customName)
+	libCfg, err := pi.libCacherFn(pi.app, pi.checker, d, customName, pi.force)
 	if err != nil {
 		return err
 	}

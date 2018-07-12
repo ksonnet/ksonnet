@@ -26,8 +26,9 @@ import (
 )
 
 var (
-	vPkgInstallName = "pkg-install-name"
-	vPkgInstallEnv  = "pkg-install-env"
+	vPkgInstallName  = "pkg-install-name"
+	vPkgInstallEnv   = "pkg-install-env"
+	vPkgInstallForce = "pkg-install-force"
 
 	pkgInstallLong = `
 The ` + "`install`" + ` command caches a ksonnet library locally, and makes it available
@@ -82,6 +83,7 @@ func newPkgInstallCmd(a app.App) *cobra.Command {
 				actions.OptionLibName: args[0],
 				actions.OptionName:    viper.GetString(vPkgInstallName),
 				actions.OptionEnvName: viper.GetString(vPkgInstallEnv),
+				actions.OptionForce:   viper.GetBool(vPkgInstallForce),
 			}
 
 			return runAction(actionPkgInstall, m)
@@ -89,9 +91,13 @@ func newPkgInstallCmd(a app.App) *cobra.Command {
 	}
 
 	pkgInstallCmd.Flags().String(flagName, "", "Name to give the dependency, to use within the ksonnet app")
-	pkgInstallCmd.Flags().String(flagEnv, "", "Environment to install package into (optional)")
 	viper.BindPFlag(vPkgInstallName, pkgInstallCmd.Flags().Lookup(flagName))
+
+	pkgInstallCmd.Flags().String(flagEnv, "", "Environment to install package into (optional)")
 	viper.BindPFlag(vPkgInstallEnv, pkgInstallCmd.Flags().Lookup(flagEnv))
+
+	pkgInstallCmd.Flags().Bool(flagForce, false, "Force installation")
+	viper.BindPFlag(vPkgInstallForce, pkgInstallCmd.Flags().Lookup(flagForce))
 
 	return pkgInstallCmd
 }

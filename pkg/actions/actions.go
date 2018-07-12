@@ -51,6 +51,8 @@ const (
 	OptionExtVarFiles = "ext-vars-files"
 	// OptionExtVars is jsonnet ext vars.
 	OptionExtVars = "ext-vars"
+	// OptionForce is force option.
+	OptionForce = "force"
 	// OptionFormat is format option.
 	OptionFormat = "format"
 	// OptionFs is fs option.

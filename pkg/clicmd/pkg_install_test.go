@@ -32,6 +32,7 @@ func Test_pkgInstallCmd(t *testing.T) {
 				actions.OptionLibName: "package-name",
 				actions.OptionName:    "",
 				actions.OptionEnvName: "",
+				actions.OptionForce:   false,
 			},
 		},
 		{
@@ -43,6 +44,19 @@ func Test_pkgInstallCmd(t *testing.T) {
 				actions.OptionLibName: "package-name",
 				actions.OptionName:    "",
 				actions.OptionEnvName: "production",
+				actions.OptionForce:   false,
+			},
+		},
+		{
+			name:   "force install",
+			args:   []string{"pkg", "install", "package-name", "--force"},
+			action: actionPkgInstall,
+			expected: map[string]interface{}{
+				actions.OptionApp:     nil,
+				actions.OptionLibName: "package-name",
+				actions.OptionName:    "",
+				actions.OptionEnvName: "",
+				actions.OptionForce:   true,
 			},
 		},
 		{
