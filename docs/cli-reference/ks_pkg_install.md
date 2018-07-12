@@ -30,7 +30,7 @@ ks pkg install <registry>/<library>@<version> [flags]
 
 ```
 
-# Install an nginx dependency, based on the latest branch.
+# Install an nginx dependency, based on the tip defined by the registry URI.
 # In a ksonnet source file, this can be referenced as:
 #   local nginx = import "incubator/nginx/nginx.libsonnet";
 ks pkg install incubator/nginx
@@ -40,11 +40,17 @@ ks pkg install incubator/nginx
 #   local nginx = import "incubator/nginx/nginx.libsonnet";
 ks pkg install incubator/nginx@master
 
+# Install a specific nginx version into the stage environment.
+# In a ksonnet source file, this can be referenced as:
+#   local nginx = import "incubator/nginx/nginx.libsonnet";
+ks pkg install --env stage incubator/nginx@40285d8a14f1ac5787e405e1023cf0c07f6aa28c
+
 ```
 
 ### Options
 
 ```
+      --env string    Environment to install package into (optional)
   -h, --help          help for install
       --name string   Name to give the dependency, to use within the ksonnet app
 ```
