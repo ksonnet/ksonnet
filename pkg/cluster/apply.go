@@ -175,9 +175,9 @@ func (a *Apply) handleObject(obj *unstructured.Unstructured) (string, error) {
 
 // preprocessObject preprocesses an object for it is applied to the cluster.
 func (a *Apply) preprocessObject(obj *unstructured.Unstructured) error {
-	dm := newDefaultManaged()
+	aa := newDefaultAnnotationApplier()
 	if !a.DryRun {
-		return errors.Wrap(dm.Tag(obj), "tagging ksonnet managed object")
+		return errors.Wrap(aa.SetOriginalConfiguration(obj), "tagging ksonnet managed object")
 	}
 
 	log.Info("tagging ksonnet managed object", a.dryRunText())

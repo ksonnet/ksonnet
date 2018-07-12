@@ -21,16 +21,21 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/rest/fake"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	api "k8s.io/kubernetes/pkg/apis/core"
 	cmdtesting "k8s.io/kubernetes/pkg/kubectl/cmd/testing"
+	"k8s.io/kubernetes/pkg/kubectl/cmd/util/openapi"
 	"k8s.io/kubernetes/pkg/kubectl/scheme"
 )
 
@@ -62,7 +67,7 @@ func Test_merger_merge(t *testing.T) {
 
 	codec := legacyscheme.Codecs.LegacyCodec(scheme.Versions...)
 
-	servicePath := "/namespaces/test/services/service"
+	servicePath := "/namespaces/testing/services/service"
 
 	clusterService := &api.Service{
 		Spec: api.ServiceSpec{
@@ -71,8 +76,6 @@ func Test_merger_merge(t *testing.T) {
 			},
 		},
 	}
-
-	var isPatched bool
 
 	tf.UnstructuredClient = &fake.RESTClient{
 		NegotiatedSerializer: unstructuredSerializer,
@@ -85,15 +88,35 @@ func Test_merger_merge(t *testing.T) {
 				_, err := convertToObject(req.Body)
 				require.NoError(t, err)
 
-				isPatched = true
-
 				return &http.Response{StatusCode: 200, Header: defaultHeader(), Body: objBody(codec, clusterService)}, nil
 			default:
-				t.Fatalf("unexpected request: %#v\n%#v", req.URL, req)
+				t.Fatalf("unexpected request using unstructured client: %#v\n%#v", req.URL, req)
 				return nil, nil
 			}
 		}),
 	}
+
+	tf.Client = &fake.RESTClient{
+		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
+			switch p, m := req.URL.Path, req.Method; {
+			case p == "/openapi/v2" && m == "GET":
+				schemaPath := filepath.Join("testdata", "swagger.json")
+				f, err := os.Open(schemaPath)
+				require.NoError(t, err)
+
+				return &http.Response{StatusCode: 200, Body: f}, nil
+			default:
+				t.Fatalf("unexpected request using client: %#v\n%#v", req.URL, req)
+				return nil, errors.New("not found")
+			}
+		}),
+	}
+
+	tf.OpenAPISchemaFunc = func() (openapi.Resources, error) {
+		return nil, errors.New("not found")
+	}
+
+	tf.ClientConfigVal = &restclient.Config{}
 
 	om := newDefaultObjectMerger(tf)
 
@@ -123,10 +146,8 @@ func Test_merger_merge(t *testing.T) {
 		},
 	}
 
-	_, err := om.Merge("test", obj)
+	_, err := om.Merge("testing", obj)
 	require.NoError(t, err)
-
-	require.True(t, isPatched)
 }
 
 type fakeObjectMerger struct {

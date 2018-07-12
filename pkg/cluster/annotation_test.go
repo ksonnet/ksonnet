@@ -23,11 +23,11 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func Test_defaultTagger_Tag(t *testing.T) {
+func Test_defaultAnnoationApplier_SetOriginalConfiguration(t *testing.T) {
 	cases := []struct {
 		name  string
 		obj   *unstructured.Unstructured
-		setup func(m *defaultTagger)
+		setup func(m *defaultAnnotationApplier)
 		isErr bool
 	}{
 		{
@@ -45,8 +45,8 @@ func Test_defaultTagger_Tag(t *testing.T) {
 			obj: &unstructured.Unstructured{
 				Object: genObject(),
 			},
-			setup: func(m *defaultTagger) {
-				m.annotationEncoder = nil
+			setup: func(m *defaultAnnotationApplier) {
+				m.codec = nil
 			},
 			isErr: true,
 		},
@@ -55,11 +55,11 @@ func Test_defaultTagger_Tag(t *testing.T) {
 			obj: &unstructured.Unstructured{
 				Object: genObject(),
 			},
-			setup: func(m *defaultTagger) {
-				fm := &fakeAnnotationEncoder{
-					err: errors.New("failure"),
+			setup: func(m *defaultAnnotationApplier) {
+				fm := &fakeAnnotationCodec{
+					encodeError: errors.New("failure"),
 				}
-				m.annotationEncoder = fm
+				m.codec = fm
 			},
 			isErr: true,
 		},
@@ -68,11 +68,11 @@ func Test_defaultTagger_Tag(t *testing.T) {
 			obj: &unstructured.Unstructured{
 				Object: genObject(),
 			},
-			setup: func(m *defaultTagger) {
-				fm := &fakeAnnotationEncoder{
+			setup: func(m *defaultAnnotationApplier) {
+				fm := &fakeAnnotationCodec{
 					marshalError: errors.New("failure"),
 				}
-				m.annotationEncoder = fm
+				m.codec = fm
 			},
 			isErr: true,
 		},
@@ -80,12 +80,12 @@ func Test_defaultTagger_Tag(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			m := newDefaultManaged()
+			m := newDefaultAnnotationApplier()
 			if tc.setup != nil {
 				tc.setup(m)
 			}
 
-			err := m.Tag(tc.obj)
+			err := m.SetOriginalConfiguration(tc.obj)
 			if tc.isErr {
 				require.Error(t, err)
 				return
@@ -108,17 +108,24 @@ func Test_defaultTagger_Tag(t *testing.T) {
 	}
 }
 
-type fakeAnnotationEncoder struct {
-	err error
+type fakeAnnotationCodec struct {
+	encodeError error
 
 	marshalBytes []byte
 	marshalError error
+
+	decodeObject map[string]interface{}
+	decodeError  error
 }
 
-func (m *fakeAnnotationEncoder) EncodePristine(in map[string]interface{}) error {
-	return m.err
+func (m *fakeAnnotationCodec) Encode(in map[string]interface{}) error {
+	return m.encodeError
 }
 
-func (m *fakeAnnotationEncoder) Marshal() ([]byte, error) {
+func (m *fakeAnnotationCodec) Marshal() ([]byte, error) {
 	return m.marshalBytes, m.marshalError
+}
+
+func (m *fakeAnnotationCodec) Decode() (map[string]interface{}, error) {
+	return m.decodeObject, m.decodeError
 }

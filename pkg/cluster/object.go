@@ -133,7 +133,7 @@ func RebuildObject(m map[string]interface{}) (map[string]interface{}, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	return mm.DecodePristine()
+	return mm.Decode()
 }
 
 // CollectObjects collects objects in a cluster namespace.
