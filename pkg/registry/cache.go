@@ -30,7 +30,7 @@ import (
 // CacheDependency vendors registry dependencies.
 // TODO: create unit tests for this once mocks for this package are
 // worked out.
-func CacheDependency(a app.App, checker InstalledChecker, d pkg.Descriptor, customName string) (*app.LibraryConfig, error) {
+func CacheDependency(a app.App, checker InstalledChecker, d pkg.Descriptor, customName string, force bool) (*app.LibraryConfig, error) {
 	logger := log.WithFields(log.Fields{
 		"action":      "registry.CacheDependency",
 		"part":        d.Name,
@@ -93,7 +93,7 @@ func CacheDependency(a app.App, checker InstalledChecker, d pkg.Descriptor, cust
 	if err != nil {
 		return nil, errors.Wrapf(err, "checking package installed status")
 	}
-	if ok {
+	if ok && !force {
 		return nil, errors.Errorf("package '%s/%s@%s' already exists.",
 			libRef.Registry, libRef.Name, libRef.Version)
 	}

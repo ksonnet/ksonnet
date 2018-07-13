@@ -35,6 +35,7 @@ func TestPkgInstall(t *testing.T) {
 			OptionApp:     appMock,
 			OptionLibName: libName,
 			OptionName:    customName,
+			OptionForce:   false,
 		}
 
 		a, err := NewPkgInstall(in)
@@ -50,7 +51,7 @@ func TestPkgInstall(t *testing.T) {
 		}
 
 		var cacherCalled bool
-		fakeCacher := func(a app.App, checker registry.InstalledChecker, d pkg.Descriptor, cn string) (*app.LibraryConfig, error) {
+		fakeCacher := func(a app.App, checker registry.InstalledChecker, d pkg.Descriptor, cn string, force bool) (*app.LibraryConfig, error) {
 			cacherCalled = true
 			require.Equal(t, expectedD, d)
 			require.Equal(t, "customName", cn)

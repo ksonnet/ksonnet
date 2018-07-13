@@ -51,6 +51,7 @@ ks pkg install --env stage incubator/nginx@40285d8a14f1ac5787e405e1023cf0c07f6aa
 
 ```
       --env string    Environment to install package into (optional)
+      --force         Force installation
   -h, --help          help for install
       --name string   Name to give the dependency, to use within the ksonnet app
 ```
