@@ -16,12 +16,14 @@
 package registry
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/parts"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
+	pmocks "github.com/ksonnet/ksonnet/pkg/pkg/mocks"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/ksonnet/ksonnet/pkg/util/test"
 	"github.com/pkg/errors"
@@ -586,4 +588,117 @@ func Test_packageManager_RemotePackages(t *testing.T) {
 		assert.Len(t, packages, len(expected))
 		assert.Subset(t, packages, expected)
 	})
+}
+
+func makePkg(registry string, name string, version string) pkg.Package {
+	var pkg pmocks.Package
+	pkg.On("Name").Return(name)
+	pkg.On("Version").Return(version)
+	pkg.On("RegistryName").Return(registry)
+	return &pkg
+}
+
+func Test_packageManger_PackageEnvironments(t *testing.T) {
+	var mockApp amocks.App
+
+	mockApp.On("Environments").Return(
+		app.EnvironmentConfigs{
+			"default": &app.EnvironmentConfig{Name: "default"},
+			"stage": &app.EnvironmentConfig{
+				Name: "stage",
+				Libraries: app.LibraryConfigs{
+					"lib1": &app.LibraryConfig{
+						Name:     "lib1",
+						Version:  "1.2.3",
+						Registry: "incubator",
+					},
+					"lib2": &app.LibraryConfig{
+						Name:     "lib2",
+						Version:  "0.0.1",
+						Registry: "incubator",
+					},
+				},
+			},
+			"dev": &app.EnvironmentConfig{
+				Name: "dev",
+				Libraries: app.LibraryConfigs{
+					"not-incubator/lib1": &app.LibraryConfig{
+						Name:     "lib1",
+						Version:  "1.2.3",
+						Registry: "not-incubator",
+					},
+					"lib1": &app.LibraryConfig{
+						Name:     "lib1",
+						Version:  "2.0.0",
+						Registry: "incubator",
+					},
+					"lib2": &app.LibraryConfig{
+						Name:     "lib2",
+						Version:  "0.0.1",
+						Registry: "incubator",
+					},
+				},
+			},
+		}, nil,
+	)
+
+	var pm = packageManager{
+		environmentsFn: mockApp.Environments,
+	}
+
+	tests := []struct {
+		caseName  string
+		name      string
+		version   string
+		registry  string
+		expected  []string
+		expectErr bool
+	}{
+		{
+			caseName: "in single environment",
+			name:     "lib1",
+			version:  "1.2.3",
+			registry: "incubator",
+			expected: []string{"stage"},
+		},
+		{
+			caseName: "same name, different version",
+			name:     "lib1",
+			version:  "2.0.0",
+			registry: "incubator",
+			expected: []string{"dev"},
+		},
+		{
+			caseName: "in multiple environments",
+			name:     "lib2",
+			version:  "0.0.1",
+			registry: "incubator",
+			expected: []string{"dev", "stage"},
+		},
+		{
+			caseName: "in no environments",
+			name:     "lib1",
+			version:  "uninstalled-version",
+			registry: "incubator",
+			expected: []string{},
+		},
+	}
+
+	for _, tc := range tests {
+		pkg := makePkg(tc.registry, tc.name, tc.version)
+		envs, err := pm.PackageEnvironments(pkg)
+		if tc.expectErr {
+			require.Error(t, err, tc.name)
+			continue
+		}
+		require.NoError(t, err, tc.name)
+
+		actual := make([]string, 0, len(envs))
+		for _, e := range envs {
+			actual = append(actual, e.Name)
+		}
+		sort.Sort(sort.StringSlice(actual))
+
+		assert.Equal(t, tc.expected, actual)
+	}
 }

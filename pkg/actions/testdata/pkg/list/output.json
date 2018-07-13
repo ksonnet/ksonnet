@@ -2,18 +2,21 @@
 	"kind": "pkgList",
 	"data": [
 		{
+			"environments": "default, production",
 			"installed": "*",
 			"name": "lib1",
 			"registry": "incubator",
 			"version": "0.0.1"
 		},
 		{
+			"environments": "stage",
 			"installed": "*",
 			"name": "lib1",
 			"registry": "incubator",
 			"version": "0.0.2"
 		},
 		{
+			"environments": "",
 			"installed": "",
 			"name": "lib2",
 			"registry": "incubator",

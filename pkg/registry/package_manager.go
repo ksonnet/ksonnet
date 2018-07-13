@@ -50,6 +50,9 @@ type PackageManager interface {
 	// Prototypes lists prototypes.
 	Prototypes() (prototype.Prototypes, error)
 
+	// PackageEnvironments returns a list of environments a package is installed in.
+	PackageEnvironments(pkg pkg.Package) ([]*app.EnvironmentConfig, error)
+
 	InstalledChecker
 }
 
@@ -65,6 +68,7 @@ type packageManager struct {
 	packagesFn     func() ([]pkg.Package, error)
 	registriesFn   func() (map[string]SpecFetcher, error)
 	resolverFn     func(name string) (LibrarySpecResolver, error)
+	environmentsFn func() (app.EnvironmentConfigs, error)
 }
 
 var _ PackageManager = (*packageManager)(nil)
@@ -90,6 +94,13 @@ func NewPackageManager(a app.App) PackageManager {
 			return nil, err
 		}
 		return LibrarySpecResolver(r), nil
+	}
+	if a != nil {
+		pm.environmentsFn = a.Environments
+	} else {
+		pm.environmentsFn = func() (app.EnvironmentConfigs, error) {
+			return nil, errors.New("not implemented")
+		}
 	}
 	return &pm
 }
@@ -574,4 +585,29 @@ func (m *packageManager) IsInstalled(d pkg.Descriptor) (bool, error) {
 
 	byVer := index[d]
 	return len(byVer) > 0, nil
+}
+
+// PackageEnvironments returns a list of environments a package is installed in.
+func (m *packageManager) PackageEnvironments(pkg pkg.Package) ([]*app.EnvironmentConfig, error) {
+	if pkg == nil {
+		return nil, errors.New("nil package")
+	}
+
+	envs, err := m.environmentsFn()
+	if err != nil {
+		return nil, nil
+	}
+
+	results := make([]*app.EnvironmentConfig, 0)
+	for _, e := range envs {
+		for _, l := range e.Libraries {
+			if l.Registry == pkg.RegistryName() &&
+				l.Name == pkg.Name() &&
+				l.Version == pkg.Version() {
+				results = append(results, e)
+			}
+		}
+	}
+
+	return results, nil
 }

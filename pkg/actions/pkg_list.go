@@ -111,7 +111,12 @@ func (pl *PkgList) Run() error {
 		if err != nil {
 			return err
 		}
-		rows = append(rows, pl.addRow(p.RegistryName(), p.Name(), p.Version(), isInstalled))
+		envs, err := envListForPackage(pl.pm, p)
+		if err != nil {
+			return err
+		}
+
+		rows = append(rows, pl.addRow(p.RegistryName(), p.Name(), p.Version(), isInstalled, envs))
 	}
 
 	sort.Slice(rows, func(i, j int) bool {
@@ -129,19 +134,44 @@ func (pl *PkgList) Run() error {
 	}
 	t.SetFormat(f)
 
-	t.SetHeader([]string{"registry", "name", "version", "installed"})
+	t.SetHeader([]string{"registry", "name", "version", "installed", "environments"})
 	t.AppendBulk(rows)
 	return t.Render()
 }
 
-func (pl *PkgList) addRow(regName, libName, version string, isInstalled bool) []string {
-	row := []string{regName, libName, version}
+func (pl *PkgList) addRow(regName, libName, version string, isInstalled bool, envs string) []string {
 	installedText := ""
 	if isInstalled {
 		installedText = pkgInstalled
 	}
 
-	row = append(row, installedText)
-
+	row := []string{regName, libName, version, installedText, envs}
 	return row
+}
+
+type pkgEnvResolver interface {
+	PackageEnvironments(pkg.Package) ([]*app.EnvironmentConfig, error)
+}
+
+// envListForPackage returns a comma-separated list of environments the given package is installed in
+func envListForPackage(pm pkgEnvResolver, pkg pkg.Package) (string, error) {
+	if pm == nil {
+		return "", errors.New("nil package manager")
+	}
+	if pkg == nil {
+		return "", errors.New("nil package")
+	}
+
+	envs, err := pm.PackageEnvironments(pkg)
+	if err != nil {
+		return "", err
+	}
+
+	names := make([]string, 0, len(envs))
+	for _, e := range envs {
+		names = append(names, e.Name)
+	}
+	sort.Sort(sort.StringSlice(names))
+
+	return strings.Join(names, ", "), nil
 }

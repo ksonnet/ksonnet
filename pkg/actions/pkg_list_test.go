@@ -20,11 +20,15 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/ksonnet/ksonnet/pkg/app"
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
+	pmocks "github.com/ksonnet/ksonnet/pkg/pkg/mocks"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	rmocks "github.com/ksonnet/ksonnet/pkg/registry/mocks"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -93,6 +97,29 @@ func TestPkgList(t *testing.T) {
 			},
 			nil,
 		)
+		pmMock.On("PackageEnvironments", mock.Anything).Return(
+			func(p pkg.Package) []*app.EnvironmentConfig {
+				switch {
+				case p.Name() == "lib1" && p.Version() == "0.0.1":
+					return []*app.EnvironmentConfig{
+						&app.EnvironmentConfig{
+							Name: "production",
+						},
+						&app.EnvironmentConfig{
+							Name: "default",
+						},
+					}
+				case p.Name() == "lib1" && p.Version() == "0.0.2":
+					return []*app.EnvironmentConfig{
+						&app.EnvironmentConfig{
+							Name: "stage",
+						},
+					}
+				default:
+					return nil
+				}
+			}, nil,
+		)
 
 		cases := []struct {
 			name          string
@@ -155,4 +182,74 @@ func TestPkgList_requires_app(t *testing.T) {
 	in := make(map[string]interface{})
 	_, err := NewPkgList(in)
 	require.Error(t, err)
+}
+
+func makePkg(name string) pkg.Package {
+	var pkg pmocks.Package
+	pkg.On("Name").Return(name)
+	return &pkg
+}
+func TestPkgList_envListForPackage(t *testing.T) {
+	var pkgEnvs = map[string][]string{
+		"lib1": []string{"z", "y", "x"},
+		"lib2": []string{},
+	}
+	pm := rmocks.PackageManager{}
+	pm.On("PackageEnvironments", mock.Anything).Return(
+		func(p pkg.Package) []*app.EnvironmentConfig {
+			names, ok := pkgEnvs[p.Name()]
+			if !ok {
+				return nil
+			}
+			result := make([]*app.EnvironmentConfig, 0, len(names))
+			for _, name := range names {
+				result = append(result,
+					&app.EnvironmentConfig{
+						Name: name,
+					},
+				)
+			}
+			return result
+		},
+		func(p pkg.Package) error {
+			if _, ok := pkgEnvs[p.Name()]; !ok {
+				return errors.New("no such package")
+			}
+			return nil
+		},
+	)
+
+	tests := []struct {
+		name      string
+		pkg       pkg.Package
+		expected  string
+		expectErr bool
+	}{
+		{
+			name:     "existing package",
+			pkg:      makePkg("lib1"),
+			expected: "x, y, z",
+		},
+		{
+			name:     "package has not environments",
+			pkg:      makePkg("lib2"),
+			expected: "",
+		},
+		{
+			name:      "nonexistent  package",
+			pkg:       makePkg("no such package"),
+			expectErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		actual, err := envListForPackage(&pm, tc.pkg)
+		if tc.expectErr {
+			require.Error(t, err, tc.name)
+			continue
+		}
+		require.NoError(t, err, tc.name)
+
+		assert.Equal(t, tc.expected, actual, tc.name)
+	}
 }
