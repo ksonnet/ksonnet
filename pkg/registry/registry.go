@@ -34,6 +34,8 @@ const (
 	ProtocolGitHub Protocol = "github"
 	// ProtocolHelm is the protocol for Helm based registries.
 	ProtocolHelm Protocol = "helm"
+	// ProtocolInvalid is an invalid protocol.
+	ProtocolInvalid Protocol = "invalid"
 
 	registryYAMLFile = "registry.yaml"
 	partsYAMLFile    = "parts.yaml"
@@ -49,7 +51,8 @@ type ResolveDirectory func(relPath string) error
 type Registry interface {
 	RegistrySpecDir() string
 	RegistrySpecFilePath() string
-	Resolver
+	LibrarySpecResolver
+	LibraryResolver
 	Name() string
 	Protocol() Protocol
 	URI() string
@@ -66,9 +69,13 @@ type SpecFetcher interface {
 	FetchRegistrySpec() (*Spec, error)
 }
 
-// Resolver fetches metadata and libraries (packages) from a registry
-type Resolver interface {
+// LibrarySpecResolver fetches metadata for a library.
+type LibrarySpecResolver interface {
 	ResolveLibrarySpec(libID, libRefSpec string) (*parts.Spec, error)
+}
+
+// LibraryResolver fetches library (package) contents from a registry
+type LibraryResolver interface {
 	ResolveLibrary(libID, libAlias, version string, onFile ResolveFile, onDir ResolveDirectory) (*parts.Spec, *app.LibraryConfig, error)
 }
 

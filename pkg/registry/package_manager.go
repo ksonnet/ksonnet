@@ -64,6 +64,7 @@ type packageManager struct {
 	InstallChecker pkg.InstallChecker
 	packagesFn     func() ([]pkg.Package, error)
 	registriesFn   func() (map[string]SpecFetcher, error)
+	resolverFn     func(name string) (LibrarySpecResolver, error)
 }
 
 var _ PackageManager = (*packageManager)(nil)
@@ -76,14 +77,26 @@ func NewPackageManager(a app.App) PackageManager {
 	}
 	pm.packagesFn = pm.Packages
 	pm.registriesFn = func() (map[string]SpecFetcher, error) {
-		return resolveRegistries(a)
+		r, err := resolveRegistries(a)
+		if err != nil {
+			return nil, err
+		}
+
+		return registriesToSpecFetchers(r), nil
+	}
+	pm.resolverFn = func(name string) (LibrarySpecResolver, error) {
+		r, err := resolveRegistry(a, name)
+		if err != nil {
+			return nil, err
+		}
+		return LibrarySpecResolver(r), nil
 	}
 	return &pm
 }
 
 // resolveRegistries returns a list of registries from the provided app.
 // (SpecFetcher is a subset of the Registry interface)
-func resolveRegistries(a app.App) (map[string]SpecFetcher, error) {
+func resolveRegistries(a app.App) (map[string]Registry, error) {
 	if a == nil {
 		return nil, errors.New("nil app")
 	}
@@ -93,7 +106,7 @@ func resolveRegistries(a app.App) (map[string]SpecFetcher, error) {
 		return nil, err
 	}
 
-	result := make(map[string]SpecFetcher)
+	result := make(map[string]Registry)
 	for _, cfg := range cfgs {
 		r, err := Locate(a, cfg)
 		if err != nil {
@@ -105,54 +118,96 @@ func resolveRegistries(a app.App) (map[string]SpecFetcher, error) {
 	return result, nil
 }
 
+// resolveRegistry returns the named registry from the provided app.
+func resolveRegistry(a app.App, name string) (Registry, error) {
+	if a == nil {
+		return nil, errors.New("nil app")
+	}
+
+	all, err := resolveRegistries(a)
+	if err != nil {
+		return nil, err
+	}
+
+	r, ok := all[name]
+	if !ok {
+		return nil, errors.Errorf("registry not found: %s", name)
+	}
+
+	return r, nil
+}
+
+// Maps map[string]Registry -> map[string]SpecFectcher
+func registriesToSpecFetchers(r map[string]Registry) map[string]SpecFetcher {
+	result := make(map[string]SpecFetcher)
+	for k, v := range r {
+		result[k] = SpecFetcher(v)
+	}
+	return result
+}
+
+// Maps map[string]Registry -> map[string]Resolver
+func registriesToResolvers(r map[string]Registry) map[string]LibrarySpecResolver {
+	result := make(map[string]LibrarySpecResolver)
+	for k, v := range r {
+		result[k] = LibrarySpecResolver(v)
+	}
+	return result
+}
+
+// registryPrototcol returns the protocol for the named registry.
+func registryProtocol(a registryConfigLister, name string) (proto Protocol, found bool) {
+	regs, err := a.Registries()
+	if err != nil {
+		return ProtocolInvalid, false
+	}
+
+	r, ok := regs[name]
+	if !ok {
+		return ProtocolInvalid, false
+	}
+	return Protocol(r.Protocol), true
+}
+
 // Find finds a package by name. Package names have the format `<registry>/<library>@<version>`.
 // Remote registries may be consulted if the package is not installed locally.
 func (m *packageManager) Find(name string) (pkg.Package, error) {
+	if m.app == nil {
+		return nil, errors.New("nil app")
+	}
+
 	d, err := pkg.Parse(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing package name")
 	}
 
-	if d.Registry == "" {
-		packages, err := m.Packages()
-		if err != nil {
-			return nil, errors.Wrap(err, "loading packages")
-		}
-		for _, p := range packages {
-			if p.Name() == name {
-				return p, nil
-			}
-		}
-
-		return nil, errors.Errorf("package %q was not found", name)
-	}
-
-	registryConfigs, err := m.app.Registries()
+	index, err := allLibraries(m.app)
 	if err != nil {
-		return nil, errors.Wrap(err, "loading registry configurations")
+		return nil, errors.Wrap(err, "resolving libraries")
 	}
 
-	registryConfig, ok := registryConfigs[d.Registry]
-	if !ok {
-		return nil, errors.Errorf("registry %q not found", d.Registry)
+	if byVer, ok := index[d]; ok {
+		// NOTE: We will use the first match for ambiguous finds
+		for _, libCfg := range byVer {
+			protocol, ok := registryProtocol(m.app, libCfg.Registry)
+			if !ok {
+				return nil, errors.Errorf("library %s references invalid registry: %s", libCfg.Name, libCfg.Registry)
+			}
+
+			return m.loadPackage(protocol, libCfg.Name, libCfg.Registry, libCfg.Version, m.InstallChecker)
+		}
 	}
 
-	registry, err := Locate(m.app, registryConfig)
+	// If we are here, the package is not installed locally - construct a remote reference
+
+	if d.Registry == "" {
+		return nil, errors.New("cannot find package - please specify a registry")
+	}
+
+	registry, err := m.resolverFn(d.Registry)
 	if err != nil {
 		return nil, err
 	}
-
-	libraryConfigs, err := m.app.Libraries()
-	if err != nil {
-		return nil, errors.Wrap(err, "reading libraries defined in the configuration")
-	}
-
-	libraryConfig, ok := libraryConfigs[d.Name]
-	if ok {
-		return m.loadPackage(registry.MakeRegistryConfig(), d.Name, d.Registry, libraryConfig.Version, m.InstallChecker)
-	}
-
-	// TODO - Check libraries configured under environments
 
 	partConfig, err := registry.ResolveLibrarySpec(d.Name, d.Version)
 	if err != nil {
@@ -227,21 +282,16 @@ func (m *packageManager) Packages() ([]pkg.Package, error) {
 
 	libraryConfigs := uniqueLibsByVersion(libIndex)
 
-	registryConfigs, err := m.app.Registries()
-	if err != nil {
-		return nil, errors.Wrap(err, "reading registries defined in the configuration")
-	}
-
 	packages := make([]pkg.Package, 0)
 
 	for _, libraryConfig := range libraryConfigs {
-		registryConfig, ok := registryConfigs[libraryConfig.Registry]
+		protocol, ok := registryProtocol(m.app, libraryConfig.Registry)
 		if !ok {
 			return nil, errors.Errorf("registry %q required by library %q is not defined in the configuration",
 				libraryConfig.Registry, libraryConfig.Name)
 		}
 
-		p, err := m.loadPackage(registryConfig, libraryConfig.Name, libraryConfig.Registry, libraryConfig.Version, pkg.TrueInstallChecker{})
+		p, err := m.loadPackage(protocol, libraryConfig.Name, libraryConfig.Registry, libraryConfig.Version, pkg.TrueInstallChecker{})
 		if err != nil {
 			return nil, err
 		}
@@ -267,11 +317,6 @@ func (m *packageManager) PackagesForEnv(e *app.EnvironmentConfig) ([]pkg.Package
 		return nil, errors.Wrap(err, "reading libraries defined in the configuration")
 	}
 
-	registryConfigs, err := m.app.Registries()
-	if err != nil {
-		return nil, errors.Wrap(err, "reading registries defined in the configuration")
-	}
-
 	packages := make([]pkg.Package, 0)
 
 	combined := make(map[string]*app.LibraryConfig)
@@ -287,13 +332,13 @@ func (m *packageManager) PackagesForEnv(e *app.EnvironmentConfig) ([]pkg.Package
 	}
 
 	for k, libraryConfig := range combined {
-		registryConfig, ok := registryConfigs[libraryConfig.Registry]
+		protocol, ok := registryProtocol(m.app, libraryConfig.Registry)
 		if !ok {
 			return nil, errors.Errorf("registry %q required by library %q is not defined in the configuration",
 				libraryConfig.Registry, k)
 		}
 
-		p, err := m.loadPackage(registryConfig, k, libraryConfig.Registry, libraryConfig.Version, pkg.TrueInstallChecker{})
+		p, err := m.loadPackage(protocol, k, libraryConfig.Registry, libraryConfig.Version, pkg.TrueInstallChecker{})
 		if err != nil {
 			return nil, err
 		}
@@ -334,8 +379,8 @@ func (m *packageManager) RemotePackages() ([]pkg.Package, error) {
 	return pkgs, nil
 }
 
-func (m *packageManager) loadPackage(registryConfig *app.RegistryConfig, pkgName, registryName, version string, installChecker pkg.InstallChecker) (pkg.Package, error) {
-	switch protocol := registryConfig.Protocol; Protocol(protocol) {
+func (m *packageManager) loadPackage(protocol Protocol, pkgName, registryName, version string, installChecker pkg.InstallChecker) (pkg.Package, error) {
+	switch protocol {
 	case ProtocolHelm:
 		h, err := pkg.NewHelm(m.app, pkgName, registryName, version, installChecker)
 		if err != nil {
