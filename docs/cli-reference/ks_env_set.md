@@ -25,9 +25,16 @@ ks env set <env-name> [flags]
 ### Examples
 
 ```
-#Update the name of the environment 'us-west/staging'.
+# Update the name of the environment 'us-west/staging'.
 # Updating the name will update the directory structure in 'environments/'.
 ks env set us-west/staging --name=us-east/staging
+
+# Setting k8s API version for an environment
+ks env set us-west/staging --api-spec=version:v1.8.0
+
+# Updating the server
+ks env set us-west/staging --server=https://192.168.99.100:8443
+
 ```
 
 ### Options
