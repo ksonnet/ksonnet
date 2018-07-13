@@ -1,5 +1,5 @@
-REGISTRY  NAME VERSION INSTALLED
-========  ==== ======= =========
-incubator lib1 0.0.1   *
-incubator lib1 0.0.2   *
+REGISTRY  NAME VERSION INSTALLED ENVIRONMENTS
+========  ==== ======= ========= ============
+incubator lib1 0.0.1   *         default, production
+incubator lib1 0.0.2   *         stage
 incubator lib2 master

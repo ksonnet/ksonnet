@@ -70,6 +70,29 @@ func (_m *PackageManager) IsInstalled(d pkg.Descriptor) (bool, error) {
 	return r0, r1
 }
 
+// PackageEnvironments provides a mock function with given fields: _a0
+func (_m *PackageManager) PackageEnvironments(_a0 pkg.Package) ([]*app.EnvironmentConfig, error) {
+	ret := _m.Called(_a0)
+
+	var r0 []*app.EnvironmentConfig
+	if rf, ok := ret.Get(0).(func(pkg.Package) []*app.EnvironmentConfig); ok {
+		r0 = rf(_a0)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*app.EnvironmentConfig)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(pkg.Package) error); ok {
+		r1 = rf(_a0)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Packages provides a mock function with given fields:
 func (_m *PackageManager) Packages() ([]pkg.Package, error) {
 	ret := _m.Called()
