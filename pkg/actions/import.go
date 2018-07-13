@@ -206,7 +206,12 @@ func (i *Import) importFile(fileName string) error {
 }
 
 func (i *Import) createYAML(fileName, base, ext string) error {
-	readers, err := utilyaml.Decode(i.app.Fs(), fileName)
+	f, err := i.app.Fs().Open(fileName)
+	if err != nil {
+		return errors.Wrapf(err, "opening %q", fileName)
+	}
+
+	readers, err := utilyaml.Decode(f)
 	if err != nil {
 		return err
 	}
