@@ -24,40 +24,197 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/ksonnet/ksonnet/pkg/util/test"
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+type miniRegistry interface {
+	SpecFetcher
+	LibrarySpecResolver
+}
+
+// fakeRegistry is a mini-registry that implements LibrarySpecResolver and SpecFetcher
+type fakeRegistry struct {
+	pkgs         map[app.LibraryConfig]*parts.Spec
+	registryName string
+	registry     Spec
+}
+
+func (r *fakeRegistry) FetchRegistrySpec() (*Spec, error) {
+	return &r.registry, nil
+}
+
+func (r *fakeRegistry) ResolveLibrarySpec(name, version string) (*parts.Spec, error) {
+	key := app.LibraryConfig{
+		Name:     name,
+		Version:  version,
+		Registry: r.registryName,
+	}
+	result, ok := r.pkgs[key]
+	if !ok {
+		return nil, errors.Errorf("package not found: %s/%s@%s", r.registryName, name, version)
+	}
+	return result, nil
+}
+
 func Test_packageManager_Find(t *testing.T) {
+	makeRegistry := func(name string, cfgs app.LibraryConfigs) *fakeRegistry {
+		pkgs := make(map[app.LibraryConfig]*parts.Spec)
+		for _, l := range cfgs {
+			pkgs[*l] = &parts.Spec{
+				Name:        l.Name,
+				Version:     l.Version,
+				Description: l.Name,
+			}
+		}
+
+		r := &fakeRegistry{
+			pkgs:         pkgs,
+			registryName: name,
+			registry:     Spec{},
+		}
+		return r
+	}
+
 	test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
 
 		test.StageDir(t, fs, "incubator/apache", "/work/apache")
-		test.StageDir(t, fs, "incubator/apache", "/app/vendor/incubator/apache")
+		test.StageDir(t, fs, "incubator/apache", "/app/vendor/incubator/apache@1.2.3")
+		test.StageDir(t, fs, "incubator/nginx", "/app/vendor/incubator/nginx@2.0.0")
 
 		a.On("VendorPath").Return("/app/vendor")
 
-		registries := app.RegistryConfigs{
-			"incubator": &app.RegistryConfig{
-				Protocol: "fs",
-				URI:      "/work",
+		libraries := app.LibraryConfigs{
+			"apache": &app.LibraryConfig{
+				Name:     "apache",
+				Version:  "1.2.3",
+				Registry: "incubator",
+			},
+			"nginx": &app.LibraryConfig{
+				Name:     "nginx",
+				Version:  "2.0.0",
+				Registry: "incubator",
 			},
 		}
 
-		a.On("Registries").Return(registries, nil)
-
-		libraries := app.LibraryConfigs{
-			"apache": &app.LibraryConfig{},
+		remoteLibs := app.LibraryConfigs{
+			"mysql": &app.LibraryConfig{
+				Name:     "mysql",
+				Version:  "5.6.1",
+				Registry: "remote",
+			},
 		}
 
 		a.On("Libraries").Return(libraries, nil)
 
-		pm := NewPackageManager(a)
+		incubator := makeRegistry("incubator", libraries)
+		remote := makeRegistry("remote", remoteLibs)
+		registries := map[string]*fakeRegistry{
+			"incubator": incubator,
+			"remote":    remote,
+		}
 
-		p, err := pm.Find("incubator/apache")
-		require.NoError(t, err)
+		a.On("Environments").Return(
+			app.EnvironmentConfigs{
+				"default": &app.EnvironmentConfig{
+					Name: "default",
+				},
+			}, nil,
+		)
 
-		require.Equal(t, "apache", p.Name())
+		a.On("Registries").Return(
+			app.RegistryConfigs{
+				"incubator": &app.RegistryConfig{
+					Name:     "incubator",
+					Protocol: string(ProtocolFilesystem),
+				},
+				"remote": &app.RegistryConfig{
+					Name:     "remote",
+					Protocol: string(ProtocolGitHub),
+				},
+			}, nil,
+		)
+
+		pm := packageManager{
+			app:            a,
+			InstallChecker: &pkg.DefaultInstallChecker{App: a},
+			registriesFn: func() (map[string]SpecFetcher, error) {
+				result := make(map[string]SpecFetcher)
+				for k, v := range registries {
+					result[k] = v
+
+				}
+				return result, nil
+			},
+			resolverFn: func(name string) (LibrarySpecResolver, error) {
+				r, ok := registries[name]
+				if !ok {
+					return nil, errors.Errorf("invalid registry: %s", name)
+				}
+				return r, nil
+			},
+		}
+
+		tests := []struct {
+			name          string
+			expectErr     bool
+			expectName    string
+			expectVersion string
+		}{
+			{
+				name:          "incubator/apache",
+				expectName:    "apache",
+				expectVersion: "1.2.3",
+			},
+			{
+				name:          "apache",
+				expectName:    "apache",
+				expectVersion: "1.2.3",
+			},
+			{
+				name:          "apache@1.2.3",
+				expectName:    "apache",
+				expectVersion: "1.2.3",
+			},
+			{
+				name:          "incubator/apache@1.2.3",
+				expectName:    "apache",
+				expectVersion: "1.2.3",
+			},
+			{
+				name:      "incubator/apache@4.5.6",
+				expectErr: true,
+			},
+			{
+				name:          "incubator/nginx@2.0.0",
+				expectName:    "nginx",
+				expectVersion: "2.0.0",
+			},
+			{
+				name:          "remote/mysql@5.6.1",
+				expectName:    "mysql",
+				expectVersion: "5.6.1",
+			},
+			{
+				name:      "mysql@5.6.1",
+				expectErr: true,
+			},
+		}
+
+		for _, tc := range tests {
+			p, err := pm.Find(tc.name)
+			if tc.expectErr {
+				require.Error(t, err, tc.name)
+				continue
+			}
+
+			require.NoError(t, err, tc.name)
+			require.Equal(t, tc.expectName, p.Name())
+			require.Equal(t, tc.expectVersion, p.Version())
+		}
+
 	})
 }
 
@@ -397,8 +554,6 @@ func Test_packageManager_RemotePackages(t *testing.T) {
 		registries := map[string]SpecFetcher{
 			"incubator": incubator,
 		}
-
-		a.On("Registries").Return(registries, nil)
 
 		// Expect global libraries + envLibraries
 		expected := []pkg.Package{
