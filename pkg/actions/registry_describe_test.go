@@ -43,17 +43,17 @@ func TestRegistryDescribe(t *testing.T) {
 
 			spec := &registry.Spec{
 				Libraries: registry.LibraryConfigs{
-					"apache":    &registry.LibaryConfig{Path: "apache"},
-					"efk":       &registry.LibaryConfig{Path: "efk"},
-					"mariadb":   &registry.LibaryConfig{Path: "mariadb"},
-					"memcached": &registry.LibaryConfig{Path: "memcached"},
-					"mongodb":   &registry.LibaryConfig{Path: "mongodb"},
-					"mysql":     &registry.LibaryConfig{Path: "mysql"},
-					"nginx":     &registry.LibaryConfig{Path: "nginx"},
-					"node":      &registry.LibaryConfig{Path: "node"},
-					"postres":   &registry.LibaryConfig{Path: "postgres"},
-					"redis":     &registry.LibaryConfig{Path: "redis"},
-					"tomcat":    &registry.LibaryConfig{Path: "tomcat"},
+					"apache":    &registry.LibraryConfig{Path: "apache"},
+					"efk":       &registry.LibraryConfig{Path: "efk"},
+					"mariadb":   &registry.LibraryConfig{Path: "mariadb"},
+					"memcached": &registry.LibraryConfig{Path: "memcached"},
+					"mongodb":   &registry.LibraryConfig{Path: "mongodb"},
+					"mysql":     &registry.LibraryConfig{Path: "mysql"},
+					"nginx":     &registry.LibraryConfig{Path: "nginx"},
+					"node":      &registry.LibraryConfig{Path: "node"},
+					"postres":   &registry.LibraryConfig{Path: "postgres"},
+					"redis":     &registry.LibraryConfig{Path: "redis"},
+					"tomcat":    &registry.LibraryConfig{Path: "tomcat"},
 				},
 			}
 

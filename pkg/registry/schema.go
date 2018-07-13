@@ -188,11 +188,11 @@ func load(a app.App, path string) (*Spec, bool, error) {
 // Specs is a slice of *Spec.
 type Specs []*Spec
 
-// LibaryConfig is library reference.
-type LibaryConfig struct {
+// LibraryConfig is library reference.
+type LibraryConfig struct {
 	Version string `json:"version"`
 	Path    string `json:"path"`
 }
 
 // LibraryConfigs maps LibraryConfigs to a name.
-type LibraryConfigs map[string]*LibaryConfig
+type LibraryConfigs map[string]*LibraryConfig

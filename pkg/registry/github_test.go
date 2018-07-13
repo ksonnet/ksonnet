@@ -215,9 +215,9 @@ func TestGithub_FetchRegistrySpec_nocache(t *testing.T) {
 		Kind:       "ksonnet.io/registry",
 		Version:    "12345",
 		Libraries: LibraryConfigs{
-			"apache": &LibaryConfig{
+			"apache": &LibraryConfig{
 				Path:    "apache",
-				Version: "master",
+				Version: "12345",
 			},
 		},
 	}

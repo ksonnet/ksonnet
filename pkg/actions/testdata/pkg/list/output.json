@@ -8,6 +8,12 @@
 			"version": "0.0.1"
 		},
 		{
+			"installed": "*",
+			"name": "lib1",
+			"registry": "incubator",
+			"version": "0.0.2"
+		},
+		{
 			"installed": "",
 			"name": "lib2",
 			"registry": "incubator",

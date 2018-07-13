@@ -64,7 +64,7 @@ func Test_packageManager_Find(t *testing.T) {
 func Test_packageManager_Packages(t *testing.T) {
 	test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
 		makePkg := func(name, registry, version string) pkg.Package {
-			p, err := pkg.NewLocal(a, name, registry, version, &pkg.DefaultInstallChecker{App: a})
+			p, err := pkg.NewLocal(a, name, registry, version, pkg.TrueInstallChecker{})
 			require.NoErrorf(t, err, "creating package %s/%s@%s", registry, name, version)
 			return p
 		}
@@ -131,7 +131,7 @@ func Test_packageManager_Packages(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Len(t, packages, len(libraries)+len(envLibraries))
-		assert.Subset(t, expected, packages)
+		assert.Subset(t, packages, expected)
 	})
 }
 
@@ -360,4 +360,75 @@ func Test_IsInstalled(t *testing.T) {
 			assert.Equal(t, tc.expected, actual, tc.name)
 		})
 	}
+}
+
+// Fake SpecFetcher implementation (returns a registry spec)
+type specFetcher struct {
+	spec Spec
+}
+
+func (s *specFetcher) FetchRegistrySpec() (*Spec, error) {
+	return &s.spec, nil
+}
+
+func Test_packageManager_RemotePackages(t *testing.T) {
+	test.WithApp(t, "/app", func(a *amocks.App, fs afero.Fs) {
+		makeRegistry := func(libs LibraryConfigs) SpecFetcher {
+			r := &specFetcher{
+				spec: Spec{
+					Libraries: libs,
+				},
+			}
+			return r
+		}
+
+		libraries := LibraryConfigs{
+			"apache": &LibraryConfig{
+				Path:    "apache",
+				Version: "1.2.3",
+			},
+			"nginx": &LibraryConfig{
+				Path:    "nginx",
+				Version: "2.0.0",
+			},
+		}
+
+		incubator := makeRegistry(libraries)
+		registries := map[string]SpecFetcher{
+			"incubator": incubator,
+		}
+
+		a.On("Registries").Return(registries, nil)
+
+		// Expect global libraries + envLibraries
+		expected := []pkg.Package{
+			remotePackage{
+				registryName: "incubator",
+				partConfig: &parts.Spec{
+					Name:    "apache",
+					Version: "1.2.3",
+				},
+			},
+			remotePackage{
+				registryName: "incubator",
+				partConfig: &parts.Spec{
+					Name:    "nginx",
+					Version: "2.0.0",
+				},
+			},
+		}
+
+		pm := packageManager{
+			app: a,
+			registriesFn: func() (map[string]SpecFetcher, error) {
+				return registries, nil
+			},
+		}
+
+		packages, err := pm.RemotePackages()
+		require.NoError(t, err)
+
+		assert.Len(t, packages, len(expected))
+		assert.Subset(t, packages, expected)
+	})
 }

@@ -138,3 +138,26 @@ func (_m *PackageManager) Prototypes() (prototype.Prototypes, error) {
 
 	return r0, r1
 }
+
+// RemotePackages provides a mock function with given fields:
+func (_m *PackageManager) RemotePackages() ([]pkg.Package, error) {
+	ret := _m.Called()
+
+	var r0 []pkg.Package
+	if rf, ok := ret.Get(0).(func() []pkg.Package); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]pkg.Package)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}

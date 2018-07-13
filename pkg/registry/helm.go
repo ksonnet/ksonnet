@@ -100,7 +100,7 @@ func (h *Helm) FetchRegistrySpec() (*Spec, error) {
 			return nil, errors.Errorf("entries are invalid")
 		}
 
-		spec.Libraries[name] = &LibaryConfig{
+		spec.Libraries[name] = &LibraryConfig{
 			Path:    name,
 			Version: chart.Version,
 		}
