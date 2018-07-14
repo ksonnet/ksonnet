@@ -17,6 +17,7 @@ package helm
 
 import (
 	"fmt"
+	"io/ioutil"
 	"path/filepath"
 	"strings"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/google/go-jsonnet/ast"
 	"github.com/ksonnet/ksonnet/pkg/app"
 	ksstrings "github.com/ksonnet/ksonnet/pkg/util/strings"
+	utilyaml "github.com/ksonnet/ksonnet/pkg/util/yaml"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/version"
@@ -148,12 +150,26 @@ func (r *Renderer) Render(repoName, chartName, chartVersion, componentName strin
 		if !ksstrings.InSlice(filepath.Ext(name), []string{".yaml", ".yml"}) {
 			continue
 		}
-		var m map[string]interface{}
-		if err := goyaml.Unmarshal([]byte(s), &m); err != nil {
-			return nil, errors.Wrapf(err, "unmarshalling %s", name)
+
+		r := strings.NewReader(s)
+		readers, err := utilyaml.Decode(r)
+		if err != nil {
+			return nil, err
 		}
 
-		out = append(out, m)
+		for _, r := range readers {
+			data, err := ioutil.ReadAll(r)
+			if err != nil {
+				return nil, err
+			}
+
+			var m map[string]interface{}
+			if err := goyaml.Unmarshal(data, &m); err != nil {
+				return nil, errors.Wrapf(err, "unmarshalling %s", name)
+			}
+
+			out = append(out, m)
+		}
 	}
 
 	return out, nil

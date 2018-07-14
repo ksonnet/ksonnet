@@ -19,10 +19,6 @@ import (
 	"bufio"
 	"bytes"
 	"io"
-	"os"
-
-	"github.com/pkg/errors"
-	"github.com/spf13/afero"
 )
 
 const (
@@ -30,16 +26,7 @@ const (
 )
 
 // Decode decodes YAML into one or more readers.
-func Decode(fs afero.Fs, source string) ([]io.Reader, error) {
-	if err := checkSource(fs, source); err != nil {
-		return nil, errors.Wrap(err, "check source")
-	}
-
-	f, err := fs.Open(source)
-	if err != nil {
-		return nil, errors.Wrap(err, "open source")
-	}
-	defer f.Close()
+func Decode(f io.Reader) ([]io.Reader, error) {
 
 	buffer := make([]bytes.Buffer, 1)
 
@@ -51,8 +38,13 @@ func Decode(fs afero.Fs, source string) ([]io.Reader, error) {
 			continue
 		}
 
-		buffer[len(buffer)-1].WriteString(t)
-		buffer[len(buffer)-1].WriteByte('\n')
+		if _, err := buffer[len(buffer)-1].WriteString(t); err != nil {
+			return nil, err
+		}
+
+		if err := buffer[len(buffer)-1].WriteByte('\n'); err != nil {
+			return nil, err
+		}
 	}
 
 	var readers []io.Reader
@@ -61,20 +53,4 @@ func Decode(fs afero.Fs, source string) ([]io.Reader, error) {
 	}
 
 	return readers, nil
-}
-
-func checkSource(fs afero.Fs, source string) error {
-	if source == "" {
-		return errors.New("source is empty")
-	}
-
-	if _, err := fs.Stat(source); err != nil {
-		if os.IsNotExist(err) {
-			return errors.Errorf("%q does not exist", source)
-		}
-
-		return errors.Wrap(err, "could not stat source")
-	}
-
-	return nil
 }
