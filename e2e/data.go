@@ -126,17 +126,20 @@ func setEnvListRow(in []envListRow, name, k8sVersion, namespace, override, serve
 }
 
 func genIncubatorPkgList() []pkgListRow {
+	// TODO: is there a better way to set this?
+	version := "40285d8a14f1ac5787e405e1023cf0c07f6aa28c"
+
 	return []pkgListRow{
-		{Registry: "incubator", Name: "apache", Version: "master", Installed: ""},
-		{Registry: "incubator", Name: "efk", Version: "master", Installed: ""},
-		{Registry: "incubator", Name: "mariadb", Version: "master", Installed: ""},
-		{Registry: "incubator", Name: "memcached", Version: "master", Installed: ""},
-		{Registry: "incubator", Name: "mongodb", Version: "master", Installed: ""},
-		{Registry: "incubator", Name: "mysql", Version: "master", Installed: ""},
-		{Registry: "incubator", Name: "nginx", Version: "master", Installed: ""},
-		{Registry: "incubator", Name: "node", Version: "master", Installed: ""},
-		{Registry: "incubator", Name: "postgres", Version: "master", Installed: ""},
-		{Registry: "incubator", Name: "redis", Version: "master", Installed: ""},
-		{Registry: "incubator", Name: "tomcat", Version: "master", Installed: ""},
+		{Registry: "incubator", Name: "apache", Version: version, Installed: ""},
+		{Registry: "incubator", Name: "efk", Version: version, Installed: ""},
+		{Registry: "incubator", Name: "mariadb", Version: version, Installed: ""},
+		{Registry: "incubator", Name: "memcached", Version: version, Installed: ""},
+		{Registry: "incubator", Name: "mongodb", Version: version, Installed: ""},
+		{Registry: "incubator", Name: "mysql", Version: version, Installed: ""},
+		{Registry: "incubator", Name: "nginx", Version: version, Installed: ""},
+		{Registry: "incubator", Name: "node", Version: version, Installed: ""},
+		{Registry: "incubator", Name: "postgres", Version: version, Installed: ""},
+		{Registry: "incubator", Name: "redis", Version: version, Installed: ""},
+		{Registry: "incubator", Name: "tomcat", Version: version, Installed: ""},
 	}
 }

@@ -118,7 +118,6 @@ func TestEnvSet(t *testing.T) {
 				saveFn: func(t *testing.T) saveFn {
 					return func(a app.App, envName, k8sAPISpec string, spec *app.EnvironmentConfig, override bool) error {
 						assert.Equal(t, newk8sAPISpec, k8sAPISpec)
-						assert.Equal(t, newk8sAPISpec, spec.KubernetesVersion)
 						return nil
 					}
 				},
@@ -141,7 +140,6 @@ func TestEnvSet(t *testing.T) {
 								Namespace: namespace,
 								Server:    server,
 							},
-							KubernetesVersion: newk8sAPISpec,
 						}, spec)
 						assert.Equal(t, newk8sAPISpec, k8sAPISpec)
 						return nil

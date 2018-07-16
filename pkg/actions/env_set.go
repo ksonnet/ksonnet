@@ -121,7 +121,7 @@ func (es *EnvSet) updateName(isOverride bool) error {
 
 // updateEnvConfig merges the provided environment config with optional override settings and the  creates and saves a new environment config based on the provided
 // base configuration. It will be merged with the provided configuration settings.
-// If isOverride is specified, Libaries will be filtered out of the merged configuration, as those should always be
+// If isOverride is specified, Libraries will be filtered out of the merged configuration, as those should always be
 // managed in the primary application config.
 func (es *EnvSet) updateEnvConfig(env app.EnvironmentConfig, namespace, server, k8sAPISpec string, isOverride bool) error {
 	if env.Name == "" {
@@ -132,8 +132,7 @@ func (es *EnvSet) updateEnvConfig(env app.EnvironmentConfig, namespace, server, 
 		return nil
 	}
 
-	var newEnv app.EnvironmentConfig
-	newEnv = env // this is a copy
+	newEnv := env
 
 	var destination *app.EnvironmentDestinationSpec
 	if env.Destination != nil {
@@ -152,11 +151,10 @@ func (es *EnvSet) updateEnvConfig(env app.EnvironmentConfig, namespace, server, 
 	}
 
 	newEnv.Destination = destination
-	newEnv.KubernetesVersion = k8sAPISpec
-	// isOverride will be set by app.AddEnvironment
 
+	// isOverride will be set by app.AddEnvironment
 	if isOverride {
-		// Libaries will always derive from the primary app.yaml
+		// Libraries will always derive from the primary app.yaml
 		newEnv.Libraries = nil
 	}
 

@@ -22,8 +22,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
-	"github.com/ksonnet/ksonnet/pkg/util/strings"
+	"github.com/blang/semver"
+	ksstrings "github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -75,11 +77,15 @@ func (e *e2e) serverVersion() string {
 	versionInfo, err := discoveryClient.ServerVersion()
 	Expect(err).ToNot(HaveOccurred(), "retrieve server version info")
 
-	return versionInfo.String()
+	v, err := semver.Make(strings.TrimPrefix(versionInfo.String(), "v"))
+	Expect(err).ToNot(HaveOccurred(), "parse server version")
+
+	return fmt.Sprintf("v%d.%d.%d",
+		v.Major, v.Minor, v.Patch)
 }
 
 func (e *e2e) createNamespace() string {
-	name := fmt.Sprintf("ks-e2e-%s", strings.LowerRand(6))
+	name := fmt.Sprintf("ks-e2e-%s", ksstrings.LowerRand(6))
 
 	c, err := corev1.NewForConfig(e.restConfig)
 	Expect(err).ToNot(HaveOccurred())
@@ -154,7 +160,7 @@ func (e *e2e) buildKs() {
 }
 
 func (e *e2e) initApp(options *initOptions) app {
-	appID := strings.Rand(6)
+	appID := ksstrings.Rand(6)
 	appDir := filepath.Join(e.root, appID)
 
 	opts := []string{
