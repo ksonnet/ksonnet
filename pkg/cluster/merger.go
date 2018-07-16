@@ -124,7 +124,7 @@ func (p *defaultObjectMerger) Merge(namespace string, obj *unstructured.Unstruct
 		}
 	}
 
-	modified, err := runtime.Encode(encoder, info.Object)
+	modified, err := runtime.Encode(encoder, obj)
 	if err != nil {
 		return nil, errors.Wrap(err, "encode modified object")
 	}
@@ -257,7 +257,8 @@ func (p *patcher) patchSimple(obj runtime.Object, modified []byte, source, names
 		if p.openapiSchema != nil {
 			if schema = p.openapiSchema.LookupResource(p.mapping.GroupVersionKind); schema != nil {
 				lookupPatchMeta = strategicpatch.PatchMetaFromOpenAPI{Schema: schema}
-				if openapiPatch, err := strategicpatch.CreateThreeWayMergePatch(original, modified, current, lookupPatchMeta, p.overwrite); err != nil {
+				openapiPatch, err := strategicpatch.CreateThreeWayMergePatch(original, modified, current, lookupPatchMeta, p.overwrite)
+				if err != nil {
 					fmt.Fprintf(errOut, "warning: error calculating patch from openapi spec: %v\n", err)
 				} else {
 					patchType = types.StrategicMergePatchType

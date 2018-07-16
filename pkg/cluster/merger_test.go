@@ -77,6 +77,8 @@ func Test_merger_merge(t *testing.T) {
 		},
 	}
 
+	isPatched := false
+
 	tf.UnstructuredClient = &fake.RESTClient{
 		NegotiatedSerializer: unstructuredSerializer,
 		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
@@ -87,6 +89,8 @@ func Test_merger_merge(t *testing.T) {
 				defer req.Body.Close()
 				_, err := convertToObject(req.Body)
 				require.NoError(t, err)
+
+				isPatched = true
 
 				return &http.Response{StatusCode: 200, Header: defaultHeader(), Body: objBody(codec, clusterService)}, nil
 			default:
@@ -148,6 +152,8 @@ func Test_merger_merge(t *testing.T) {
 
 	_, err := om.Merge("testing", obj)
 	require.NoError(t, err)
+
+	require.True(t, isPatched)
 }
 
 type fakeObjectMerger struct {
