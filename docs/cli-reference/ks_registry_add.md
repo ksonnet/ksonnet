@@ -12,7 +12,7 @@ as an example.*
 
 A registry is given a string identifier, which must be unique within a ksonnet application.
 
-There are two supported registry protocols: **github** and **fs**.
+There are three supported registry protocols: **github**, **fs**, and **Helm**.
 
 GitHub registries expect a path in a GitHub repository, and filesystem based
 registries expect a path on the local filesystem.
@@ -44,6 +44,9 @@ ks registry add databases github.com/example
 # Add a registry with the name 'databases' at the uri
 # 'github.com/org/example/tree/0.0.1/registry' (0.0.1 is the branch name)
 ks registry add databases github.com/org/example/tree/0.0.1/registry
+
+# Add a registry with a Helm Charts Repository uri
+ks registry add helm-stable https://kubernetes-charts.storage.googleapis.com
 ```
 
 ### Options
