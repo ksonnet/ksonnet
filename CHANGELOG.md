@@ -1,9 +1,9 @@
 # Change Log
 
-## [v0.12.0](https://github.com/ksonnet/ksonnet/tree/v0.12.0) (2018-7-17)
-[Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.11.0...v0.12.0)
+## [v0.12.0-rc1](https://github.com/ksonnet/ksonnet/tree/v0.12.0-rc1) (2018-7-17)
+[Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.11.0...v0.12.0-rc1)
 
-ksonnet 0.12 introduces the following changes:
+ksonnet 0.12-rc1 introduces the following changes:
 
 **Enhancements:**
 
