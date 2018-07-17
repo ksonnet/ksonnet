@@ -1,5 +1,42 @@
 # Change Log
 
+## [v0.12.0](https://github.com/ksonnet/ksonnet/tree/v0.12.0) (2018-7-17)
+[Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.11.0...v0.12.0)
+
+ksonnet 0.12 introduces the following changes:
+
+**Enhancements:**
+
+* Added Helm Registry support where charts operate as ksonnet parts [\#583](https://github.com/ksonnet/ksonnet/pull/583)
+* Added docker-image target to Makefile for building an image with ks [\#588](https://github.com/ksonnet/ksonnet/pull/588)
+* Updated go-jsonnet version from [dfddf2b](https://github.com/google/go-jsonnet/commit/dfddf2b4e3aec377b0dcdf247ff92e7d078b8179) to [a1964b4](https://github.com/google/go-jsonnet/commit/a1964b49f18919f5aaed17d3c2f6b48a35634b5c) [\#597](https://github.com/ksonnet/ksonnet/pull/597)
+* Added `--installed` flag to `ks pkg list` to show installed packages [\#600](https://github.com/ksonnet/ksonnet/pull/600)
+* Changed location of cached registry manifests [\#604](https://github.com/ksonnet/ksonnet/pull/604)
+* Added `--server` to change Kubernetes server address in an environment [\#612](https://github.com/ksonnet/ksonnet/pull/612)
+* Added `--api-spec` to change Kubernetes API version in an environment [\#618](https://github.com/ksonnet/ksonnet/pull/618)
+* Added `ks registry set <name> --uri <uri>` command to update a registry URI [\#622](https://github.com/ksonnet/ksonnet/pull/622)
+* Changed GitHub-based registries to automatically follow remote branches [\#622](https://github.com/ksonnet/ksonnet/pull/622)
+* Removed versioning for ksonnet registries [\#632](https://github.com/ksonnet/ksonnet/pull/632)
+* Added retries up to five times for `ks apply` [\#639](https://github.com/ksonnet/ksonnet/pull/639)
+* Added `lib/` to jsonnet path [\#647](https://github.com/ksonnet/ksonnet/pull/647)
+* Changed vendored packages to be qualified with their versions and allow side-by-side installation [\#669](https://github.com/ksonnet/ksonnet/pull/669)
+* Updated `ks pkg list` to show canonical versions for packages [\#673](https://github.com/ksonnet/ksonnet/pull/673)
+* Added package version to `ks pkg list` [\#673](https://github.com/ksonnet/ksonnet/pull/673)
+* Added package versioning support where fully-qualified package identifiers can be specified by `<registry>/<pkg>@<version>` [\#683](https://github.com/heptio/ksonnet-website/pull/683)
+* Added `--output=json` to print tabular output as JSON [\#695](https://github.com/ksonnet/ksonnet/pull/695)
+* Added support for packages to be installed in an environment with `ks pkg install --env <env> <registry/package>` [\#697](https://github.com/ksonnet/ksonnet/pull/697)
+* Added environment scope for packages with `ks pkg list` [\#727](https://github.com/ksonnet/ksonnet/pull/727)
+* Added a force option to allow re-installing an existing version of a package with `ks pkg install --force` [\#744](https://github.com/ksonnet/ksonnet/pull/744)
+
+**Bug Fixes:**
+
+* Allowed component selection for `ks diff` [\#592](https://github.com/ksonnet/ksonnet/pull/592)
+* Ensured registry paths exist prior to adding [\#601](https://github.com/ksonnet/ksonnet/pull/601)
+* Picked up proper kubernetes version when running on OpenShift [\#640](https://github.com/ksonnet/ksonnet/pull/640)
+* Re-added docker image resolver for setting parameters [\#645](https://github.com/ksonnet/ksonnet/pull/645)
+* Fixed case where `ks apply --dry-run` modified the cluster [\#699](https://github.com/ksonnet/ksonnet/pull/699)
+* Reworked failing end-to-end tests [\#706](https://github.com/ksonnet/ksonnet/pull/706)
+
 ## [v0.11.0](https://github.com/ksonnet/ksonnet/tree/v0.11.0) (2018-6-1)
 [Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.10.2...v0.11.0)
 
