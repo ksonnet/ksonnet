@@ -45,9 +45,9 @@ An environment consists of four elements, some of which can be pulled from your 
 | What       | Example       | Description          | How is this tracked? |
 | ---------- | ------------- | ------------- | ---------- |
 | (1) *Name* | dev | A string used to identify a particular environment. Must be unique within a ksonnet app. | A directory under `environments/` (e.g. `environments/dev/`). <br><br>**A name with slashes results in a hierarchical file structure**. For example, `us-west/staging` creates `environments/us-west/staging/`.|
-| (2) *Server* | https://cluster-name-with-hash.us-west-2.elb.amazonaws.com | The address and port of a Kubernetes API server. In other words, identifies a unique cluster. | Inside `environments/<env-name>/spec.json` |
-| (3) *Namespace* | dev | Specifically, a [Kubernetes namespace](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/). | Inside `environments/<env-name>/spec.json` |
-| (4) *Kubernetes API version* | version:v1.7.1 | The version of your cluster's Kubernetes API server, defaults to v1.7.0. | Used to generate appropriate files in `environments/<env-name>/.metadata/` based on the specified version of the Kubernetes OpenAPI spec |
+| (2) *Server* | https://cluster-name-with-hash.us-west-2.elb.amazonaws.com | The address and port of a Kubernetes API server. In other words, identifies a unique cluster. | Inside `app.yaml` |
+| (3) *Namespace* | dev | Specifically, a [Kubernetes namespace](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/). | Inside `app.yaml` |
+| (4) *Kubernetes API version* | version:v1.7.1 | The version of your cluster's Kubernetes API server, defaults to v1.8.0. | Used to generate appropriate files in `lib/ksonnet-lib/` based on the specified version of the Kubernetes OpenAPI spec |
 
 ksonnet allows you to deploy any particular *application* to **multiple** environments. Below is a visualization of two environments that represent different namespaces on the same cluster:
 
