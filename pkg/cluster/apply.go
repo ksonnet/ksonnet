@@ -204,6 +204,11 @@ func (a *Apply) upsert(obj *unstructured.Unstructured) (string, error) {
 			if !kerrors.IsConflict(cause) {
 				return "", err
 			}
+			// In order for the next try to work, update the resource version on the object
+			updatedObj, err := a.getUpdatedObject(obj)
+			if err == nil {
+				obj.SetResourceVersion(updatedObj.GetResourceVersion())
+			}
 
 			time.Sleep(a.conflictTimeout)
 			continue
@@ -213,6 +218,14 @@ func (a *Apply) upsert(obj *unstructured.Unstructured) (string, error) {
 	}
 
 	return "", errApplyConflict
+}
+
+func (a *Apply) getUpdatedObject(obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	rc, err := a.resourceClientFactory(*a.clientOpts, obj)
+	if err != nil {
+		return nil, err
+	}
+	return rc.Get(metav1.GetOptions{})
 }
 
 // setupGC setups ksonnet's garbage collection process for objects.
