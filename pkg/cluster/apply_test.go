@@ -20,13 +20,16 @@ import (
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/client"
+	"github.com/ksonnet/ksonnet/pkg/cluster/mocks"
 	"github.com/ksonnet/ksonnet/pkg/util/test"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -130,6 +133,11 @@ func Test_Apply_retry_on_conflict(t *testing.T) {
 			obj := &unstructured.Unstructured{Object: genObject()}
 
 			apply.clientOpts = &clientOpts{}
+			apply.resourceClientFactory = func(opts clientOpts, object runtime.Object) (ResourceClient, error) {
+				rc := &mocks.ResourceClient{}
+				rc.On("Get", mock.Anything).Return(obj, nil)
+				return rc, nil
+			}
 
 			apply.findObjectsFn = func(a app.App, envName string, componentNames []string) ([]*unstructured.Unstructured, error) {
 				objects := []*unstructured.Unstructured{obj}
