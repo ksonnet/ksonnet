@@ -36,3 +36,16 @@ func Test_PatchJSON(t *testing.T) {
 
 	test.AssertOutput(t, "rbac-1-patched.json", got)
 }
+
+func Test_PatchJSON_EmptyPatch(t *testing.T) {
+	jsonObject, err := ioutil.ReadFile(filepath.Join("testdata", "rbac-1.json"))
+	require.NoError(t, err)
+
+	patch, err := ioutil.ReadFile(filepath.Join("testdata", "patch-empty.json"))
+	require.NoError(t, err)
+
+	got, err := PatchJSON(string(jsonObject), string(patch), "rbac-1")
+	require.NoError(t, err)
+
+	test.AssertOutput(t, "rbac-1.json", got)
+}

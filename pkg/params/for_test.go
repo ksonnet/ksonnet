@@ -54,6 +54,13 @@ func TestBuildEnvParamsForModule(t *testing.T) {
 			moduleName:      "no-match",
 			output:          "no_match.jsonnet",
 		},
+		{
+			name:            "empty input, still output components field",
+			input:           "input_empty.jsonnet",
+			componentParams: "component_empty.jsonnet",
+			moduleName:      "no-match",
+			output:          "no_match.jsonnet",
+		},
 	}
 
 	for _, tc := range cases {
