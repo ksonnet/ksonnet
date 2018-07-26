@@ -20,6 +20,7 @@ import (
 	"io"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/lib"
@@ -59,6 +60,9 @@ func (u *upgrade010) Upgrade(dryRun bool) error {
 	}
 	if err := u.upgradeOldVendoredPackages(u.packageLister, dryRun); err != nil {
 		return errors.Wrapf(err, "upgrading vendored packages")
+	}
+	if err := u.upgradeEnvTargets(u.app, dryRun); err != nil {
+		return errors.Wrapf(err, "upgrading environment targets")
 	}
 
 	// Upgrade app.yaml
@@ -176,6 +180,59 @@ func (u *upgrade010) upgradeOldVendoredPackages(pl PackageLister, dryRun bool) e
 		}
 		if err := fs.Rename(unversioned, versioned); err != nil {
 			return errors.Wrapf(err, "renaming %v to %v", unversioned, versioned)
+		}
+	}
+
+	return nil
+}
+
+type envListerUpdater interface {
+	// Environments returns all environments.
+	Environments() (app.EnvironmentConfigs, error)
+	// UpdateTargets sets the targets for an environment.
+	UpdateTargets(envName string, targets []string) error
+}
+
+// In ksonnet 0.12.0 (app version 0.2.0) - environment targets began using the dot (.) separator for modules.
+// Example:
+// `module_a/module_b/module_c` -> `module_a.module_b.component_a`
+func (*upgrade010) upgradeEnvTargets(listerUpdater envListerUpdater, dryRun bool) error {
+	if listerUpdater == nil {
+		return errors.New("nil envListerUpdater")
+	}
+
+	targets := make(map[string][]string)
+
+	envs, err := listerUpdater.Environments()
+	if err != nil {
+		return errors.Wrap(err, "fetching environments")
+	}
+	for _, e := range envs {
+		if e == nil {
+			continue
+		}
+		var dirty bool
+		upgraded := make([]string, len(e.Targets))
+		for i, t := range e.Targets {
+			if t == "/" {
+				// Root module is an exception - leave as-is
+				upgraded[i] = t
+				continue
+			}
+			if strings.Contains(t, "/") {
+				dirty = true
+				upgraded[i] = strings.Replace(t, "/", ".", -1)
+			}
+		}
+		if !dirty || dryRun {
+			continue
+		}
+		targets[e.Name] = upgraded
+	}
+
+	for name, upgraded := range targets {
+		if err := listerUpdater.UpdateTargets(name, upgraded); err != nil {
+			return errors.Wrapf(err, "updating targets for environment: %s", name)
 		}
 	}
 

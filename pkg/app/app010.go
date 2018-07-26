@@ -267,6 +267,10 @@ func (a *App010) Upgrade(dryRun bool) error {
 	if a.config == nil {
 		return errors.Errorf("invalid app - config is nil")
 	}
+	if dryRun {
+		return nil
+	}
+
 	a.config.APIVersion = "0.2.0"
 	return a.save()
 }
