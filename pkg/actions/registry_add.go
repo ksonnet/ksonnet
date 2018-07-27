@@ -127,6 +127,6 @@ func (ra *RegistryAdd) protocol() (registryDetails, error) {
 }
 
 func (ra *RegistryAdd) isGitHub() bool {
-	return strings.HasPrefix(ra.uri, "github.com") ||
-		strings.HasPrefix(ra.uri, "https://github.com")
+	return strings.HasPrefix(ra.uri, "github") ||
+		strings.HasPrefix(ra.uri, "https://github")
 }
