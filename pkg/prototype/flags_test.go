@@ -60,6 +60,7 @@ func TestBindFlags(t *testing.T) {
 		"module":      "Component module",
 		"optional":    "optional",
 		"values-file": "Prototype values file (file returns a Jsonnet object)",
+               "verbose":     "Increase verbosity. May be given multiple times.",
 	}
 
 	var seenFlags []string

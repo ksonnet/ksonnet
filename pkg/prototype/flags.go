@@ -40,6 +40,7 @@ func BindFlags(p *Prototype) (fs *pflag.FlagSet, err error) {
 
 	fs.String("values-file", "", "Prototype values file (file returns a Jsonnet object)")
 	fs.String("module", "", "Component module")
+       fs.CountP("verbose", "v", "Increase verbosity. May be given multiple times.")
 
 	for _, param := range p.RequiredParams() {
 		if fs.Lookup(param.Name) != nil {
