@@ -119,7 +119,7 @@ func extractPathParts(ksApp app.App, path string) (string, string, error) {
 	}
 
 	path = strings.Replace(path, ".", string(filepath.Separator), -1)
-	module, componentName := ExtractModuleComponent(ksApp, path)
+	module, componentName := extractModuleComponent(ksApp, path)
 	base := filepath.Join(module.Dir(), componentName)
 
 	exts := []string{".yaml", ".jsonnet", ".json"}

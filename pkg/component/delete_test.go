@@ -53,3 +53,33 @@ func TestDelete(t *testing.T) {
 		)
 	})
 }
+
+func TestDeleteWithModule(t *testing.T) {
+	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+		test.StageDir(t, fs, "delete", "/app")
+
+		envs := app.EnvironmentConfigs{
+			"default": &app.EnvironmentConfig{},
+		}
+		a.On("Environments").Return(envs, nil)
+
+		err := Delete(a, "nested.guestbook-ui")
+		require.NoError(t, err)
+
+		base := filepath.Join("/app", "components", "nested")
+
+		test.AssertNotExists(t, fs, filepath.Join(base, "guestbook-ui.jsonnet"))
+		test.AssertContents(
+			t,
+			fs,
+			"delete-params.libsonnet",
+			filepath.Join(base, "params.libsonnet"),
+		)
+		test.AssertContents(
+			t,
+			fs,
+			"delete-env-params-nested.libsonnet",
+			filepath.Join("/app", "environments", "default", "params.libsonnet"),
+		)
+	})
+}

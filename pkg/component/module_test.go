@@ -169,7 +169,7 @@ func TestExtractModuleComponent(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
-				m, c := ExtractModuleComponent(a, tc.in)
+				m, c := extractModuleComponent(a, tc.in)
 
 				assert.Equal(t, tc.m, m.Name())
 				assert.Equal(t, tc.c, c)

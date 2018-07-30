@@ -80,6 +80,17 @@ func (y *YAML) Type() string {
 	return TypeYAML
 }
 
+// Remove removes the component.
+func (y *YAML) Remove() error {
+	m := NewModule(y.app, y.module)
+	path := filepath.Join(m.Dir(), y.Name(false)+"."+y.Type())
+	if err := y.app.Fs().Remove(path); err != nil {
+		return errors.Wrapf(err, "removing %q", path)
+	}
+
+	return nil
+}
+
 // Params returns params for a component.
 func (y *YAML) Params(envName string) ([]ModuleParameter, error) {
 	y.log().WithField("env-name", envName).Debug("getting component params")

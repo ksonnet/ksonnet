@@ -76,6 +76,20 @@ func (_m *Component) Params(envName string) ([]component.ModuleParameter, error)
 	return r0, r1
 }
 
+// Remove provides a mock function with given fields:
+func (_m *Component) Remove() error {
+	ret := _m.Called()
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func() error); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // SetParam provides a mock function with given fields: path, value
 func (_m *Component) SetParam(path []string, value interface{}) error {
 	ret := _m.Called(path, value)

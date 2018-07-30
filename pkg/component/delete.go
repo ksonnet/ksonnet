@@ -31,19 +31,35 @@ import (
 // the directory structure in a half-finished state.
 func Delete(a app.App, name string) error {
 	log.Debugf("deleting component %s", name)
-	componentPath, err := Path(a, name)
+
+	moduleName, componentName, err := extractPathParts(a, name)
 	if err != nil {
 		return err
 	}
 
-	ns, _ := ExtractModuleComponent(a, name)
+	m := NewModule(a, moduleName)
 
-	// Build the new component/params.libsonnet file.
-	componentParamsFile, err := afero.ReadFile(a.Fs(), ns.ParamsPath())
+	var c Component
+	components, err := m.Components()
 	if err != nil {
 		return err
 	}
-	componentJsonnet, err := param.DeleteComponent(name, string(componentParamsFile))
+	for i := range components {
+		if components[i].Name(false) == componentName {
+			c = components[i]
+		}
+	}
+
+	if c == nil {
+		return errors.Errorf("unable to find component %q", name)
+	}
+
+	// Build the new component params.libsonnet file.
+	componentParamsFile, err := afero.ReadFile(a.Fs(), m.ParamsPath())
+	if err != nil {
+		return err
+	}
+	componentJsonnet, err := param.DeleteComponent(c.Name(false), string(componentParamsFile))
 	if err != nil {
 		return err
 	}
@@ -71,8 +87,8 @@ func Delete(a app.App, name string) error {
 	log.Infof("Removing component parameter references ...")
 
 	// Remove the references in component/params.libsonnet.
-	log.Debugf("... deleting references in %s", ns.ParamsPath())
-	err = afero.WriteFile(a.Fs(), ns.ParamsPath(), []byte(componentJsonnet), defaultFilePermissions)
+	log.Debugf("... deleting references in %s", m.ParamsPath())
+	err = afero.WriteFile(a.Fs(), m.ParamsPath(), []byte(componentJsonnet), defaultFilePermissions)
 	if err != nil {
 		return err
 	}
@@ -84,8 +100,8 @@ func Delete(a app.App, name string) error {
 	//
 	// Delete the component file in components/.
 	//
-	log.Infof("Deleting component '%s' at path '%s'", name, componentPath)
-	if err := a.Fs().Remove(componentPath); err != nil {
+	log.Infof("Deleting component %q", name)
+	if err := c.Remove(); err != nil {
 		return err
 	}
 
@@ -110,8 +126,8 @@ func collectEnvParams(a app.App, env *app.EnvironmentConfig, componentName, envN
 	return ecr.Remove(componentName, string(envParamsFile))
 }
 
-/// updateEnvParam removes the component references in each environment's
-// paramss.libsonnet.
+// updateEnvParam removes the component references in each environment's
+// params.libsonnet.
 func updateEnvParam(a app.App, envs app.EnvironmentConfigs, envParams map[string]string) error {
 	for envName := range envs {
 		path := filepath.Join(a.Root(), "environments", envName, "params.libsonnet")
