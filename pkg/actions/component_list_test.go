@@ -41,28 +41,15 @@ func TestComponentList_wide(t *testing.T) {
 
 		cs := []component.Component{c1, c2}
 
-		module := &cmocks.Module{}
-		module.On("Components").Return(cs, nil)
-
 		cm := &cmocks.Manager{}
-		cm.On("Module", mock.Anything, "").Return(module, nil)
-
-		return cm
-	}
-
-	componentManagerCannotLoadModule := func() component.Manager {
-		cm := &cmocks.Manager{}
-		cm.On("Module", mock.Anything, "").Return(nil, errors.New("can't load module"))
+		cm.On("Components", mock.Anything, "/").Return(cs, nil)
 
 		return cm
 	}
 
 	cannotLoadComponents := func() component.Manager {
-		module := &cmocks.Module{}
-		module.On("Components").Return(nil, errors.New("can't load components"))
-
 		cm := &cmocks.Manager{}
-		cm.On("Module", mock.Anything, "").Return(module, nil)
+		cm.On("Components", mock.Anything, "/").Return(nil, errors.New("can't load components"))
 
 		return cm
 	}
@@ -74,11 +61,8 @@ func TestComponentList_wide(t *testing.T) {
 
 		cs := []component.Component{c1}
 
-		module := &cmocks.Module{}
-		module.On("Components").Return(cs, nil)
-
 		cm := &cmocks.Manager{}
-		cm.On("Module", mock.Anything, "").Return(module, nil)
+		cm.On("Components", mock.Anything, "/").Return(cs, nil)
 
 		return cm
 	}
@@ -114,11 +98,6 @@ func TestComponentList_wide(t *testing.T) {
 			isErr:            true,
 		},
 		{
-			name:             "can't load module",
-			componentManager: componentManagerCannotLoadModule(),
-			isErr:            true,
-		},
-		{
 			name:             "can't load components",
 			componentManager: cannotLoadComponents(),
 			isErr:            true,
@@ -133,7 +112,7 @@ func TestComponentList_wide(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			withApp(t, func(appMock *amocks.App) {
-				moduleName := ""
+				moduleName := "/"
 
 				in := map[string]interface{}{
 					OptionApp:    appMock,

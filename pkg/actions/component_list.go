@@ -67,12 +67,7 @@ func NewComponentList(m map[string]interface{}) (*ComponentList, error) {
 
 // Run runs the ComponentList action.
 func (cl *ComponentList) Run() error {
-	module, err := cl.cm.Module(cl.app, cl.module)
-	if err != nil {
-		return err
-	}
-
-	components, err := module.Components()
+	components, err := cl.cm.Components(cl.app, cl.module)
 	if err != nil {
 		return err
 	}

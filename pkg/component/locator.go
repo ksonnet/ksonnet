@@ -42,6 +42,8 @@ func newComponentPathLocator(a app.App, envName string) (*componentPathLocator, 
 	}, nil
 }
 
+// Locate returns component paths targetted by an environment (specified in newComponentPathLocater), or
+// all component paths if that environment identifier is the empty string.
 func (cpl *componentPathLocator) Locate() ([]string, error) {
 	if cpl.envName == "" {
 		return cpl.allNamespaces()

@@ -127,8 +127,8 @@ func (p *Pipeline) Components(filter []string) ([]component.Component, error) {
 	}
 
 	components := make([]component.Component, 0)
-	for _, ns := range modules {
-		members, err := p.cm.Components(ns)
+	for _, m := range modules {
+		members, err := p.cm.Components(p.app, m.Name())
 		if err != nil {
 			return nil, err
 		}

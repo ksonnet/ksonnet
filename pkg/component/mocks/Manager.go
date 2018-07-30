@@ -48,13 +48,13 @@ func (_m *Manager) Component(ksApp app.App, module string, componentName string)
 	return r0, r1
 }
 
-// Components provides a mock function with given fields: ns
-func (_m *Manager) Components(ns component.Module) ([]component.Component, error) {
-	ret := _m.Called(ns)
+// Components provides a mock function with given fields: ksApp, module
+func (_m *Manager) Components(ksApp app.App, module string) ([]component.Component, error) {
+	ret := _m.Called(ksApp, module)
 
 	var r0 []component.Component
-	if rf, ok := ret.Get(0).(func(component.Module) []component.Component); ok {
-		r0 = rf(ns)
+	if rf, ok := ret.Get(0).(func(app.App, string) []component.Component); ok {
+		r0 = rf(ksApp, module)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]component.Component)
@@ -62,8 +62,8 @@ func (_m *Manager) Components(ns component.Module) ([]component.Component, error
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(component.Module) error); ok {
-		r1 = rf(ns)
+	if rf, ok := ret.Get(1).(func(app.App, string) error); ok {
+		r1 = rf(ksApp, module)
 	} else {
 		r1 = ret.Error(1)
 	}
