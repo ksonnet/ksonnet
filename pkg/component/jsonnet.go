@@ -79,6 +79,17 @@ func (j *Jsonnet) Type() string {
 	return TypeJsonnet
 }
 
+// Remove removes the component.
+func (j *Jsonnet) Remove() error {
+	m := NewModule(j.app, j.module)
+	path := filepath.Join(m.Dir(), j.Name(false)+"."+j.Type())
+	if err := j.app.Fs().Remove(path); err != nil {
+		return errors.Wrapf(err, "removing %q", path)
+	}
+
+	return nil
+}
+
 // SetParam set parameter for a component.
 func (j *Jsonnet) SetParam(path []string, value interface{}) error {
 	paramsData, err := j.readModuleParams()

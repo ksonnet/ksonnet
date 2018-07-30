@@ -4,5 +4,8 @@ params {
     "guestbook-ui" +: {
        name: "guestbook-dev",
     },
+    "nested.guestbook-ui" +: {
+       name: "guestbook-dev",
+    },
   },
 }

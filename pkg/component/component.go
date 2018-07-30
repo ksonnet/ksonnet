@@ -57,6 +57,8 @@ type Component interface {
 	// Params returns a list of all parameters for a component. If envName is a
 	// blank string, it will report the local parameters.
 	Params(envName string) ([]ModuleParameter, error)
+	// Remove removes the component
+	Remove() error
 	// SetParams sets a component paramaters.
 	SetParam(path []string, value interface{}) error
 	// Summarize returns a summary of the component.
@@ -87,7 +89,7 @@ func LocateComponent(ksApp app.App, module, name string) (Component, error) {
 
 // Path returns returns the file system path for a component.
 func Path(a app.App, name string) (string, error) {
-	ns, localName := ExtractModuleComponent(a, name)
+	ns, localName := extractModuleComponent(a, name)
 
 	fis, err := afero.ReadDir(a.Fs(), ns.Dir())
 	if err != nil {
@@ -122,7 +124,7 @@ func Path(a app.App, name string) (string, error) {
 
 // ExtractComponent extracts a component from a path.
 func ExtractComponent(a app.App, path string) (Component, error) {
-	ns, componentName := ExtractModuleComponent(a, path)
+	ns, componentName := extractModuleComponent(a, path)
 	members, err := ns.Components()
 	if err != nil {
 		return nil, err

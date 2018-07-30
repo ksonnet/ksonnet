@@ -83,8 +83,8 @@ func NewModule(ksApp app.App, path string) *FilesystemModule {
 	return &FilesystemModule{app: ksApp, path: path}
 }
 
-// ExtractModuleComponent extracts a module and a component from a filesystem path.
-func ExtractModuleComponent(a app.App, path string) (Module, string) {
+// extractModuleComponent extracts a module and a component from a filesystem path.
+func extractModuleComponent(a app.App, path string) (Module, string) {
 	dir, file := filepath.Split(path)
 	componentName := strings.TrimSuffix(file, filepath.Ext(file))
 
