@@ -44,7 +44,7 @@ required = ["k8s.io/kubernetes/pkg/kubectl/cmd/util"]
 
 [[constraint]]
   name = "github.com/google/go-jsonnet"
-  revision = "a1964b49f18919f5aaed17d3c2f6b48a35634b5c"
+  revision = "v0.11.2"
 
 [[constraint]]
   name = "github.com/googleapis/gnostic"
