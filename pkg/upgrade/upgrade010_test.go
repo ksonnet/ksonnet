@@ -21,12 +21,15 @@ import (
 	"testing"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
+	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
 	pmocks "github.com/ksonnet/ksonnet/pkg/pkg/mocks"
 	rmocks "github.com/ksonnet/ksonnet/pkg/registry/mocks"
 	"github.com/ksonnet/ksonnet/pkg/util/test"
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -78,13 +81,15 @@ func TestApp010_Upgrade(t *testing.T) {
 
 	cases := []struct {
 		name         string
+		stageFile    string
 		init         func(t *testing.T, a *app.App010) upgrader
 		checkUpgrade func(t *testing.T, a *app.App010)
 		dryRun       bool
 		isErr        bool
 	}{
 		{
-			name: "ksonnet lib doesn't need to be upgraded",
+			name:      "ksonnet lib doesn't need to be upgraded",
+			stageFile: "app010_app.yaml",
 			init: func(t *testing.T, a *app.App010) upgrader {
 				err := a.Fs().MkdirAll("/lib", app.DefaultFolderPermissions)
 				require.NoError(t, err)
@@ -98,7 +103,8 @@ func TestApp010_Upgrade(t *testing.T) {
 			dryRun: false,
 		},
 		{
-			name: "ksonnet lib needs to be upgraded",
+			name:      "ksonnet lib needs to be upgraded",
+			stageFile: "app010_app.yaml",
 			init: func(t *testing.T, a *app.App010) upgrader {
 				err := a.Fs().MkdirAll("/lib", app.DefaultFolderPermissions)
 				require.NoError(t, err)
@@ -112,7 +118,8 @@ func TestApp010_Upgrade(t *testing.T) {
 			dryRun: false,
 		},
 		{
-			name: "ksonnet lib needs to be upgraded - dry run",
+			name:      "ksonnet lib needs to be upgraded - dry run",
+			stageFile: "app010_app.yaml",
 			init: func(t *testing.T, a *app.App010) upgrader {
 				err := a.Fs().MkdirAll("/lib", app.DefaultFolderPermissions)
 				require.NoError(t, err)
@@ -131,14 +138,16 @@ func TestApp010_Upgrade(t *testing.T) {
 			dryRun: true,
 		},
 		{
-			name:  "lib doesn't exist",
-			isErr: true,
+			name:      "lib doesn't exist",
+			stageFile: "app010_app.yaml",
+			isErr:     true,
 			init: func(t *testing.T, a *app.App010) upgrader {
 				return newUpgrade010(a, &b, &defaultPM)
 			},
 		},
 		{
-			name: "vendored packages need to be upgraded",
+			name:      "vendored packages need to be upgraded",
+			stageFile: "app010_app.yaml",
 			init: func(t *testing.T, a *app.App010) upgrader {
 				err := a.Fs().MkdirAll("/lib", app.DefaultFolderPermissions)
 				require.NoError(t, err)
@@ -163,7 +172,8 @@ func TestApp010_Upgrade(t *testing.T) {
 			dryRun: false,
 		},
 		{
-			name: "unversion packages are untouched",
+			name:      "unversioned packages are untouched",
+			stageFile: "app010_app.yaml",
 			init: func(t *testing.T, a *app.App010) upgrader {
 				err := a.Fs().MkdirAll("/lib", app.DefaultFolderPermissions)
 				require.NoError(t, err)
@@ -185,11 +195,29 @@ func TestApp010_Upgrade(t *testing.T) {
 			},
 			dryRun: false,
 		},
+		{
+			name:      "environment targets are upgraded",
+			stageFile: "app010_env_targets.yaml",
+			init: func(t *testing.T, a *app.App010) upgrader {
+				err := a.Fs().MkdirAll("/lib", app.DefaultFolderPermissions)
+				require.NoError(t, err)
+
+				p := filepath.Join(a.Root(), "lib", "ksonnet-lib", "v1.10.3")
+				err = a.Fs().MkdirAll(p, app.DefaultFolderPermissions)
+				require.NoError(t, err)
+
+				return newUpgrade010(a, &b, &defaultPM)
+			},
+			checkUpgrade: func(t *testing.T, a *app.App010) {
+				test.AssertContents(t, a.Fs(), "app020_env_targets.yaml", "/app.yaml")
+			},
+			dryRun: false,
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			withApp010Fs(t, "app010_app.yaml", func(a *app.App010) {
+			withApp010Fs(t, tc.stageFile, func(a *app.App010) {
 				var u upgrader
 				if tc.init != nil {
 					u = tc.init(t, a)
@@ -210,6 +238,102 @@ func TestApp010_Upgrade(t *testing.T) {
 				}
 				b.Reset()
 			})
+		})
+	}
+}
+
+func Test_upgrade010_upgradeEnvTargets(t *testing.T) {
+	makeApp := func(targets map[string][]string) *amocks.App {
+		envs := make(app.EnvironmentConfigs)
+		for name, t := range targets {
+			tCopy := make([]string, len(t))
+			copy(tCopy, t)
+			envs[name] = &app.EnvironmentConfig{
+				Name:    name,
+				Targets: tCopy,
+			}
+		}
+
+		var a = new(amocks.App)
+		a.On("Environments").Return(func() app.EnvironmentConfigs {
+			return envs
+		}, nil)
+		a.On("UpdateTargets", mock.Anything, mock.Anything).Return(func(name string, targets []string) error {
+			tCopy := make([]string, len(targets))
+			copy(tCopy, targets)
+			e, ok := envs[name]
+			if !ok {
+				return errors.Errorf("unknown environment: %s", name)
+			}
+			e.Targets = tCopy
+			return nil
+		})
+
+		return a
+	}
+
+	tests := []struct {
+		name         string
+		targets      map[string][]string
+		expected     map[string][]string
+		dryRun       bool
+		expectUpdate bool
+		wantErr      bool
+	}{
+		{
+			name: "nothing to upgrade",
+			targets: map[string][]string{
+				"default": []string{"/", "module_a", "module_b"},
+			},
+			expected: map[string][]string{
+				"default": []string{"/", "module_a", "module_b"},
+			},
+			expectUpdate: false,
+		},
+		{
+			name: "need to upgrade",
+			targets: map[string][]string{
+				"default": []string{"/", "prefix/module_b", "prefix/module/module_b"},
+				"stage":   []string{"prefix/module_b", "/"},
+			},
+			expected: map[string][]string{
+				"default": []string{"/", "prefix.module_b", "prefix.module.module_b"},
+				"stage":   []string{"prefix.module_b", "/"},
+			},
+			expectUpdate: true,
+		},
+		{
+			name: "dry run",
+			targets: map[string][]string{
+				"default": []string{"/", "module/module_a", "prefix/module/module_b"},
+			},
+			expected: map[string][]string{
+				"default": []string{"/", "module/module_a", "prefix/module/module_b"},
+			},
+			dryRun:       true,
+			expectUpdate: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var u = new(upgrade010)
+			a := makeApp(tt.targets)
+
+			if err := u.upgradeEnvTargets(a, tt.dryRun); (err != nil) != tt.wantErr {
+				t.Errorf("upgrade010.upgradeEnvTargets() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if !tt.expectUpdate {
+				a.AssertNotCalled(t, "UpdateTargets", mock.Anything, mock.Anything)
+				return
+			}
+
+			a.AssertExpectations(t)
+			updated, err := a.Environments()
+			require.NoError(t, err)
+			for name, targets := range tt.expected {
+				assert.Equal(t, targets, updated[name].Targets, "targets for %s", name)
+			}
 		})
 	}
 }
