@@ -29,8 +29,8 @@ func PatchJSON(jsonObject, patch, patchName string) (string, error) {
 
 var snippetMergeComponentPatch = `
 function(target, patch, patchName)
-	if std.objectHas(patch.components, patchName) then
-		std.mergePatch(target, patch.components[patchName])
-	else
-		target
+  if std.objectHas(patch, 'components') && std.objectHas(patch.components, patchName) then
+    std.mergePatch(target, patch.components[patchName])
+  else
+    target
 `

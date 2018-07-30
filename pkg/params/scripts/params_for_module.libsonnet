@@ -41,5 +41,7 @@ function(moduleName, input)
 
    local a = fn(moduleName, input);
 
-   std.foldl(foldFn, a, {})
+   local init = {components: {}};
+
+   std.foldl(foldFn, a, init)
 
