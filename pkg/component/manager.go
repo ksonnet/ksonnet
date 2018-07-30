@@ -65,7 +65,7 @@ var (
 
 // Manager is an interface for interacting with components.
 type Manager interface {
-	Components(ns Module) ([]Component, error)
+	Components(ksApp app.App, module string) ([]Component, error)
 	Component(ksApp app.App, module, componentName string) (Component, error)
 	CreateModule(ksApp app.App, name string) error
 	Module(ksApp app.App, moduleName string) (Module, error)
@@ -84,8 +84,32 @@ func (dm *defaultManager) Module(ksApp app.App, module string) (Module, error) {
 	return GetModule(ksApp, module)
 }
 
-func (dm *defaultManager) Components(ns Module) ([]Component, error) {
-	return ns.Components()
+// Components returns components for the specified module, or all modules if module == ""
+func (dm *defaultManager) Components(ksApp app.App, module string) ([]Component, error) {
+	if module != "" {
+		m, err := dm.Module(ksApp, module)
+		if err != nil {
+			return nil, err
+		}
+		return m.Components()
+	}
+
+	modules, err := dm.Modules(ksApp, "")
+	if err != nil {
+		return nil, errors.Wrap(err, "fetching modules")
+	}
+
+	result := make([]Component, 0, len(modules))
+	for _, m := range modules {
+		components, err := m.Components()
+		if err != nil {
+			return nil, errors.Wrapf(err, "fetching components for module: %s", m.Name())
+		}
+		for _, c := range components {
+			result = append(result, c)
+		}
+	}
+	return result, nil
 }
 
 func (dm *defaultManager) Component(ksApp app.App, module, componentName string) (Component, error) {

@@ -68,13 +68,12 @@ func TestPipeline_Components(t *testing.T) {
 		cpnt := &cmocks.Component{}
 		components := []component.Component{cpnt}
 
-		ns := component.NewModule(p.app, "/")
-		namespaces := []component.Module{ns}
-		m.On("Modules", p.app, "default").Return(namespaces, nil)
-		m.On("Module", p.app, "/").Return(ns, nil)
-		m.On("NSResolveParams", ns).Return("", nil)
+		module := component.NewModule(p.app, "/")
+		modules := []component.Module{module}
+		m.On("Modules", p.app, "default").Return(modules, nil)
+		m.On("Module", p.app, "/").Return(module, nil)
 		a.On("EnvironmentParams", "default").Return("{}", nil)
-		m.On("Components", ns).Return(components, nil)
+		m.On("Components", p.app, "/").Return(components, nil)
 
 		got, err := p.Components(nil)
 		require.NoError(t, err)
@@ -96,13 +95,12 @@ func TestPipeline_Components_filtered(t *testing.T) {
 		cpnt2 := mockComponent("cpnt2")
 		components := []component.Component{cpnt1, cpnt2}
 
-		ns := component.NewModule(p.app, "/")
-		namespaces := []component.Module{ns}
-		m.On("Modules", p.app, "default").Return(namespaces, nil)
-		m.On("Module", p.app, "/").Return(ns, nil)
-		m.On("NSResolveParams", ns).Return("", nil)
+		module := component.NewModule(p.app, "/")
+		modules := []component.Module{module}
+		m.On("Modules", p.app, "default").Return(modules, nil)
+		m.On("Module", p.app, "/").Return(module, nil)
 		a.On("EnvironmentParams", "default").Return("{}", nil)
-		m.On("Components", ns).Return(components, nil)
+		m.On("Components", p.app, "/").Return(components, nil)
 
 		got, err := p.Components([]string{"cpnt1"})
 		require.NoError(t, err)
@@ -149,7 +147,6 @@ func TestPipeline_Objects(t *testing.T) {
 		modules := []component.Module{module}
 		m.On("Modules", p.app, "default").Return(modules, nil)
 		m.On("Module", p.app, "/").Return(module, nil)
-		m.On("NSResolveParams", module).Return("", nil)
 		a.On("EnvironmentParams", "default").Return("{}", nil)
 
 		env := &app.EnvironmentConfig{Path: "default"}

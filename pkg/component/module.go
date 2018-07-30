@@ -340,6 +340,7 @@ func (m *FilesystemModule) readParams() (string, error) {
 }
 
 // ModulesFromEnv returns all modules given an environment.
+// If environment == "", all modules (globally) are returned.
 func ModulesFromEnv(a app.App, env string) ([]Module, error) {
 	paths, err := MakePaths(a, env)
 	if err != nil {

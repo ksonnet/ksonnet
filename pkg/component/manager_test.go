@@ -16,6 +16,7 @@
 package component
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/ksonnet/ksonnet/pkg/app/mocks"
@@ -109,6 +110,74 @@ func Test_ResolvePath(t *testing.T) {
 
 				assert.Equal(t, tc.expectedModule, m.Name())
 			})
+		}
+	})
+}
+
+func Test_defaultManager_Components(t *testing.T) {
+	mgr := &defaultManager{}
+	cases := []struct {
+		name               string
+		module             string
+		expectedComponents []string
+		isErr              bool
+	}{
+		{
+			name:               "module: unknown",
+			module:             "unknown",
+			expectedComponents: []string{},
+			isErr:              true,
+		},
+		{
+			name:               "module: /",
+			module:             "/",
+			expectedComponents: []string{"deployment"},
+			isErr:              false,
+		},
+		{
+			name:               "module: nested",
+			module:             "nested",
+			expectedComponents: []string{"nested.deployment"},
+			isErr:              false,
+		},
+		{
+			name:               "module: nested.deeper",
+			module:             "nested.deeper",
+			expectedComponents: []string{"nested.deeper.deployment"},
+			isErr:              false,
+		},
+		{
+			name:               "all components",
+			module:             "",
+			expectedComponents: []string{"deployment", "nested.deeper.deployment", "nested.deployment"},
+			isErr:              false,
+		},
+	}
+
+	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+
+		test.StageFile(t, fs, "params-mixed.libsonnet", "/app/components/params.libsonnet")
+		test.StageFile(t, fs, "deployment.yaml", "/app/components/deployment.yaml")
+		test.StageFile(t, fs, "params-mixed.libsonnet", "/app/components/nested/params.libsonnet")
+		test.StageFile(t, fs, "deployment.yaml", "/app/components/nested/deployment.yaml")
+		test.StageFile(t, fs, "params-mixed.libsonnet", "/app/components/nested/deeper/params.libsonnet")
+		test.StageFile(t, fs, "deployment.yaml", "/app/components/nested/deeper/deployment.yaml")
+
+		for _, tc := range cases {
+			actual, err := mgr.Components(a, tc.module)
+			if tc.isErr {
+				require.Error(t, err, tc.name)
+				continue
+			}
+			require.NoError(t, err, tc.name)
+
+			actualNames := make([]string, len(actual))
+			for i := range actual {
+				actualNames[i] = actual[i].Name(true)
+			}
+			sort.Strings(actualNames)
+
+			assert.Equal(t, tc.expectedComponents, actualNames, tc.name)
 		}
 	})
 }
