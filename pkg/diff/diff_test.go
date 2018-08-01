@@ -22,10 +22,10 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/ghodss/yaml"
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/client"
-	"github.com/ksonnet/ksonnet/pkg/cluster"
 	"github.com/ksonnet/ksonnet/pkg/util/test"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
@@ -77,23 +77,40 @@ func TestDiffer(t *testing.T) {
 
 func Test_yamlLocal(t *testing.T) {
 	cases := []struct {
-		name   string
-		showFn func(c cluster.ShowConfig, opts ...cluster.ShowOpts) error
-		isErr  bool
+		name             string
+		collectObjectsFn func(a app.App, envName string, componentNames []string) ([]*unstructured.Unstructured, error)
+		showFn           func(io.Writer, []*unstructured.Unstructured) error
+		expected         string
+		isErr            bool
 	}{
 		{
 			name: "in general",
-			showFn: func(c cluster.ShowConfig, opts ...cluster.ShowOpts) error {
-				fmt.Fprint(c.Out, "output")
+			collectObjectsFn: func(a app.App, envName string, componentNames []string) ([]*unstructured.Unstructured, error) {
+				return nil, nil
+			},
+			showFn: func(w io.Writer, objects []*unstructured.Unstructured) error {
+				fmt.Fprint(w, "output")
 				return nil
 			},
+			expected: "output",
 		},
 		{
 			name: "show failed",
-			showFn: func(c cluster.ShowConfig, opts ...cluster.ShowOpts) error {
+			collectObjectsFn: func(a app.App, envName string, componentNames []string) ([]*unstructured.Unstructured, error) {
+				return nil, nil
+			},
+			showFn: func(w io.Writer, objects []*unstructured.Unstructured) error {
 				return errors.New("fail")
 			},
 			isErr: true,
+		},
+		{
+			name: "sorted",
+			collectObjectsFn: func(a app.App, envName string, componentNames []string) ([]*unstructured.Unstructured, error) {
+				return genObjects(), nil
+			},
+			showFn:   showYAML,
+			expected: sortedYAML,
 		},
 	}
 
@@ -104,6 +121,7 @@ func Test_yamlLocal(t *testing.T) {
 
 				yl := newYamlLocal(appMock)
 
+				yl.collectObjectsFn = tc.collectObjectsFn
 				yl.showFn = tc.showFn
 
 				rs, err := yl.Generate(location, []string{})
@@ -116,7 +134,7 @@ func Test_yamlLocal(t *testing.T) {
 				b, err := ioutil.ReadAll(rs)
 				require.NoError(t, err)
 
-				require.Equal(t, "output", string(b))
+				require.Equal(t, tc.expected, string(b))
 			})
 		})
 	}
@@ -138,6 +156,7 @@ func Test_yamlRemote(t *testing.T) {
 		appSetup  func(a *mocks.App)
 		collectFn func(namespace string, config clientcmd.ClientConfig, components []string) ([]*unstructured.Unstructured, error)
 		showFn    func(w io.Writer, objects []*unstructured.Unstructured) error
+		expected  string
 		isErr     bool
 	}{
 		{
@@ -150,8 +169,8 @@ func Test_yamlRemote(t *testing.T) {
 				fmt.Fprintf(w, "output")
 				return nil
 			},
+			expected: "output",
 		},
-
 		{
 			name: "invalid environment",
 			appSetup: func(a *mocks.App) {
@@ -159,7 +178,6 @@ func Test_yamlRemote(t *testing.T) {
 			},
 			isErr: true,
 		},
-
 		{
 			name:     "collect objects failed",
 			appSetup: validAppSetup,
@@ -168,7 +186,6 @@ func Test_yamlRemote(t *testing.T) {
 			},
 			isErr: true,
 		},
-
 		{
 			name:     "show failed",
 			appSetup: validAppSetup,
@@ -179,6 +196,15 @@ func Test_yamlRemote(t *testing.T) {
 				return errors.New("fail")
 			},
 			isErr: true,
+		},
+		{
+			name:     "sorted",
+			appSetup: validAppSetup,
+			collectFn: func(namespace string, config clientcmd.ClientConfig, components []string) ([]*unstructured.Unstructured, error) {
+				return genObjects(), nil
+			},
+			showFn:   showYAML,
+			expected: sortedYAML,
 		},
 	}
 
@@ -205,8 +231,137 @@ func Test_yamlRemote(t *testing.T) {
 				b, err := ioutil.ReadAll(rs)
 				require.NoError(t, err)
 
-				require.Equal(t, "output", string(b))
+				require.Equal(t, tc.expected, string(b))
 			})
 		})
 	}
 }
+
+func showYAML(out io.Writer, objects []*unstructured.Unstructured) error {
+	for _, obj := range objects {
+		fmt.Fprintln(out, "---")
+		buf, err := yaml.Marshal(obj)
+		if err != nil {
+			return err
+		}
+		_, err = out.Write(buf)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func genObjects() []*unstructured.Unstructured {
+	return []*unstructured.Unstructured{
+		&unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": "apps/v1",
+				"kind":       "Deployment",
+				"metadata": map[string]interface{}{
+					"name":      "deploymentZ",
+					"namespace": "default",
+					"annotations": map[string]interface{}{
+						"app": "Z",
+					},
+				},
+			},
+		},
+		&unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": "v1",
+				"kind":       "Service",
+				"metadata": map[string]interface{}{
+					"name":      "serviceA",
+					"namespace": "default",
+				},
+			},
+		},
+		&unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": "apps/v1",
+				"kind":       "Deployment",
+				"metadata": map[string]interface{}{
+					"name":      "deploymentA",
+					"namespace": "default",
+					"annotations": map[string]interface{}{
+						"app": "Z",
+					},
+				},
+			},
+		},
+		&unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": "v1",
+				"kind":       "Pod",
+				"metadata": map[string]interface{}{
+					"namespace":    "default",
+					"generateName": "podZ",
+				},
+			},
+		},
+		&unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": "v1",
+				"kind":       "Pod",
+				"metadata": map[string]interface{}{
+					"namespace":    "a-before-d",
+					"generateName": "podA",
+				},
+			},
+		},
+		&unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": "v1",
+				"kind":       "Pod",
+				"metadata": map[string]interface{}{
+					"namespace":    "default",
+					"generateName": "podA",
+				},
+			},
+		},
+	}
+}
+
+var sortedYAML = `---
+apiVersion: v1
+kind: Pod
+metadata:
+  generateName: podA
+  namespace: a-before-d
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  generateName: podA
+  namespace: default
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  generateName: podZ
+  namespace: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: serviceA
+  namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    app: Z
+  name: deploymentA
+  namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    app: Z
+  name: deploymentZ
+  namespace: default
+`
