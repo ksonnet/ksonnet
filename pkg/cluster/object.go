@@ -17,16 +17,16 @@ package cluster
 
 import (
 	"encoding/json"
-	"fmt"
-	"strings"
 
 	clustermetadata "github.com/ksonnet/ksonnet/pkg/metadata"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/clientcmd"
-	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
+	"k8s.io/client-go/discovery"
 	"k8s.io/kubernetes/pkg/kubectl/resource"
 )
 
@@ -50,28 +50,90 @@ func SetMetaDataAnnotation(obj metav1.Object, key, value string) {
 	obj.SetAnnotations(a)
 }
 
+// Resoucetypes to exclude when fetching managed objects
+var unmanagedKinds = map[string]bool{
+	"ComponentStatus": true,
+	"Endpoints":       true,
+}
+
 // DefaultResourceInfo fetches objects from the cluster.
-func DefaultResourceInfo(namespace string, config clientcmd.ClientConfig, components []string) *resource.Result {
-	factory := kcmdutil.NewFactory(config)
-
-	f := factory.NewBuilder().
-		Unstructured().
-		NamespaceParam(namespace).
-		ExportParam(false).
-		ResourceTypeOrNameArgs(true, "all").
-		LabelSelectorParam("app.kubernetes.io/deploy-manager=ksonnet").
-		ContinueOnError().
-		Flatten().
-		IncludeUninitialized(false).
-		RequireObject(true).
-		Latest()
-
-	if len(components) > 0 {
-		selector := fmt.Sprintf("%s in (%s)", clustermetadata.LabelComponent, strings.Join(components, ","))
-		f = f.LabelSelectorParam(selector)
+func fetchManagedObjects(namespace string, clients Clients, components []string) ([]*unstructured.Unstructured, error) {
+	log := log.WithFields(log.Fields{
+		"action":    "fetchManagedObjects",
+		"namespace": namespace,
+	})
+	if clients.discovery == nil {
+		return nil, errors.New("nil discovery client")
+	}
+	if clients.clientPool == nil {
+		return nil, errors.New("nil client pool")
 	}
 
-	return f.Do()
+	// TODO address cluster-wide-resources defined in other environments (see ServerPreferredResources)
+	resources, err := clients.discovery.ServerPreferredNamespacedResources()
+	if err != nil {
+		return nil, errors.Wrap(err, "ServerPreferredNamespacedResources")
+	}
+	sortResources(resources) // Sift "extensions" to the end because it duplicates resources, e.g. Deployments
+
+	// Filter out resources we can't list
+	filtered := discovery.FilteredBy(
+		discovery.ResourcePredicateFunc(
+			func(groupVersion string, r *metav1.APIResource) bool {
+				return (!unmanagedKinds[r.Kind]) &&
+					discovery.SupportsAllVerbs{Verbs: []string{"list", "get"}}.Match(groupVersion, r)
+			},
+		),
+		resources,
+	)
+
+	uids := make(map[types.UID]bool)
+	results := make([]*unstructured.Unstructured, 0)
+
+	for _, lst := range filtered {
+		gv, err := schema.ParseGroupVersion(lst.GroupVersion)
+		if err != nil {
+			return nil, errors.Wrapf(err, "parsing GroupVersion: %s", lst.GroupVersion)
+		}
+
+		for _, resource := range lst.APIResources {
+			// Create a dynamic client for this resource type
+			gvr := gv.WithKind(resource.Kind)
+			dynamic, err := clients.clientPool.ClientForGroupVersionKind(gvr)
+			log.Debugf("listing resources: %s", gvr.String())
+			if err != nil {
+				return nil, errors.Wrapf(err, "creating client for resource: %s", gvr.String())
+			}
+			resourceClient := dynamic.Resource(&resource, namespace)
+
+			// List managed resources of this type from the cluster
+			obj, err := resourceClient.List(metav1.ListOptions{
+				LabelSelector: "app.kubernetes.io/deploy-manager=ksonnet",
+			})
+			if err != nil {
+				log.Warnf("skipping %s due to error: %v", resource.Kind, err)
+				continue
+			}
+
+			if ul, ok := obj.(*unstructured.UnstructuredList); ok {
+				if err := ul.EachListItem(func(o runtime.Object) error {
+					if u, ok := o.(*unstructured.Unstructured); ok {
+						// Filter out duplicates, e.g apps/v1/Deployment vs. extensions/v1beta1/Deployment
+						if uids[u.GetUID()] {
+							return nil
+						}
+
+						uids[u.GetUID()] = true
+						results = append(results, u)
+					}
+					return nil
+				}); err != nil {
+					return nil, errors.Wrapf(err, "iterating %s", resource.Kind)
+				}
+			}
+		}
+	}
+	return results, nil
 }
 
 // ResourceInfo holds information about cluster resources.
@@ -82,36 +144,6 @@ type ResourceInfo interface {
 
 var _ ResourceInfo = (*resource.Result)(nil)
 
-// ManagedObjects returns a slice of ksonnet managed objects.
-func ManagedObjects(r ResourceInfo) ([]*unstructured.Unstructured, error) {
-	if err := r.Err(); err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	infos, err := r.Infos()
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	lookup := make(map[types.UID]map[string]interface{})
-
-	var objects []*unstructured.Unstructured
-
-	for i := range infos {
-		if obj, ok := infos[i].Object.(*unstructured.Unstructured); ok {
-			if _, ok := lookup[obj.GetUID()]; ok {
-				// we've seen this object already
-				continue
-			}
-
-			lookup[obj.GetUID()] = obj.Object
-			objects = append(objects, obj)
-		}
-	}
-
-	return objects, nil
-}
-
 // RebuildObject rebuilds the ksonnet generated object from an object on
 // the cluster.
 func RebuildObject(m map[string]interface{}) (map[string]interface{}, error) {
@@ -121,7 +153,7 @@ func RebuildObject(m map[string]interface{}) (map[string]interface{}, error) {
 	}
 	annotations, ok := metadata["annotations"].(map[string]interface{})
 	if !ok {
-		return nil, errors.New("metadata annotations not found")
+		return nil, errors.Errorf("metadata annotations not found: %v", metadata)
 	}
 	descriptor, ok := annotations[clustermetadata.AnnotationManaged].(string)
 	if !ok {
@@ -136,10 +168,30 @@ func RebuildObject(m map[string]interface{}) (map[string]interface{}, error) {
 	return mm.Decode()
 }
 
+// filterManagedObjects filters out any non-managed objects according to their labels
+func filterManagedObjects(objects []*unstructured.Unstructured) []*unstructured.Unstructured {
+	// see Filtering without allocating - https://github.com/golang/go/wiki/SliceTricks#filtering-without-allocating
+	filtered := objects[:0]
+	for _, o := range objects {
+		labels := o.GetLabels()
+		if labels == nil {
+			continue
+		}
+		if labels["app.kubernetes.io/deploy-manager"] == "ksonnet" {
+			filtered = append(filtered, o)
+		}
+	}
+
+	return filtered
+}
+
 // CollectObjects collects objects in a cluster namespace.
-func CollectObjects(namespace string, config clientcmd.ClientConfig, components []string) ([]*unstructured.Unstructured, error) {
-	res := DefaultResourceInfo(namespace, config, components)
-	objects, err := ManagedObjects(res)
+func CollectObjects(namespace string, clients Clients, components []string) ([]*unstructured.Unstructured, error) {
+	objects, err := fetchManagedObjects(namespace, clients, components)
+	if err != nil {
+		return nil, err
+	}
+	objects = filterManagedObjects(objects)
 	if err != nil {
 		return nil, err
 	}

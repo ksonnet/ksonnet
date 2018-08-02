@@ -21,10 +21,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/types"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -147,71 +145,6 @@ func TestSetMetadataAnnotation(t *testing.T) {
 	}
 }
 
-func TestManagedObjects(t *testing.T) {
-	obj1 := &unstructured.Unstructured{}
-	obj1.SetUID(types.UID("uid"))
-
-	obj2 := &unstructured.Unstructured{}
-	obj2.SetUID(types.UID("uid"))
-
-	obj3 := &unstructured.Unstructured{}
-	obj3.SetUID(types.UID("uid2"))
-
-	cases := []struct {
-		name         string
-		resourceInfo ResourceInfo
-		expected     []*unstructured.Unstructured
-		isErr        bool
-	}{
-		{
-			name: "no error",
-			resourceInfo: func() *fakeResourceInfo {
-				return &fakeResourceInfo{
-					infos: []*resource.Info{
-						{Object: obj1},
-						{Object: obj2},
-						{Object: obj3},
-					},
-				}
-			}(),
-			expected: []*unstructured.Unstructured{obj1, obj3},
-		},
-
-		{
-			name: "resource info error",
-			resourceInfo: func() *fakeResourceInfo {
-				return &fakeResourceInfo{
-					err: errors.New("error"),
-				}
-			}(),
-			isErr: true,
-		},
-
-		{
-			name: "infos error",
-			resourceInfo: func() *fakeResourceInfo {
-				return &fakeResourceInfo{
-					infosErr: errors.New("error"),
-				}
-			}(),
-			isErr: true,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			objects, err := ManagedObjects(tc.resourceInfo)
-			if tc.isErr {
-				require.Error(t, err)
-				return
-			}
-
-			require.NoError(t, err)
-			require.Equal(t, tc.expected, objects)
-		})
-	}
-}
-
 type fakeResourceInfo struct {
 	err      error
 	infos    []*resource.Info
@@ -279,12 +212,12 @@ func TestRebuildObject(t *testing.T) {
 	require.Equal(t, expected, got)
 }
 
-func TestDefaultResourceInfo(t *testing.T) {
-	fcc := &fakeClientConfig{}
-	res := DefaultResourceInfo("default", fcc, []string{})
+func Test_fetchManagedObjects_Fail(t *testing.T) {
+	fakeClients := Clients{}
+	_, err := fetchManagedObjects("default", fakeClients, []string{})
 
 	// NOTE: yes this errors.
-	require.Error(t, res.Err())
+	require.Error(t, err)
 }
 
 type fakeClientConfig struct{}

@@ -28,7 +28,7 @@ import (
 )
 
 func Test_newResourceClient(t *testing.T) {
-	aOpts := clientOpts{}
+	aOpts := Clients{}
 	aObject := &unstructured.Unstructured{}
 
 	mockDI := &mockDynamicInterface{}
@@ -101,7 +101,7 @@ func Test_resourceClient_Patch(t *testing.T) {
 }
 
 func withMockResourceClient(t *testing.T, fn func(rc *resourceClient, di *mockDynamicInterface, ob *unstructured.Unstructured)) {
-	aOpts := clientOpts{}
+	aOpts := Clients{}
 	aObject := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"metadata": map[string]interface{}{

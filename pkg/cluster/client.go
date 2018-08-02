@@ -16,6 +16,8 @@
 package cluster
 
 import (
+	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/ksonnet/ksonnet/pkg/client"
 	"github.com/ksonnet/ksonnet/utils"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,7 +42,8 @@ type ResourceClient interface {
 	Patch(pt types.PatchType, data []byte) (*unstructured.Unstructured, error)
 }
 
-type clientOpts struct {
+// Clients is a tuple of Kubernetes clients: dynamic.ClientPool, discovery.DiscoveryInterface.
+type Clients struct {
 	clientPool dynamic.ClientPool
 	discovery  discovery.DiscoveryInterface
 	namespace  string
@@ -49,22 +52,22 @@ type clientOpts struct {
 type resourceClientOpt func(*resourceClient)
 
 type resourceClient struct {
-	object *unstructured.Unstructured
-	opts   clientOpts
-	c      dynamic.ResourceInterface
+	object  *unstructured.Unstructured
+	clients Clients
+	c       dynamic.ResourceInterface
 }
 
 var _ ResourceClient = (*resourceClient)(nil)
 
-func newResourceClient(opts clientOpts, object runtime.Object, rcOpts ...resourceClientOpt) (*resourceClient, error) {
+func newResourceClient(clients Clients, object runtime.Object, rcOpts ...resourceClientOpt) (*resourceClient, error) {
 	o, ok := object.(*unstructured.Unstructured)
 	if !ok {
 		return nil, errors.Errorf("unsupported runtime object type %T", object)
 	}
 
 	rc := &resourceClient{
-		object: o,
-		opts:   opts,
+		object:  o,
+		clients: clients,
 	}
 
 	for _, opt := range rcOpts {
@@ -72,7 +75,7 @@ func newResourceClient(opts clientOpts, object runtime.Object, rcOpts ...resourc
 	}
 
 	if rc.c == nil {
-		c, err := utils.ClientForResource(opts.clientPool, opts.discovery, object, opts.namespace)
+		c, err := utils.ClientForResource(clients.clientPool, clients.discovery, object, clients.namespace)
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +86,7 @@ func newResourceClient(opts clientOpts, object runtime.Object, rcOpts ...resourc
 	return rc, nil
 }
 
-func resourceClientFactory(opts clientOpts, object runtime.Object) (ResourceClient, error) {
+func resourceClientFactory(opts Clients, object runtime.Object) (ResourceClient, error) {
 	return newResourceClient(opts, object)
 }
 
@@ -104,4 +107,18 @@ func (c *resourceClient) Get(options metav1.GetOptions) (*unstructured.Unstructu
 func (c *resourceClient) Patch(pt types.PatchType, data []byte) (*unstructured.Unstructured, error) {
 	name := c.object.GetName()
 	return c.c.Patch(name, pt, data)
+}
+
+// GenClients returns a cluster.Clients structure initialized to the provided environment cluster/namespace
+func GenClients(a app.App, clientConfig *client.Config, envName string) (Clients, error) {
+	clientPool, discovery, namespace, err := clientConfig.RestClient(a, &envName)
+	if err != nil {
+		return Clients{}, err
+	}
+
+	return Clients{
+		clientPool: clientPool,
+		discovery:  discovery,
+		namespace:  namespace,
+	}, nil
 }

@@ -25,7 +25,7 @@ import (
 )
 
 func Test_defaultObjectDescriber_Describe(t *testing.T) {
-	co := clientOpts{}
+	co := Clients{}
 	oi := &fakeObjectInfo{resourceName: "name"}
 
 	od, err := newDefaultObjectDescriber(co, oi)

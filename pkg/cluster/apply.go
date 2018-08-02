@@ -72,7 +72,7 @@ type Apply struct {
 	// these make it easier to test Apply.
 	findObjectsFn         findObjectsFn
 	resourceClientFactory resourceClientFactoryFn
-	clientOpts            *clientOpts
+	clientOpts            *Clients
 	objectInfo            ObjectInfo
 	ksonnetObjectFactory  func() ksonnetObject
 	upserterFactory       func() Upserter
@@ -102,7 +102,7 @@ func RunApply(config ApplyConfig, opts ...ApplyOpts) error {
 	}
 
 	if a.clientOpts == nil {
-		co, err := genClientOpts(a.App, a.ClientConfig, a.EnvName)
+		co, err := GenClients(a.App, a.ClientConfig, a.EnvName)
 		if err != nil {
 			return err
 		}
@@ -278,17 +278,4 @@ func (a *Apply) dryRunText() string {
 	}
 
 	return text
-}
-
-func genClientOpts(a app.App, clientConfig *client.Config, envName string) (clientOpts, error) {
-	clientPool, discovery, namespace, err := clientConfig.RestClient(a, &envName)
-	if err != nil {
-		return clientOpts{}, err
-	}
-
-	return clientOpts{
-		clientPool: clientPool,
-		discovery:  discovery,
-		namespace:  namespace,
-	}, nil
 }
