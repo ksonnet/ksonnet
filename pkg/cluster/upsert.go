@@ -38,7 +38,7 @@ type defaultUpserter struct {
 	ApplyConfig
 
 	// clientOpts are Kubernetes client options.
-	clientOpts clientOpts
+	clientOpts Clients
 
 	// objectInfo is the utility for location information about objects.
 	objectInfo ObjectInfo
@@ -53,7 +53,7 @@ type defaultUpserter struct {
 var _ Upserter = (*defaultUpserter)(nil)
 
 // newDefaultUpserter creates an instance of defaultUpserter.
-func newDefaultUpserter(ac ApplyConfig, oi ObjectInfo, co clientOpts, rfc resourceClientFactoryFn) (*defaultUpserter, error) {
+func newDefaultUpserter(ac ApplyConfig, oi ObjectInfo, co Clients, rfc resourceClientFactoryFn) (*defaultUpserter, error) {
 	describer, err := newDefaultObjectDescriber(co, oi)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating object describer")
@@ -114,7 +114,7 @@ func (u *defaultUpserter) updateObject(rc ResourceClient, obj *unstructured.Unst
 }
 
 // createObject attempts to create an object in the cluster.
-func (u *defaultUpserter) createObject(co clientOpts, rc ResourceClient, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+func (u *defaultUpserter) createObject(co Clients, rc ResourceClient, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	newObj, err := rc.Create()
 	log.Debugf("Create(%s) returned (%v, %v)", obj.GetName(), newObj, err)
 

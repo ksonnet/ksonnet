@@ -56,7 +56,7 @@ func RunDelete(config DeleteConfig, opts ...DeleteOpts) error {
 	d := &Delete{
 		DeleteConfig:          config,
 		findObjectsFn:         findObjects,
-		genClientOptsFn:       genClientOpts,
+		genClientOptsFn:       GenClients,
 		resourceClientFactory: resourceClientFactory,
 		objectInfo:            &objectInfo{},
 	}

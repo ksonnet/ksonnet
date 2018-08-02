@@ -25,7 +25,7 @@ import (
 // ksonnetObject can merge an object with its cluster state. This is required because
 // some fields will be overwritten if applied again (e.g. Server NodePort).
 type ksonnetObject interface {
-	MergeFromCluster(co clientOpts, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
+	MergeFromCluster(co Clients, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
 }
 
 type defaultKsonnetObject struct {
@@ -42,7 +42,7 @@ func newDefaultKsonnetObject(factory cmdutil.Factory) *defaultKsonnetObject {
 	}
 }
 
-func (ko *defaultKsonnetObject) MergeFromCluster(co clientOpts, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+func (ko *defaultKsonnetObject) MergeFromCluster(co Clients, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	mergedObject, err := ko.objectMerger.Merge(co.namespace, obj)
 	if err != nil {
 		cause := errors.Cause(err)

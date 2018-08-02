@@ -32,7 +32,7 @@ type objectDescriber interface {
 // defaultObjectDescriber is the default implementation of objectDescriber.
 type defaultObjectDescriber struct {
 	// clientOpts are Kubernetes client otpions.
-	clientOpts clientOpts
+	clientOpts Clients
 
 	// objectInfo locates information for Kubernetes objects.
 	objectInfo ObjectInfo
@@ -41,7 +41,7 @@ type defaultObjectDescriber struct {
 var _ objectDescriber = (*defaultObjectDescriber)(nil)
 
 // newDefaultObjectDescriber creates an instance of defaultObjectDescriber.
-func newDefaultObjectDescriber(co clientOpts, oi ObjectInfo) (*defaultObjectDescriber, error) {
+func newDefaultObjectDescriber(co Clients, oi ObjectInfo) (*defaultObjectDescriber, error) {
 	if oi == nil {
 		return nil, errors.Errorf("object info is required")
 	}

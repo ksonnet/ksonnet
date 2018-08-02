@@ -34,11 +34,11 @@ import (
 	"k8s.io/client-go/dynamic"
 )
 
-type genClientOptsFn func(a app.App, c *client.Config, envName string) (clientOpts, error)
+type genClientOptsFn func(a app.App, c *client.Config, envName string) (Clients, error)
 
 type clientFactoryFn func(dynamic.ClientPool, discovery.DiscoveryInterface, runtime.Object, string) (dynamic.ResourceInterface, error)
 
-type resourceClientFactoryFn func(opts clientOpts, object runtime.Object) (ResourceClient, error)
+type resourceClientFactoryFn func(opts Clients, object runtime.Object) (ResourceClient, error)
 
 type discoveryFn func(a app.App, clientConfig *client.Config, envName string) (discovery.DiscoveryInterface, error)
 
@@ -47,11 +47,6 @@ type validateObjectFn func(d discovery.DiscoveryInterface,
 
 type findObjectsFn func(a app.App, envName string,
 	componentNames []string) ([]*unstructured.Unstructured, error)
-
-func loadDiscovery(a app.App, clientConfig *client.Config, envName string) (discovery.DiscoveryInterface, error) {
-	_, d, _, err := clientConfig.RestClient(a, &envName)
-	return d, err
-}
 
 func findObjects(a app.App, envName string, componentNames []string) ([]*unstructured.Unstructured, error) {
 	p := pipeline.New(a, envName)
@@ -68,7 +63,7 @@ func stringListContains(list []string, value string) bool {
 }
 
 // func gcDelete(clientpool dynamic.ClientPool, disco discovery.DiscoveryInterface, version *utils.ServerVersion, o runtime.Object) error {
-func gcDelete(options clientOpts, rcFactory resourceClientFactoryFn, version *utils.ServerVersion, o runtime.Object) error {
+func gcDelete(options Clients, rcFactory resourceClientFactoryFn, version *utils.ServerVersion, o runtime.Object) error {
 	obj, err := meta.Accessor(o)
 	if err != nil {
 		return fmt.Errorf("Unexpected object type: %s", err)
@@ -108,7 +103,7 @@ func gcDelete(options clientOpts, rcFactory resourceClientFactoryFn, version *ut
 	return nil
 }
 
-func walkObjects(co clientOpts, listopts metav1.ListOptions, callback func(runtime.Object) error) error {
+func walkObjects(co Clients, listopts metav1.ListOptions, callback func(runtime.Object) error) error {
 	rsrclists, err := co.discovery.ServerResources()
 	if err != nil {
 		return err

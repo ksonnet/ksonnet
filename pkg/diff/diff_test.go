@@ -26,12 +26,12 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/client"
+	"github.com/ksonnet/ksonnet/pkg/cluster"
 	"github.com/ksonnet/ksonnet/pkg/util/test"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 type fakeYamlGenerator struct {
@@ -154,7 +154,7 @@ func Test_yamlRemote(t *testing.T) {
 	cases := []struct {
 		name      string
 		appSetup  func(a *mocks.App)
-		collectFn func(namespace string, config clientcmd.ClientConfig, components []string) ([]*unstructured.Unstructured, error)
+		collectFn func(namespace string, clients cluster.Clients, components []string) ([]*unstructured.Unstructured, error)
 		showFn    func(w io.Writer, objects []*unstructured.Unstructured) error
 		expected  string
 		isErr     bool
@@ -162,7 +162,7 @@ func Test_yamlRemote(t *testing.T) {
 		{
 			name:     "in general",
 			appSetup: validAppSetup,
-			collectFn: func(namespace string, config clientcmd.ClientConfig, components []string) ([]*unstructured.Unstructured, error) {
+			collectFn: func(namespace string, clients cluster.Clients, components []string) ([]*unstructured.Unstructured, error) {
 				return nil, nil
 			},
 			showFn: func(w io.Writer, objects []*unstructured.Unstructured) error {
@@ -181,7 +181,7 @@ func Test_yamlRemote(t *testing.T) {
 		{
 			name:     "collect objects failed",
 			appSetup: validAppSetup,
-			collectFn: func(namespace string, config clientcmd.ClientConfig, components []string) ([]*unstructured.Unstructured, error) {
+			collectFn: func(namespace string, clients cluster.Clients, components []string) ([]*unstructured.Unstructured, error) {
 				return nil, errors.New("fail")
 			},
 			isErr: true,
@@ -189,7 +189,7 @@ func Test_yamlRemote(t *testing.T) {
 		{
 			name:     "show failed",
 			appSetup: validAppSetup,
-			collectFn: func(namespace string, config clientcmd.ClientConfig, components []string) ([]*unstructured.Unstructured, error) {
+			collectFn: func(namespace string, clients cluster.Clients, components []string) ([]*unstructured.Unstructured, error) {
 				return nil, nil
 			},
 			showFn: func(w io.Writer, objects []*unstructured.Unstructured) error {
@@ -200,7 +200,7 @@ func Test_yamlRemote(t *testing.T) {
 		{
 			name:     "sorted",
 			appSetup: validAppSetup,
-			collectFn: func(namespace string, config clientcmd.ClientConfig, components []string) ([]*unstructured.Unstructured, error) {
+			collectFn: func(namespace string, clients cluster.Clients, components []string) ([]*unstructured.Unstructured, error) {
 				return genObjects(), nil
 			},
 			showFn:   showYAML,
@@ -218,6 +218,9 @@ func Test_yamlRemote(t *testing.T) {
 
 				yr.collectObjectsFn = tc.collectFn
 				yr.showFn = tc.showFn
+				yr.genClientsFn = func(a app.App, clientConfig *client.Config, envName string) (cluster.Clients, error) {
+					return cluster.Clients{}, nil
+				}
 
 				location := NewLocation("default")
 

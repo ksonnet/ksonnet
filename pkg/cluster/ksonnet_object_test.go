@@ -85,7 +85,7 @@ func Test_defaultKsonnetObject_MergeFromCluster(t *testing.T) {
 			factory := cmdtesting.NewTestFactory()
 			defer factory.Cleanup()
 
-			co := clientOpts{}
+			co := Clients{}
 
 			ko := newDefaultKsonnetObject(factory)
 			ko.objectMerger = tc.objectMerger
@@ -109,6 +109,6 @@ type fakeKsonnetObject struct {
 
 var _ (ksonnetObject) = (*fakeKsonnetObject)(nil)
 
-func (ko *fakeKsonnetObject) MergeFromCluster(co clientOpts, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+func (ko *fakeKsonnetObject) MergeFromCluster(co Clients, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	return ko.obj, ko.err
 }

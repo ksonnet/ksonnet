@@ -150,10 +150,10 @@ func Test_defaultUpserter_Upsert(t *testing.T) {
 
 			oi := &fakeObjectInfo{resourceName: "name"}
 
-			co := clientOpts{}
+			co := Clients{}
 
 			rc := tc.initResourceClient(t, obj)
-			rfc := func(clientOpts, runtime.Object) (ResourceClient, error) {
+			rfc := func(Clients, runtime.Object) (ResourceClient, error) {
 				return rc, nil
 			}
 

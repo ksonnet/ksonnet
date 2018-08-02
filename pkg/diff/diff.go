@@ -27,7 +27,6 @@ import (
 	godiff "github.com/shazow/go-diff"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // Differ generates the differences between two Locations.
@@ -146,7 +145,8 @@ func (yl *yamlLocal) Generate(location *Location, components []string) (io.ReadS
 type yamlRemote struct {
 	app              app.App
 	config           *client.Config
-	collectObjectsFn func(string, clientcmd.ClientConfig, []string) ([]*unstructured.Unstructured, error)
+	genClientsFn     func(a app.App, clientConfig *client.Config, envName string) (cluster.Clients, error)
+	collectObjectsFn func(string, cluster.Clients, []string) ([]*unstructured.Unstructured, error)
 	showFn           func(io.Writer, []*unstructured.Unstructured) error
 }
 
@@ -154,6 +154,7 @@ func newYamlRemote(a app.App, config *client.Config) *yamlRemote {
 	return &yamlRemote{
 		app:              a,
 		config:           config,
+		genClientsFn:     cluster.GenClients,
 		collectObjectsFn: cluster.CollectObjects,
 		showFn:           cluster.ShowYAML,
 	}
@@ -167,7 +168,13 @@ func (yr *yamlRemote) Generate(location *Location, components []string) (io.Read
 		return nil, err
 	}
 
-	objects, err := yr.collectObjectsFn(environment.Destination.Namespace, yr.config.Config, components)
+	// Create an environment-scoped set of cluster clients
+	clients, err := yr.genClientsFn(yr.app, yr.config, location.EnvName())
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating client for environment: %s", location.EnvName())
+	}
+
+	objects, err := yr.collectObjectsFn(environment.Destination.Namespace, clients, components)
 	if err != nil {
 		return nil, err
 	}

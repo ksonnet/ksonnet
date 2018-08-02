@@ -59,7 +59,7 @@ func Test_Apply(t *testing.T) {
 		setupApp := func(apply *Apply) {
 			obj := &unstructured.Unstructured{Object: genObject()}
 
-			apply.clientOpts = &clientOpts{}
+			apply.clientOpts = &Clients{}
 
 			apply.findObjectsFn = func(a app.App, envName string, componentNames []string) ([]*unstructured.Unstructured, error) {
 				objects := []*unstructured.Unstructured{obj}
@@ -96,7 +96,7 @@ func Test_Apply_dry_run(t *testing.T) {
 		setupApp := func(apply *Apply) {
 			obj := &unstructured.Unstructured{Object: genObject()}
 
-			apply.clientOpts = &clientOpts{}
+			apply.clientOpts = &Clients{}
 
 			apply.findObjectsFn = func(a app.App, envName string, componentNames []string) ([]*unstructured.Unstructured, error) {
 				objects := []*unstructured.Unstructured{obj}
@@ -132,8 +132,8 @@ func Test_Apply_retry_on_conflict(t *testing.T) {
 		setupApp := func(apply *Apply) {
 			obj := &unstructured.Unstructured{Object: genObject()}
 
-			apply.clientOpts = &clientOpts{}
-			apply.resourceClientFactory = func(opts clientOpts, object runtime.Object) (ResourceClient, error) {
+			apply.clientOpts = &Clients{}
+			apply.resourceClientFactory = func(opts Clients, object runtime.Object) (ResourceClient, error) {
 				rc := &mocks.ResourceClient{}
 				rc.On("Get", mock.Anything).Return(obj, nil)
 				return rc, nil
