@@ -22,6 +22,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
 	"github.com/ksonnet/ksonnet/pkg/cluster"
+	"github.com/ksonnet/ksonnet/pkg/pipeline"
 	"github.com/pkg/errors"
 	godiff "github.com/shazow/go-diff"
 	"github.com/sirupsen/logrus"
@@ -106,29 +107,36 @@ type yamlGenerator interface {
 }
 
 type yamlLocal struct {
-	app    app.App
-	showFn func(cluster.ShowConfig, ...cluster.ShowOpts) error
+	app              app.App
+	collectObjectsFn func(a app.App, envName string, componentNames []string) ([]*unstructured.Unstructured, error)
+	showFn           func(io.Writer, []*unstructured.Unstructured) error
 }
 
 func newYamlLocal(a app.App) *yamlLocal {
 	return &yamlLocal{
-		app:    a,
-		showFn: cluster.RunShow,
+		app:              a,
+		collectObjectsFn: localCollectObjects,
+		showFn:           cluster.ShowYAML,
 	}
+}
+
+func localCollectObjects(a app.App, envName string, componentNames []string) ([]*unstructured.Unstructured, error) {
+	p := pipeline.New(a, envName)
+	return p.Objects(componentNames)
 }
 
 func (yl *yamlLocal) Generate(location *Location, components []string) (io.ReadSeeker, error) {
 	var buf bytes.Buffer
 
-	showConfig := cluster.ShowConfig{
-		App:            yl.app,
-		EnvName:        location.EnvName(),
-		Format:         "yaml",
-		Out:            &buf,
-		ComponentNames: components,
+	objects, err := yl.collectObjectsFn(yl.app, location.EnvName(), components)
+	if err != nil {
+		return nil, err
+
 	}
 
-	if err := yl.showFn(showConfig); err != nil {
+	cluster.UnstructuredSlice(objects).Sort()
+
+	if err := yl.showFn(&buf, objects); err != nil {
 		return nil, err
 	}
 
@@ -163,6 +171,8 @@ func (yr *yamlRemote) Generate(location *Location, components []string) (io.Read
 	if err != nil {
 		return nil, err
 	}
+
+	cluster.UnstructuredSlice(objects).Sort()
 
 	if err := yr.showFn(&buf, objects); err != nil {
 		return nil, err

@@ -19,11 +19,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"sort"
 
+	"github.com/ghodss/yaml"
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
-	yaml "gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -68,11 +67,15 @@ func (s *Show) Show() error {
 		return errors.Wrap(err, "find objects")
 	}
 
+	sorted := make([]*unstructured.Unstructured, len(apiObjects))
+	copy(sorted, apiObjects)
+	UnstructuredSlice(sorted).Sort()
+
 	switch s.Format {
 	case "yaml":
-		return s.showYAML(apiObjects)
+		return s.showYAML(sorted)
 	case "json":
-		return s.showJSON(apiObjects)
+		return s.showJSON(sorted)
 	default:
 		return fmt.Errorf("Unknown --format: %s", s.Format)
 	}
@@ -104,29 +107,9 @@ func (s *Show) showJSON(apiObjects []*unstructured.Unstructured) error {
 
 // ShowYAML shows YAML objects.
 func ShowYAML(out io.Writer, apiObjects []*unstructured.Unstructured) error {
-	objects := make([]*unstructured.Unstructured, len(apiObjects))
-	for i := range apiObjects {
-		obj := apiObjects[i]
-		objects[i] = obj.DeepCopy()
-	}
-
-	sortByKind(objects)
-
-	for i := range objects {
-		obj := objects[i]
+	for _, obj := range apiObjects {
 		fmt.Fprintln(out, "---")
-		// Go via json because we need
-		// to trigger the custom scheme
-		// encoding.
-		buf, err := json.Marshal(obj)
-		if err != nil {
-			return err
-		}
-		o := map[string]interface{}{}
-		if err = json.Unmarshal(buf, &o); err != nil {
-			return err
-		}
-		buf, err = yaml.Marshal(o)
+		buf, err := yaml.Marshal(obj)
 		if err != nil {
 			return err
 		}
@@ -137,27 +120,4 @@ func ShowYAML(out io.Writer, apiObjects []*unstructured.Unstructured) error {
 	}
 
 	return nil
-}
-
-// sortByKind sorts objects by their kind/group/version/name
-func sortByKind(apiObjects []*unstructured.Unstructured) {
-	sort.SliceStable(apiObjects, func(i, j int) bool {
-		o1 := apiObjects[i]
-		o2 := apiObjects[j]
-
-		if o1.GroupVersionKind().Kind < o2.GroupVersionKind().Kind {
-			return true
-		}
-
-		if o1.GroupVersionKind().Group < o2.GroupVersionKind().Group {
-			return true
-		}
-
-		if o1.GroupVersionKind().Version < o2.GroupVersionKind().Version {
-			return true
-		}
-
-		return o1.GetName() < o2.GetName()
-	})
-
 }
