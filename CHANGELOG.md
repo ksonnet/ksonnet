@@ -1,15 +1,14 @@
 # Change Log
 
-## [v0.12.0-rc1](https://github.com/ksonnet/ksonnet/tree/v0.12.0-rc1) (2018-7-17)
-[Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.11.0...v0.12.0-rc1)
+## [v0.12.0](https://github.com/ksonnet/ksonnet/tree/v0.12.0) (2018-8-2)
+[Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.11.0...v0.12.0)
 
-ksonnet 0.12-rc1 introduces the following changes:
+ksonnet 0.12.0 introduces the following changes:
 
 **Enhancements:**
 
 * Added Helm Registry support where charts operate as ksonnet parts [\#583](https://github.com/ksonnet/ksonnet/pull/583)
 * Added docker-image target to Makefile for building an image with ks [\#588](https://github.com/ksonnet/ksonnet/pull/588)
-* Updated go-jsonnet version from [dfddf2b](https://github.com/google/go-jsonnet/commit/dfddf2b4e3aec377b0dcdf247ff92e7d078b8179) to [a1964b4](https://github.com/google/go-jsonnet/commit/a1964b49f18919f5aaed17d3c2f6b48a35634b5c) [\#597](https://github.com/ksonnet/ksonnet/pull/597)
 * Added `--installed` flag to `ks pkg list` to show installed packages [\#600](https://github.com/ksonnet/ksonnet/pull/600)
 * Changed location of cached registry manifests [\#604](https://github.com/ksonnet/ksonnet/pull/604)
 * Added `--server` to change Kubernetes server address in an environment [\#612](https://github.com/ksonnet/ksonnet/pull/612)
@@ -27,6 +26,9 @@ ksonnet 0.12-rc1 introduces the following changes:
 * Added support for packages to be installed in an environment with `ks pkg install --env <env> <registry/package>` [\#697](https://github.com/ksonnet/ksonnet/pull/697)
 * Added environment scope for packages with `ks pkg list` [\#727](https://github.com/ksonnet/ksonnet/pull/727)
 * Added a force option to allow re-installing an existing version of a package with `ks pkg install --force` [\#744](https://github.com/ksonnet/ksonnet/pull/744)
+* Updated `ks upgrade` to change environment target separators from `/` to `.` [\#792](https://github.com/ksonnet/ksonnet/pull/792)
+* Change `ks component list` to aggregate components from all modules [\#797](https://github.com/ksonnet/ksonnet/pull/797)
+* Updated go-jsonnet version from [dfddf2b](https://github.com/google/go-jsonnet/commit/dfddf2b4e3aec377b0dcdf247ff92e7d078b8179) to [v0.11.2](https://github.com/google/go-jsonnet/releases/tag/v0.11.2) [\#800](https://github.com/ksonnet/ksonnet/pull/800)
 
 **Bug Fixes:**
 
@@ -36,6 +38,13 @@ ksonnet 0.12-rc1 introduces the following changes:
 * Re-added docker image resolver for setting parameters [\#645](https://github.com/ksonnet/ksonnet/pull/645)
 * Fixed case where `ks apply --dry-run` modified the cluster [\#699](https://github.com/ksonnet/ksonnet/pull/699)
 * Reworked failing end-to-end tests [\#706](https://github.com/ksonnet/ksonnet/pull/706)
+* Fixed error message when passing verbose flag to `ks generate` [\#772](https://github.com/ksonnet/ksonnet/pull/772)
+* Update resource version on retry due to conflict [\#787](https://github.com/ksonnet/ksonnet/pull/787)
+* Fixed case where params are required to render multiple components [\#790](https://github.com/ksonnet/ksonnet/pull/790)
+* Allow removing component in a module with dot notation [\#796](https://github.com/ksonnet/ksonnet/pull/796)
+* Fixed sorting of objects for consistent `ks diff` behavior [\#808](https://github.com/ksonnet/ksonnet/pull/808)
+* Fixed `ks diff` to return all object types [\#811](https://github.com/ksonnet/ksonnet/pull/811)
+* Updated `ks diff` to use environment rather than current context [\#811](https://github.com/ksonnet/ksonnet/pull/811)
 
 ## [v0.11.0](https://github.com/ksonnet/ksonnet/tree/v0.11.0) (2018-6-1)
 [Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.10.2...v0.11.0)
