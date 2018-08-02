@@ -13,6 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+SHELL=/bin/bash
 VERSION?=dev-$(shell date +%FT%T%z)
 KS_BIN?=ks
 
@@ -76,4 +77,8 @@ generate:
 clean:
 	$(RM) ./ks ./docs/cli-reference/ks*.md
 
-.PHONY: all ks test clean vet fmt docs install docker-image
+snapshot:
+	$(shell goreleaser --rm-dist || true)
+	$(shell APIMACHINERY_VER=$(APIMACHINERY_VER) goreleaser --snapshot)
+
+.PHONY: all ks test clean vet fmt docs install docker-image snapshot
