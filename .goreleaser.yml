@@ -2,7 +2,7 @@ project_name: ks
 builds:
   - main: ./cmd/ks/main.go
     binary: ks
-    ldflags: -X main.version={{.Version}}
+    ldflags: -X "main.version={{.Version}}" -X "main.apimachineryVersion={{.Env.APIMACHINERY_VER}}" -X "generator.revision={{.Commit}}"
     goos:
       - linux
       - darwin
@@ -33,3 +33,5 @@ brew:
     email: heptibot@heptio.com
   homepage: "https://ksonnet.io"
   description: "The ksonnet command line utility. Manage and deploy Kubernetes applications."
+snapshot:
+  name_template: SNAPSHOT-{{.Commit}}
