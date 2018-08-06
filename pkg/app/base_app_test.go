@@ -60,15 +60,41 @@ func Test_baseapp_CurrentEnvironment(t *testing.T) {
 }
 
 func Test_baseapp_SetCurrentEnvironment(t *testing.T) {
-	fs := afero.NewMemMapFs()
-	stageFile(t, fs, "app010_app.yaml", "/app.yaml")
-	ba := newBaseApp(fs, "/")
+	cases := []struct {
+		name    string
+		envName string
+		isErr   bool
+	}{
+		{
+			name:    "environment exists",
+			envName: "default",
+		},
+		{
+			name:    "environment does not exist",
+			envName: "invalid",
+			isErr:   true,
+		},
+	}
 
-	err := ba.SetCurrentEnvironment("default")
-	require.NoError(t, err)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+			stageFile(t, fs, "app010_app.yaml", "/app.yaml")
+			ba := newBaseApp(fs, "/")
 
-	current := ba.CurrentEnvironment()
-	assert.Equal(t, "default", current)
+			err := ba.SetCurrentEnvironment(tc.envName)
+			if tc.isErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			current := ba.CurrentEnvironment()
+			assert.Equal(t, tc.envName, current)
+		})
+	}
+
 }
 
 func Test_baseApp_AddRegistry(t *testing.T) {
@@ -164,8 +190,6 @@ func Test_baseApp_UpdateRegistry(t *testing.T) {
 }
 
 func Test_baseApp_UpdateLibrary(t *testing.T) {
-	//func (ba *baseApp) UpdateLib(name string, env string, libSpec *LibraryConfig) error
-
 	tests := []struct {
 		name           string
 		libCfg         LibraryConfig

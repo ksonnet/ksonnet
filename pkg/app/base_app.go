@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	"github.com/ghodss/yaml"
+	stringutils "github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -62,6 +63,20 @@ func (ba *baseApp) CurrentEnvironment() string {
 }
 
 func (ba *baseApp) SetCurrentEnvironment(name string) error {
+	envs, err := ba.Environments()
+	if err != nil {
+		return errors.Wrap(err, "loading environments")
+	}
+
+	var envNames []string
+	for _, env := range envs {
+		envNames = append(envNames, env.Name)
+	}
+
+	if !stringutils.InSlice(name, envNames) {
+		return errors.Errorf("environment %q does not exist", name)
+	}
+
 	currentPath := filepath.Join(ba.root, currentEnvName)
 	return afero.WriteFile(ba.fs, currentPath, []byte(name), DefaultFilePermissions)
 }
