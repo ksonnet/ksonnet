@@ -27,6 +27,8 @@ import (
 	cmocks "github.com/ksonnet/ksonnet/pkg/component/mocks"
 	"github.com/ksonnet/ksonnet/pkg/metadata"
 	"github.com/ksonnet/ksonnet/pkg/util/jsonnet"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -56,7 +58,31 @@ func TestPipeline_EnvParameters(t *testing.T) {
 		env := &app.EnvironmentConfig{Path: "default"}
 		a.On("Environment", "default").Return(env, nil)
 
-		got, err := p.EnvParameters("/")
+		got, err := p.EnvParameters("/", true)
+		require.NoError(t, err)
+
+		require.Equal(t, "{ }\n", got)
+	})
+}
+
+func TestPipeline_EnvParameters_inherited(t *testing.T) {
+	withPipeline(t, func(p *Pipeline, m *cmocks.Manager, a *appmocks.App) {
+		module := &cmocks.Module{}
+		module.On("ResolvedParams", "default").Return("{}", nil)
+
+		c := &cmocks.Component{}
+		c.On("Name", true).Return("app")
+		module.On("Components").Return([]component.Component{c}, nil)
+
+		namespaces := []component.Module{module}
+		m.On("Modules", p.app, "default").Return(namespaces, nil)
+		m.On("Module", p.app, "/").Return(module, nil)
+		a.On("EnvironmentParams", "default").Return("{}", nil)
+
+		env := &app.EnvironmentConfig{Path: "default"}
+		a.On("Environment", "default").Return(env, nil)
+
+		got, err := p.EnvParameters("/", false)
 		require.NoError(t, err)
 
 		require.Equal(t, "{ }\n", got)
@@ -215,6 +241,56 @@ func Test_upgradeParams(t *testing.T) {
 
 	got := upgradeParams("default", in)
 	require.Equal(t, expected, got)
+}
+
+func Test_stubModule(t *testing.T) {
+	cases := []struct {
+		name     string
+		module   func() *cmocks.Module
+		expected string
+		isErr    bool
+	}{
+		{
+			name: "valid",
+			module: func() *cmocks.Module {
+				module := &cmocks.Module{}
+
+				c := &cmocks.Component{}
+				c.On("Name", true).Return("app")
+				module.On("Components").Return([]component.Component{c}, nil)
+
+				return module
+			},
+			expected: `{"components":{"app":{}}}`,
+		},
+		{
+			name: "invalid components",
+			module: func() *cmocks.Module {
+				module := &cmocks.Module{}
+				module.On("Components").Return(nil, errors.New("failed"))
+
+				return module
+			},
+			isErr: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NotNil(t, tc.module)
+			module := tc.module()
+
+			got, err := stubModule(module)
+			if tc.isErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.expected, got)
+		})
+	}
 }
 
 func withPipeline(t *testing.T, fn func(p *Pipeline, m *cmocks.Manager, a *appmocks.App)) {

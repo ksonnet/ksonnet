@@ -53,18 +53,23 @@ func TestParamList(t *testing.T) {
 		},
 	}
 
+	fakeEnvParametersFn := func(string, bool) (string, error) {
+		return "{}", nil
+	}
+
 	withApp(t, func(appMock *amocks.App) {
 		ec := &app.EnvironmentConfig{}
 		appMock.On("Environment", "envName").Return(ec, nil)
 
 		cases := []struct {
-			name         string
-			in           map[string]interface{}
-			findModuleFn func(t *testing.T) findModuleFn
-			modulesFn    func() ([]component.Module, error)
-			lister       paramsLister
-			outputFile   string
-			isErr        bool
+			name            string
+			in              map[string]interface{}
+			findModuleFn    func(t *testing.T) findModuleFn
+			envParametersFn func(string, bool) (string, error)
+			modulesFn       func() ([]component.Module, error)
+			lister          paramsLister
+			outputFile      string
+			isErr           bool
 		}{
 			{
 				name: "component name",
@@ -127,6 +132,24 @@ func TestParamList(t *testing.T) {
 				outputFile: filepath.Join("param", "list", "env.txt"),
 			},
 			{
+				name: "env without modules",
+				in: map[string]interface{}{
+					OptionApp:            appMock,
+					OptionEnvName:        "envName",
+					OptionWithoutModules: true,
+				},
+				modulesFn: func() ([]component.Module, error) {
+					module.On("Name").Return("/")
+					return []component.Module{module}, nil
+				},
+				lister:     fakeLister,
+				outputFile: filepath.Join("param", "list", "env.txt"),
+				envParametersFn: func(envName string, inherited bool) (string, error) {
+					assert.False(t, inherited, "should not request inherited parameters")
+					return "{}", nil
+				},
+			},
+			{
 				name: "invalid output type",
 				in: map[string]interface{}{
 					OptionApp:           appMock,
@@ -160,9 +183,12 @@ func TestParamList(t *testing.T) {
 					a.modulesFn = tc.modulesFn
 				}
 
-				a.envParametersFn = func(string) (string, error) {
-					return "{}", nil
+				envParametersFn := tc.envParametersFn
+				if envParametersFn == nil {
+					envParametersFn = fakeEnvParametersFn
 				}
+
+				a.envParametersFn = envParametersFn
 
 				var buf bytes.Buffer
 				a.out = &buf

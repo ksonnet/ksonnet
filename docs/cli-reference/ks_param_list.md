@@ -42,10 +42,11 @@ ks param list guestbook --env=dev
 ### Options
 
 ```
-      --env string      Specify environment to list parameters for
-  -h, --help            help for list
-      --module string   Specify module to list parameters for
-  -o, --output string   Output format. Valid options: table|json
+      --env string        Specify environment to list parameters for
+  -h, --help              help for list
+      --module string     Specify module to list parameters for
+  -o, --output string     Output format. Valid options: table|json
+      --without-modules   Exclude module defaults
 ```
 
 ### Options inherited from parent commands

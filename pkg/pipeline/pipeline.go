@@ -18,6 +18,7 @@ package pipeline
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"path/filepath"
 	"regexp"
@@ -58,6 +59,7 @@ type Pipeline struct {
 	buildObjectsFn      func(*Pipeline, []string) ([]*unstructured.Unstructured, error)
 	evaluateEnvFn       func(a app.App, envName, components, paramsStr string, opts ...jsonnet.VMOpt) (string, error)
 	evaluateEnvParamsFn func(a app.App, sourcePath, paramsStr, envName, moduleName string) (string, error)
+	stubModuleFn        func(m component.Module) (string, error)
 }
 
 // New creates an instance of Pipeline.
@@ -70,6 +72,7 @@ func New(ksApp app.App, envName string, opts ...Opt) *Pipeline {
 		buildObjectsFn:      buildObjects,
 		evaluateEnvFn:       env.Evaluate,
 		evaluateEnvParamsFn: params.EvaluateEnv,
+		stubModuleFn:        stubModule,
 	}
 
 	for _, opt := range opts {
@@ -85,15 +88,15 @@ func (p *Pipeline) Modules() ([]component.Module, error) {
 }
 
 // EnvParameters creates parameters for a namespace given an environment.
-func (p *Pipeline) EnvParameters(moduleName string) (string, error) {
+func (p *Pipeline) EnvParameters(moduleName string, inherited bool) (string, error) {
 	module, err := p.cm.Module(p.app, moduleName)
 	if err != nil {
 		return "", errors.Wrapf(err, "load module %s", moduleName)
 	}
 
-	paramsStr, err := module.ResolvedParams(p.envName)
+	paramsStr, err := p.moduleParams(module, inherited)
 	if err != nil {
-		return "", errors.Wrapf(err, "resolve params for %s", moduleName)
+		return "", err
 	}
 
 	data, err := p.app.EnvironmentParams(p.envName)
@@ -117,6 +120,45 @@ func (p *Pipeline) EnvParameters(moduleName string) (string, error) {
 	vm.ExtCode("__ksonnet/params", paramsStr)
 	log.Debugf("[Pipeline.EnvParameters] Evaluating: %v", envParams)
 	return vm.EvaluateSnippet("snippet", string(envParams))
+}
+
+func (p *Pipeline) moduleParams(module component.Module, inherited bool) (string, error) {
+	if !inherited {
+		return stubModule(module)
+	}
+
+	paramsStr, err := module.ResolvedParams(p.envName)
+	if err != nil {
+		return "", errors.Wrapf(err, "resolve params for %s", module.Name())
+	}
+
+	fmt.Println(paramsStr)
+
+	return paramsStr, nil
+}
+
+func stubModule(module component.Module) (string, error) {
+	componentsObject := map[string]interface{}{}
+
+	components, err := module.Components()
+	if err != nil {
+		return "", errors.Wrap(err, "loading module components")
+	}
+
+	for _, c := range components {
+		componentsObject[c.Name(true)] = make(map[string]interface{})
+	}
+
+	m := map[string]interface{}{
+		"components": componentsObject,
+	}
+
+	data, err := json.Marshal(&m)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
 }
 
 // Components returns the components that belong to this pipeline.

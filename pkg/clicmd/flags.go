@@ -53,6 +53,7 @@ const (
 	flagUnset                 = "unset"
 	flagVerbose               = "verbose"
 	flagVersion               = "version"
+	flagWithoutModules        = "without-modules"
 
 	shortComponent = "c"
 	shortFilename  = "f"
