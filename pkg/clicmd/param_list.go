@@ -25,7 +25,8 @@ import (
 )
 
 const (
-	vParamListOutput = "param-list-output"
+	vParamListOutput         = "param-list-output"
+	vParamListWithoutModules = "param-without-modules"
 )
 
 var (
@@ -84,11 +85,12 @@ func newParamListCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:           a,
-				actions.OptionComponentName: component,
-				actions.OptionEnvName:       env,
-				actions.OptionModule:        module,
-				actions.OptionOutput:        viper.GetString(vParamListOutput),
+				actions.OptionApp:            a,
+				actions.OptionComponentName:  component,
+				actions.OptionEnvName:        env,
+				actions.OptionModule:         module,
+				actions.OptionOutput:         viper.GetString(vParamListOutput),
+				actions.OptionWithoutModules: viper.GetBool(vParamListWithoutModules),
 			}
 
 			return runAction(actionParamList, m)
@@ -98,6 +100,9 @@ func newParamListCmd(a app.App) *cobra.Command {
 	addCmdOutput(paramListCmd, vParamListOutput)
 	paramListCmd.PersistentFlags().String(flagEnv, "", "Specify environment to list parameters for")
 	paramListCmd.Flags().String(flagModule, "", "Specify module to list parameters for")
+
+	paramListCmd.Flags().Bool(flagWithoutModules, false, "Exclude module defaults")
+	viper.BindPFlag(vParamListWithoutModules, paramListCmd.Flags().Lookup(flagWithoutModules))
 
 	return paramListCmd
 

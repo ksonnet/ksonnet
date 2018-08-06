@@ -114,6 +114,8 @@ const (
 	OptionUnset = "unset"
 	// OptionURI is uri option. Used for setting registry URI.
 	OptionURI = "URI"
+	// OptionWithoutModules is without modules option.
+	OptionWithoutModules = "without-modules"
 	// OptionValue is value option.
 	OptionValue = "value"
 	// OptionVersion is version option.

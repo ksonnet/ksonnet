@@ -224,6 +224,27 @@ var _ = Describe("ks param", func() {
 				Expect(got).To(Equal(expected))
 			})
 		})
+
+		Describe("at the environment level without modules", func() {
+			BeforeEach(func() {
+				a.generateDeployedService()
+
+				a.paramSet("guestbook-ui", "replicas", "3", "--env", "default")
+				listParams = []string{"param", "list", "-o", "json", "--env", "default", "--without-modules"}
+			})
+
+			It("should exit with 0", func() {
+				assertExitStatus(listOutput, 0)
+			})
+
+			It("lists the params", func() {
+				tr := loadTableResponse(listOutput.stdout)
+				got := tr.paramList()
+
+				expected := setGuestBookRow([]paramListRow{}, "replicas", "3")
+				Expect(got).To(Equal(expected))
+			})
+		})
 	})
 
 	Describe("set", func() {

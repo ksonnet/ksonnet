@@ -49,17 +49,18 @@ type paramsLister interface {
 
 // ParamList lists parameters for a component.
 type ParamList struct {
-	app           app.App
-	moduleName    string
-	componentName string
-	envName       string
-	outputType    string
+	app            app.App
+	moduleName     string
+	componentName  string
+	envName        string
+	outputType     string
+	withoutModules bool
 
 	out          io.Writer
 	findModuleFn findModuleFn
 
 	modulesFn       func() ([]component.Module, error)
-	envParametersFn func(string) (string, error)
+	envParametersFn func(moduleName string, inherited bool) (string, error)
 	lister          paramsLister
 }
 
@@ -68,11 +69,12 @@ func NewParamList(m map[string]interface{}) (*ParamList, error) {
 	ol := newOptionLoader(m)
 
 	pl := &ParamList{
-		app:           ol.LoadApp(),
-		moduleName:    ol.LoadOptionalString(OptionModule),
-		componentName: ol.LoadOptionalString(OptionComponentName),
-		envName:       ol.LoadOptionalString(OptionEnvName),
-		outputType:    ol.LoadOptionalString(OptionOutput),
+		app:            ol.LoadApp(),
+		moduleName:     ol.LoadOptionalString(OptionModule),
+		componentName:  ol.LoadOptionalString(OptionComponentName),
+		envName:        ol.LoadOptionalString(OptionEnvName),
+		outputType:     ol.LoadOptionalString(OptionOutput),
+		withoutModules: ol.LoadOptionalBool(OptionWithoutModules),
 
 		out:          os.Stdout,
 		findModuleFn: component.GetModule,
@@ -142,7 +144,7 @@ func (pl *ParamList) handleEnvParams() error {
 
 	var entries []params.Entry
 	for _, m := range modules {
-		source, err := pl.envParametersFn(m.Name())
+		source, err := pl.envParametersFn(m.Name(), !pl.withoutModules)
 		if err != nil {
 			return err
 		}
