@@ -44,6 +44,12 @@ func TestRegistryAdd(t *testing.T) {
 				protocol:    registry.ProtocolGitHub,
 			},
 			{
+				name:        "github enterprise",
+				uri:         "github.foo.com/foo/bar",
+				expectedURI: "github.foo.com/foo/bar",
+				protocol:    registry.ProtocolGitHub,
+			},
+			{
 				name:        "github override",
 				uri:         "github.com/foo/bar",
 				expectedURI: "github.com/foo/bar",
