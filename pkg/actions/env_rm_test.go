@@ -25,9 +25,17 @@ import (
 )
 
 func TestEnvRm(t *testing.T) {
+	aName := "my-app"
+	aIsOverride := false
+
+	environmentMockFn := func(name string) *app.EnvironmentConfig {
+		return &app.EnvironmentConfig{
+			Name: name,
+		}
+	}
+
 	withApp(t, func(appMock *amocks.App) {
-		aName := "my-app"
-		aIsOverride := false
+		appMock.On("Environment", aName).Return(environmentMockFn, nil)
 
 		in := map[string]interface{}{
 			OptionApp:      appMock,

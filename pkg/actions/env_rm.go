@@ -46,9 +46,8 @@ func NewEnvRm(m map[string]interface{}) (*EnvRm, error) {
 	ol := newOptionLoader(m)
 
 	ea := &EnvRm{
-		app:        ol.LoadApp(),
-		envName:    ol.LoadString(OptionEnvName),
-		isOverride: ol.LoadBool(OptionOverride),
+		app:     ol.LoadApp(),
+		envName: ol.LoadString(OptionEnvName),
 
 		envDeleteFn: env.Delete,
 	}
@@ -62,9 +61,14 @@ func NewEnvRm(m map[string]interface{}) (*EnvRm, error) {
 
 // Run assigns targets to an environment.
 func (er *EnvRm) Run() error {
+	env, err := er.app.Environment(er.envName)
+	if err != nil {
+		return err
+	}
+
 	return er.envDeleteFn(
 		er.app,
 		er.envName,
-		er.isOverride,
+		env.IsOverride(),
 	)
 }

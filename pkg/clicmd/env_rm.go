@@ -21,7 +21,6 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 const (
@@ -64,17 +63,13 @@ func newEnvRmCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:      a,
-				actions.OptionEnvName:  args[0],
-				actions.OptionOverride: viper.GetBool(vEnvRmOverride),
+				actions.OptionApp:     a,
+				actions.OptionEnvName: args[0],
 			}
 
 			return runAction(actionEnvRm, m)
 		},
 	}
-
-	envRmCmd.Flags().BoolP(flagOverride, shortOverride, false, "Remove the overridden environment")
-	viper.BindPFlag(vEnvRmOverride, envRmCmd.Flags().Lookup(flagOverride))
 
 	return envRmCmd
 

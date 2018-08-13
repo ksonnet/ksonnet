@@ -138,7 +138,7 @@ var _ = Describe("ks env", func() {
 					"default", e.serverVersion(), "default", "*", "http://example.com")
 				a.checkEnvs(expected)
 
-				o = a.runKs("env", "rm", "-o", "default")
+				o = a.runKs("env", "rm", "default")
 				assertExitStatus(o, 0)
 
 				a.checkEnvs(genEnvList(e.serverVersion()))
