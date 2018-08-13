@@ -106,6 +106,7 @@ func newPrototypeUseCmd(a app.App) *cobra.Command {
 			m := map[string]interface{}{
 				actions.OptionApp:       a,
 				actions.OptionArguments: rawArgs,
+				// We don't pass flagTLSSkipVerify because flag parsing is disabled
 			}
 
 			return runAction(actionPrototypeUse, m)

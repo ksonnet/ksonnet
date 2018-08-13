@@ -58,15 +58,20 @@ type PkgList struct {
 func NewPkgList(m map[string]interface{}) (*PkgList, error) {
 	ol := newOptionLoader(m)
 
-	app := ol.LoadApp()
+	a := ol.LoadApp()
+	httpClient := ol.LoadHTTPClient()
+	httpClientOpt := registry.HTTPClientOpt(httpClient)
+
 	rl := &PkgList{
-		app:           app,
-		pm:            registry.NewPackageManager(app),
+		app:           a,
+		pm:            registry.NewPackageManager(a, httpClientOpt),
 		onlyInstalled: ol.LoadBool(OptionInstalled),
 		outputType:    ol.LoadOptionalString(OptionOutput),
 
-		registryListFn: registry.List,
-		out:            os.Stdout,
+		registryListFn: func(ksApp app.App) ([]registry.Registry, error) {
+			return registry.List(ksApp, httpClient)
+		},
+		out: os.Stdout,
 	}
 
 	if ol.err != nil {

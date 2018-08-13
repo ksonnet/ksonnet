@@ -695,3 +695,15 @@ func TestGitHub_CacheRoot(t *testing.T) {
 		assert.Equal(t, tc.expected, result, tc.name)
 	}
 }
+
+func Test_githubFactory(t *testing.T) {
+	regCfg := &app.RegistryConfig{
+		Name: "incubator",
+		URI:  "github.com/foo/bar",
+	}
+	ghMock := &mocks.GitHub{}
+	optGh := GitHubClient(ghMock)
+	gh, err := githubFactory(nil, regCfg, optGh)
+	require.NoError(t, err, "github constructor")
+	assert.Equal(t, ghMock, gh.ghClient)
+}

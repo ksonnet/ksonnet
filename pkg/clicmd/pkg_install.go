@@ -79,11 +79,12 @@ func newPkgInstallCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:     a,
-				actions.OptionLibName: args[0],
-				actions.OptionName:    viper.GetString(vPkgInstallName),
-				actions.OptionEnvName: viper.GetString(vPkgInstallEnv),
-				actions.OptionForce:   viper.GetBool(vPkgInstallForce),
+				actions.OptionApp:           a,
+				actions.OptionLibName:       args[0],
+				actions.OptionName:          viper.GetString(vPkgInstallName),
+				actions.OptionEnvName:       viper.GetString(vPkgInstallEnv),
+				actions.OptionForce:         viper.GetBool(vPkgInstallForce),
+				actions.OptionTLSSkipVerify: viper.GetBool(flagTLSSkipVerify),
 			}
 
 			return runAction(actionPkgInstall, m)

@@ -77,11 +77,22 @@ func defaultHTTPClient() *http.Client {
 }
 
 type defaultGitHub struct {
-	httpClient httpClient
+	httpClient *http.Client
 	urlParse   func(string) (*url.URL, error)
 }
 
 var _ GitHub = (*defaultGitHub)(nil)
+
+// NewGitHub constructs a GitHub client
+func NewGitHub(httpClient *http.Client) GitHub {
+	if httpClient == nil {
+		httpClient = defaultHTTPClient()
+	}
+	return &defaultGitHub{
+		httpClient: httpClient,
+		urlParse:   url.Parse,
+	}
+}
 
 func (dg *defaultGitHub) ValidateURL(urlStr string) error {
 	u, err := dg.urlParse(urlStr)
@@ -130,16 +141,17 @@ func (dg *defaultGitHub) Contents(ctx context.Context, repo Repo, path, ref stri
 }
 
 func (dg *defaultGitHub) client() *github.Client {
-	var hc *http.Client
+	var httpClient = dg.httpClient
 
 	ght := os.Getenv("GITHUB_TOKEN")
 	if len(ght) > 0 {
-		ctx := context.Background()
+		// TODO WithTimeout
+		ctx := context.WithValue(context.Background(), oauth2.HTTPClient, dg.httpClient)
 		ts := oauth2.StaticTokenSource(
 			&oauth2.Token{AccessToken: ght},
 		)
-		hc = oauth2.NewClient(ctx, ts)
+		httpClient = oauth2.NewClient(ctx, ts)
 	}
 
-	return github.NewClient(hc)
+	return github.NewClient(httpClient)
 }

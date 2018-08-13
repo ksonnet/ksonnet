@@ -41,9 +41,10 @@ func TestPrototypePreview(t *testing.T) {
 		}
 
 		in := map[string]interface{}{
-			OptionApp:       appMock,
-			OptionQuery:     "single-port-deployment",
-			OptionArguments: args,
+			OptionApp:           appMock,
+			OptionQuery:         "single-port-deployment",
+			OptionArguments:     args,
+			OptionTLSSkipVerify: false,
 		}
 
 		a, err := NewPrototypePreview(in)
@@ -74,9 +75,10 @@ func TestPrototypePreview_bind_flags_failed(t *testing.T) {
 		}
 
 		in := map[string]interface{}{
-			OptionApp:       appMock,
-			OptionQuery:     "single-port-deployment",
-			OptionArguments: args,
+			OptionApp:           appMock,
+			OptionQuery:         "single-port-deployment",
+			OptionArguments:     args,
+			OptionTLSSkipVerify: false,
 		}
 
 		a, err := NewPrototypePreview(in)

@@ -21,6 +21,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -57,8 +58,9 @@ func newPrototypeDescribeCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:   a,
-				actions.OptionQuery: args[0],
+				actions.OptionApp:           a,
+				actions.OptionQuery:         args[0],
+				actions.OptionTLSSkipVerify: viper.GetBool(flagTLSSkipVerify),
 			}
 
 			return runAction(actionPrototypeDescribe, m)

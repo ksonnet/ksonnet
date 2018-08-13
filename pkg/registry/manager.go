@@ -16,22 +16,25 @@
 package registry
 
 import (
+	"net/http"
 	"path/filepath"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/helm"
+	"github.com/ksonnet/ksonnet/pkg/util/github"
 	"github.com/pkg/errors"
 )
 
 // Locate locates a registry given a spec.
-func Locate(a app.App, spec *app.RegistryConfig) (Registry, error) {
+func Locate(a app.App, spec *app.RegistryConfig, httpClient *http.Client) (Registry, error) {
 	switch Protocol(spec.Protocol) {
 	case ProtocolGitHub:
-		return githubFactory(a, spec)
+		var ghc = github.NewGitHub(httpClient)
+		return githubFactory(a, spec, GitHubClient(ghc))
 	case ProtocolFilesystem:
 		return NewFs(a, spec)
 	case ProtocolHelm:
-		client, err := helm.NewHTTPClient(spec.URI, nil)
+		client, err := helm.NewHTTPClient(spec.URI, httpClient)
 		if err != nil {
 			return nil, err
 		}
@@ -58,7 +61,7 @@ func registrySpecFilePath(a app.App, r Registry) string {
 }
 
 // List returns a list of alphabetically sorted Registries.
-func List(ksApp app.App) ([]Registry, error) {
+func List(ksApp app.App, httpClient *http.Client) ([]Registry, error) {
 	var registries []Registry
 	appRegistries, err := ksApp.Registries()
 	if err != nil {
@@ -66,7 +69,7 @@ func List(ksApp app.App) ([]Registry, error) {
 	}
 	for name, regRef := range appRegistries {
 		regRef.Name = name
-		r, err := Locate(ksApp, regRef)
+		r, err := Locate(ksApp, regRef, httpClient)
 		if err != nil {
 			return nil, err
 		}

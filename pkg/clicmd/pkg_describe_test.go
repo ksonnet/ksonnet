@@ -28,8 +28,9 @@ func Test_pkgDescribeCmd(t *testing.T) {
 			args:   []string{"pkg", "describe", "package-name"},
 			action: actionPkgDescribe,
 			expected: map[string]interface{}{
-				actions.OptionApp:         nil,
-				actions.OptionPackageName: "package-name",
+				actions.OptionApp:           nil,
+				actions.OptionPackageName:   "package-name",
+				actions.OptionTLSSkipVerify: false,
 			},
 		},
 		{

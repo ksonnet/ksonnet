@@ -57,9 +57,10 @@ func newPrototypeSearchCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:    a,
-				actions.OptionQuery:  args[0],
-				actions.OptionOutput: viper.GetString(vPrototypeSearchOutput),
+				actions.OptionApp:           a,
+				actions.OptionQuery:         args[0],
+				actions.OptionOutput:        viper.GetString(vPrototypeSearchOutput),
+				actions.OptionTLSSkipVerify: viper.GetBool(flagTLSSkipVerify),
 			}
 
 			return runAction(actionPrototypeSearch, m)

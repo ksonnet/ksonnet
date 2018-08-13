@@ -21,16 +21,17 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
 )
 
-func Test_protoptypeSearchCmd(t *testing.T) {
+func Test_prototypeSearchCmd(t *testing.T) {
 	cases := []cmdTestCase{
 		{
 			name:   "in general",
 			args:   []string{"prototype", "search", "name"},
 			action: actionPrototypeSearch,
 			expected: map[string]interface{}{
-				actions.OptionApp:    nil,
-				actions.OptionQuery:  "name",
-				actions.OptionOutput: "",
+				actions.OptionApp:           nil,
+				actions.OptionQuery:         "name",
+				actions.OptionOutput:        "",
+				actions.OptionTLSSkipVerify: false,
 			},
 		},
 		{
@@ -38,9 +39,10 @@ func Test_protoptypeSearchCmd(t *testing.T) {
 			args:   []string{"prototype", "search", "name", "-o", "json"},
 			action: actionPrototypeSearch,
 			expected: map[string]interface{}{
-				actions.OptionApp:    nil,
-				actions.OptionQuery:  "name",
-				actions.OptionOutput: "json",
+				actions.OptionApp:           nil,
+				actions.OptionQuery:         "name",
+				actions.OptionOutput:        "json",
+				actions.OptionTLSSkipVerify: false,
 			},
 		},
 		{

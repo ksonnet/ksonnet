@@ -58,8 +58,9 @@ func TestPrototypeList(t *testing.T) {
 				manager.On("Prototypes").Return(prototypes, nil)
 
 				in := map[string]interface{}{
-					OptionApp:    appMock,
-					OptionOutput: tc.outputType,
+					OptionApp:           appMock,
+					OptionOutput:        tc.outputType,
+					OptionTLSSkipVerify: false,
 				}
 
 				a, err := NewPrototypeList(in)

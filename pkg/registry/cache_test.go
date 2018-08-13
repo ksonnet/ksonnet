@@ -71,7 +71,7 @@ func Test_CacheDependency(t *testing.T) {
 			var checker installedChecker
 			d := pkg.Descriptor{Registry: lib.Registry, Name: lib.Name}
 
-			_, err := CacheDependency(a, &checker, d, "", false)
+			_, err := CacheDependency(a, &checker, d, "", false, nil)
 			require.NoError(t, err)
 
 			test.AssertExists(t, fs, filepath.Join(a.Root(), "vendor", lib.Registry, lib.Name, "parts.yaml"))

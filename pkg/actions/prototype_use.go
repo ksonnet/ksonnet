@@ -57,12 +57,14 @@ func NewPrototypeUse(m map[string]interface{}) (*PrototypeUse, error) {
 	ol := newOptionLoader(m)
 
 	app := ol.LoadApp()
+	httpClientOpt := registry.HTTPClientOpt(ol.LoadHTTPClient())
+
 	pl := &PrototypeUse{
 		app:  app,
 		args: ol.LoadStringSlice(OptionArguments),
 
 		out:                 os.Stdout,
-		packageManager:      registry.NewPackageManager(app),
+		packageManager:      registry.NewPackageManager(app, httpClientOpt),
 		createComponentFn:   component.Create,
 		bindFlagsFn:         prototype.BindFlags,
 		extractParametersFn: prototype.ExtractParameters,

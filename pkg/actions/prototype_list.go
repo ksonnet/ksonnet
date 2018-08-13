@@ -51,12 +51,14 @@ func NewPrototypeList(m map[string]interface{}) (*PrototypeList, error) {
 	ol := newOptionLoader(m)
 
 	app := ol.LoadApp()
+	httpClientOpt := registry.HTTPClientOpt(ol.LoadHTTPClient())
+
 	pl := &PrototypeList{
 		app:        app,
 		out:        os.Stdout,
 		outputType: ol.LoadOptionalString(OptionOutput),
 
-		packageManager: registry.NewPackageManager(app),
+		packageManager: registry.NewPackageManager(app, httpClientOpt),
 	}
 
 	if ol.err != nil {

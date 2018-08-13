@@ -82,6 +82,7 @@ func newPrototypePreviewCmd(a app.App) *cobra.Command {
 				actions.OptionApp:       a,
 				actions.OptionQuery:     rawArgs[0],
 				actions.OptionArguments: rawArgs[1:],
+				// We don't pass flagTLSSkipVerify because flag parsing is disabled
 			}
 
 			return runAction(actionPrototypePreview, m)

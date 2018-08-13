@@ -16,14 +16,17 @@
 package registry
 
 import (
+	"net/http"
+
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/helm"
+	"github.com/ksonnet/ksonnet/pkg/util/github"
 	"github.com/pkg/errors"
 )
 
 // Add adds a registry with `name`, `protocol`, and `uri` to
 // the current ksonnet application.
-func Add(a app.App, protocol Protocol, name string, uri string, isOverride bool) (*Spec, error) {
+func Add(a app.App, protocol Protocol, name string, uri string, isOverride bool, httpClient *http.Client) (*Spec, error) {
 	var r Registry
 	var err error
 
@@ -35,12 +38,13 @@ func Add(a app.App, protocol Protocol, name string, uri string, isOverride bool)
 
 	switch protocol {
 	case ProtocolGitHub:
-		r, err = githubFactory(a, initSpec)
+		var ghc = github.NewGitHub(httpClient)
+		r, err = githubFactory(a, initSpec, GitHubClient(ghc))
 	case ProtocolFilesystem:
 		r, err = NewFs(a, initSpec)
 	case ProtocolHelm:
 		var hc *helm.HTTPClient
-		hc, err = helm.NewHTTPClient(initSpec.URI, nil)
+		hc, err = helm.NewHTTPClient(initSpec.URI, httpClient)
 		if err != nil {
 			return nil, errors.Wrap(err, "initializing helm HTTP client")
 		}

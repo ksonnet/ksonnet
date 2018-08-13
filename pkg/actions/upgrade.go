@@ -49,7 +49,8 @@ func newUpgrade(m map[string]interface{}) (*Upgrade, error) {
 	if ol.err != nil {
 		return nil, ol.err
 	}
-	pm := registry.NewPackageManager(a)
+	httpClientOpt := registry.HTTPClientOpt(ol.LoadHTTPClient())
+	pm := registry.NewPackageManager(a, httpClientOpt)
 
 	u := &Upgrade{
 		app:       a,

@@ -28,6 +28,7 @@ import (
 	"github.com/shomron/pflag"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	// Register auth plugins
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -197,6 +198,8 @@ func NewRoot(appFs afero.Fs, wd string, args []string) (*cobra.Command, error) {
 
 	rootCmd.PersistentFlags().CountP(flagVerbose, "v", "Increase verbosity. May be given multiple times.")
 	rootCmd.PersistentFlags().Set("logtostderr", "true")
+	rootCmd.PersistentFlags().Bool(flagTLSSkipVerify, false, "Skip verification of TLS server certificates")
+	viper.BindPFlag(flagTLSSkipVerify, rootCmd.PersistentFlags().Lookup(flagTLSSkipVerify))
 
 	rootCmd.AddCommand(newApplyCmd(a))
 	rootCmd.AddCommand(newComponentCmd(a))

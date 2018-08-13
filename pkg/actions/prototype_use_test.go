@@ -45,8 +45,9 @@ func TestPrototypeUse(t *testing.T) {
 		}
 
 		in := map[string]interface{}{
-			OptionApp:       appMock,
-			OptionArguments: args,
+			OptionApp:           appMock,
+			OptionArguments:     args,
+			OptionTLSSkipVerify: false,
 		}
 
 		a, err := NewPrototypeUse(in)
@@ -92,8 +93,9 @@ func TestPrototypeUse_bind_flags_failed(t *testing.T) {
 		}
 
 		in := map[string]interface{}{
-			OptionApp:       appMock,
-			OptionArguments: args,
+			OptionApp:           appMock,
+			OptionArguments:     args,
+			OptionTLSSkipVerify: false,
 		}
 
 		a, err := NewPrototypeUse(in)
@@ -143,8 +145,9 @@ func TestPrototypeUse_with_module_in_name(t *testing.T) {
 		}
 
 		in := map[string]interface{}{
-			OptionApp:       appMock,
-			OptionArguments: args,
+			OptionApp:           appMock,
+			OptionArguments:     args,
+			OptionTLSSkipVerify: false,
 		}
 
 		a, err := NewPrototypeUse(in)

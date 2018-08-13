@@ -62,13 +62,15 @@ func NewPrototypePreview(m map[string]interface{}) (*PrototypePreview, error) {
 	ol := newOptionLoader(m)
 
 	app := ol.LoadApp()
+	httpClientOpt := registry.HTTPClientOpt(ol.LoadHTTPClient())
+
 	pp := &PrototypePreview{
 		app:   app,
 		query: ol.LoadString(OptionQuery),
 		args:  ol.LoadStringSlice(OptionArguments),
 
 		out:                 os.Stdout,
-		packageManager:      registry.NewPackageManager(app),
+		packageManager:      registry.NewPackageManager(app, httpClientOpt),
 		bindFlagsFn:         prototype.BindFlags,
 		extractParametersFn: prototype.ExtractParameters,
 	}

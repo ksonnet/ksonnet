@@ -153,8 +153,9 @@ func TestPkgDescribe(t *testing.T) {
 				a.On("Libraries").Return(libraries, nil)
 
 				in := map[string]interface{}{
-					OptionApp:         a,
-					OptionPackageName: "apache",
+					OptionApp:           a,
+					OptionPackageName:   "apache",
+					OptionTLSSkipVerify: false,
 				}
 
 				pd, err := NewPkgDescribe(in)

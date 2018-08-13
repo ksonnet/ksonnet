@@ -33,8 +33,9 @@ func TestPrototypeDescribe(t *testing.T) {
 		manager.On("Prototypes").Return(prototypes, nil)
 
 		in := map[string]interface{}{
-			OptionApp:   appMock,
-			OptionQuery: "namespace",
+			OptionApp:           appMock,
+			OptionQuery:         "namespace",
+			OptionTLSSkipVerify: false,
 		}
 
 		a, err := NewPrototypeDescribe(in)

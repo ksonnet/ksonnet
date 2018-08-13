@@ -48,6 +48,8 @@ type PkgDescribe struct {
 func NewPkgDescribe(m map[string]interface{}) (*PkgDescribe, error) {
 	ol := newOptionLoader(m)
 
+	httpClientOpt := registry.HTTPClientOpt(ol.LoadHTTPClient())
+
 	app := ol.LoadApp()
 	pd := &PkgDescribe{
 		app:     app,
@@ -55,7 +57,7 @@ func NewPkgDescribe(m map[string]interface{}) (*PkgDescribe, error) {
 
 		templateSrc:    pkgDescribeTemplate,
 		out:            os.Stdout,
-		packageManager: registry.NewPackageManager(app),
+		packageManager: registry.NewPackageManager(app, httpClientOpt),
 	}
 
 	if ol.err != nil {

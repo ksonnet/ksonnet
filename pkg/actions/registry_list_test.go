@@ -53,8 +53,9 @@ func TestRegistryList(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			withApp(t, func(appMock *amocks.App) {
 				in := map[string]interface{}{
-					OptionApp:    appMock,
-					OptionOutput: tc.outputType,
+					OptionApp:           appMock,
+					OptionOutput:        tc.outputType,
+					OptionTLSSkipVerify: false,
 				}
 
 				a, err := NewRegistryList(in)

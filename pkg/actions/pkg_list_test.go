@@ -152,9 +152,10 @@ func TestPkgList(t *testing.T) {
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
 				in := map[string]interface{}{
-					OptionApp:       appMock,
-					OptionInstalled: tc.onlyInstalled,
-					OptionOutput:    tc.outputType,
+					OptionApp:           appMock,
+					OptionInstalled:     tc.onlyInstalled,
+					OptionOutput:        tc.outputType,
+					OptionTLSSkipVerify: false,
 				}
 
 				a, err := NewPkgList(in)

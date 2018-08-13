@@ -28,8 +28,9 @@ func Test_prototypeListCmd(t *testing.T) {
 			args:   []string{"prototype", "list"},
 			action: actionPrototypeList,
 			expected: map[string]interface{}{
-				actions.OptionApp:    nil,
-				actions.OptionOutput: "",
+				actions.OptionApp:           nil,
+				actions.OptionOutput:        "",
+				actions.OptionTLSSkipVerify: false,
 			},
 		},
 		{
@@ -37,8 +38,9 @@ func Test_prototypeListCmd(t *testing.T) {
 			args:   []string{"prototype", "list", "-o", "json"},
 			action: actionPrototypeList,
 			expected: map[string]interface{}{
-				actions.OptionApp:    nil,
-				actions.OptionOutput: "json",
+				actions.OptionApp:           nil,
+				actions.OptionOutput:        "json",
+				actions.OptionTLSSkipVerify: false,
 			},
 		},
 		{

@@ -18,6 +18,7 @@ package actions
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"sort"
 
@@ -48,12 +49,15 @@ type RegistryDescribe struct {
 func NewRegistryDescribe(m map[string]interface{}) (*RegistryDescribe, error) {
 	ol := newOptionLoader(m)
 
+	httpClient := ol.LoadHTTPClient()
 	rd := &RegistryDescribe{
 		app:  ol.LoadApp(),
 		name: ol.LoadString(OptionName),
 
-		out:                 os.Stdout,
-		fetchRegistrySpecFn: fetchRegistrySpec,
+		out: os.Stdout,
+		fetchRegistrySpecFn: func(a app.App, name string) (*registry.Spec, *app.RegistryConfig, error) {
+			return fetchRegistrySpec(a, name, httpClient)
+		},
 	}
 
 	if ol.err != nil {
@@ -93,7 +97,7 @@ func (rd *RegistryDescribe) Run() error {
 	return nil
 }
 
-func fetchRegistrySpec(a app.App, name string) (*registry.Spec, *app.RegistryConfig, error) {
+func fetchRegistrySpec(a app.App, name string, httpClient *http.Client) (*registry.Spec, *app.RegistryConfig, error) {
 	appRegistries, err := a.Registries()
 	if err != nil {
 		return nil, nil, err
@@ -103,7 +107,7 @@ func fetchRegistrySpec(a app.App, name string) (*registry.Spec, *app.RegistryCon
 		return nil, nil, errors.Errorf("registry %q doesn't exist", name)
 	}
 
-	r, err := registry.Locate(a, regRef)
+	r, err := registry.Locate(a, regRef, httpClient)
 	if err != nil {
 		return nil, nil, err
 	}

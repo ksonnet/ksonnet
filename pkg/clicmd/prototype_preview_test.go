@@ -28,9 +28,10 @@ func Test_prototypePreviewCmd(t *testing.T) {
 			args:   []string{"prototype", "preview", "name"},
 			action: actionPrototypePreview,
 			expected: map[string]interface{}{
-				actions.OptionApp:       nil,
-				actions.OptionQuery:     "name",
-				actions.OptionArguments: make([]string, 0),
+				actions.OptionApp:           nil,
+				actions.OptionQuery:         "name",
+				actions.OptionArguments:     make([]string, 0),
+				actions.OptionTLSSkipVerify: false,
 			},
 		},
 		{

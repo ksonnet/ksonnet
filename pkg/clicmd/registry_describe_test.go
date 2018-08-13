@@ -28,8 +28,9 @@ func Test_envRegistryDescribe(t *testing.T) {
 			args:   []string{"registry", "describe", "name"},
 			action: actionRegistryDescribe,
 			expected: map[string]interface{}{
-				actions.OptionApp:  nil,
-				actions.OptionName: "name",
+				actions.OptionApp:           nil,
+				actions.OptionName:          "name",
+				actions.OptionTLSSkipVerify: false,
 			},
 		},
 		{

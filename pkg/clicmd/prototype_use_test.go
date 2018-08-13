@@ -28,8 +28,9 @@ func Test_prototypeUseCmd(t *testing.T) {
 			args:   []string{"prototype", "use", "name", "--containerPort", "8080"},
 			action: actionPrototypeUse,
 			expected: map[string]interface{}{
-				actions.OptionApp:       nil,
-				actions.OptionArguments: []string{"name", "--containerPort", "8080"},
+				actions.OptionApp:           nil,
+				actions.OptionArguments:     []string{"name", "--containerPort", "8080"},
+				actions.OptionTLSSkipVerify: false,
 			},
 		},
 		{
@@ -37,8 +38,9 @@ func Test_prototypeUseCmd(t *testing.T) {
 			args:   []string{"generate", "name", "--containerPort", "8080"},
 			action: actionPrototypeUse,
 			expected: map[string]interface{}{
-				actions.OptionApp:       nil,
-				actions.OptionArguments: []string{"name", "--containerPort", "8080"},
+				actions.OptionApp:           nil,
+				actions.OptionArguments:     []string{"name", "--containerPort", "8080"},
+				actions.OptionTLSSkipVerify: false,
 			},
 		},
 		{

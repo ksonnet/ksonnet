@@ -28,9 +28,10 @@ func Test_pkgListCmd(t *testing.T) {
 			args:   []string{"pkg", "list"},
 			action: actionPkgList,
 			expected: map[string]interface{}{
-				actions.OptionApp:       nil,
-				actions.OptionInstalled: false,
-				actions.OptionOutput:    "",
+				actions.OptionApp:           nil,
+				actions.OptionInstalled:     false,
+				actions.OptionOutput:        "",
+				actions.OptionTLSSkipVerify: false,
 			},
 		},
 		{
@@ -38,9 +39,10 @@ func Test_pkgListCmd(t *testing.T) {
 			args:   []string{"pkg", "list", "-o", "json"},
 			action: actionPkgList,
 			expected: map[string]interface{}{
-				actions.OptionApp:       nil,
-				actions.OptionInstalled: false,
-				actions.OptionOutput:    "json",
+				actions.OptionApp:           nil,
+				actions.OptionInstalled:     false,
+				actions.OptionOutput:        "json",
+				actions.OptionTLSSkipVerify: false,
 			},
 		},
 		{
