@@ -48,7 +48,7 @@ func Test_baseapp_CurrentEnvironment(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			fs := afero.NewMemMapFs()
 			stageFile(t, fs, "app010_app.yaml", "/app.yaml")
-			ba := newBaseApp(fs, "/")
+			ba := newBaseApp(fs, "/", nil)
 
 			if tc.init != nil {
 				tc.init(t, fs)
@@ -80,7 +80,7 @@ func Test_baseapp_SetCurrentEnvironment(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			fs := afero.NewMemMapFs()
 			stageFile(t, fs, "app010_app.yaml", "/app.yaml")
-			ba := newBaseApp(fs, "/")
+			ba := newBaseApp(fs, "/", nil)
 
 			err := ba.SetCurrentEnvironment(tc.envName)
 			if tc.isErr {
@@ -102,7 +102,7 @@ func Test_baseApp_AddRegistry(t *testing.T) {
 
 	stageFile(t, fs, "app010_app.yaml", "/app.yaml")
 
-	ba := newBaseApp(fs, "/")
+	ba := newBaseApp(fs, "/", nil)
 
 	reg := &RegistryConfig{
 		Name: "new",
@@ -120,7 +120,7 @@ func Test_baseApp_AddRegistry_override(t *testing.T) {
 
 	stageFile(t, fs, "app010_app.yaml", "/app.yaml")
 
-	ba := newBaseApp(fs, "/")
+	ba := newBaseApp(fs, "/", nil)
 
 	reg := &RegistryConfig{
 		Name: "new",
@@ -138,7 +138,7 @@ func Test_baseApp_AddRegistry_override_existing(t *testing.T) {
 
 	stageFile(t, fs, "app010_app.yaml", "/app.yaml")
 
-	ba := newBaseApp(fs, "/")
+	ba := newBaseApp(fs, "/", nil)
 
 	reg := &RegistryConfig{
 		Name: "incubator",
@@ -172,7 +172,7 @@ func Test_baseApp_UpdateRegistry(t *testing.T) {
 			stageFile(t, fs, tc.appFilePath, "/app.yaml")
 		}
 
-		ba := newBaseApp(fs, "/")
+		ba := newBaseApp(fs, "/", nil)
 
 		// Test updating non-existing registry
 		err := ba.UpdateRegistry(&tc.regSpec)
@@ -242,7 +242,7 @@ func Test_baseApp_UpdateLibrary(t *testing.T) {
 			stageFile(t, fs, tc.appFilePath, "/app.yaml")
 		}
 
-		ba := newBaseApp(fs, "/")
+		ba := newBaseApp(fs, "/", nil)
 
 		// Test updating non-existing registry
 		err := ba.UpdateLib(tc.libCfg.Name, tc.env, &tc.libCfg)
@@ -265,7 +265,7 @@ func Test_baseApp_load_override(t *testing.T) {
 	stageFile(t, fs, "app010_app.yaml", "/app.yaml")
 	stageFile(t, fs, "add-registry-override.yaml", "/app.override.yaml")
 
-	ba := newBaseApp(fs, "/")
+	ba := newBaseApp(fs, "/", nil)
 
 	err := ba.load()
 	require.NoError(t, err)
@@ -280,7 +280,7 @@ func Test_baseApp_load_override_invalid(t *testing.T) {
 	stageFile(t, fs, "app010_app.yaml", "/app.yaml")
 	stageFile(t, fs, "add-registry-override-invalid.yaml", "/app.override.yaml")
 
-	ba := newBaseApp(fs, "/")
+	ba := newBaseApp(fs, "/", nil)
 
 	err := ba.load()
 	require.Error(t, err)
@@ -288,7 +288,7 @@ func Test_baseApp_load_override_invalid(t *testing.T) {
 
 func Test_baseApp_environment_override_is_merged(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	ba := newBaseApp(fs, "/")
+	ba := newBaseApp(fs, "/", nil)
 	ba.load = func() error {
 		return nil
 	}
@@ -341,7 +341,7 @@ func Test_baseApp_environment_override_is_merged(t *testing.T) {
 
 func Test_baseApp_environment_just_override(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	ba := newBaseApp(fs, "/")
+	ba := newBaseApp(fs, "/", nil)
 	ba.load = func() error {
 		return nil
 	}

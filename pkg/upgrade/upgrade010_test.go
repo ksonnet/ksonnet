@@ -33,22 +33,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var LibUpdater = app.LibUpdater
-
 type upgrader interface {
 	Upgrade(dryRun bool) error
 }
 
+type fakeLibUpdater func(k8sSpecFlag string, libPath string) (string, error)
+
+func (f fakeLibUpdater) UpdateKSLib(k8sSpecFlag string, libPath string) (string, error) {
+	return f(k8sSpecFlag, libPath)
+}
+
 func withApp010Fs(t *testing.T, appName string, fn func(app *app.App010)) {
-	ogLibUpdater := LibUpdater
-	LibUpdater = func(fs afero.Fs, k8sSpecFlag string, libPath string) (string, error) {
-		return "v1.8.7", nil
-	}
-
-	defer func() {
-		LibUpdater = ogLibUpdater
-	}()
-
 	fs := afero.NewMemMapFs()
 
 	envDirs := []string{
@@ -69,9 +64,14 @@ func withApp010Fs(t *testing.T, appName string, fn func(app *app.App010)) {
 
 	test.StageFile(t, fs, appName, "/app.yaml")
 
-	app := app.NewApp010(fs, "/")
+	libUpdaterOpt := app.App010OptLibUpdater(
+		fakeLibUpdater(func(k8sSpecFlag string, libPath string) (string, error) {
+			return "v1.8.7", nil
+		}),
+	)
+	a := app.NewApp010(fs, "/", nil, libUpdaterOpt)
 
-	fn(app)
+	fn(a)
 }
 
 func TestApp010_Upgrade(t *testing.T) {

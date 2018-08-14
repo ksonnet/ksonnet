@@ -16,11 +16,11 @@
 package app
 
 import (
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
 
-	"github.com/ksonnet/ksonnet/pkg/lib"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -49,9 +49,6 @@ var (
 	DefaultFilePermissions = os.FileMode(0644)
 	// DefaultFolderPermissions are the default permissions for a folder.
 	DefaultFolderPermissions = os.FileMode(0755)
-
-	// LibUpdater updates ksonnet lib versions.
-	LibUpdater = updateLibData
 )
 
 // App is a ksonnet application.
@@ -70,6 +67,8 @@ type App interface {
 	EnvironmentParams(name string) (string, error)
 	// Fs is the app's afero Fs.
 	Fs() afero.Fs
+	// HTTPClient is the app's http client
+	HTTPClient() *http.Client
 	// CheckUpgrade checks whether an app should be upgraded.
 	CheckUpgrade() (bool, error)
 	// LibPath returns the path of the lib for an environment.
@@ -102,7 +101,7 @@ type App interface {
 }
 
 // Load loads the application configuration.
-func Load(fs afero.Fs, cwd string, skipFindRoot bool) (App, error) {
+func Load(fs afero.Fs, httpClient *http.Client, cwd string, skipFindRoot bool) (App, error) {
 	log := log.WithField("action", "app.Load")
 	appRoot := cwd
 	if !skipFindRoot {
@@ -116,7 +115,7 @@ func Load(fs afero.Fs, cwd string, skipFindRoot bool) (App, error) {
 	spec, err := read(fs, appRoot)
 	if os.IsNotExist(err) {
 		// During `ks init`, app.yaml will not yet exist - generate a new one.
-		return NewApp010(fs, appRoot), nil
+		return NewApp010(fs, appRoot, httpClient), nil
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "reading app configuration")
@@ -126,31 +125,18 @@ func Load(fs afero.Fs, cwd string, skipFindRoot bool) (App, error) {
 	default:
 		return nil, errors.Errorf("unknown apiVersion %q in %s", spec.APIVersion, appYamlName)
 	case "0.0.1":
-		return NewApp001(fs, appRoot), nil
+		return NewApp001(fs, appRoot, httpClient), nil
 	case "0.1.0", "0.2.0":
 		// TODO TODO
 		// 0.1.0 will auto-upgraded to 0.2.0. 0.1.0 is read-compatible with
 		// 0.2.0, but will be persisted back as 0.2.0. This behavior will be
 		// subsequently changed with new upgrade framework.
-		a := NewApp010(fs, appRoot)
+		a := NewApp010(fs, appRoot, httpClient)
 		log.Debugf("Interpreting app version as latest (0.2.0)", a.baseApp)
 		a.config.APIVersion = "0.2.0"
 		a.baseApp.config.APIVersion = "0.2.0"
 		return a, nil
 	}
-}
-
-func updateLibData(fs afero.Fs, k8sSpecFlag, libPath string) (string, error) {
-	lm, err := lib.NewManager(k8sSpecFlag, fs, libPath)
-	if err != nil {
-		return "", err
-	}
-
-	if err := lm.GenerateLibData(); err != nil {
-		return "", err
-	}
-
-	return lm.K8sVersion, nil
 }
 
 func app010LibPath(root string) string {

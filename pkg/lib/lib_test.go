@@ -16,6 +16,7 @@ package lib
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -67,7 +68,7 @@ func TestGenerateLibData(t *testing.T) {
 			specFlag := fmt.Sprintf("file:%s", swaggerLocation)
 			libPath := "lib"
 
-			libManager, err := NewManager(specFlag, fs, libPath)
+			libManager, err := NewManager(specFlag, fs, libPath, nil)
 			require.NoError(t, err)
 
 			libManager.generator = tc.generator
@@ -93,6 +94,24 @@ func checkKsLib(t *testing.T, fs afero.Fs, path string) {
 	}
 }
 
+type fakeTransport struct {
+	resp *http.Response
+	err  error
+}
+
+func (f *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f.resp, f.err
+}
+
+func fakeHTTPClient(resp *http.Response, err error) *http.Client {
+	c := &http.Client{
+		Transport: &fakeTransport{
+			resp: resp,
+			err:  err,
+		},
+	}
+	return c
+}
 func TestManager_GetLibPath(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -140,7 +159,20 @@ func TestManager_GetLibPath(t *testing.T) {
 
 			fs := tc.initFs(t, "v1.10.3", "lib")
 
-			libManager, err := NewManager(specFlag, fs, libPath)
+			specReader, err := os.Open("../cluster/testdata/swagger.json")
+			if err != nil {
+				require.NoError(t, err, "opening fixture: swagger.json")
+				return
+			}
+			defer specReader.Close()
+			fakeClient := fakeHTTPClient(
+				&http.Response{
+					StatusCode: 200,
+					Body:       specReader,
+				},
+				nil,
+			)
+			libManager, err := NewManager(specFlag, fs, libPath, fakeClient)
 			require.NoError(t, err)
 
 			got, err := libManager.GetLibPath()

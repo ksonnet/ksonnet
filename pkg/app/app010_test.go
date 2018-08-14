@@ -17,6 +17,7 @@ package app
 
 import (
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -25,6 +26,26 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type fakeTransport struct {
+	resp *http.Response
+	err  error
+}
+
+func (f *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f.resp, f.err
+}
+
+// fakeHTTPClient returns an http.Client that will respond with the predefined response and error.
+func fakeHTTPClient(resp *http.Response, err error) *http.Client {
+	c := &http.Client{
+		Transport: &fakeTransport{
+			resp: resp,
+			err:  err,
+		},
+	}
+	return c
+}
 
 func TestApp010_AddEnvironment(t *testing.T) {
 	withApp010Fs(t, "app010_app.yaml", func(app *App010) {
@@ -196,6 +217,21 @@ func TestApp010_CheckUpgrade_legacy_environments(t *testing.T) {
 
 func TestApp0101_LibPath(t *testing.T) {
 	withApp010Fs(t, "app010_app.yaml", func(app *App010) {
+		app.libUpdater = fakeLibUpdater(func(string, string) (string, error) {
+			return "v1.8.7", nil
+		})
+
+		specReader, err := os.Open("../cluster/testdata/swagger.json")
+		if err != nil {
+			require.NoError(t, err, "opening fixture: swagger.json")
+			return
+		}
+		defer specReader.Close()
+		app.httpClient = fakeHTTPClient(
+			&http.Response{
+				StatusCode: 200,
+				Body:       specReader,
+			}, nil)
 		path, err := app.LibPath("default")
 		require.NoError(t, err)
 
@@ -300,16 +336,13 @@ func TestApp0101_UpdateTargets(t *testing.T) {
 	})
 }
 
+type fakeLibUpdater func(k8sSpecFlag string, libPath string) (string, error)
+
+func (f fakeLibUpdater) UpdateKSLib(k8sSpecFlag string, libPath string) (string, error) {
+	return f(k8sSpecFlag, libPath)
+}
+
 func withApp010Fs(t *testing.T, appName string, fn func(app *App010)) {
-	ogLibUpdater := LibUpdater
-	LibUpdater = func(fs afero.Fs, k8sSpecFlag string, libPath string) (string, error) {
-		return "v1.8.7", nil
-	}
-
-	defer func() {
-		LibUpdater = ogLibUpdater
-	}()
-
 	dir, err := ioutil.TempDir("", "")
 	require.NoError(t, err)
 
@@ -335,7 +368,10 @@ func withApp010Fs(t *testing.T, appName string, fn func(app *App010)) {
 
 	stageFile(t, fs, appName, "/app.yaml")
 
-	app := NewApp010(fs, "/")
+	app := NewApp010(fs, "/", nil)
+	app.libUpdater = fakeLibUpdater(func(string, string) (string, error) {
+		return "v1.8.7", nil
+	})
 
 	fn(app)
 }

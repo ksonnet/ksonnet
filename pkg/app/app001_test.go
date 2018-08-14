@@ -254,17 +254,6 @@ func TestApp001_UpdateTargets(t *testing.T) {
 }
 
 func withApp001Fs(t *testing.T, appName string, fn func(app *App001)) {
-	ogLibUpdater := LibUpdater
-	LibUpdater = func(fs afero.Fs, k8sSpecFlag string, libPath string) (string, error) {
-		path := filepath.Join(libPath, "swagger.json")
-		stageFile(t, fs, "swagger.json", path)
-		return "v1.8.7", nil
-	}
-
-	defer func() {
-		LibUpdater = ogLibUpdater
-	}()
-
 	dir, err := ioutil.TempDir("", "")
 	require.NoError(t, err)
 
@@ -293,6 +282,12 @@ func withApp001Fs(t *testing.T, appName string, fn func(app *App001)) {
 
 	stageFile(t, fs, appName, "/app.yaml")
 
-	app := NewApp001(fs, "/")
+	app := NewApp001(fs, "/", nil)
+	app.libUpdater = fakeLibUpdater(func(k8sSpecFlag string, libPath string) (string, error) {
+		path := filepath.Join(libPath, "swagger.json")
+		stageFile(t, fs, "swagger.json", path)
+		return "v1.8.7", nil
+	})
+
 	fn(app)
 }

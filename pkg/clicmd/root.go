@@ -80,21 +80,30 @@ func appRoot() (string, error) {
 	return os.Getwd()
 }
 
+type earlyParseArgs struct {
+	command       string
+	help          bool
+	tlsSkipVerify bool
+}
+
 // parseCommand does an early parse of the command line and returns
 // what will ultimately be recognized as the command by cobra
 // and a boolean for calling help flags.
-func parseCommand(args []string) (string, bool, error) {
+func parseCommand(args []string) (earlyParseArgs, error) {
+	var parsed earlyParseArgs
 	fset := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fset.ParseErrorsWhitelist.UnknownFlags = true
-	containsHelp := fset.BoolP("help", "h", false, "") // Needed to avoid pflag.ErrHelp
+	fset.BoolVarP(&parsed.help, "help", "h", false, "") // Needed to avoid pflag.ErrHelp
+	fset.BoolVar(&parsed.tlsSkipVerify, flagTLSSkipVerify, false, "")
 	if err := fset.Parse(args); err != nil {
-		return "", false, err
+		return earlyParseArgs{}, err
 	}
 	if len(fset.Args()) == 0 {
-		return "", true, nil
+		return earlyParseArgs{}, nil
 	}
 
-	return fset.Args()[0], *containsHelp, nil
+	parsed.command = fset.Args()[0]
+	return parsed, nil
 }
 
 // checkUpgrade runs upgrade validations unless the user is running an excluded command.
@@ -124,20 +133,20 @@ func NewRoot(appFs afero.Fs, wd string, args []string) (*cobra.Command, error) {
 	}
 
 	var a app.App
-	var err error
 
-	cmdName, hasHelpFlag, err := parseCommand(args)
+	parsed, err := parseCommand(args)
 	if err != nil {
 		return nil, err
 	}
+	httpClient := app.NewHTTPClient(parsed.tlsSkipVerify)
 
 	cmds := []string{"init", "version", "help"}
 	switch {
 	// Commands that do not require a ksonnet application
-	case strings.InSlice(cmdName, cmds), hasHelpFlag:
-		a, err = app.Load(appFs, wd, true)
+	case strings.InSlice(parsed.command, cmds), parsed.help:
+		a, err = app.Load(appFs, httpClient, wd, true)
 	case len(args) > 0:
-		a, err = app.Load(appFs, wd, false)
+		a, err = app.Load(appFs, httpClient, wd, false)
 	default:
 		// noop
 	}
@@ -146,7 +155,7 @@ func NewRoot(appFs afero.Fs, wd string, args []string) (*cobra.Command, error) {
 		return nil, err
 	}
 
-	if err := checkUpgrade(a, cmdName); err != nil {
+	if err := checkUpgrade(a, parsed.command); err != nil {
 		return nil, errors.Wrap(err, "checking if app needs upgrade")
 	}
 

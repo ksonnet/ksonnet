@@ -16,6 +16,7 @@
 package lib
 
 import (
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -75,11 +76,11 @@ type Manager struct {
 }
 
 // NewManager creates a new instance of lib.Manager
-func NewManager(k8sSpecFlag string, fs afero.Fs, libPath string) (*Manager, error) {
+func NewManager(k8sSpecFlag string, fs afero.Fs, libPath string, httpClient *http.Client) (*Manager, error) {
 	//
 	// Generate the program text for ksonnet-lib.
 	//
-	spec, err := ParseClusterSpec(k8sSpecFlag, fs)
+	spec, err := ParseClusterSpec(k8sSpecFlag, fs, httpClient)
 	if err != nil {
 		return nil, err
 	}

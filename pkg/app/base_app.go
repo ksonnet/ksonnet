@@ -16,6 +16,7 @@
 package app
 
 import (
+	"net/http"
 	"path/filepath"
 	"sync"
 
@@ -27,8 +28,12 @@ import (
 )
 
 type baseApp struct {
-	root string
-	fs   afero.Fs
+	root       string
+	fs         afero.Fs
+	httpClient *http.Client
+
+	// LibUpdater updates ksonnet lib versions.
+	libUpdater KSLibUpdater
 
 	config    *Spec
 	overrides *Override
@@ -38,9 +43,14 @@ type baseApp struct {
 	load func() error
 }
 
-func newBaseApp(fs afero.Fs, root string) *baseApp {
+func newBaseApp(fs afero.Fs, root string, httpClient *http.Client) *baseApp {
 	ba := &baseApp{
-		fs:     fs,
+		fs:         fs,
+		httpClient: httpClient,
+		libUpdater: ksLibUpdater{
+			fs:         fs,
+			httpClient: httpClient,
+		},
 		root:   root,
 		config: &Spec{},
 		overrides: &Override{
@@ -304,6 +314,10 @@ func (ba *baseApp) UpdateRegistry(spec *RegistryConfig) error {
 
 func (ba *baseApp) Fs() afero.Fs {
 	return ba.fs
+}
+
+func (ba *baseApp) HTTPClient() *http.Client {
+	return ba.httpClient
 }
 
 func (ba *baseApp) Root() string {

@@ -16,9 +16,12 @@
 package actions
 
 import (
+	"net/http"
+
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/appinit"
 	"github.com/ksonnet/ksonnet/pkg/registry"
+	"github.com/ksonnet/ksonnet/pkg/util/github"
 	"github.com/spf13/afero"
 )
 
@@ -37,11 +40,11 @@ func RunInit(m map[string]interface{}) error {
 	return i.Run()
 }
 
-type appLoadFn func(fs afero.Fs, root string, skipFindRoot bool) (app.App, error)
+type appLoadFn func(fs afero.Fs, httpClient *http.Client, root string, skipFindRoot bool) (app.App, error)
 
-type appInitFn func(fs afero.Fs, name, rootPath, envName, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) error
+type appInitFn func(fs afero.Fs, httpClient *http.Client, name, rootPath, envName, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) error
 
-type initIncubatorFn func(app.App) (registry.Registry, error)
+type initIncubatorFn func(app.App, *http.Client) (registry.Registry, error)
 
 // Init creates a component namespace
 type Init struct {
@@ -57,6 +60,8 @@ type Init struct {
 	appInitFn       appInitFn
 	appLoadFn       appLoadFn
 	initIncubatorFn initIncubatorFn
+
+	httpClient *http.Client
 }
 
 // NewInit creates an instance of Init.
@@ -76,6 +81,8 @@ func NewInit(m map[string]interface{}) (*Init, error) {
 		appInitFn:       appinit.Init,
 		appLoadFn:       app.Load,
 		initIncubatorFn: initIncubator,
+
+		httpClient: ol.LoadHTTPClient(),
 	}
 
 	if ol.err != nil {
@@ -90,12 +97,12 @@ func (i *Init) Run() error {
 	var registries []registry.Registry
 
 	if !i.skipDefaultRegistries {
-		a, err := i.appLoadFn(i.fs, i.rootPath, true)
+		a, err := i.appLoadFn(i.fs, i.httpClient, i.rootPath, true)
 		if err != nil {
 			return err
 		}
 
-		gh, err := i.initIncubatorFn(a)
+		gh, err := i.initIncubatorFn(a, i.httpClient)
 		if err != nil {
 			return err
 		}
@@ -105,6 +112,7 @@ func (i *Init) Run() error {
 
 	return i.appInitFn(
 		i.fs,
+		i.httpClient,
 		i.name,
 		i.rootPath,
 		i.envName,
@@ -115,12 +123,14 @@ func (i *Init) Run() error {
 	)
 }
 
-func initIncubator(a app.App) (registry.Registry, error) {
+func initIncubator(a app.App, httpClient *http.Client) (registry.Registry, error) {
+	gh := github.NewGitHub(httpClient)
+
 	return registry.NewGitHub(
 		a,
 		&app.RegistryConfig{
 			Name:     "incubator",
 			Protocol: string(registry.ProtocolGitHub),
 			URI:      defaultIncubatorURI,
-		})
+		}, registry.GitHubClient(gh))
 }

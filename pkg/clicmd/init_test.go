@@ -41,6 +41,7 @@ func Test_initCmd(t *testing.T) {
 				actions.OptionSpecFlag:              "version:v1.8.0",
 				actions.OptionNamespace:             "new-namespace",
 				actions.OptionSkipDefaultRegistries: false,
+				actions.OptionTLSSkipVerify:         false,
 			},
 		},
 		{
@@ -61,6 +62,7 @@ func Test_initCmd(t *testing.T) {
 				actions.OptionSpecFlag:              "version:v1.8.0",
 				actions.OptionNamespace:             "new-namespace",
 				actions.OptionSkipDefaultRegistries: false,
+				actions.OptionTLSSkipVerify:         false,
 			},
 		},
 		{
