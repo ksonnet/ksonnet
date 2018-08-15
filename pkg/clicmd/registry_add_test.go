@@ -28,11 +28,12 @@ func Test_registryAddCmd(t *testing.T) {
 			args:   []string{"registry", "add", "name", "uri"},
 			action: actionRegistryAdd,
 			expected: map[string]interface{}{
-				actions.OptionApp:      nil,
-				actions.OptionName:     "name",
-				actions.OptionURI:      "uri",
-				actions.OptionOverride: false,
-				actions.OptionVersion:  "",
+				actions.OptionApp:           nil,
+				actions.OptionName:          "name",
+				actions.OptionURI:           "uri",
+				actions.OptionOverride:      false,
+				actions.OptionVersion:       "",
+				actions.OptionTLSSkipVerify: false,
 			},
 		},
 		{

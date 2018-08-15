@@ -49,12 +49,15 @@ type RegistryList struct {
 func NewRegistryList(m map[string]interface{}) (*RegistryList, error) {
 	ol := newOptionLoader(m)
 
+	httpClient := ol.LoadHTTPClient()
 	rl := &RegistryList{
 		app:        ol.LoadApp(),
 		outputType: ol.LoadOptionalString(OptionOutput),
 
-		registryListFn: registry.List,
-		out:            os.Stdout,
+		registryListFn: func(ksApp app.App) ([]registry.Registry, error) {
+			return registry.List(ksApp, httpClient)
+		},
+		out: os.Stdout,
 	}
 
 	if ol.err != nil {

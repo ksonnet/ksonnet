@@ -54,13 +54,15 @@ func NewPrototypeSearch(m map[string]interface{}) (*PrototypeSearch, error) {
 	ol := newOptionLoader(m)
 
 	app := ol.LoadApp()
+	httpClientOpt := registry.HTTPClientOpt(ol.LoadHTTPClient())
+
 	ps := &PrototypeSearch{
 		app:        app,
 		query:      ol.LoadString(OptionQuery),
 		outputType: ol.LoadOptionalString(OptionOutput),
 
 		out:            os.Stdout,
-		packageManager: registry.NewPackageManager(app),
+		packageManager: registry.NewPackageManager(app, httpClientOpt),
 		protoSearchFn:  protoSearch,
 	}
 

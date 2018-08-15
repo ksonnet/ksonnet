@@ -43,12 +43,12 @@ var (
 	// errInvalidURI is an invalid github uri error.
 	errInvalidURI = fmt.Errorf("Invalid GitHub URI: try navigating in GitHub to the URI of the folder containing the 'yaml', and using that URI instead. Generally, this URI should be of the form 'github.com/{organization}/{repository}/tree/{branch}/[path-to-directory]'")
 
-	githubFactory = func(a app.App, spec *app.RegistryConfig) (*GitHub, error) {
-		return NewGitHub(a, spec)
+	githubFactory = func(a app.App, spec *app.RegistryConfig, opts ...GitHubOpt) (*GitHub, error) {
+		return NewGitHub(a, spec, opts...)
 	}
 )
 
-type ghFactoryFn func(a app.App, spec *app.RegistryConfig) (*GitHub, error)
+type ghFactoryFn func(a app.App, spec *app.RegistryConfig, opts ...GitHubOpt) (*GitHub, error)
 
 // GitHubClient is an option for the setting a github client.
 func GitHubClient(c github.GitHub) GitHubOpt {
@@ -190,7 +190,13 @@ func (gh *GitHub) FetchRegistrySpec() (*Spec, error) {
 	// Get the latest matching commit to determine staleness of cache
 	sha, err := gh.resolveLatestSHA()
 	if err != nil || sha == "" {
-		log.Warnf("%v", errors.Wrapf(err, "unable to resolve commit for refspec: %v", gh.hd.refSpec))
+		errMsg := errors.Wrapf(err, "unable to resolve commit for refspec: %v", gh.hd.refSpec)
+		if registrySpec == nil || cachedVersion == "" {
+			// In this case, we failed both the cache and to fetch from remote
+			return nil, errMsg
+		}
+
+		log.Warnf("%v", errMsg)
 		log.Warnf("falling back to cached version (%v)", cachedVersion)
 		updateLibVersions(registrySpec, gh.hd.refSpec)
 		return registrySpec, nil

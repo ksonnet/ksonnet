@@ -28,8 +28,9 @@ import (
 func TestRegistryDescribe(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		in := map[string]interface{}{
-			OptionApp:  appMock,
-			OptionName: "incubator",
+			OptionApp:           appMock,
+			OptionName:          "incubator",
+			OptionTLSSkipVerify: false,
 		}
 
 		a, err := NewRegistryDescribe(in)

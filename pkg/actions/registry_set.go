@@ -16,6 +16,8 @@
 package actions
 
 import (
+	"net/http"
+
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/pkg/errors"
@@ -52,9 +54,12 @@ type RegistrySet struct {
 func NewRegistrySet(m map[string]interface{}) (*RegistrySet, error) {
 	ol := newOptionLoader(m)
 
+	httpClient := ol.LoadHTTPClient()
 	rs := &RegistrySet{
-		app:      ol.LoadApp(),
-		locateFn: defaultLocate,
+		app: ol.LoadApp(),
+		locateFn: func(ksApp app.App, spec *app.RegistryConfig) (registry.Setter, error) {
+			return defaultLocate(ksApp, spec, httpClient)
+		},
 	}
 
 	if ol.err != nil {
@@ -67,8 +72,8 @@ func NewRegistrySet(m map[string]interface{}) (*RegistrySet, error) {
 // defaultLocate passes-through to registry.Locate, but constrains the interface
 // to just `registry.Setter`. The concrete type of registry.Setter is determined
 // by the `spec` argument. In other words, this is a factory for registry.Setter implementations.
-func defaultLocate(ksApp app.App, spec *app.RegistryConfig) (registry.Setter, error) {
-	return registry.Locate(ksApp, spec)
+func defaultLocate(ksApp app.App, spec *app.RegistryConfig, httpClient *http.Client) (registry.Setter, error) {
+	return registry.Locate(ksApp, spec, httpClient)
 }
 
 // registryConfig returns a registry configuration by name from the provided App.

@@ -28,8 +28,9 @@ import (
 func TestUpgrade(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		in := map[string]interface{}{
-			OptionApp:    appMock,
-			OptionDryRun: true,
+			OptionApp:           appMock,
+			OptionDryRun:        true,
+			OptionTLSSkipVerify: false,
 		}
 
 		var called bool

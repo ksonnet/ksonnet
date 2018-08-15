@@ -61,9 +61,10 @@ func newPkgListCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:       a,
-				actions.OptionInstalled: viper.GetBool(vPkgListInstalled),
-				actions.OptionOutput:    viper.GetString(vPkgListOutput),
+				actions.OptionApp:           a,
+				actions.OptionInstalled:     viper.GetBool(vPkgListInstalled),
+				actions.OptionOutput:        viper.GetString(vPkgListOutput),
+				actions.OptionTLSSkipVerify: viper.GetBool(flagTLSSkipVerify),
 			}
 
 			return runAction(actionPkgList, m)

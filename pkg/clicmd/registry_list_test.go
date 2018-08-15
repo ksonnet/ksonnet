@@ -28,8 +28,9 @@ func Test_registryListCmd(t *testing.T) {
 			args:   []string{"registry", "list"},
 			action: actionRegistryList,
 			expected: map[string]interface{}{
-				actions.OptionApp:    nil,
-				actions.OptionOutput: "",
+				actions.OptionApp:           nil,
+				actions.OptionOutput:        "",
+				actions.OptionTLSSkipVerify: false,
 			},
 		},
 		{
@@ -37,8 +38,9 @@ func Test_registryListCmd(t *testing.T) {
 			args:   []string{"registry", "list", "-o", "json"},
 			action: actionRegistryList,
 			expected: map[string]interface{}{
-				actions.OptionApp:    nil,
-				actions.OptionOutput: "json",
+				actions.OptionApp:           nil,
+				actions.OptionOutput:        "json",
+				actions.OptionTLSSkipVerify: false,
 			},
 		},
 		{

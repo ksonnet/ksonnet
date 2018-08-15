@@ -79,10 +79,11 @@ func newRegistryAddCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:      a,
-				actions.OptionName:     args[0],
-				actions.OptionURI:      args[1],
-				actions.OptionOverride: viper.GetBool(vRegistryAddOverride),
+				actions.OptionApp:           a,
+				actions.OptionName:          args[0],
+				actions.OptionURI:           args[1],
+				actions.OptionOverride:      viper.GetBool(vRegistryAddOverride),
+				actions.OptionTLSSkipVerify: viper.GetBool(flagTLSSkipVerify),
 			}
 
 			return runAction(actionRegistryAdd, m)

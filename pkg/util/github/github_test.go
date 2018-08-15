@@ -16,57 +16,78 @@
 package github
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/url"
+	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+type fakeTransport struct {
+	resp *http.Response
+	err  error
+}
+
+func (f *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f.resp, f.err
+}
+
+func fakeHTTPClient(resp *http.Response, err error) *http.Client {
+	c := &http.Client{
+		Transport: &fakeTransport{
+			resp: resp,
+			err:  err,
+		},
+	}
+	return c
+}
 func Test_defaultGitHub_ValidateURL(t *testing.T) {
 	cases := []struct {
 		name     string
 		url      string
-		c        httpClient
+		c        *http.Client
 		urlParse func(string) (*url.URL, error)
 		isErr    bool
 	}{
 		{
 			name: "url exists",
 			url:  "https://github.com/ksonnet/parts",
-			c: &fakeHTTPClient{
-				headResp: &http.Response{
+			c: fakeHTTPClient(
+				&http.Response{
 					Status:     http.StatusText(http.StatusOK),
 					StatusCode: http.StatusOK,
-				},
-			},
+				}, nil,
+			),
 		},
 		{
 			name: "hostname and path",
 			url:  "github.com/ksonnet/parts",
-			c: &fakeHTTPClient{
-				headResp: &http.Response{
+			c: fakeHTTPClient(
+				&http.Response{
 					Status:     http.StatusText(http.StatusOK),
 					StatusCode: http.StatusOK,
-				},
-			},
+				}, nil,
+			),
 		},
 		{
 			name: "client failure",
-			c: &fakeHTTPClient{
-				headErr: errors.New("failed"),
-			},
+			c: fakeHTTPClient(
+				nil, errors.New("failed"),
+			),
 			isErr: true,
 		},
 		{
 			name: "invalid status code",
-			c: &fakeHTTPClient{
-				headResp: &http.Response{
+			c: fakeHTTPClient(
+				&http.Response{
 					Status:     http.StatusText(http.StatusNotFound),
 					StatusCode: http.StatusNotFound,
-				},
-			},
+				}, nil,
+			),
 			isErr: true,
 		},
 		{
@@ -98,11 +119,40 @@ func Test_defaultGitHub_ValidateURL(t *testing.T) {
 	}
 }
 
-type fakeHTTPClient struct {
-	headResp *http.Response
-	headErr  error
+type mockTransport struct {
+	roundTrip func(req *http.Request) (*http.Response, error)
 }
 
-func (c *fakeHTTPClient) Head(string) (*http.Response, error) {
-	return c.headResp, c.headErr
+func (f *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f.roundTrip(req)
+}
+
+// Ensure httpClient propogates into vendor GitHub client
+func Test_defaultGitHub_client(t *testing.T) {
+	var called bool
+	transport := &mockTransport{
+		roundTrip: func(req *http.Request) (*http.Response, error) {
+			called = true
+			return nil, errors.New("N/A")
+		},
+	}
+	httpClient := &http.Client{
+		Transport: transport,
+	}
+	wrapper := NewGitHub(httpClient)
+	dgh, ok := wrapper.(*defaultGitHub)
+	require.Truef(t, ok, "unexpected type: %T", wrapper)
+
+	os.Setenv("GITHUB_TOKEN", "")
+	github := dgh.client()
+	ctx := context.Background()
+	_, _, _ = github.Repositories.GetCommitSHA1(ctx, "ksonnet", "ksonnet", "master", "")
+	assert.True(t, called, "custom http client not called")
+	called = false
+
+	// Test with GITHUB_TOKEN
+	os.Setenv("GITHUB_TOKEN", "foobar")
+	github = dgh.client()
+	_, _, _ = github.Repositories.GetCommitSHA1(ctx, "ksonnet", "ksonnet", "master", "")
+	assert.True(t, called, "custom http client not called (with GITHUB_TOKEN)")
 }

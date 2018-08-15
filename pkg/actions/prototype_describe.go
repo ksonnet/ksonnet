@@ -51,12 +51,14 @@ func NewPrototypeDescribe(m map[string]interface{}) (*PrototypeDescribe, error) 
 	ol := newOptionLoader(m)
 
 	app := ol.LoadApp()
+	httpClientOpt := registry.HTTPClientOpt(ol.LoadHTTPClient())
+
 	pd := &PrototypeDescribe{
 		app:   app,
 		query: ol.LoadString(OptionQuery),
 
 		out:            os.Stdout,
-		packageManager: registry.NewPackageManager(app),
+		packageManager: registry.NewPackageManager(app, httpClientOpt),
 	}
 
 	if ol.err != nil {

@@ -17,6 +17,7 @@ package registry
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
@@ -62,7 +63,8 @@ type registryConfigLister interface {
 
 // packageManager is an implementation of PackageManager.
 type packageManager struct {
-	app app.App
+	app        app.App
+	httpClient *http.Client
 
 	InstallChecker pkg.InstallChecker
 	packagesFn     func() ([]pkg.Package, error)
@@ -73,15 +75,29 @@ type packageManager struct {
 
 var _ PackageManager = (*packageManager)(nil)
 
+// PackageManagerOpt configures a package mangager
+type PackageManagerOpt func(*packageManager)
+
+// HTTPClientOpt configures a packageManager with an http.Client
+func HTTPClientOpt(httpClient *http.Client) PackageManagerOpt {
+	return func(pm *packageManager) {
+		pm.httpClient = httpClient
+	}
+}
+
 // NewPackageManager creates an instance of PackageManager.
-func NewPackageManager(a app.App) PackageManager {
+func NewPackageManager(a app.App, opts ...PackageManagerOpt) PackageManager {
 	pm := packageManager{
 		app:            a,
 		InstallChecker: &pkg.DefaultInstallChecker{App: a},
 	}
+	// Allow httpClient and other options to be set
+	for _, optFn := range opts {
+		optFn(&pm)
+	}
 	pm.packagesFn = pm.Packages
 	pm.registriesFn = func() (map[string]SpecFetcher, error) {
-		r, err := resolveRegistries(a)
+		r, err := resolveRegistries(a, pm.httpClient)
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +105,7 @@ func NewPackageManager(a app.App) PackageManager {
 		return registriesToSpecFetchers(r), nil
 	}
 	pm.resolverFn = func(name string) (LibrarySpecResolver, error) {
-		r, err := resolveRegistry(a, name)
+		r, err := resolveRegistry(a, name, pm.httpClient)
 		if err != nil {
 			return nil, err
 		}
@@ -102,12 +118,13 @@ func NewPackageManager(a app.App) PackageManager {
 			return nil, errors.New("not implemented")
 		}
 	}
+
 	return &pm
 }
 
 // resolveRegistries returns a list of registries from the provided app.
 // (SpecFetcher is a subset of the Registry interface)
-func resolveRegistries(a app.App) (map[string]Registry, error) {
+func resolveRegistries(a app.App, httpClient *http.Client) (map[string]Registry, error) {
 	if a == nil {
 		return nil, errors.New("nil app")
 	}
@@ -119,7 +136,7 @@ func resolveRegistries(a app.App) (map[string]Registry, error) {
 
 	result := make(map[string]Registry)
 	for _, cfg := range cfgs {
-		r, err := Locate(a, cfg)
+		r, err := Locate(a, cfg, httpClient)
 		if err != nil {
 			return nil, errors.Wrapf(err, "resolving registry: %v", cfg.Name)
 		}
@@ -130,12 +147,12 @@ func resolveRegistries(a app.App) (map[string]Registry, error) {
 }
 
 // resolveRegistry returns the named registry from the provided app.
-func resolveRegistry(a app.App, name string) (Registry, error) {
+func resolveRegistry(a app.App, name string, httpClient *http.Client) (Registry, error) {
 	if a == nil {
 		return nil, errors.New("nil app")
 	}
 
-	all, err := resolveRegistries(a)
+	all, err := resolveRegistries(a, httpClient)
 	if err != nil {
 		return nil, err
 	}

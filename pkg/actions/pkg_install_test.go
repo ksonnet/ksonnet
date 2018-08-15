@@ -32,10 +32,11 @@ func TestPkgInstall(t *testing.T) {
 		customName := "customName"
 
 		in := map[string]interface{}{
-			OptionApp:     appMock,
-			OptionLibName: libName,
-			OptionName:    customName,
-			OptionForce:   false,
+			OptionApp:           appMock,
+			OptionLibName:       libName,
+			OptionName:          customName,
+			OptionForce:         false,
+			OptionTLSSkipVerify: false,
 		}
 
 		a, err := NewPkgInstall(in)

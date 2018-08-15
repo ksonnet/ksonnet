@@ -16,7 +16,11 @@
 package actions
 
 import (
+	"crypto/tls"
 	"fmt"
+	"net"
+	"net/http"
+	"time"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
@@ -110,6 +114,8 @@ const (
 	OptionTlaVarFiles = "tla-var-files"
 	// OptionTlaVars is jsonnet tla vars.
 	OptionTlaVars = "tla-vars"
+	// OptionTLSSkipVerify specifies that tls server certifactes should not be verified.
+	OptionTLSSkipVerify = "tls-skip-verify"
 	// OptionUnset is unset option.
 	OptionUnset = "unset"
 	// OptionURI is uri option. Used for setting registry URI.
@@ -340,6 +346,38 @@ func (o *optionLoader) LoadApp() app.App {
 	}
 
 	return a
+}
+
+// LoadHTTPClient loads an HTTP client based on common configuration for certificates, tls verification, timeouts, etc.
+func (o *optionLoader) LoadHTTPClient() *http.Client {
+	tlsSkipVerify := o.LoadOptionalBool(OptionTLSSkipVerify)
+
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: tlsSkipVerify,
+	}
+
+	timeoutSeconds := 10
+
+	var defaultTransport http.RoundTripper = &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSClientConfig:       tlsConfig,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
+	c := &http.Client{
+		Timeout:   time.Duration(timeoutSeconds) * time.Second,
+		Transport: defaultTransport,
+	}
+
+	return c
 }
 
 func (o *optionLoader) load(key string) interface{} {

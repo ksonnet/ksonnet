@@ -55,6 +55,8 @@ func NewPkgInstall(m map[string]interface{}) (*PkgInstall, error) {
 	if ol.err != nil {
 		return nil, ol.err
 	}
+	httpClient := ol.LoadHTTPClient()
+	httpClientOpt := registry.HTTPClientOpt(httpClient)
 
 	nl := &PkgInstall{
 		app:        a,
@@ -62,9 +64,11 @@ func NewPkgInstall(m map[string]interface{}) (*PkgInstall, error) {
 		customName: ol.LoadString(OptionName),
 		force:      ol.LoadBool(OptionForce),
 		envName:    ol.LoadOptionalString(OptionEnvName),
-		checker:    registry.NewPackageManager(a),
+		checker:    registry.NewPackageManager(a, httpClientOpt),
 
-		libCacherFn: registry.CacheDependency,
+		libCacherFn: func(a app.App, checker registry.InstalledChecker, d pkg.Descriptor, customName string, force bool) (*app.LibraryConfig, error) {
+			return registry.CacheDependency(a, checker, d, customName, force, httpClient)
+		},
 		libUpdateFn: a.UpdateLib,
 	}
 

@@ -16,6 +16,7 @@
 package actions
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
@@ -85,17 +86,18 @@ func TestRegistryAdd(t *testing.T) {
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
 				in := map[string]interface{}{
-					OptionApp:      appMock,
-					OptionName:     name,
-					OptionURI:      tc.uri,
-					OptionVersion:  tc.version,
-					OptionOverride: tc.isOverride,
+					OptionApp:           appMock,
+					OptionName:          name,
+					OptionURI:           tc.uri,
+					OptionVersion:       tc.version,
+					OptionOverride:      tc.isOverride,
+					OptionTLSSkipVerify: false,
 				}
 
 				a, err := NewRegistryAdd(in)
 				require.NoError(t, err)
 
-				a.registryAddFn = func(a app.App, protocol registry.Protocol, name string, uri string, isOverride bool) (*registry.Spec, error) {
+				a.registryAddFn = func(a app.App, protocol registry.Protocol, name string, uri string, isOverride bool, httpClient *http.Client) (*registry.Spec, error) {
 					assert.Equal(t, "new", name)
 					assert.Equal(t, tc.protocol, protocol)
 					assert.Equal(t, tc.expectedURI, uri)

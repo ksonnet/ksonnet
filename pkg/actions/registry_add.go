@@ -16,6 +16,7 @@
 package actions
 
 import (
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -36,11 +37,13 @@ func RunRegistryAdd(m map[string]interface{}) error {
 
 // RegistryAdd adds a registry.
 type RegistryAdd struct {
-	app           app.App
-	name          string
-	uri           string
-	isOverride    bool
-	registryAddFn func(a app.App, protocol registry.Protocol, name string, uri string, isOverride bool) (*registry.Spec, error)
+	app        app.App
+	name       string
+	uri        string
+	isOverride bool
+	httpClient *http.Client
+
+	registryAddFn func(a app.App, protocol registry.Protocol, name string, uri string, isOverride bool, httpClient *http.Client) (*registry.Spec, error)
 }
 
 // NewRegistryAdd creates an instance of RegistryAdd.
@@ -52,6 +55,7 @@ func NewRegistryAdd(m map[string]interface{}) (*RegistryAdd, error) {
 		name:       ol.LoadString(OptionName),
 		uri:        ol.LoadString(OptionURI),
 		isOverride: ol.LoadBool(OptionOverride),
+		httpClient: ol.LoadHTTPClient(),
 
 		registryAddFn: registry.Add,
 	}
@@ -70,7 +74,7 @@ func (ra *RegistryAdd) Run() error {
 		return errors.Wrap(err, "detect registry protocol")
 	}
 
-	_, err = ra.registryAddFn(ra.app, rd.Protocol, ra.name, rd.URI, ra.isOverride)
+	_, err = ra.registryAddFn(ra.app, rd.Protocol, ra.name, rd.URI, ra.isOverride, ra.httpClient)
 	return err
 }
 

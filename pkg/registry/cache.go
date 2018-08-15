@@ -17,6 +17,7 @@ package registry
 
 import (
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"strings"
 
@@ -30,7 +31,7 @@ import (
 // CacheDependency vendors registry dependencies.
 // TODO: create unit tests for this once mocks for this package are
 // worked out.
-func CacheDependency(a app.App, checker InstalledChecker, d pkg.Descriptor, customName string, force bool) (*app.LibraryConfig, error) {
+func CacheDependency(a app.App, checker InstalledChecker, d pkg.Descriptor, customName string, force bool, httpClient *http.Client) (*app.LibraryConfig, error) {
 	logger := log.WithFields(log.Fields{
 		"action":      "registry.CacheDependency",
 		"part":        d.Name,
@@ -58,7 +59,7 @@ func CacheDependency(a app.App, checker InstalledChecker, d pkg.Descriptor, cust
 		return nil, fmt.Errorf("registry '%s' does not exist", d.Registry)
 	}
 
-	r, err := Locate(a, regRefSpec)
+	r, err := Locate(a, regRefSpec, httpClient)
 	if err != nil {
 		return nil, err
 	}

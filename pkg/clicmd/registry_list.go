@@ -56,8 +56,9 @@ func newRegistryListCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:    a,
-				actions.OptionOutput: viper.GetString(vRegistryListOutput),
+				actions.OptionApp:           a,
+				actions.OptionOutput:        viper.GetString(vRegistryListOutput),
+				actions.OptionTLSSkipVerify: viper.GetBool(flagTLSSkipVerify),
 			}
 
 			return runAction(actionRegistryList, m)

@@ -48,6 +48,7 @@ const (
 	flagSkipGc                = "skip-gc"
 	flagTlaVar                = "tla-str"
 	flagTlaVarFile            = "tla-str-file"
+	flagTLSSkipVerify         = "tls-skip-verify"
 	flagOutput                = "output"
 	flagOverride              = "override"
 	flagUnset                 = "unset"

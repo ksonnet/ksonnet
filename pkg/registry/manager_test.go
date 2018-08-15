@@ -35,7 +35,7 @@ func Test_List(t *testing.T) {
 			Return("12345", nil)
 
 		ghcOpt := GitHubClient(c)
-		githubFactory = func(a app.App, spec *app.RegistryConfig) (*GitHub, error) {
+		githubFactory = func(a app.App, spec *app.RegistryConfig, opts ...GitHubOpt) (*GitHub, error) {
 			return NewGitHub(a, spec, ghcOpt)
 		}
 
@@ -49,7 +49,7 @@ func Test_List(t *testing.T) {
 		appMock := &mocks.App{}
 		appMock.On("Registries").Return(specs, nil)
 
-		registries, err := List(appMock)
+		registries, err := List(appMock, nil)
 		require.NoError(t, err)
 
 		require.Len(t, registries, 1)

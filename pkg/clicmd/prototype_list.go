@@ -60,8 +60,9 @@ func newPrototypeListCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:    a,
-				actions.OptionOutput: viper.GetString(vPrototypeListOutput),
+				actions.OptionApp:           a,
+				actions.OptionOutput:        viper.GetString(vPrototypeListOutput),
+				actions.OptionTLSSkipVerify: viper.GetBool(flagTLSSkipVerify),
 			}
 
 			return runAction(actionPrototypeList, m)

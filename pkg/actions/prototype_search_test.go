@@ -58,9 +58,10 @@ func TestPrototypeSearch(t *testing.T) {
 				manager.On("Prototypes").Return(prototypes, nil)
 
 				in := map[string]interface{}{
-					OptionApp:    appMock,
-					OptionQuery:  "search",
-					OptionOutput: tc.outputType,
+					OptionApp:           appMock,
+					OptionQuery:         "search",
+					OptionOutput:        tc.outputType,
+					OptionTLSSkipVerify: false,
 				}
 
 				a, err := NewPrototypeSearch(in)
