@@ -377,6 +377,7 @@ func TestGithub_ResolveLibrarySpec(t *testing.T) {
 		APIVersion:  "0.0.1",
 		Kind:        "ksonnet.io/parts",
 		Name:        "apache",
+		Version:     "54321",
 		Description: "part description",
 		Author:      "author",
 		Contributors: parts.ContributorSpecs{

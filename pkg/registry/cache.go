@@ -64,6 +64,28 @@ func CacheDependency(a app.App, checker InstalledChecker, d pkg.Descriptor, cust
 		return nil, err
 	}
 
+	libSpec, err := r.ResolveLibrarySpec(d.Name, d.Version)
+	if err != nil {
+		return nil, errors.Wrapf(err, "resolving package metadata: %v", d)
+	}
+
+	// Check whether this library version is already installed
+	var qualified = d
+	qualified.Version = libSpec.Version
+	ok, err := checker.IsInstalled(qualified)
+	if err != nil {
+		return nil, errors.Wrapf(err, "checking package installed status: %v", qualified)
+	}
+
+	if ok && !force {
+		// We will reuse the currently installed package files
+		return &app.LibraryConfig{
+			Registry: d.Registry,
+			Name:     d.Name,
+			Version:  libSpec.Version,
+		}, nil
+	}
+
 	// Get all directories and files first, then write to disk. This
 	// protects us from failing with a half-cached dependency because of
 	// a network failure.
@@ -86,18 +108,6 @@ func CacheDependency(a app.App, checker InstalledChecker, d pkg.Descriptor, cust
 
 	// Make triple-sure the library references the correct registry, as it is known in this app.
 	libRef.Registry = d.Registry
-
-	// Check whether this library version is already installed
-	var qualified = d
-	qualified.Version = libRef.Version
-	ok, err := checker.IsInstalled(qualified)
-	if err != nil {
-		return nil, errors.Wrapf(err, "checking package installed status")
-	}
-	if ok && !force {
-		return nil, errors.Errorf("package '%s/%s@%s' already exists.",
-			libRef.Registry, libRef.Name, libRef.Version)
-	}
 
 	// Add library to app specification, but wait to write it out until
 	// the end, in case one of the network calls fails.
