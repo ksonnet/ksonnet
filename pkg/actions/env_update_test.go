@@ -16,6 +16,7 @@
 package actions
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
@@ -41,7 +42,7 @@ func TestEnvUpdate(t *testing.T) {
 		a, err := newEnvUpdate(in)
 		require.NoError(t, err)
 
-		a.genLibFn = func(_ app.App, k8sSpecFlag, libPath string) error {
+		a.genLibFn = func(_ app.App, k8sSpecFlag, libPath string, httpClient *http.Client) error {
 			assert.Equal(t, "version:v1.8.9", k8sSpecFlag)
 			assert.Equal(t, "/app/lib/v1.8.9", libPath)
 			return nil

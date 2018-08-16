@@ -16,6 +16,7 @@
 package appinit
 
 import (
+	"net/http"
 	"path/filepath"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
@@ -28,13 +29,14 @@ import (
 )
 
 // Init initializes a ksonnet application.
-func Init(fs afero.Fs, name, rootPath, envName, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) error {
-	i := new(fs, name, rootPath, envName, k8sSpecFlag, serverURI, namespace, registries)
+func Init(fs afero.Fs, httpClient *http.Client, name, rootPath, envName, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) error {
+	i := newInitApp(fs, httpClient, name, rootPath, envName, k8sSpecFlag, serverURI, namespace, registries)
 	return i.Run()
 }
 
 type initApp struct {
 	fs          afero.Fs
+	httpClient  *http.Client
 	name        string
 	rootPath    string
 	envName     string
@@ -45,9 +47,10 @@ type initApp struct {
 }
 
 // New creates an instance of Init.
-func new(fs afero.Fs, name, rootPath, envName, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) *initApp {
+func newInitApp(fs afero.Fs, httpClient *http.Client, name, rootPath, envName, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) *initApp {
 	i := &initApp{
 		fs:          fs,
+		httpClient:  httpClient,
 		name:        name,
 		rootPath:    rootPath,
 		envName:     envName,
@@ -72,7 +75,7 @@ func (i *initApp) Run() error {
 	}
 
 	// Load application.
-	a, err := app.Load(i.fs, i.rootPath, false)
+	a, err := app.Load(i.fs, i.httpClient, i.rootPath, false)
 	if err != nil {
 		return err
 	}

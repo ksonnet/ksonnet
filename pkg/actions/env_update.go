@@ -17,6 +17,7 @@ package actions
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/lib"
@@ -37,7 +38,8 @@ type EnvUpdate struct {
 	app     app.App
 	envName string
 
-	genLibFn func(app.App, string, string) error
+	httpClient *http.Client
+	genLibFn   func(app.App, string, string, *http.Client) error
 }
 
 // RunEnvUpdate runs `env update`
@@ -48,7 +50,8 @@ func newEnvUpdate(m map[string]interface{}) (*EnvUpdate, error) {
 		app:     ol.LoadApp(),
 		envName: ol.LoadString(OptionEnvName),
 
-		genLibFn: genLib,
+		httpClient: ol.LoadHTTPClient(),
+		genLibFn:   genLib,
 	}
 
 	if ol.err != nil {
@@ -71,12 +74,12 @@ func (eu *EnvUpdate) run() error {
 		return err
 	}
 
-	return eu.genLibFn(eu.app, k8sSpecFlag, libPath)
+	return eu.genLibFn(eu.app, k8sSpecFlag, libPath, eu.httpClient)
 
 }
 
-func genLib(a app.App, k8sSpecFlag, libPath string) error {
-	libManager, err := lib.NewManager(k8sSpecFlag, a.Fs(), libPath)
+func genLib(a app.App, k8sSpecFlag, libPath string, httpClient *http.Client) error {
+	libManager, err := lib.NewManager(k8sSpecFlag, a.Fs(), libPath, httpClient)
 	if err != nil {
 		return err
 	}

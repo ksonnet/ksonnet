@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -243,4 +244,24 @@ func AssertDirectoriesMatch(t *testing.T, fs afero.Fs, rootA string, rootB strin
 	assert.NoError(t, err, "walking %v", rootB)
 
 	assert.Empty(t, diffSet, "file set symmetric_difference")
+}
+
+type fakeTransport struct {
+	resp *http.Response
+	err  error
+}
+
+func (f *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f.resp, f.err
+}
+
+// FakeHTTPClient returns an http.Client that will respond with the predefined response and error.
+func FakeHTTPClient(resp *http.Response, err error) *http.Client {
+	c := &http.Client{
+		Transport: &fakeTransport{
+			resp: resp,
+			err:  err,
+		},
+	}
+	return c
 }

@@ -28,8 +28,9 @@ func Test_envUpdateCmd(t *testing.T) {
 			args:   []string{"env", "update", "prod"},
 			action: actionEnvUpdate,
 			expected: map[string]interface{}{
-				actions.OptionApp:     nil,
-				actions.OptionEnvName: "prod",
+				actions.OptionApp:           nil,
+				actions.OptionEnvName:       "prod",
+				actions.OptionTLSSkipVerify: false,
 			},
 		},
 		{

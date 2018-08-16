@@ -17,6 +17,7 @@ package lib
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -44,7 +45,7 @@ type ClusterSpec interface {
 // ClusterSpec object. For example, if the flag is `--version:v1.7.1`, then we
 // will output a ClusterSpec representing the cluster specification associated
 // with the `v1.7.1` build of Kubernetes.
-func ParseClusterSpec(specFlag string, fs afero.Fs) (ClusterSpec, error) {
+func ParseClusterSpec(specFlag string, fs afero.Fs, httpClient *http.Client) (ClusterSpec, error) {
 	split := strings.SplitN(specFlag, ":", 2)
 	if len(split) <= 1 || split[1] == "" {
 		return nil, fmt.Errorf("Invalid API specification '%s'", specFlag)
@@ -52,7 +53,7 @@ func ParseClusterSpec(specFlag string, fs afero.Fs) (ClusterSpec, error) {
 
 	switch split[0] {
 	case "version":
-		return &clusterSpecVersion{k8sVersion: split[1]}, nil
+		return &clusterSpecVersion{k8sVersion: split[1], httpClient: httpClient}, nil
 	case "file":
 		p, err := filepath.Abs(split[1])
 		if err != nil {
@@ -123,11 +124,15 @@ func (cs *clusterSpecLive) Version() (string, error) {
 
 type clusterSpecVersion struct {
 	k8sVersion string
+	httpClient *http.Client
 }
 
 func (cs *clusterSpecVersion) OpenAPI() ([]byte, error) {
+	if cs.httpClient == nil {
+		return nil, errors.New("nil httpClient")
+	}
 	versionURL := fmt.Sprintf(k8sVersionURLTemplate, cs.k8sVersion)
-	resp, err := http.Get(versionURL)
+	resp, err := cs.httpClient.Get(versionURL)
 	if err != nil {
 		return nil, err
 	}

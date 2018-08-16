@@ -33,13 +33,13 @@ func TestClusterSpecParsingSuccess(t *testing.T) {
 	afero.WriteFile(testFS, swaggerLocation, []byte(blankSwaggerData), os.ModePerm)
 
 	var successTests = []parseSuccess{
-		{"version:v1.7.1", &clusterSpecVersion{"v1.7.1"}},
+		{"version:v1.7.1", &clusterSpecVersion{k8sVersion: "v1.7.1"}},
 		{"file:swagger.json", &clusterSpecFile{"swagger.json", testFS}},
 		{"url:file:///some_file", &clusterSpecLive{"file:///some_file"}},
 	}
 
 	for _, test := range successTests {
-		parsed, err := ParseClusterSpec(test.input, testFS)
+		parsed, err := ParseClusterSpec(test.input, testFS, nil)
 		if err != nil {
 			t.Errorf("Failed to parse spec: %v", err)
 		}
@@ -90,7 +90,7 @@ func TestClusterSpecParsingFailure(t *testing.T) {
 	for _, test := range failureTests {
 		testFS := afero.NewMemMapFs()
 		afero.WriteFile(testFS, swaggerLocation, []byte(blankSwaggerData), os.ModePerm)
-		_, err := ParseClusterSpec(test.input, testFS)
+		_, err := ParseClusterSpec(test.input, testFS, nil)
 		if err == nil {
 			t.Errorf("Cluster spec parse for '%s' should have failed, but succeeded", test.input)
 		} else if msg := err.Error(); msg != test.errorMsg {

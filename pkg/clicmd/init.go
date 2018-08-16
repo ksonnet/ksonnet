@@ -148,6 +148,7 @@ func newInitCmd(fs afero.Fs, wd string) *cobra.Command {
 				actions.OptionServer:                server,
 				actions.OptionNamespace:             namespace,
 				actions.OptionSkipDefaultRegistries: viper.GetBool(vInitSkipDefaultRegistries),
+				actions.OptionTLSSkipVerify:         viper.GetBool(flagTLSSkipVerify),
 			}
 
 			return runAction(actionInit, m)

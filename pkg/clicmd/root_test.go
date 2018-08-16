@@ -26,46 +26,57 @@ func Test_parseCommand(t *testing.T) {
 	tests := []struct {
 		name     string
 		args     []string
-		expected string
-		helpFlag bool
+		expected earlyParseArgs
 	}{
 		{
-			name:     "normal",
-			args:     []string{"init", "-abc", "123", "--foo", "--bar", ""},
-			expected: "init",
-			helpFlag: false,
+			name: "normal",
+			args: []string{"init", "-abc", "123", "--foo", "--bar", ""},
+			expected: earlyParseArgs{
+				command: "init",
+			},
 		},
 		{
-			name:     "flags before command",
-			args:     []string{"-abc", "123", "--foo", "--empty", "", "--bar", "arg", "init"},
-			expected: "init",
-			helpFlag: false,
+			name: "flags before command",
+			args: []string{"-abc", "123", "--foo", "--empty", "", "--bar", "arg", "init"},
+			expected: earlyParseArgs{
+				command: "init",
+			},
 		},
 		{
 			name:     "no command",
 			args:     []string{"-abc", "123", "--foo", "--empty", "", "--bar", "arg"},
-			expected: "",
-			helpFlag: true,
+			expected: earlyParseArgs{},
 		},
 		{
-			name:     "help flag",
-			args:     []string{"init", "arg", "--help", "-h"},
-			expected: "init",
-			helpFlag: true,
+			name: "help flag",
+			args: []string{"init", "arg", "--help", "-h"},
+			expected: earlyParseArgs{
+				command: "init",
+				help:    true,
+			},
 		},
 		{
-			name:     "help command",
-			args:     []string{"help", "-abc", "--foo", "--bar", ""},
-			expected: "help",
-			helpFlag: false,
+			name: "help command",
+			args: []string{"help", "-abc", "--foo", "--bar", ""},
+			expected: earlyParseArgs{
+				command: "help",
+				help:    false,
+			},
+		},
+		{
+			name: "tls-skip-verify",
+			args: []string{"whatever", "-abc", "--tls-skip-verify", "--bar", ""},
+			expected: earlyParseArgs{
+				command:       "whatever",
+				tlsSkipVerify: true,
+			},
 		},
 	}
 
 	for _, tc := range tests {
-		cmd, hasHelpFlag, err := parseCommand(tc.args)
+		parsed, err := parseCommand(tc.args)
 		require.NoError(t, err)
-		assert.Equal(t, tc.expected, cmd, tc.name)
-		assert.Equal(t, tc.helpFlag, hasHelpFlag, tc.name)
+		assert.Equal(t, tc.expected, parsed, tc.name)
 
 	}
 }

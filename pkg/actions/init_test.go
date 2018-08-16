@@ -16,6 +16,7 @@
 package actions
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
@@ -65,12 +66,13 @@ func TestInit(t *testing.T) {
 					OptionServer:                aServerURI,
 					OptionNamespace:             aNamespace,
 					OptionSkipDefaultRegistries: tc.skipRegistries,
+					OptionTLSSkipVerify:         false,
 				}
 
 				a, err := NewInit(in)
 				require.NoError(t, err)
 
-				a.appInitFn = func(fs afero.Fs, name, rootPath, envName, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) error {
+				a.appInitFn = func(fs afero.Fs, httpClient *http.Client, name, rootPath, envName, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) error {
 					assert.Equal(t, aFs, fs)
 					assert.Equal(t, aName, name)
 					assert.Equal(t, aRootPath, rootPath)
@@ -93,11 +95,11 @@ func TestInit(t *testing.T) {
 					return nil
 				}
 
-				a.appLoadFn = func(fs afero.Fs, root string, skipFindRoot bool) (app.App, error) {
+				a.appLoadFn = func(fs afero.Fs, httpClient *http.Client, root string, skipFindRoot bool) (app.App, error) {
 					return appMock, nil
 				}
 
-				a.initIncubatorFn = func(a app.App) (registry.Registry, error) {
+				a.initIncubatorFn = func(a app.App, httpClient *http.Client) (registry.Registry, error) {
 					r := &rmocks.Registry{}
 					r.On("Protocol").Return(registry.ProtocolGitHub)
 					r.On("URI").Return("github.com/ksonnet/parts/tree/master/incubator")

@@ -16,12 +16,15 @@
 package appinit
 
 import (
+	"net/http"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 	"github.com/ksonnet/ksonnet/pkg/registry/mocks"
+	"github.com/ksonnet/ksonnet/pkg/util/test"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
@@ -56,7 +59,7 @@ func TestInit(t *testing.T) {
 		isErr    bool
 	}{
 		{
-			name:     "with valid aptions",
+			name:     "with valid options",
 			appName:  name,
 			rootPath: rootPath,
 		},
@@ -84,7 +87,19 @@ func TestInit(t *testing.T) {
 			err := fs.MkdirAll("/existing", 0755)
 			require.NoError(t, err)
 
-			i := new(fs, tc.appName, tc.rootPath, tc.envName, specFlag, serverURI, namespace, registries)
+			specReader, err := os.Open("../cluster/testdata/swagger.json")
+			if err != nil {
+				require.NoError(t, err, "opening fixture: swagger.json")
+				return
+			}
+			defer specReader.Close()
+			httpClient := test.FakeHTTPClient(
+				&http.Response{
+					StatusCode: 200,
+					Body:       specReader,
+				}, nil)
+
+			i := newInitApp(fs, httpClient, tc.appName, tc.rootPath, tc.envName, specFlag, serverURI, namespace, registries)
 			err = i.Run()
 
 			if tc.isErr {

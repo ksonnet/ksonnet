@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,8 +44,8 @@ type App001 struct {
 var _ App = (*App001)(nil)
 
 // NewApp001 creates an App001 instance.
-func NewApp001(fs afero.Fs, root string) *App001 {
-	ba := newBaseApp(fs, root)
+func NewApp001(fs afero.Fs, root string, httpClient *http.Client) *App001 {
+	ba := newBaseApp(fs, root, httpClient)
 
 	return &App001{
 		out:     os.Stdout,
@@ -80,7 +81,7 @@ func (a *App001) AddEnvironment(e *EnvironmentConfig, k8sSpecFlag string, isOver
 		return err
 	}
 
-	_, err = LibUpdater(a.fs, k8sSpecFlag, a.appLibPath(e.Name))
+	_, err = a.libUpdater.UpdateKSLib(k8sSpecFlag, a.appLibPath(e.Name))
 	return err
 }
 
@@ -294,7 +295,7 @@ func (a *App001) convertEnvironment(envName string, dryRun bool) error {
 	}
 
 	k8sSpecFlag := fmt.Sprintf("version:%s", env.KubernetesVersion)
-	_, err = LibUpdater(a.fs, k8sSpecFlag, app010LibPath(a.root))
+	_, err = a.libUpdater.UpdateKSLib(k8sSpecFlag, app010LibPath(a.root))
 	if err != nil {
 		return err
 	}

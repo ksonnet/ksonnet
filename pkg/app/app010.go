@@ -18,6 +18,7 @@ package app
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -39,15 +40,29 @@ type App010 struct {
 
 var _ App = (*App010)(nil)
 
+// App010Opt is a constructor option for App010
+type App010Opt func(*App010)
+
+// App010OptLibUpdater returns an option for setting a KSLibUpdater on an App010
+func App010OptLibUpdater(libUpdater KSLibUpdater) App010Opt {
+	return func(a *App010) {
+		a.libUpdater = libUpdater
+	}
+}
+
 // NewApp010 creates an App010 instance.
-func NewApp010(fs afero.Fs, root string) *App010 {
-	ba := newBaseApp(fs, root)
+func NewApp010(fs afero.Fs, root string, httpClient *http.Client, opts ...App010Opt) *App010 {
+	ba := newBaseApp(fs, root, httpClient)
 
 	a := &App010{
 		baseApp: ba,
 		out:     os.Stdout,
 
 		libPaths: make(map[string]string),
+	}
+
+	for _, optFn := range opts {
+		optFn(a)
 	}
 
 	return a
@@ -78,7 +93,7 @@ func (a *App010) AddEnvironment(newEnv *EnvironmentConfig, k8sSpecFlag string, i
 	}
 
 	if k8sSpecFlag != "" {
-		ver, err := LibUpdater(a.fs, k8sSpecFlag, app010LibPath(a.root))
+		ver, err := a.libUpdater.UpdateKSLib(k8sSpecFlag, app010LibPath(a.root))
 		if err != nil {
 			return err
 		}
@@ -149,7 +164,7 @@ func (a *App010) LibPath(envName string) (string, error) {
 	}
 
 	ver := fmt.Sprintf("version:%s", env.KubernetesVersion)
-	lm, err := lib.NewManager(ver, a.fs, app010LibPath(a.root))
+	lm, err := lib.NewManager(ver, a.fs, app010LibPath(a.root), a.httpClient)
 	if err != nil {
 		return "", err
 	}
