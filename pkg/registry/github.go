@@ -321,6 +321,9 @@ func (gh *GitHub) ResolveLibrarySpec(partName, libRefSpec string) (*parts.Spec, 
 		return nil, err
 	}
 
+	// For GitHub repositories, the SHA is the correct version, not what is written in the spec file.
+	parts.Version = resolvedSHA
+
 	return parts, nil
 }
 
