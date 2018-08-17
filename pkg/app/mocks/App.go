@@ -312,17 +312,26 @@ func (_m *App) SetCurrentEnvironment(name string) error {
 }
 
 // UpdateLib provides a mock function with given fields: name, env, spec
-func (_m *App) UpdateLib(name string, env string, spec *app.LibraryConfig) error {
+func (_m *App) UpdateLib(name string, env string, spec *app.LibraryConfig) (*app.LibraryConfig, error) {
 	ret := _m.Called(name, env, spec)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, *app.LibraryConfig) error); ok {
+	var r0 *app.LibraryConfig
+	if rf, ok := ret.Get(0).(func(string, string, *app.LibraryConfig) *app.LibraryConfig); ok {
 		r0 = rf(name, env, spec)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*app.LibraryConfig)
+		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, *app.LibraryConfig) error); ok {
+		r1 = rf(name, env, spec)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // UpdateRegistry provides a mock function with given fields: spec

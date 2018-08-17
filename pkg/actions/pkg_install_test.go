@@ -33,7 +33,7 @@ func TestPkgInstall(t *testing.T) {
 
 		in := map[string]interface{}{
 			OptionApp:           appMock,
-			OptionLibName:       libName,
+			OptionPkgName:       libName,
 			OptionName:          customName,
 			OptionForce:         false,
 			OptionTLSSkipVerify: false,
@@ -60,7 +60,7 @@ func TestPkgInstall(t *testing.T) {
 		}
 
 		var updaterCalled bool
-		fakeUpdater := func(name string, env string, spec *app.LibraryConfig) error {
+		fakeUpdater := func(name string, env string, spec *app.LibraryConfig) (*app.LibraryConfig, error) {
 			updaterCalled = true
 			assert.Equal(t, newLibCfg.Name, name, "unexpected library name")
 			assert.Equal(t, a.envName, env, "unexpected environment name")
@@ -68,7 +68,7 @@ func TestPkgInstall(t *testing.T) {
 			if spec != nil {
 				assert.Equal(t, expectedD.Name, spec.Name, "unexpected library name in configuration object")
 			}
-			return nil
+			return nil, nil
 		}
 
 		a.libCacherFn = fakeCacher

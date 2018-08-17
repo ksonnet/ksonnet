@@ -245,7 +245,7 @@ func Test_baseApp_UpdateLibrary(t *testing.T) {
 		ba := newBaseApp(fs, "/", nil)
 
 		// Test updating non-existing registry
-		err := ba.UpdateLib(tc.libCfg.Name, tc.env, &tc.libCfg)
+		_, err := ba.UpdateLib(tc.libCfg.Name, tc.env, &tc.libCfg)
 		if tc.expectErr {
 			require.Error(t, err)
 		} else {
@@ -257,6 +257,148 @@ func Test_baseApp_UpdateLibrary(t *testing.T) {
 		}
 	}
 
+}
+
+func Test_baseApp_UpdateLib_Remove(t *testing.T) {
+	tests := []struct {
+		name               string
+		globalLibraries    LibraryConfigs
+		environments       EnvironmentConfigs
+		libName            string
+		expectRemovedLib   *LibraryConfig
+		env                string
+		appFilePath        string
+		expectEnvironments EnvironmentConfigs
+		expectLibraries    LibraryConfigs
+		expectErr          bool
+	}{
+		{
+			name:        "remove - env - exists",
+			libName:     "nginx",
+			env:         "default",
+			appFilePath: "app020_simple.yaml",
+			environments: EnvironmentConfigs{
+				"default": &EnvironmentConfig{
+					Name: "default",
+					Libraries: LibraryConfigs{
+						"nginx": &LibraryConfig{
+							Name:     "nginx",
+							Registry: "incubator",
+							Version:  "1.2.3",
+						},
+						"other": &LibraryConfig{
+							Name:     "other",
+							Registry: "incubator",
+							Version:  "1.2.3",
+						},
+					},
+				},
+			},
+			expectRemovedLib: &LibraryConfig{
+				Name:     "nginx",
+				Registry: "incubator",
+				Version:  "1.2.3",
+			},
+			expectEnvironments: EnvironmentConfigs{
+				"default": &EnvironmentConfig{
+					Name: "default",
+					Libraries: LibraryConfigs{
+						"other": &LibraryConfig{
+							Name:     "other",
+							Registry: "incubator",
+							Version:  "1.2.3",
+						},
+					},
+				},
+			},
+		},
+		{
+			name:        "remove - global - exists",
+			libName:     "nginx",
+			appFilePath: "app020_simple.yaml",
+			globalLibraries: LibraryConfigs{
+				"nginx": &LibraryConfig{
+					Name:     "nginx",
+					Registry: "incubator",
+					Version:  "1.2.3",
+				},
+				"other": &LibraryConfig{
+					Name:     "other",
+					Registry: "incubator",
+					Version:  "1.2.3",
+				},
+			},
+			expectRemovedLib: &LibraryConfig{
+				Name:     "nginx",
+				Registry: "incubator",
+				Version:  "1.2.3",
+			},
+			expectLibraries: LibraryConfigs{
+				"other": &LibraryConfig{
+					Name:     "other",
+					Registry: "incubator",
+					Version:  "1.2.3",
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name:        "no such environment",
+			libName:     "nginx",
+			env:         "no-such-environment",
+			appFilePath: "app020_app.yaml",
+			expectErr:   true,
+		},
+		{
+			name:        "no such library",
+			libName:     "no-such-library",
+			appFilePath: "app020_app.yaml",
+			globalLibraries: LibraryConfigs{
+				"nginx": &LibraryConfig{
+					Name:     "nginx",
+					Registry: "incubator",
+					Version:  "1.2.3",
+				},
+				"other": &LibraryConfig{
+					Name:     "other",
+					Registry: "incubator",
+					Version:  "1.2.3",
+				},
+			},
+			expectErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+
+			if tc.appFilePath != "" {
+				stageFile(t, fs, tc.appFilePath, "/app.yaml")
+			}
+
+			ba := newBaseApp(fs, "/", nil)
+			ba.load = func() error { return nil }
+
+			if tc.globalLibraries != nil {
+				ba.config.Libraries = tc.globalLibraries
+			}
+			if tc.environments != nil {
+				ba.config.Environments = tc.environments
+			}
+
+			removed, err := ba.UpdateLib(tc.libName, tc.env, nil)
+			if tc.expectErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.expectRemovedLib, removed)
+			assert.Equal(t, tc.expectLibraries, ba.config.Libraries)
+			assert.Equal(t, tc.expectEnvironments, ba.config.Environments)
+		})
+	}
 }
 
 func Test_baseApp_load_override(t *testing.T) {
@@ -375,3 +517,4 @@ func Test_baseApp_environment_just_override(t *testing.T) {
 
 	assert.Equal(t, expected, e)
 }
+
