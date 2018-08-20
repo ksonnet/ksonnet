@@ -19,11 +19,14 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/registry"
+	"github.com/pkg/errors"
 )
 
 type libCacher func(app.App, registry.InstalledChecker, pkg.Descriptor, string, bool) (*app.LibraryConfig, error)
 
 type libUpdater func(name string, env string, spec *app.LibraryConfig) (*app.LibraryConfig, error)
+
+type envChecker func(name string) (bool, error)
 
 // RunPkgInstall runs `pkg install`
 func RunPkgInstall(m map[string]interface{}) error {
@@ -37,14 +40,15 @@ func RunPkgInstall(m map[string]interface{}) error {
 
 // PkgInstall installs packages.
 type PkgInstall struct {
-	app         app.App
-	libName     string
-	customName  string
-	envName     string
-	force       bool
-	checker     registry.InstalledChecker
-	libCacherFn libCacher
-	libUpdateFn libUpdater
+	app          app.App
+	libName      string
+	customName   string
+	envName      string
+	force        bool
+	checker      registry.InstalledChecker
+	libCacherFn  libCacher
+	libUpdateFn  libUpdater
+	envCheckerFn envChecker
 }
 
 // NewPkgInstall creates an instance of PkgInstall.
@@ -70,6 +74,14 @@ func NewPkgInstall(m map[string]interface{}) (*PkgInstall, error) {
 			return registry.CacheDependency(a, checker, d, customName, force, httpClient)
 		},
 		libUpdateFn: a.UpdateLib,
+		envCheckerFn: func(name string) (bool, error) {
+			env, err := a.Environment(name)
+			if err != nil {
+				return false, err
+			}
+			exists := (env != nil)
+			return exists, nil
+		},
 	}
 
 	if ol.err != nil {
@@ -84,6 +96,17 @@ func (pi *PkgInstall) Run() error {
 	d, customName, err := pi.parseDepSpec()
 	if err != nil {
 		return err
+	}
+
+	// Environment validation
+	if pi.envName != "" {
+		ok, err := pi.envCheckerFn(pi.envName)
+		if err != nil {
+			return errors.Wrap(err, "checking environment")
+		}
+		if !ok {
+			return errors.Errorf("invalid environment: %s", pi.envName)
+		}
 	}
 
 	libCfg, err := pi.libCacherFn(pi.app, pi.checker, d, customName, pi.force)

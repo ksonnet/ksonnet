@@ -22,6 +22,7 @@ import (
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/registry"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -96,4 +97,46 @@ func TestPkgInstall_requires_app(t *testing.T) {
 	in := make(map[string]interface{})
 	_, err := NewPkgInstall(in)
 	require.Error(t, err)
+}
+
+func TestPkgInstall_invalid_env(t *testing.T) {
+	withApp(t, func(appMock *amocks.App) {
+		libName := "incubator/apache"
+		customName := "customName"
+
+		in := map[string]interface{}{
+			OptionApp:           appMock,
+			OptionPkgName:       libName,
+			OptionName:          customName,
+			OptionEnvName:       "invalid-env",
+			OptionForce:         false,
+			OptionTLSSkipVerify: false,
+		}
+
+		a, err := NewPkgInstall(in)
+		require.NoError(t, err)
+
+		var cacherCalled bool
+		fakeCacher := func(a app.App, checker registry.InstalledChecker, d pkg.Descriptor, cn string, force bool) (*app.LibraryConfig, error) {
+			cacherCalled = true
+			return nil, errors.New("not implemented")
+		}
+
+		var updaterCalled bool
+		fakeUpdater := func(name string, env string, spec *app.LibraryConfig) (*app.LibraryConfig, error) {
+			updaterCalled = true
+			return nil, errors.New("not implemented")
+		}
+
+		a.libCacherFn = fakeCacher
+		a.libUpdateFn = fakeUpdater
+		a.envCheckerFn = func(string) (bool, error) {
+			return false, nil
+		}
+
+		err = a.Run()
+		require.Error(t, err)
+		assert.False(t, cacherCalled, "dependency cacher called unexpectedly")
+		assert.False(t, updaterCalled, "library reference updater called unexpectedly")
+	})
 }
