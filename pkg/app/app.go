@@ -87,10 +87,12 @@ type App interface {
 	SetCurrentEnvironment(name string) error
 	// UpdateTargets sets the targets for an environment.
 	UpdateTargets(envName string, targets []string) error
-	// UpdateLib adds or updates a library reference.
+	// UpdateLib adds, updates or removes a library reference.
 	// env is optional - if provided the reference is scoped under the environment,
 	// otherwise it is globally scoped.
-	UpdateLib(name string, env string, spec *LibraryConfig) error
+	// If spec if nil, the library reference will be removed.
+	// Returns the previous reference for the named library, if one existed.
+	UpdateLib(name string, env string, spec *LibraryConfig) (*LibraryConfig, error)
 	// UpdateRegistry updates a registry.
 	UpdateRegistry(spec *RegistryConfig) error
 	// Upgrade upgrades an application to the current version.

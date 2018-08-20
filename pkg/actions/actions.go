@@ -71,8 +71,8 @@ const (
 	OptionInstalled = "only-installed"
 	// OptionJPaths is jsonnet paths.
 	OptionJPaths = "jpaths"
-	// OptionLibName is libName.
-	OptionLibName = "lib-name"
+	// OptionPkgName is (an optionally qualified) name of a package.
+	OptionPkgName = "pkg-name"
 	// OptionName is name option.
 	OptionName = "name"
 	// OptionModule is component module option.

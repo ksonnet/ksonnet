@@ -23,7 +23,7 @@ import (
 
 type libCacher func(app.App, registry.InstalledChecker, pkg.Descriptor, string, bool) (*app.LibraryConfig, error)
 
-type libUpdater func(name string, env string, spec *app.LibraryConfig) error
+type libUpdater func(name string, env string, spec *app.LibraryConfig) (*app.LibraryConfig, error)
 
 // RunPkgInstall runs `pkg install`
 func RunPkgInstall(m map[string]interface{}) error {
@@ -60,7 +60,7 @@ func NewPkgInstall(m map[string]interface{}) (*PkgInstall, error) {
 
 	nl := &PkgInstall{
 		app:        a,
-		libName:    ol.LoadString(OptionLibName),
+		libName:    ol.LoadString(OptionPkgName),
 		customName: ol.LoadString(OptionName),
 		force:      ol.LoadBool(OptionForce),
 		envName:    ol.LoadOptionalString(OptionEnvName),
@@ -91,10 +91,16 @@ func (pi *PkgInstall) Run() error {
 		return err
 	}
 
-	err = pi.libUpdateFn(d.Name, pi.envName, libCfg)
+	oldCfg, err := pi.libUpdateFn(d.Name, pi.envName, libCfg)
 	if err != nil {
 		return err
 	}
+
+	if oldCfg == nil {
+		return nil
+	}
+
+	// TODO Garbage collector hook here
 
 	return nil
 }

@@ -21,50 +21,33 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
 )
 
-func Test_pkgInstallCmd(t *testing.T) {
+func Test_pkgRemoveCmd(t *testing.T) {
 	cases := []cmdTestCase{
 		{
 			name:   "in general",
-			args:   []string{"pkg", "install", "package-name"},
-			action: actionPkgInstall,
+			args:   []string{"pkg", "remove", "package-name"},
+			action: actionPkgRemove,
 			expected: map[string]interface{}{
 				actions.OptionApp:           nil,
 				actions.OptionPkgName:       "package-name",
-				actions.OptionName:          "",
 				actions.OptionEnvName:       "",
-				actions.OptionForce:         false,
 				actions.OptionTLSSkipVerify: false,
 			},
 		},
 		{
 			name:   "with env flag",
-			args:   []string{"pkg", "install", "--env", "production", "package-name"},
-			action: actionPkgInstall,
+			args:   []string{"pkg", "remove", "--env", "production", "package-name"},
+			action: actionPkgRemove,
 			expected: map[string]interface{}{
 				actions.OptionApp:           nil,
 				actions.OptionPkgName:       "package-name",
-				actions.OptionName:          "",
 				actions.OptionEnvName:       "production",
-				actions.OptionForce:         false,
-				actions.OptionTLSSkipVerify: false,
-			},
-		},
-		{
-			name:   "force install",
-			args:   []string{"pkg", "install", "package-name", "--force"},
-			action: actionPkgInstall,
-			expected: map[string]interface{}{
-				actions.OptionApp:           nil,
-				actions.OptionPkgName:       "package-name",
-				actions.OptionName:          "",
-				actions.OptionEnvName:       "",
-				actions.OptionForce:         true,
 				actions.OptionTLSSkipVerify: false,
 			},
 		},
 		{
 			name:  "invalid args",
-			args:  []string{"pkg", "install"},
+			args:  []string{"pkg", "remove"},
 			isErr: true,
 		},
 	}

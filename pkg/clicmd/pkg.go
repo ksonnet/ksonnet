@@ -27,6 +27,7 @@ const (
 var (
 	pkgShortDesc = map[string]string{
 		"install":  "Install a package (e.g. extra prototypes) for the current ksonnet app",
+		"remove":   "Remove a package from the app or environment scope",
 		"describe": "Describe a ksonnet package and its contents",
 		"list":     "List all packages known (downloaded or not) for the current ksonnet app",
 	}
@@ -68,6 +69,7 @@ func newPkgCmd(a app.App) *cobra.Command {
 	pkgCmd.AddCommand(newPkgListCmd(a))
 	pkgCmd.AddCommand(newPkgInstallCmd(a))
 	pkgCmd.AddCommand(newPkgDescribeCmd(a))
+	pkgCmd.AddCommand(newPkgRemoveCmd(a))
 
 	return pkgCmd
 }

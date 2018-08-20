@@ -1,0 +1,8 @@
+apiVersion: 0.2.0
+environments:
+  default:
+    libraries:
+kind: ksonnet.io/app
+libraries:
+name: test-get-envs
+version: 0.0.1

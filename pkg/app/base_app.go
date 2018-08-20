@@ -236,44 +236,67 @@ func (ba *baseApp) AddRegistry(newReg *RegistryConfig, isOverride bool) error {
 // UpdateLib adds or updates a library reference.
 // env is optional - if provided the reference is scoped under the environment,
 // otherwise it is globally scoped.
-func (ba *baseApp) UpdateLib(name string, env string, libSpec *LibraryConfig) error {
+// If spec if nil, the library reference will be removed.
+// Returns the previous reference for the named library, if one existed.
+func (ba *baseApp) UpdateLib(name string, env string, libSpec *LibraryConfig) (*LibraryConfig, error) {
 	if err := ba.load(); err != nil {
-		return errors.Wrap(err, "load configuration")
+		return nil, errors.Wrap(err, "load configuration")
 	}
 
 	if ba.config == nil {
-		return errors.Errorf("invalid app - configuration is nil")
+		return nil, errors.Errorf("invalid app - configuration is nil")
 	}
 
-	if libSpec.Name != name {
-		return errors.Errorf("library name mismatch: %v vs %v", libSpec.Name, name)
+	if libSpec != nil && libSpec.Name != name {
+		return nil, errors.Errorf("library name mismatch: %v vs %v", libSpec.Name, name)
 	}
 
 	// TODO support app overrides
 
+	var oldSpec *LibraryConfig
 	switch env {
 	case "":
+		if ba.config.Libraries == nil {
+			ba.config.Libraries = LibraryConfigs{}
+		}
 		// Globally scoped
-		ba.config.Libraries[name] = libSpec
+		oldSpec = ba.config.Libraries[name]
+		if libSpec == nil {
+			if oldSpec == nil {
+				return nil, errors.Errorf("package not found: %s", name)
+			}
+			delete(ba.config.Libraries, name)
+		} else {
+			ba.config.Libraries[name] = libSpec
+		}
 	default:
 		// Scoped by environment
 		e, ok := ba.config.GetEnvironmentConfig(env)
 		if !ok {
-			return errors.Errorf("invalid environment: %v", env)
+			return nil, errors.Errorf("invalid environment: %v", env)
 		}
 
 		if e.Libraries == nil {
 			// We may want to move this into EnvrionmentConfig unmarshaling code.
 			e.Libraries = LibraryConfigs{}
 		}
-		e.Libraries[name] = libSpec
+		oldSpec = e.Libraries[name]
+
+		if libSpec == nil {
+			if oldSpec == nil {
+				return nil, errors.Errorf("package %s not found in environment: %s", name, env)
+			}
+			delete(e.Libraries, name)
+		} else {
+			e.Libraries[name] = libSpec
+		}
 
 		if err := ba.config.UpdateEnvironmentConfig(env, e); err != nil {
-			return errors.Wrapf(err, "updating environment %v", env)
+			return nil, errors.Wrapf(err, "updating environment %v", env)
 		}
 	}
 
-	return ba.save()
+	return oldSpec, ba.save()
 }
 
 // UpdateRegistry updates a registry spec and persists in app[.override].yaml

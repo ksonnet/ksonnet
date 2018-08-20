@@ -48,6 +48,7 @@ const (
 	actionPkgDescribe
 	actionPkgInstall
 	actionPkgList
+	actionPkgRemove
 	actionPrototypeDescribe
 	actionPrototypeList
 	actionPrototypePreview
@@ -91,6 +92,7 @@ var (
 		actionPkgDescribe:       actions.RunPkgDescribe,
 		actionPkgInstall:        actions.RunPkgInstall,
 		actionPkgList:           actions.RunPkgList,
+		actionPkgRemove:         actions.RunPkgRemove,
 		actionPrototypeDescribe: actions.RunPrototypeDescribe,
 		actionPrototypeList:     actions.RunPrototypeList,
 		actionPrototypePreview:  actions.RunPrototypePreview,
