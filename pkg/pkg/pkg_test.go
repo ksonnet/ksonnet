@@ -29,15 +29,17 @@ import (
 func Test_DefaultInstallChecker_isInstalled(t *testing.T) {
 	cases := []struct {
 		name           string
+		libName        string
 		setupLibraries func(*amocks.App)
 		isInstalled    bool
 		isErr          bool
 	}{
 		{
-			name: "is installed globally",
+			name:    "is installed globally",
+			libName: "redis",
 			setupLibraries: func(a *amocks.App) {
 				libraries := app.LibraryConfigs{
-					"redis": &app.LibraryConfig{},
+					"redis": &app.LibraryConfig{Version: "5.0.0"},
 				}
 
 				a.On("Libraries").Return(libraries, nil)
@@ -46,14 +48,42 @@ func Test_DefaultInstallChecker_isInstalled(t *testing.T) {
 			isInstalled: true,
 		},
 		{
-			name: "not installed",
+			name:    "is installed globally - match version",
+			libName: "redis@5.0.0",
+			setupLibraries: func(a *amocks.App) {
+				libraries := app.LibraryConfigs{
+					"redis": &app.LibraryConfig{Version: "5.0.0"},
+				}
+
+				a.On("Libraries").Return(libraries, nil)
+				a.On("Environments").Return(app.EnvironmentConfigs{}, nil)
+			},
+			isInstalled: true,
+		},
+		{
+			name:    "is installed globally - version mismatch",
+			libName: "redis@5.0.1",
+			setupLibraries: func(a *amocks.App) {
+				libraries := app.LibraryConfigs{
+					"redis": &app.LibraryConfig{Version: "5.0.0"},
+				}
+
+				a.On("Libraries").Return(libraries, nil)
+				a.On("Environments").Return(app.EnvironmentConfigs{}, nil)
+			},
+			isInstalled: false,
+		},
+		{
+			name:    "not installed",
+			libName: "redis",
 			setupLibraries: func(a *amocks.App) {
 				a.On("Libraries").Return(nil, nil)
 				a.On("Environments").Return(app.EnvironmentConfigs{}, nil)
 			},
 		},
 		{
-			name: "libraries error",
+			name:    "libraries error",
+			libName: "redis",
 			setupLibraries: func(a *amocks.App) {
 				a.On("Libraries").Return(nil, errors.New("failed"))
 				a.On("Environments").Return(app.EnvironmentConfigs{}, nil)
@@ -61,10 +91,11 @@ func Test_DefaultInstallChecker_isInstalled(t *testing.T) {
 			isErr: true,
 		},
 		{
-			name: "is installed in an environment",
+			name:    "is installed in an environment",
+			libName: "redis",
 			setupLibraries: func(a *amocks.App) {
 				libraries := app.LibraryConfigs{
-					"redis": &app.LibraryConfig{},
+					"redis": &app.LibraryConfig{Version: "5.0.0"},
 				}
 
 				a.On("Libraries").Return(app.LibraryConfigs{}, nil)
@@ -78,7 +109,44 @@ func Test_DefaultInstallChecker_isInstalled(t *testing.T) {
 			isInstalled: true,
 		},
 		{
-			name: "is installed both globally and in environment",
+			name:    "is installed in an environment - match version",
+			libName: "redis@5.0.0",
+			setupLibraries: func(a *amocks.App) {
+				libraries := app.LibraryConfigs{
+					"redis": &app.LibraryConfig{Version: "5.0.0"},
+				}
+
+				a.On("Libraries").Return(app.LibraryConfigs{}, nil)
+				a.On("Environments").Return(app.EnvironmentConfigs{
+					"default": &app.EnvironmentConfig{
+						Name:      "default",
+						Libraries: libraries,
+					},
+				}, nil)
+			},
+			isInstalled: true,
+		},
+		{
+			name:    "is installed in an environment - version mismatch",
+			libName: "redis@5.0.1",
+			setupLibraries: func(a *amocks.App) {
+				libraries := app.LibraryConfigs{
+					"redis": &app.LibraryConfig{Version: "5.0.0"},
+				}
+
+				a.On("Libraries").Return(app.LibraryConfigs{}, nil)
+				a.On("Environments").Return(app.EnvironmentConfigs{
+					"default": &app.EnvironmentConfig{
+						Name:      "default",
+						Libraries: libraries,
+					},
+				}, nil)
+			},
+			isInstalled: false,
+		},
+		{
+			name:    "is installed both globally and in environment",
+			libName: "redis",
 			setupLibraries: func(a *amocks.App) {
 				libraries := app.LibraryConfigs{
 					"redis": &app.LibraryConfig{},
@@ -103,7 +171,7 @@ func Test_DefaultInstallChecker_isInstalled(t *testing.T) {
 
 				ic := DefaultInstallChecker{App: a}
 
-				i, err := ic.IsInstalled("redis")
+				i, err := ic.IsInstalled(tc.libName)
 				if tc.isErr {
 					require.Error(t, err)
 					return

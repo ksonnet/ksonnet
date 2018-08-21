@@ -206,7 +206,10 @@ func Test_packageManager_Find(t *testing.T) {
 		}
 
 		for _, tc := range tests {
-			p, err := pm.Find(tc.name)
+			d, err := pkg.Parse(tc.name)
+			require.NoError(t, err)
+
+			p, err := pm.Find(d)
 			if tc.expectErr {
 				require.Error(t, err, tc.name)
 				continue

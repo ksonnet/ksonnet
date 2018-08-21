@@ -152,16 +152,11 @@ func versionAndVendorRelPath(lib *app.LibraryConfig, vendorRoot string, relPath 
 	// Version the path
 	var versionedPath string
 	if lib.Version != "" {
-		//filepath.ToSlash()
 		parts := strings.SplitN(filepath.ToSlash(relPath), "/", -1)
 		if parts[0] == lib.Name {
 			parts[0] = fmt.Sprintf("%s@%s", lib.Name, lib.Version)
 		}
 		versionedPath = filepath.FromSlash(strings.Join(parts, "/"))
-
-		// oldPrefix := filepath.Join(lib.Registry, lib.Name)
-		// newPrefix := fmt.Sprintf("%s@%s", lib.Name, lib.Version)
-		// versionedPath = strings.Replace(relPath, oldPrefix, newPrefix, 1)
 	} else {
 		// For unversioned packages, use path as-is
 		versionedPath = relPath

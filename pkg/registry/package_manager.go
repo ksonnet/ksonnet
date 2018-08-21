@@ -36,7 +36,11 @@ type InstalledChecker interface {
 
 // PackageManager is a package manager.
 type PackageManager interface {
-	Find(string) (pkg.Package, error)
+	InstalledChecker
+
+	// Find finds a package by name. Package names have the format `<registry>/<library>@<version>`.
+	// Remote registries may be consulted if the package is not installed locally.
+	Find(pkg.Descriptor) (pkg.Package, error)
 
 	// Packages lists packages.
 	Packages() ([]pkg.Package, error)
@@ -54,7 +58,8 @@ type PackageManager interface {
 	// PackageEnvironments returns a list of environments a package is installed in.
 	PackageEnvironments(pkg pkg.Package) ([]*app.EnvironmentConfig, error)
 
-	InstalledChecker
+	// VendorPath returns the local path a package would be vendored at
+	VendorPath(pkg.Descriptor) (string, error)
 }
 
 type registryConfigLister interface {
@@ -199,14 +204,9 @@ func registryProtocol(a registryConfigLister, name string) (proto Protocol, foun
 
 // Find finds a package by name. Package names have the format `<registry>/<library>@<version>`.
 // Remote registries may be consulted if the package is not installed locally.
-func (m *packageManager) Find(name string) (pkg.Package, error) {
+func (m *packageManager) Find(d pkg.Descriptor) (pkg.Package, error) {
 	if m.app == nil {
 		return nil, errors.New("nil app")
-	}
-
-	d, err := pkg.Parse(name)
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing package name")
 	}
 
 	index, err := allLibraries(m.app)
@@ -627,4 +627,33 @@ func (m *packageManager) PackageEnvironments(pkg pkg.Package) ([]*app.Environmen
 	}
 
 	return results, nil
+}
+
+// VendorPath returns the local path a package would be vendored at
+func (m *packageManager) VendorPath(d pkg.Descriptor) (string, error) {
+	if m.app == nil {
+		return "", errors.New("nil app")
+	}
+
+	protocol, ok := registryProtocol(m.app, d.Registry)
+	if !ok {
+		return "", errors.Errorf("library %s references invalid registry: %s", d.Name, d.Registry)
+	}
+
+	switch protocol {
+	case ProtocolHelm:
+		path := pkg.HelmVendorPath(m.app, d)
+		if path == "" {
+			return "", errors.Errorf("could not resolve path for descriptor: %v", d)
+		}
+		return path, nil
+	case ProtocolFilesystem, ProtocolGitHub:
+		path := pkg.LocalVendorPath(m.app, d)
+		if path == "" {
+			return "", errors.Errorf("could not resolve path for descriptor: %v", d)
+		}
+		return path, nil
+	default:
+		return "", errors.Errorf("package %q - registry uses unknown protocol: %q", d, protocol)
+	}
 }

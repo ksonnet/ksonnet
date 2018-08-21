@@ -245,6 +245,7 @@ func withApp(t *testing.T, fn func(*mocks.App)) {
 	appMock := &mocks.App{}
 	appMock.On("Fs").Return(fs)
 	appMock.On("Root").Return("/")
+	appMock.On("VendorPath").Return("/vendor")
 
 	fn(appMock)
 }

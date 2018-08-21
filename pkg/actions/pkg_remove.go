@@ -19,6 +19,8 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/registry"
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 // PkgRemove removes packages
@@ -27,6 +29,7 @@ type PkgRemove struct {
 	pkgName     string
 	envName     string
 	checker     registry.InstalledChecker
+	gc          registry.GarbageCollector
 	libUpdateFn libUpdater
 }
 
@@ -39,11 +42,14 @@ func NewPkgRemove(m map[string]interface{}) (*PkgRemove, error) {
 		return nil, ol.err
 	}
 
+	pm := registry.NewPackageManager(a)
+
 	pr := &PkgRemove{
 		app:         a,
 		pkgName:     ol.LoadString(OptionPkgName),
 		envName:     ol.LoadOptionalString(OptionEnvName),
 		libUpdateFn: a.UpdateLib,
+		gc:          registry.NewGarbageCollector(a.Fs(), pm, a.VendorPath()),
 	}
 
 	if ol.err != nil {
@@ -79,6 +85,16 @@ func (pr *PkgRemove) Run() error {
 		return nil
 	}
 
-	// TODO: Garbage collection hook goes here
+	log.Infof("Removing package %v", oldCfg)
+
+	// Optionally remove any orphaned vendor directories
+	if err := pr.gc.RemoveOrphans(pkg.Descriptor{
+		Registry: oldCfg.Registry,
+		Name:     oldCfg.Name,
+		Version:  oldCfg.Version,
+	}); err != nil {
+		return errors.Wrapf(err, "garbage collection for package %v", oldCfg)
+	}
+
 	return nil
 }

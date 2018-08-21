@@ -21,6 +21,7 @@ import (
 	"text/template"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/registry"
 )
 
@@ -69,7 +70,12 @@ func NewPkgDescribe(m map[string]interface{}) (*PkgDescribe, error) {
 
 // Run describes a package.
 func (pd *PkgDescribe) Run() error {
-	p, err := pd.packageManager.Find(pd.pkgName)
+	d, err := pkg.Parse(pd.pkgName)
+	if err != nil {
+		return err
+	}
+
+	p, err := pd.packageManager.Find(d)
 	if err != nil {
 		return err
 	}
