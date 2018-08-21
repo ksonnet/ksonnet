@@ -98,12 +98,22 @@ func (ic *DefaultInstallChecker) IsInstalled(name string) (bool, error) {
 		return false, errors.New("app is nil")
 	}
 
+	d, err := Parse(name)
+	if err != nil {
+		return false, errors.Wrapf(err, "parsing package descriptor: %s", name)
+	}
+
 	libs, err := ic.App.Libraries()
 	if err != nil {
 		return false, errors.Wrapf(err, "checking if package %q is installed", name)
 	}
 
-	_, isGlobal := libs[name]
+	var isGlobal bool
+	if l, ok := libs[d.Name]; ok {
+		if d.Version == "" || l.Version == d.Version {
+			isGlobal = true
+		}
+	}
 
 	envs, err := ic.App.Environments()
 	if err != nil {
@@ -112,9 +122,11 @@ func (ic *DefaultInstallChecker) IsInstalled(name string) (bool, error) {
 
 	var isLocal bool
 	for _, e := range envs {
-		_, isLocal = e.Libraries[name]
-		if isLocal {
-			break
+		if l, ok := e.Libraries[d.Name]; ok {
+			if d.Version == "" || l.Version == d.Version {
+				isLocal = true
+				break
+			}
 		}
 	}
 

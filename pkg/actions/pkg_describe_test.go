@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/ksonnet/ksonnet/pkg/prototype"
 	"github.com/pkg/errors"
 
@@ -34,6 +35,7 @@ import (
 )
 
 func TestPkgDescribe(t *testing.T) {
+	d := pkg.Descriptor{Name: "apache"}
 
 	cases := []struct {
 		name        string
@@ -52,7 +54,7 @@ func TestPkgDescribe(t *testing.T) {
 				p.On("IsInstalled").Return(false, nil)
 
 				pkgManager := &regmocks.PackageManager{}
-				pkgManager.On("Find", "apache").Return(p, nil)
+				pkgManager.On("Find", d).Return(p, nil)
 
 				return pkgManager
 			},
@@ -76,7 +78,7 @@ func TestPkgDescribe(t *testing.T) {
 				p.On("Prototypes").Return(prototypes, nil)
 
 				pkgManager := &regmocks.PackageManager{}
-				pkgManager.On("Find", "apache").Return(p, nil)
+				pkgManager.On("Find", d).Return(p, nil)
 
 				return pkgManager
 			},
@@ -86,7 +88,7 @@ func TestPkgDescribe(t *testing.T) {
 			isErr: true,
 			pkgManager: func() registry.PackageManager {
 				pkgManager := &regmocks.PackageManager{}
-				pkgManager.On("Find", "apache").Return(nil, errors.New("failed"))
+				pkgManager.On("Find", d).Return(nil, errors.New("failed"))
 
 				return pkgManager
 			},
@@ -100,7 +102,7 @@ func TestPkgDescribe(t *testing.T) {
 				p.On("IsInstalled").Return(false, errors.New("failed"))
 
 				pkgManager := &regmocks.PackageManager{}
-				pkgManager.On("Find", "apache").Return(p, nil)
+				pkgManager.On("Find", d).Return(p, nil)
 
 				return pkgManager
 			},
@@ -115,7 +117,7 @@ func TestPkgDescribe(t *testing.T) {
 				p.On("IsInstalled").Return(true, nil)
 
 				pkgManager := &regmocks.PackageManager{}
-				pkgManager.On("Find", "apache").Return(p, nil)
+				pkgManager.On("Find", d).Return(p, nil)
 
 				return pkgManager
 			},
@@ -129,7 +131,7 @@ func TestPkgDescribe(t *testing.T) {
 				p.On("IsInstalled").Return(false, nil)
 
 				pkgManager := &regmocks.PackageManager{}
-				pkgManager.On("Find", "apache").Return(p, nil)
+				pkgManager.On("Find", d).Return(p, nil)
 
 				return pkgManager
 			},

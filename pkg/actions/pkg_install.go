@@ -46,6 +46,7 @@ type PkgInstall struct {
 	envName      string
 	force        bool
 	checker      registry.InstalledChecker
+	gc           registry.GarbageCollector
 	libCacherFn  libCacher
 	libUpdateFn  libUpdater
 	envCheckerFn envChecker
@@ -62,13 +63,16 @@ func NewPkgInstall(m map[string]interface{}) (*PkgInstall, error) {
 	httpClient := ol.LoadHTTPClient()
 	httpClientOpt := registry.HTTPClientOpt(httpClient)
 
+	pm := registry.NewPackageManager(a, httpClientOpt)
+
 	nl := &PkgInstall{
 		app:        a,
 		libName:    ol.LoadString(OptionPkgName),
 		customName: ol.LoadString(OptionName),
 		force:      ol.LoadBool(OptionForce),
 		envName:    ol.LoadOptionalString(OptionEnvName),
-		checker:    registry.NewPackageManager(a, httpClientOpt),
+		checker:    pm,
+		gc:         registry.NewGarbageCollector(a.Fs(), pm, a.VendorPath()),
 
 		libCacherFn: func(a app.App, checker registry.InstalledChecker, d pkg.Descriptor, customName string, force bool) (*app.LibraryConfig, error) {
 			return registry.CacheDependency(a, checker, d, customName, force, httpClient)
@@ -123,7 +127,14 @@ func (pi *PkgInstall) Run() error {
 		return nil
 	}
 
-	// TODO Garbage collector hook here
+	// Optionally remove any orphaned vendor directories
+	if err := pi.gc.RemoveOrphans(pkg.Descriptor{
+		Registry: oldCfg.Registry,
+		Name:     oldCfg.Name,
+		Version:  oldCfg.Version,
+	}); err != nil {
+		return errors.Wrapf(err, "garbage collection for package %v", oldCfg)
+	}
 
 	return nil
 }

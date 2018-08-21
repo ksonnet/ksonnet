@@ -563,3 +563,19 @@ func (s *Spec) UpdateEnvironmentConfig(name string, env *EnvironmentConfig) erro
 	s.Environments[env.Name] = env
 	return nil
 }
+
+func (l LibraryConfig) String() string {
+	switch {
+	case l.Registry != "" && l.Version != "":
+		return fmt.Sprintf("%s/%s@%s", l.Registry, l.Name, l.Version)
+	case l.Registry != "" && l.Version == "":
+		return fmt.Sprintf("%s/%s", l.Registry, l.Name)
+	case l.Registry == "" && l.Version != "":
+		return fmt.Sprintf("%s@%s", l.Name, l.Version)
+	case l.Registry == "" && l.Version == "":
+		return l.Name
+	default:
+		// Not sure which case we missed, just default to verbose
+		return fmt.Sprintf("%s/%s@%s", l.Registry, l.Name, l.Version)
+	}
+}

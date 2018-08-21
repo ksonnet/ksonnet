@@ -204,3 +204,12 @@ func (l *Local) Path() string {
 
 	return buildPath(l.a, l.registryName, l.name, l.version)
 }
+
+// LocalVendorPath returns a path for vendoring the described package.
+func LocalVendorPath(a app.App, d Descriptor) string {
+	if a == nil {
+		return ""
+	}
+
+	return buildPath(a, d.Registry, d.Name, d.Version)
+}

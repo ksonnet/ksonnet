@@ -34,21 +34,42 @@ type Descriptor struct {
 	Version  string
 }
 
+func (d Descriptor) String() string {
+	switch {
+	case d.Registry != "" && d.Version != "":
+		return fmt.Sprintf("%s/%s@%s", d.Registry, d.Name, d.Version)
+	case d.Registry != "" && d.Version == "":
+		return fmt.Sprintf("%s/%s", d.Registry, d.Name)
+	case d.Registry == "" && d.Version != "":
+		return fmt.Sprintf("%s@%s", d.Name, d.Version)
+	case d.Registry == "" && d.Version == "":
+		return d.Name
+	default:
+		// Not sure which case we missed, just default to verbose
+		return fmt.Sprintf("%s/%s@%s", d.Registry, d.Name, d.Version)
+	}
+}
+
 // Parse parses a package identifier into its components
 // <registry>/<name>@<version>
 func Parse(id string) (Descriptor, error) {
+	var registry, name, version string
+
 	matches := reDescriptor.FindStringSubmatch(id)
 	if len(matches) == 0 {
 		return Descriptor{}, errInvalidSpec
 	}
 
 	if matches[2] == "" {
-		return Descriptor{Name: strings.TrimPrefix(matches[1], "/")}, nil
+		// No registry
+		name = strings.TrimPrefix(matches[1], "/")
+	} else {
+		// Registry and name
+		registry = matches[1]
+		name = strings.TrimPrefix(matches[2], "/")
 	}
 
-	registry := matches[1]
-	name := strings.TrimPrefix(matches[2], "/")
-	version := strings.TrimPrefix(matches[3], "@")
+	version = strings.TrimPrefix(matches[3], "@")
 
 	return Descriptor{
 		Registry: registry,

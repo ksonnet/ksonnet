@@ -246,6 +246,53 @@ func AssertDirectoriesMatch(t *testing.T, fs afero.Fs, rootA string, rootB strin
 	assert.Empty(t, diffSet, "file set symmetric_difference")
 }
 
+// AssertExpectedPaths compares the contents of a path with a set of expected paths
+func AssertExpectedPaths(t *testing.T, fs afero.Fs, root string, expected []string) {
+	if fs == nil {
+		return
+	}
+
+	exists, err := afero.DirExists(fs, root)
+	if err != nil {
+		t.Errorf("%v: DirExists: %s", err, root)
+		return
+	}
+	if !exists {
+		t.Errorf("no such path: %s", root)
+		return
+	}
+
+	// Build a set for comparison
+	expectedSet := make(map[string]bool)
+	for _, path := range expected {
+		segment := path
+		for segment != filepath.Dir(root) && segment != "/" && segment != "." && segment != "" {
+			expectedSet[segment] = false
+			segment = filepath.Dir(segment)
+		}
+	}
+
+	err = afero.Walk(fs, root, func(path string, info os.FileInfo, err error) error {
+		if _, ok := expectedSet[path]; !ok {
+			t.Errorf("unexpected path: %s", path)
+			return nil
+		}
+
+		expectedSet[path] = true
+
+		return nil
+	})
+	if err != nil {
+		t.Errorf("walk failed for path %s: %v", root, err)
+	}
+
+	for path, visited := range expectedSet {
+		if !visited {
+			t.Errorf("missing expected path: %s", path)
+		}
+	}
+}
+
 type fakeTransport struct {
 	resp *http.Response
 	err  error

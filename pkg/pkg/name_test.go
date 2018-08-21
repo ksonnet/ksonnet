@@ -40,6 +40,10 @@ func Test_Parse(t *testing.T) {
 			expected: Descriptor{Registry: "parts-infra", Name: "contour", Version: "0.1.0"},
 		},
 		{
+			name:     "contour@0.1.0",
+			expected: Descriptor{Registry: "", Name: "contour", Version: "0.1.0"},
+		},
+		{
 			name:  "@foo/bar@baz@doh",
 			isErr: true,
 		},

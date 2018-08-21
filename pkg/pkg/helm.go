@@ -198,3 +198,16 @@ func (h *Helm) Path() string {
 	}
 	return path
 }
+
+// HelmVendorPath returns a path for vendoring the described package.
+func HelmVendorPath(a app.App, d Descriptor) string {
+	if a == nil {
+		return ""
+	}
+
+	path, err := chartConfigDir(a, d.Name, d.Registry, d.Version)
+	if err != nil {
+		return ""
+	}
+	return path
+}
