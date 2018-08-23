@@ -111,9 +111,10 @@ func TestAdd_Helm(t *testing.T) {
 
 		httpClient, err := helm.NewHTTPClient("http://example.com", getterMock)
 		require.NoError(t, err)
+		cc := helm.NewCachingClient(httpClient)
 
-		helmFactory = func(a app.App, registryConfig *app.RegistryConfig, _ *helm.HTTPClient) (*Helm, error) {
-			return NewHelm(a, registryConfig, httpClient, nil)
+		helmFactory = func(a app.App, registryConfig *app.RegistryConfig, _ helm.RepositoryClient) (*Helm, error) {
+			return NewHelm(a, registryConfig, cc, nil)
 		}
 
 		spec, err := Add(appMock, ProtocolHelm, "new", "http://example.com", false, nil)
