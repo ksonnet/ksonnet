@@ -48,7 +48,8 @@ func Add(a app.App, protocol Protocol, name string, uri string, isOverride bool,
 		if err != nil {
 			return nil, errors.Wrap(err, "initializing helm HTTP client")
 		}
-		r, err = helmFactory(a, initSpec, hc)
+		cc := helm.NewCachingClient(hc)
+		r, err = helmFactory(a, initSpec, cc)
 	default:
 		return nil, errors.Errorf("invalid registry protocol %q", protocol)
 	}

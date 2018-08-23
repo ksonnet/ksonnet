@@ -33,12 +33,12 @@ import (
 
 var (
 	// helmFactory creates Helm registry instances.
-	helmFactory = func(a app.App, registryConfig *app.RegistryConfig, httpClient *helm.HTTPClient) (*Helm, error) {
+	helmFactory = func(a app.App, registryConfig *app.RegistryConfig, httpClient helm.RepositoryClient) (*Helm, error) {
 		return NewHelm(a, registryConfig, httpClient, nil)
 	}
 )
 
-type helmFactoryFn func(a app.App, registryConfig *app.RegistryConfig, httpClient *helm.HTTPClient) (*Helm, error)
+type helmFactoryFn func(a app.App, registryConfig *app.RegistryConfig, httpClient helm.RepositoryClient) (*Helm, error)
 
 // Helm is a Helm repository.
 type Helm struct {
@@ -114,14 +114,12 @@ func (h *Helm) MakeRegistryConfig() *app.RegistryConfig {
 	return h.spec
 }
 
-// ResolveLibrarySpec returns a resolved spec for a part.
-func (h *Helm) ResolveLibrarySpec(partName, version string) (*parts.Spec, error) {
-	chart, err := h.repositoryClient.Chart(partName, version)
-	if err != nil {
-		return nil, errors.Wrapf(err, "retrieving chart %s-%s", partName, version)
+// makeChartSpec constructs a parts.Spec for a helm chart.
+func makeChartSpec(chart *helm.RepositoryChart) *parts.Spec {
+	if chart == nil {
+		return nil
 	}
-
-	part := &parts.Spec{
+	return &parts.Spec{
 		APIVersion: parts.DefaultAPIVersion,
 		Kind:       parts.DefaultKind,
 
@@ -129,17 +127,20 @@ func (h *Helm) ResolveLibrarySpec(partName, version string) (*parts.Spec, error)
 		Version:     chart.Version,
 		Description: chart.Description,
 	}
+}
 
-	return part, nil
+// ResolveLibrarySpec returns a resolved spec for a part.
+func (h *Helm) ResolveLibrarySpec(partName, version string) (*parts.Spec, error) {
+	chart, err := h.repositoryClient.Chart(partName, version)
+	if err != nil {
+		return nil, errors.Wrapf(err, "retrieving chart %s-%s", partName, version)
+	}
+
+	return makeChartSpec(chart), nil
 }
 
 // ResolveLibrary fetches the part and creates a parts spec and library ref spec.
 func (h *Helm) ResolveLibrary(partName string, partAlias string, version string, onFile ResolveFile, onDir ResolveDirectory) (*parts.Spec, *app.LibraryConfig, error) {
-	part, err := h.ResolveLibrarySpec(partName, version)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	chart, err := h.repositoryClient.Chart(partName, version)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "retrieving chart %s-%s", partName, version)
@@ -176,6 +177,8 @@ func (h *Helm) ResolveLibrary(partName string, partAlias string, version string,
 			return nil, nil, err
 		}
 	}
+
+	part := makeChartSpec(chart)
 
 	refSpec := &app.LibraryConfig{
 		Name:     partAlias,

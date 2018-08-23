@@ -38,7 +38,7 @@ func Locate(a app.App, spec *app.RegistryConfig, httpClient *http.Client) (Regis
 		if err != nil {
 			return nil, err
 		}
-		return NewHelm(a, spec, client, nil)
+		return NewHelm(a, spec, helm.NewCachingClient(client), nil)
 	default:
 		return nil, errors.Errorf("invalid registry protocol %q", spec.Protocol)
 	}
