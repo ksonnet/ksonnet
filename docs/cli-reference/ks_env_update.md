@@ -5,7 +5,7 @@ Updates the libs for an environment
 ### Synopsis
 
 
-The `update` command updates libraries for an environment.
+The `update` command updates packages for an environment.
 
 ### Related Commands
 
@@ -25,7 +25,7 @@ ks env update <env-name> [flags]
 
 ```
 
-# Update the environment 'us-west/staging' libs.
+# Update the environment 'us-west/staging' packages.
 ks env update us-west/staging
 ```
 
@@ -38,6 +38,7 @@ ks env update us-west/staging
 ### Options inherited from parent commands
 
 ```
+      --tls-skip-verify      Skip verification of TLS server certificates
   -v, --verbose count[=-1]   Increase verbosity. May be given multiple times.
 ```
 

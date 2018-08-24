@@ -26,7 +26,7 @@ import (
 
 var (
 	envUpdateLong = `
-The ` + "`update`" + ` command updates libraries for an environment.
+The ` + "`update`" + ` command updates packages for an environment.
 
 ### Related Commands
 
@@ -38,7 +38,7 @@ The ` + "`update`" + ` command updates libraries for an environment.
 ### Syntax
 `
 	envUpdateExample = `
-# Update the environment 'us-west/staging' libs.
+# Update the environment 'us-west/staging' packages.
 ks env update us-west/staging`
 )
 

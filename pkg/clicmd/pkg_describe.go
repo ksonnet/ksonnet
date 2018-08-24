@@ -30,9 +30,9 @@ The ` + "`describe`" + ` command outputs documentation for a package that is ava
 (e.g. downloaded) in the current ksonnet application. (This must belong to an already
 known ` + "`<registry-name>`" + ` like *incubator*). The output includes:
 
-1. The library name
-2. A brief description provided by the library authors
-3. A list of available prototypes provided by the library
+1. The package name
+2. A brief description provided by the package authors
+3. A list of available prototypes provided by the package
 
 ### Related Commands
 

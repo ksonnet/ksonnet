@@ -24,7 +24,7 @@ The following diagram shows how the ksonnet framework works holistically:
 ksonnet's package management schema can be summed up as follows:
 
 *registry* > *package* > *prototype*<br>
-**Ex:** [`incubator` repo](https://github.com/ksonnet/parts/tree/master/incubator) > [Redis library](https://github.com/ksonnet/parts/tree/master/incubator/redis) > [`redis-stateless` prototype](https://github.com/ksonnet/parts/blob/master/incubator/redis/prototypes/redis-stateless.jsonnet)
+**Ex:** [`incubator` repo](https://github.com/ksonnet/parts/tree/master/incubator) > [Redis package](https://github.com/ksonnet/parts/tree/master/incubator/redis) > [`redis-stateless` prototype](https://github.com/ksonnet/parts/blob/master/incubator/redis/prototypes/redis-stateless.jsonnet)
 
 ---
 

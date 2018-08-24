@@ -46,6 +46,7 @@ ks param diff dev prod --component=guestbook
 ### Options inherited from parent commands
 
 ```
+      --tls-skip-verify      Skip verification of TLS server certificates
   -v, --verbose count[=-1]   Increase verbosity. May be given multiple times.
 ```
 

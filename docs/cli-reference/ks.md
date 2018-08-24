@@ -19,6 +19,7 @@ ks [flags]
 
 ```
   -h, --help                 help for ks
+      --tls-skip-verify      Skip verification of TLS server certificates
   -v, --verbose count[=-1]   Increase verbosity. May be given multiple times.
 ```
 

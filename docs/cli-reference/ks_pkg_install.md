@@ -5,13 +5,13 @@ Install a package (e.g. extra prototypes) for the current ksonnet app
 ### Synopsis
 
 
-The `install` command caches a ksonnet library locally, and makes it available
+The `install` command caches a ksonnet package locally, and makes it available
 for use in the current ksonnet application. Enough info and metadata is recorded in
 `app.yaml` that new users can retrieve the dependency after a fresh clone of this app.
 
-The library itself needs to be located in a registry (e.g. Github repo). By default,
+The package itself needs to be located in a registry (e.g. Github repo). By default,
 ksonnet knows about two registries: *incubator* and *stable*, which are the release
-channels for official ksonnet libraries.
+channels for official ksonnet packages.
 
 ### Related Commands
 
@@ -23,7 +23,7 @@ channels for official ksonnet libraries.
 
 
 ```
-ks pkg install <registry>/<library>@<version> [flags]
+ks pkg install <registry>/<package>@<version> [flags]
 ```
 
 ### Examples
@@ -59,6 +59,7 @@ ks pkg install --env stage incubator/nginx@40285d8a14f1ac5787e405e1023cf0c07f6aa
 ### Options inherited from parent commands
 
 ```
+      --tls-skip-verify      Skip verification of TLS server certificates
   -v, --verbose count[=-1]   Increase verbosity. May be given multiple times.
 ```
 
