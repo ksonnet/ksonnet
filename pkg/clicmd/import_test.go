@@ -24,12 +24,13 @@ import (
 func Test_importCmd(t *testing.T) {
 	cases := []cmdTestCase{
 		{
-			name:   "import location",
+			name:   "import location without module",
 			args:   []string{"import", "-f", "location"},
 			action: actionImport,
 			expected: map[string]interface{}{
-				actions.OptionApp:  nil,
-				actions.OptionPath: "location",
+				actions.OptionApp:    nil,
+				actions.OptionPath:   "location",
+				actions.OptionModule: "/",
 			},
 		},
 		{
