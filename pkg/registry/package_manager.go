@@ -359,14 +359,14 @@ func (m *packageManager) PackagesForEnv(e *app.EnvironmentConfig) ([]pkg.Package
 		combined[k] = cfg
 	}
 
-	for k, libraryConfig := range combined {
+	for _, libraryConfig := range combined {
 		protocol, ok := registryProtocol(m.app, libraryConfig.Registry)
 		if !ok {
 			return nil, errors.Errorf("registry %q required by library %q is not defined in the configuration",
-				libraryConfig.Registry, k)
+				libraryConfig.Registry, libraryConfig.Name)
 		}
 
-		p, err := m.loadPackage(protocol, k, libraryConfig.Registry, libraryConfig.Version, pkg.TrueInstallChecker{})
+		p, err := m.loadPackage(protocol, libraryConfig.Name, libraryConfig.Registry, libraryConfig.Version, pkg.TrueInstallChecker{})
 		if err != nil {
 			return nil, err
 		}

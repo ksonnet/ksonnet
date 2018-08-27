@@ -233,12 +233,32 @@ func (ba *baseApp) AddRegistry(newReg *RegistryConfig, isOverride bool) error {
 	return ba.save()
 }
 
+// libKeyByDesc scans for a library in the referenced LibraryConfigs map.
+// Matching is by registry/name or name if registry is not provided.
+// Versions are ignored.
+// Complexity: O(n)
+// Returns key of matching library, or empty string if no match is found.
+func libKeyByDesc(desc LibraryConfig, libs LibraryConfigs) string {
+	for k, v := range libs {
+		if desc.Name != v.Name {
+			continue
+		}
+		if desc.Registry == "" {
+			return k
+		}
+		if desc.Registry == v.Registry {
+			return k
+		}
+	}
+	return ""
+}
+
 // UpdateLib adds or updates a library reference.
 // env is optional - if provided the reference is scoped under the environment,
 // otherwise it is globally scoped.
 // If spec if nil, the library reference will be removed.
 // Returns the previous reference for the named library, if one existed.
-func (ba *baseApp) UpdateLib(name string, env string, libSpec *LibraryConfig) (*LibraryConfig, error) {
+func (ba *baseApp) UpdateLib(id string, env string, libSpec *LibraryConfig) (*LibraryConfig, error) {
 	if err := ba.load(); err != nil {
 		return nil, errors.Wrap(err, "load configuration")
 	}
@@ -247,8 +267,13 @@ func (ba *baseApp) UpdateLib(name string, env string, libSpec *LibraryConfig) (*
 		return nil, errors.Errorf("invalid app - configuration is nil")
 	}
 
-	if libSpec != nil && libSpec.Name != name {
-		return nil, errors.Errorf("library name mismatch: %v vs %v", libSpec.Name, name)
+	desc, err := parseLibraryConfig(id)
+	if err != nil {
+		return nil, errors.Wrapf(err, "parsing id: %s", id)
+	}
+
+	if libSpec != nil && libSpec.Name != desc.Name {
+		return nil, errors.Errorf("library name mismatch: %v vs %v", libSpec.Name, desc.Name)
 	}
 
 	// TODO support app overrides
@@ -256,18 +281,10 @@ func (ba *baseApp) UpdateLib(name string, env string, libSpec *LibraryConfig) (*
 	var oldSpec *LibraryConfig
 	switch env {
 	case "":
-		if ba.config.Libraries == nil {
-			ba.config.Libraries = LibraryConfigs{}
-		}
 		// Globally scoped
-		oldSpec = ba.config.Libraries[name]
-		if libSpec == nil {
-			if oldSpec == nil {
-				return nil, errors.Errorf("package not found: %s", name)
-			}
-			delete(ba.config.Libraries, name)
-		} else {
-			ba.config.Libraries[name] = libSpec
+		oldSpec, err = updateLibInScope(desc, libSpec, &ba.config.Libraries)
+		if err != nil {
+			return nil, errors.Wrap(err, "updating library in global scope")
 		}
 	default:
 		// Scoped by environment
@@ -276,19 +293,9 @@ func (ba *baseApp) UpdateLib(name string, env string, libSpec *LibraryConfig) (*
 			return nil, errors.Errorf("invalid environment: %v", env)
 		}
 
-		if e.Libraries == nil {
-			// We may want to move this into EnvrionmentConfig unmarshaling code.
-			e.Libraries = LibraryConfigs{}
-		}
-		oldSpec = e.Libraries[name]
-
-		if libSpec == nil {
-			if oldSpec == nil {
-				return nil, errors.Errorf("package %s not found in environment: %s", name, env)
-			}
-			delete(e.Libraries, name)
-		} else {
-			e.Libraries[name] = libSpec
+		oldSpec, err = updateLibInScope(desc, libSpec, &e.Libraries)
+		if err != nil {
+			return nil, errors.Wrap(err, "updating library in environment scope")
 		}
 
 		if err := ba.config.UpdateEnvironmentConfig(env, e); err != nil {
@@ -297,6 +304,29 @@ func (ba *baseApp) UpdateLib(name string, env string, libSpec *LibraryConfig) (*
 	}
 
 	return oldSpec, ba.save()
+}
+
+func updateLibInScope(desc LibraryConfig, libSpec *LibraryConfig, scope *LibraryConfigs) (*LibraryConfig, error) {
+	if scope == nil {
+		return nil, errors.New("nil scope")
+	}
+	if *scope == nil {
+		*scope = LibraryConfigs{}
+	}
+
+	oldSpecKey := libKeyByDesc(desc, *scope)
+	oldSpec := (*scope)[oldSpecKey]
+	if libSpec == nil {
+		if oldSpecKey == "" || oldSpec == nil {
+			return nil, errors.Errorf("package not found: %v", desc)
+		}
+		delete(*scope, oldSpecKey)
+	} else {
+		newKey := qualifyLibName(libSpec.Registry, libSpec.Name)
+		(*scope)[newKey] = libSpec
+	}
+
+	return oldSpec, nil
 }
 
 // UpdateRegistry updates a registry spec and persists in app[.override].yaml

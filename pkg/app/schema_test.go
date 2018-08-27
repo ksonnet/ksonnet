@@ -547,3 +547,45 @@ func assertContents(t *testing.T, fs afero.Fs, expectedPath, contentPath string)
 
 	require.Equal(t, string(expected), string(got), "unexpected %q contents", contentPath)
 }
+
+func Test_parseLibraryConfig(t *testing.T) {
+	cases := []struct {
+		name     string
+		expected LibraryConfig
+		isErr    bool
+	}{
+		{
+			name:     "parts-infra/contour",
+			expected: LibraryConfig{Registry: "parts-infra", Name: "contour"},
+		},
+		{
+			name:     "contour",
+			expected: LibraryConfig{Name: "contour"},
+		},
+		{
+			name:     "parts-infra/contour@0.1.0",
+			expected: LibraryConfig{Registry: "parts-infra", Name: "contour", Version: "0.1.0"},
+		},
+		{
+			name:     "contour@0.1.0",
+			expected: LibraryConfig{Registry: "", Name: "contour", Version: "0.1.0"},
+		},
+		{
+			name:  "@foo/bar@baz@doh",
+			isErr: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			d, err := parseLibraryConfig(tc.name)
+			if tc.isErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.expected, d)
+		})
+	}
+}

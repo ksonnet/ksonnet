@@ -19,6 +19,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/blang/semver"
 	"github.com/ghodss/yaml"
@@ -362,6 +364,10 @@ type GitVersionSpec struct {
 // LibraryConfigs is a mapping of a library configurations by name.
 type LibraryConfigs map[string]*LibraryConfig
 
+// libraryConfigs is an alias that allows us to leverage default JSON encoding
+// in our custom MarshalJSON handler without triggering infinite recursion.
+type libraryConfigs LibraryConfigs
+
 // UnmarshalJSON implements the json.Unmarshaler interface.
 // We implement some compatibility conversions.
 func (l *LibraryConfigs) UnmarshalJSON(b []byte) error {
@@ -377,12 +383,35 @@ func (l *LibraryConfigs) UnmarshalJSON(b []byte) error {
 			continue
 		}
 
-		v.Name = k
-		result[k] = v
+		name := libName(k)
+		qualifiedName := qualifyLibName(v.Registry, name)
+
+		v.Name = name
+		result[qualifiedName] = v
 	}
 
 	*l = result
 	return nil
+}
+
+// MarshalJSON implements the json.Unmarshaler interface.
+// We implement some compatibility conversions.
+func (l *LibraryConfigs) MarshalJSON() ([]byte, error) {
+	lc := libraryConfigs{}
+
+	for k, v := range *l {
+		if v == nil {
+			continue
+		}
+
+		name := libName(k)
+		qualifiedName := qualifyLibName(v.Registry, name)
+
+		v.Name = name
+		lc[qualifiedName] = v
+	}
+
+	return json.Marshal(lc)
 }
 
 // libraryConfig is an alias that allows us to leverage default JSON decoding
@@ -578,4 +607,54 @@ func (l LibraryConfig) String() string {
 		// Not sure which case we missed, just default to verbose
 		return fmt.Sprintf("%s/%s@%s", l.Registry, l.Name, l.Version)
 	}
+}
+
+func libName(name string) string {
+	segments := strings.Split(name, "/")
+	if len(segments) < 2 {
+		return name
+	}
+	return segments[len(segments)-1]
+}
+
+func qualifyLibName(registry, name string) string {
+	if registry == "" {
+		return name
+	}
+
+	return fmt.Sprintf("%s/%s", registry, name)
+}
+
+var (
+	errInvalidSpec = fmt.Errorf("package name should be in the form `<registry>/<library>@<version>`")
+	reDescriptor   = regexp.MustCompile(`^([A-Za-z0-9\-]+)(\/[^@]+)?(@[^@]+)?$`)
+)
+
+// parseLibraryConfig parses a library identifier into its components
+// <registry>/<name>@<version>
+// See pkg.Parse().
+func parseLibraryConfig(id string) (LibraryConfig, error) {
+	var registry, name, version string
+
+	matches := reDescriptor.FindStringSubmatch(id)
+	if len(matches) == 0 {
+		return LibraryConfig{}, errInvalidSpec
+	}
+
+	if matches[2] == "" {
+		// No registry
+		name = strings.TrimPrefix(matches[1], "/")
+	} else {
+		// Registry and name
+		registry = matches[1]
+		name = strings.TrimPrefix(matches[2], "/")
+	}
+
+	version = strings.TrimPrefix(matches[3], "@")
+
+	return LibraryConfig{
+		Registry: registry,
+		Name:     name,
+		Version:  version,
+	}, nil
 }
