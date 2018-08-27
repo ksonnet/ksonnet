@@ -50,6 +50,7 @@ ks env set us-west/staging --server=https://192.168.99.100:8443
 ### Options inherited from parent commands
 
 ```
+      --tls-skip-verify      Skip verification of TLS server certificates
   -v, --verbose count[=-1]   Increase verbosity. May be given multiple times.
 ```
 

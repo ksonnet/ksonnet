@@ -25,5 +25,5 @@ libraries:
     path: scheduling
 ```
 
-In this example, the registry contains a single library, `scheduling`, which lives in directory `scheduling`. This path is relative to the directory that contains `registry.yaml`. 
+In this example, the registry contains a single package, `scheduling`, which lives in directory `scheduling`. This path is relative to the directory that contains `registry.yaml`.
 

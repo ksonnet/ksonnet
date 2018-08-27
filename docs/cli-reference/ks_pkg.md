@@ -40,6 +40,7 @@ See the annotated file tree below, as an example:
 ### Options inherited from parent commands
 
 ```
+      --tls-skip-verify      Skip verification of TLS server certificates
   -v, --verbose count[=-1]   Increase verbosity. May be given multiple times.
 ```
 
@@ -49,4 +50,5 @@ See the annotated file tree below, as an example:
 * [ks pkg describe](ks_pkg_describe.md)	 - Describe a ksonnet package and its contents
 * [ks pkg install](ks_pkg_install.md)	 - Install a package (e.g. extra prototypes) for the current ksonnet app
 * [ks pkg list](ks_pkg_list.md)	 - List all packages known (downloaded or not) for the current ksonnet app
+* [ks pkg remove](ks_pkg_remove.md)	 - Remove a package from the app or environment scope
 

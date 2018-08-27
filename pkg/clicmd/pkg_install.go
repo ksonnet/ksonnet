@@ -31,13 +31,13 @@ var (
 	vPkgInstallForce = "pkg-install-force"
 
 	pkgInstallLong = `
-The ` + "`install`" + ` command caches a ksonnet library locally, and makes it available
+The ` + "`install`" + ` command caches a ksonnet package locally, and makes it available
 for use in the current ksonnet application. Enough info and metadata is recorded in
 ` + "`app.yaml` " + `that new users can retrieve the dependency after a fresh clone of this app.
 
-The library itself needs to be located in a registry (e.g. Github repo). By default,
+The package itself needs to be located in a registry (e.g. Github repo). By default,
 ksonnet knows about two registries: *incubator* and *stable*, which are the release
-channels for official ksonnet libraries.
+channels for official ksonnet packages.
 
 ### Related Commands
 
@@ -68,14 +68,14 @@ ks pkg install --env stage incubator/nginx@40285d8a14f1ac5787e405e1023cf0c07f6aa
 func newPkgInstallCmd(a app.App) *cobra.Command {
 
 	pkgInstallCmd := &cobra.Command{
-		Use:     "install <registry>/<library>@<version>",
+		Use:     "install <registry>/<package>@<version>",
 		Short:   pkgShortDesc["install"],
 		Long:    pkgInstallLong,
 		Example: pkgInstallExample,
 		Aliases: []string{"get"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
-				return fmt.Errorf("Command requires a single argument of the form <registry>/<library>@<version>\n\n%s", cmd.UsageString())
+				return fmt.Errorf("Command requires a single argument of the form <registry>/<package>@<version>\n\n%s", cmd.UsageString())
 			}
 
 			m := map[string]interface{}{
