@@ -53,7 +53,7 @@ func TestImport_http(t *testing.T) {
 
 		in := map[string]interface{}{
 			OptionApp:    appMock,
-			OptionModule: "",
+			OptionModule: "/",
 			OptionPath:   ts.URL,
 		}
 
