@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -49,7 +48,7 @@ ks env current
 ks env current --unset`
 )
 
-func newEnvCurrentCmd(a app.App) *cobra.Command {
+func newEnvCurrentCmd() *cobra.Command {
 	envCurrentCmd := &cobra.Command{
 		Use:     "current [--set <name> | --unset]",
 		Short:   envShortDesc["current"],
@@ -61,10 +60,10 @@ func newEnvCurrentCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:     a,
 				actions.OptionEnvName: viper.GetString(vEnvCurrentSet),
 				actions.OptionUnset:   viper.GetBool(vEnvCurrentUnset),
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionEnvCurrent, m)
 		},

@@ -17,12 +17,11 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
-func newModuleCreateCmd(a app.App) *cobra.Command {
+func newModuleCreateCmd() *cobra.Command {
 	moduleCreateCmd := &cobra.Command{
 		Use:   "create <name>",
 		Short: "Create a module",
@@ -33,9 +32,9 @@ func newModuleCreateCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:    a,
 				actions.OptionModule: args[0],
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionModuleCreate, m)
 		},

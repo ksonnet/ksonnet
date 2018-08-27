@@ -17,7 +17,6 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
@@ -28,16 +27,16 @@ const (
 	vImportModule   = "import-module"
 )
 
-func newImportCmd(a app.App) *cobra.Command {
+func newImportCmd() *cobra.Command {
 	importCmd := &cobra.Command{
 		Use:   "import",
 		Short: "Import manifest",
 		Long:  `Import manifest`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			m := map[string]interface{}{
-				actions.OptionApp:  a,
 				actions.OptionPath: viper.GetString(vImportFilename),
 			}
+			addGlobalOptions(m)
 
 			if mod := viper.GetString(vImportModule); mod != "" {
 				m[actions.OptionModule] = mod

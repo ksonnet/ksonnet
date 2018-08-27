@@ -17,7 +17,6 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -27,17 +26,17 @@ const (
 	vModuleListOutput = "module-list-output"
 )
 
-func newModuleListCmd(a app.App) *cobra.Command {
+func newModuleListCmd() *cobra.Command {
 	moduleListCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List modules",
 		Long:  `List modules`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			m := map[string]interface{}{
-				actions.OptionApp:     a,
 				actions.OptionEnvName: viper.GetString(vModuleListEnv),
 				actions.OptionOutput:  viper.GetString(vModuleListOutput),
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionModuleList, m)
 		},

@@ -21,7 +21,6 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
@@ -65,7 +64,7 @@ ks pkg install --env stage incubator/nginx@40285d8a14f1ac5787e405e1023cf0c07f6aa
 `
 )
 
-func newPkgInstallCmd(a app.App) *cobra.Command {
+func newPkgInstallCmd() *cobra.Command {
 
 	pkgInstallCmd := &cobra.Command{
 		Use:     "install <registry>/<package>@<version>",
@@ -79,13 +78,12 @@ func newPkgInstallCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:           a,
-				actions.OptionPkgName:       args[0],
-				actions.OptionName:          viper.GetString(vPkgInstallName),
-				actions.OptionEnvName:       viper.GetString(vPkgInstallEnv),
-				actions.OptionForce:         viper.GetBool(vPkgInstallForce),
-				actions.OptionTLSSkipVerify: viper.GetBool(flagTLSSkipVerify),
+				actions.OptionPkgName: args[0],
+				actions.OptionName:    viper.GetString(vPkgInstallName),
+				actions.OptionEnvName: viper.GetString(vPkgInstallEnv),
+				actions.OptionForce:   viper.GetBool(vPkgInstallForce),
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionPkgInstall, m)
 		},

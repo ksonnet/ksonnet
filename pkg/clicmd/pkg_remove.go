@@ -16,26 +16,25 @@
 package clicmd
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/spf13/viper"
+	"github.com/spf13/viper"
 
-    "github.com/ksonnet/ksonnet/pkg/actions"
-    "github.com/ksonnet/ksonnet/pkg/app"
-    "github.com/spf13/cobra"
+	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/spf13/cobra"
 )
 
 var (
-    vPkgRemoveEnv   = "pkg-remove-env"
+	vPkgRemoveEnv = "pkg-remove-env"
 
-    pkgRemoveLong = `
+	pkgRemoveLong = `
 The ` + "`remove`" + ` command removes a reference to a ksonnet library.  The reference can either be
 global or scoped to an environment. If the last reference to a library version is removed, the cached
 files will be removed as well.
 
 ### Syntax
 `
-    pkgRemoveExample = `
+	pkgRemoveExample = `
 # Remove an nginx dependency
 ks pkg remove incubator/nginx
 
@@ -44,32 +43,31 @@ ks pkg remove incubator/nginx --env stage
 `
 )
 
-func newPkgRemoveCmd(a app.App) *cobra.Command {
+func newPkgRemoveCmd() *cobra.Command {
 
-    pkgRemoveCmd := &cobra.Command{
-        Use:     "remove <registry>/<library>",
-        Short:   pkgShortDesc["remove"],
-        Long:    pkgRemoveLong,
-        Example: pkgRemoveExample,
-        Aliases: []string{"get"},
-        RunE: func(cmd *cobra.Command, args []string) error {
-            if len(args) != 1 {
-                return fmt.Errorf("Command requires a single argument of the form <registry>/<library>@<version>\n\n%s", cmd.UsageString())
-            }
+	pkgRemoveCmd := &cobra.Command{
+		Use:     "remove <registry>/<library>",
+		Short:   pkgShortDesc["remove"],
+		Long:    pkgRemoveLong,
+		Example: pkgRemoveExample,
+		Aliases: []string{"get"},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return fmt.Errorf("Command requires a single argument of the form <registry>/<library>@<version>\n\n%s", cmd.UsageString())
+			}
 
-            m := map[string]interface{}{
-                actions.OptionApp:           a,
-                actions.OptionPkgName:       args[0],
-                actions.OptionEnvName:       viper.GetString(vPkgRemoveEnv),
-                actions.OptionTLSSkipVerify: viper.GetBool(flagTLSSkipVerify),
-            }
+			m := map[string]interface{}{
+				actions.OptionPkgName: args[0],
+				actions.OptionEnvName: viper.GetString(vPkgRemoveEnv),
+			}
+			addGlobalOptions(m)
 
-            return runAction(actionPkgRemove, m)
-        },
-    }
+			return runAction(actionPkgRemove, m)
+		},
+	}
 
-    pkgRemoveCmd.Flags().String(flagEnv, "", "Environment to remove package from (optional)")
-    viper.BindPFlag(vPkgRemoveEnv, pkgRemoveCmd.Flags().Lookup(flagEnv))
+	pkgRemoveCmd.Flags().String(flagEnv, "", "Environment to remove package from (optional)")
+	viper.BindPFlag(vPkgRemoveEnv, pkgRemoveCmd.Flags().Lookup(flagEnv))
 
-    return pkgRemoveCmd
+	return pkgRemoveCmd
 }

@@ -103,16 +103,8 @@ type App interface {
 }
 
 // Load loads the application configuration.
-func Load(fs afero.Fs, httpClient *http.Client, cwd string, skipFindRoot bool) (App, error) {
+func Load(fs afero.Fs, httpClient *http.Client, appRoot string) (App, error) {
 	log := log.WithField("action", "app.Load")
-	appRoot := cwd
-	if !skipFindRoot {
-		var err error
-		appRoot, err = findRoot(fs, cwd)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	spec, err := read(fs, appRoot)
 	if os.IsNotExist(err) {
@@ -232,7 +224,7 @@ func cleanEnv(fs afero.Fs, root string) error {
 	return nil
 }
 
-func findRoot(fs afero.Fs, cwd string) (string, error) {
+func FindRoot(fs afero.Fs, cwd string) (string, error) {
 	prev := cwd
 
 	for {

@@ -17,12 +17,12 @@ package clicmd
 
 import (
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
 )
 
@@ -65,8 +65,8 @@ ksonnet validate prod -c redis
 `
 )
 
-func newValidateCmd(a app.App) *cobra.Command {
-	validateClientConfig := client.NewDefaultClientConfig(a)
+func newValidateCmd(fs afero.Fs) *cobra.Command {
+	validateClientConfig := client.NewDefaultClientConfig()
 
 	validateCmd := &cobra.Command{
 		Use:     "validate <env-name> [-c <component-name>]",
@@ -80,14 +80,13 @@ func newValidateCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:            a,
 				actions.OptionEnvName:        envName,
 				actions.OptionModule:         "",
 				actions.OptionComponentNames: viper.GetStringSlice(vValidateComponent),
 				actions.OptionClientConfig:   validateClientConfig,
 			}
 
-			if err := extractJsonnetFlags(a, "validate"); err != nil {
+			if err := extractJsonnetFlags(fs, "validate"); err != nil {
 				return errors.Wrap(err, "handle jsonnet flags")
 			}
 

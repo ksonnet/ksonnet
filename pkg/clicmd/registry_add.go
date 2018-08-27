@@ -21,7 +21,6 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
@@ -67,7 +66,7 @@ ks registry add databases github.com/org/example/tree/0.0.1/registry
 ks registry add helm-stable https://kubernetes-charts.storage.googleapis.com`
 )
 
-func newRegistryAddCmd(a app.App) *cobra.Command {
+func newRegistryAddCmd() *cobra.Command {
 	registryAddCmd := &cobra.Command{
 		Use:     "add <registry-name> <registry-uri>",
 		Short:   regShortDesc["add"],
@@ -79,12 +78,11 @@ func newRegistryAddCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:           a,
-				actions.OptionName:          args[0],
-				actions.OptionURI:           args[1],
-				actions.OptionOverride:      viper.GetBool(vRegistryAddOverride),
-				actions.OptionTLSSkipVerify: viper.GetBool(flagTLSSkipVerify),
+				actions.OptionName:     args[0],
+				actions.OptionURI:      args[1],
+				actions.OptionOverride: viper.GetBool(vRegistryAddOverride),
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionRegistryAdd, m)
 		},

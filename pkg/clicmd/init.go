@@ -32,7 +32,6 @@ const (
 	initShortDesc = "Initialize a ksonnet application"
 
 	vInitAPISpec               = "init-api-spec"
-	vInitDir                   = "init-dir"
 	vInitSkipDefaultRegistries = "init-skip-default-registries"
 	vInitEnvironment           = "init-environment"
 )
@@ -105,7 +104,7 @@ ks init app-name --dir=custom-location`
 )
 
 func newInitCmd(fs afero.Fs, wd string) *cobra.Command {
-	clientConfig := client.NewDefaultClientConfig(nil)
+	clientConfig := client.NewDefaultClientConfig()
 
 	initCmd := &cobra.Command{
 		Use:     "init <app-name>",
@@ -119,15 +118,17 @@ func newInitCmd(fs afero.Fs, wd string) *cobra.Command {
 			}
 
 			appName := args[0]
+			appDir := viper.GetString(flagDir)
+			if appDir == wd {
+				appDir = ""
+			}
 
-			initDir := viper.GetString(vInitDir)
-
-			appRoot, err := genKsRoot(appName, wd, initDir)
+			appRoot, err := genKsRoot(appName, wd, appDir)
 			if err != nil {
 				return err
 			}
 
-			clientConfig := client.NewDefaultClientConfig(nil)
+			clientConfig := client.NewDefaultClientConfig()
 
 			server, namespace, err := resolveEnvFlags(flags, clientConfig)
 			if err != nil {
@@ -142,23 +143,21 @@ func newInitCmd(fs afero.Fs, wd string) *cobra.Command {
 			m := map[string]interface{}{
 				actions.OptionFs:                    fs,
 				actions.OptionName:                  appName,
-				actions.OptionRootPath:              appRoot,
+				actions.OptionNewRoot:               appRoot,
 				actions.OptionEnvName:               viper.GetString(vInitEnvironment),
 				actions.OptionSpecFlag:              specFlag,
 				actions.OptionServer:                server,
 				actions.OptionNamespace:             namespace,
 				actions.OptionSkipDefaultRegistries: viper.GetBool(vInitSkipDefaultRegistries),
-				actions.OptionTLSSkipVerify:         viper.GetBool(flagTLSSkipVerify),
+				actions.OptionSkipCheckUpgrade:      true,
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionInit, m)
 		},
 	}
 
 	clientConfig.BindClientGoFlags(initCmd)
-
-	initCmd.Flags().String(flagDir, "", "Ksonnet application directory")
-	viper.BindPFlag(vInitDir, initCmd.Flag(flagDir))
 
 	// TODO: We need to make this default to checking the `kubeconfig` file.
 	initCmd.Flags().String(flagAPISpec, "",
@@ -174,22 +173,29 @@ func newInitCmd(fs afero.Fs, wd string) *cobra.Command {
 	return initCmd
 }
 
-func genKsRoot(appName, ksDir, wd string) (string, error) {
-	if ksDir == "" {
-		return "", errors.New("invalid working directory")
-	}
-
-	if appName == "" && wd == "" {
+// genKsRoot determines what the filesystem path to the new ksonnet app will be
+// based on the app name, execution directory and cli options provided.
+func genKsRoot(appName, ksExecDir, newAppDir string) (string, error) {
+	// we either need an app name or a directory to put the app in
+	if appName == "" && newAppDir == "" {
 		return "", errors.New("invalid application name")
 	}
 
-	if wd != "" {
-		if filepath.IsAbs(wd) {
-			return wd, nil
-		}
-
-		return filepath.Abs(filepath.Join(ksDir, wd))
+	// if the directory we specified is not relative, just use that path
+	if filepath.IsAbs(newAppDir) {
+		return newAppDir, nil
 	}
 
-	return filepath.Join(ksDir, appName), nil
+	// not having an absolute path to the directory requires knowing CWD
+	if ksExecDir == "" {
+		return "", errors.New("executing in invalid working directory")
+	}
+
+	// if we have a relative dir specified, use that
+	if newAppDir != "" {
+		return filepath.Abs(filepath.Join(ksExecDir, newAppDir))
+	}
+
+	// otherwise (common case) use the CWD/appName as path
+	return filepath.Join(ksExecDir, appName), nil
 }

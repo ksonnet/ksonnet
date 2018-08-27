@@ -42,7 +42,7 @@ func Upgrade(a app.App, out io.Writer, pl PackageLister, dryRun bool) error {
 		}
 
 		// Reload App between upgrades
-		app010, err := app.Load(va.Fs(), va.HTTPClient(), va.Root(), false)
+		app010, err := app.Load(va.Fs(), va.HTTPClient(), va.Root())
 		if err != nil {
 			return errors.Wrapf(err, "reloading app after 0.1.0 upgrade")
 		}

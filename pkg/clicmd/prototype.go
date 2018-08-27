@@ -16,7 +16,7 @@
 package clicmd
 
 import (
-	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
 
@@ -46,18 +46,18 @@ for your use case.
 `
 )
 
-func newPrototypeCmd(a app.App) *cobra.Command {
+func newPrototypeCmd(fs afero.Fs) *cobra.Command {
 	prototypeCmd := &cobra.Command{
 		Use:   "prototype",
 		Short: `Instantiate, inspect, and get examples for ksonnet prototypes`,
 		Long:  protoLong,
 	}
 
-	prototypeCmd.AddCommand(newPrototypeDescribeCmd(a))
-	prototypeCmd.AddCommand(newPrototypeListCmd(a))
-	prototypeCmd.AddCommand(newPrototypePreviewCmd(a))
-	prototypeCmd.AddCommand(newPrototypeSearchCmd(a))
-	prototypeCmd.AddCommand(newPrototypeUseCmd(a))
+	prototypeCmd.AddCommand(newPrototypeDescribeCmd())
+	prototypeCmd.AddCommand(newPrototypeListCmd())
+	prototypeCmd.AddCommand(newPrototypePreviewCmd())
+	prototypeCmd.AddCommand(newPrototypeSearchCmd())
+	prototypeCmd.AddCommand(newPrototypeUseCmd(fs))
 
 	return prototypeCmd
 }

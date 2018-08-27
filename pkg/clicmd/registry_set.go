@@ -17,7 +17,6 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -39,7 +38,7 @@ The following parameters can be set:
 `
 )
 
-func newRegistrySetCmd(a app.App) *cobra.Command {
+func newRegistrySetCmd() *cobra.Command {
 	var registrySetCmd = &cobra.Command{
 		Use:     "set [registry-name]",
 		Short:   regShortDesc["set"],
@@ -50,7 +49,6 @@ func newRegistrySetCmd(a app.App) *cobra.Command {
 			registryName := args[0] // len(args) was verified
 
 			m := map[string]interface{}{
-				actions.OptionApp:  a,
 				actions.OptionName: registryName,
 				actions.OptionURI:  viper.GetString(vRegistrySetURI),
 			}

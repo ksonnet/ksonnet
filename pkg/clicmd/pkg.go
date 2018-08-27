@@ -16,7 +16,6 @@
 package clicmd
 
 import (
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
@@ -59,17 +58,17 @@ See the annotated file tree below, as an example:
 `
 )
 
-func newPkgCmd(a app.App) *cobra.Command {
+func newPkgCmd() *cobra.Command {
 	pkgCmd := &cobra.Command{
 		Use:   "pkg",
 		Short: `Manage packages and dependencies for the current ksonnet application`,
 		Long:  pkgLong,
 	}
 
-	pkgCmd.AddCommand(newPkgListCmd(a))
-	pkgCmd.AddCommand(newPkgInstallCmd(a))
-	pkgCmd.AddCommand(newPkgDescribeCmd(a))
-	pkgCmd.AddCommand(newPkgRemoveCmd(a))
+	pkgCmd.AddCommand(newPkgListCmd())
+	pkgCmd.AddCommand(newPkgInstallCmd())
+	pkgCmd.AddCommand(newPkgDescribeCmd())
+	pkgCmd.AddCommand(newPkgRemoveCmd())
 
 	return pkgCmd
 }

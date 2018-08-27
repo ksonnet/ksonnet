@@ -19,11 +19,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
-func newComponentCmd(a app.App) *cobra.Command {
+func newComponentCmd() *cobra.Command {
 	componentCmd := &cobra.Command{
 		Use:   "component",
 		Short: "Manage ksonnet components",
@@ -35,8 +34,8 @@ func newComponentCmd(a app.App) *cobra.Command {
 		},
 	}
 
-	componentCmd.AddCommand(newComponentListCmd(a))
-	componentCmd.AddCommand(newComponentRmCmd(a))
+	componentCmd.AddCommand(newComponentListCmd())
+	componentCmd.AddCommand(newComponentRmCmd())
 
 	return componentCmd
 

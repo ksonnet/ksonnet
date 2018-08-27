@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -49,7 +48,7 @@ from the *incubator* registry.
 `
 )
 
-func newPrototypeListCmd(a app.App) *cobra.Command {
+func newPrototypeListCmd() *cobra.Command {
 	prototypeListCmd := &cobra.Command{
 		Use:   "list",
 		Short: protoShortDesc["list"],
@@ -60,10 +59,9 @@ func newPrototypeListCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:           a,
-				actions.OptionOutput:        viper.GetString(vPrototypeListOutput),
-				actions.OptionTLSSkipVerify: viper.GetBool(flagTLSSkipVerify),
+				actions.OptionOutput: viper.GetString(vPrototypeListOutput),
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionPrototypeList, m)
 		},

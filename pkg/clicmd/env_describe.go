@@ -17,12 +17,11 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
-func newEnvDescribeCmd(a app.App) *cobra.Command {
+func newEnvDescribeCmd() *cobra.Command {
 	envDescribeCmd := &cobra.Command{
 		Use:   "describe <env>",
 		Short: "Describe an environment",
@@ -33,9 +32,9 @@ func newEnvDescribeCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:     a,
 				actions.OptionEnvName: args[0],
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionEnvDescribe, m)
 		},

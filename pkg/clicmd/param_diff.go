@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -53,7 +52,7 @@ ks param diff dev prod
 ks param diff dev prod --component=guestbook`
 )
 
-func newParamDiffCmd(a app.App) *cobra.Command {
+func newParamDiffCmd() *cobra.Command {
 	paramDiffCmd := &cobra.Command{
 		Use:     "diff <env1> <env2> [--component <component-name>]",
 		Short:   paramShortDesc["diff"],
@@ -65,12 +64,12 @@ func newParamDiffCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:           a,
 				actions.OptionEnvName1:      args[0],
 				actions.OptionEnvName2:      args[1],
 				actions.OptionComponentName: viper.GetString(vParamDiffComponent),
 				actions.OptionOutput:        viper.GetString(vParamDiffOutput),
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionParamDiff, m)
 		},

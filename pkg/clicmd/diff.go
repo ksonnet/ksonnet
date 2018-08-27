@@ -19,11 +19,11 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
 )
 
@@ -85,8 +85,8 @@ ks diff dev -c redis
 `
 )
 
-func newDiffCmd(a app.App) *cobra.Command {
-	diffClientConfig := client.NewDefaultClientConfig(a)
+func newDiffCmd(fs afero.Fs) *cobra.Command {
+	diffClientConfig := client.NewDefaultClientConfig()
 
 	diffCmd := &cobra.Command{
 		Use:     "diff <location1:env1> [location2:env2]",
@@ -102,17 +102,17 @@ func newDiffCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:            a,
 				actions.OptionClientConfig:   diffClientConfig,
 				actions.OptionSrc1:           args[0],
 				actions.OptionComponentNames: viper.GetStringSlice(vDiffComponentNames),
 			}
+			addGlobalOptions(m)
 
 			if len(args) == 2 {
 				m[actions.OptionSrc2] = args[1]
 			}
 
-			if err := extractJsonnetFlags(a, "diff"); err != nil {
+			if err := extractJsonnetFlags(fs, "diff"); err != nil {
 				return errors.Wrap(err, "handle jsonnet flags")
 			}
 

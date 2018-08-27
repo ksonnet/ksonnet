@@ -28,9 +28,8 @@ func Test_upgradeCmd(t *testing.T) {
 			args:   []string{"upgrade"},
 			action: actionUpgrade,
 			expected: map[string]interface{}{
-				actions.OptionApp:           nil,
-				actions.OptionDryRun:        false,
-				actions.OptionTLSSkipVerify: false,
+				actions.OptionDryRun:           false,
+				actions.OptionSkipCheckUpgrade: true,
 			},
 		},
 	}

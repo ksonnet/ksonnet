@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_findRoot(t *testing.T) {
+func Test_FindRoot(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	stageFile(t, fs, "app010_app.yaml", "/app/app.yaml")
 
@@ -61,7 +61,7 @@ func Test_findRoot(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			root, err := findRoot(fs, tc.name)
+			root, err := FindRoot(fs, tc.name)
 			if tc.isErr {
 				require.Error(t, err)
 				return

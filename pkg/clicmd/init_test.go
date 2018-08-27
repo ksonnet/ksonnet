@@ -36,12 +36,13 @@ func Test_initCmd(t *testing.T) {
 				actions.OptionFs:                    nil,
 				actions.OptionName:                  "app",
 				actions.OptionEnvName:               "env-name",
-				actions.OptionRootPath:              "/app",
+				actions.OptionNewRoot:               "/app",
 				actions.OptionServer:                "http://127.0.0.1",
 				actions.OptionSpecFlag:              "version:v1.8.0",
 				actions.OptionNamespace:             "new-namespace",
 				actions.OptionSkipDefaultRegistries: false,
 				actions.OptionTLSSkipVerify:         false,
+				actions.OptionSkipCheckUpgrade:      true,
 			},
 		},
 		{
@@ -57,12 +58,36 @@ func Test_initCmd(t *testing.T) {
 				actions.OptionFs:                    nil,
 				actions.OptionName:                  "app",
 				actions.OptionEnvName:               "env-name",
-				actions.OptionRootPath:              "/app",
+				actions.OptionNewRoot:               "/app",
 				actions.OptionServer:                "http://127.0.0.1",
 				actions.OptionSpecFlag:              "version:v1.8.0",
 				actions.OptionNamespace:             "new-namespace",
 				actions.OptionSkipDefaultRegistries: false,
 				actions.OptionTLSSkipVerify:         false,
+				actions.OptionSkipCheckUpgrade:      true,
+			},
+		},
+		{
+			name: "global dir flag",
+			args: []string{"init", "app",
+				"--namespace", "new-namespace",
+				"--server", "http://127.0.0.1",
+				"--env", "env-name",
+				"--api-spec", "version:v1.8.0",
+				"--dir", "/app/custom",
+			},
+			action: actionInit,
+			expected: map[string]interface{}{
+				actions.OptionFs:                    nil,
+				actions.OptionName:                  "app",
+				actions.OptionEnvName:               "env-name",
+				actions.OptionNewRoot:               "/app/custom",
+				actions.OptionServer:                "http://127.0.0.1",
+				actions.OptionSpecFlag:              "version:v1.8.0",
+				actions.OptionNamespace:             "new-namespace",
+				actions.OptionSkipDefaultRegistries: false,
+				actions.OptionTLSSkipVerify:         false,
+				actions.OptionSkipCheckUpgrade:      true,
 			},
 		},
 		{
@@ -77,25 +102,28 @@ func Test_initCmd(t *testing.T) {
 
 func Test_genKsRoot(t *testing.T) {
 	cases := []struct {
-		name     string
-		appName  string
-		ksDir    string
-		wd       string
-		expected string
-		isErr    bool
+		name      string
+		appName   string
+		ksExecDir string
+		newAppDir string
+		expected  string
+		isErr     bool
 	}{
-		{name: "no wd", appName: "app", ksDir: "/root", expected: "/root/app"},
-		{name: "with abs wd", appName: "app", ksDir: "/root", wd: "/custom", expected: "/custom"},
-		{name: "with rel wd #1", appName: "app", ksDir: "/root", wd: "./custom", expected: "/root/custom"},
-		{name: "with rel wd #2", appName: "app", ksDir: "/root", wd: "custom", expected: "/root/custom"},
-		{name: "with rel wd #2", appName: "app", ksDir: "/root", wd: "../custom", expected: "/custom"},
-		{name: "missing ksDir", appName: "app", wd: "./custom", isErr: true},
-		{name: "missing appName and wd", ksDir: "/root", isErr: true},
+		{name: "no newAppDir", appName: "app", ksExecDir: "/root", expected: "/root/app"},
+		{name: "with abs newAppDir", appName: "app", ksExecDir: "/root", newAppDir: "/custom", expected: "/custom"},
+		{name: "with rel newAppDir #1", appName: "app", ksExecDir: "/root", newAppDir: "./custom", expected: "/root/custom"},
+		{name: "with rel newAppDir #2", appName: "app", ksExecDir: "/root", newAppDir: "custom", expected: "/root/custom"},
+		{name: "with rel newAppDir #2", appName: "app", ksExecDir: "/root", newAppDir: "../custom", expected: "/custom"},
+		{name: "missing ksExecDir with rel newAppDir", appName: "app", newAppDir: "./custom", isErr: true},
+		{name: "missing ksExecDir with abs newAppDir", appName: "app", newAppDir: "/custom", expected: "/custom"},
+		{name: "missing appname and ksExecDir", newAppDir: "/custom", expected: "/custom"},
+		{name: "missing appname and ksExecDir rel newAppDir", newAppDir: "./custom", isErr: true},
+		{name: "missing appName and newAppDir", ksExecDir: "/root", isErr: true},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := genKsRoot(tc.appName, tc.ksDir, tc.wd)
+			got, err := genKsRoot(tc.appName, tc.ksExecDir, tc.newAppDir)
 			if tc.isErr {
 				if err == nil {
 					t.Errorf("genKsRoot expected error, but none was received")

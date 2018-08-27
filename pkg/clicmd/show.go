@@ -17,8 +17,8 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -64,7 +64,7 @@ ks show dev -c redis -c nginx-server
 `
 )
 
-func newShowCmd(a app.App) *cobra.Command {
+func newShowCmd(fs afero.Fs) *cobra.Command {
 	showCmd := &cobra.Command{
 		Use:     "show <env> [-c <component-filename>]",
 		Short:   showShortDesc,
@@ -77,13 +77,12 @@ func newShowCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:            a,
 				actions.OptionComponentNames: viper.GetStringSlice(vShowComponent),
 				actions.OptionEnvName:        envName,
 				actions.OptionFormat:         viper.GetString(vShowFormat),
 			}
 
-			if err := extractJsonnetFlags(a, "show"); err != nil {
+			if err := extractJsonnetFlags(fs, "show"); err != nil {
 				return errors.Wrap(err, "handle jsonnet flags")
 			}
 

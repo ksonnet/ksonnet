@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -44,7 +43,7 @@ current ksonnet app. Specifically, this will display the (1) *name*,
 `
 )
 
-func newEnvListCmd(a app.App) *cobra.Command {
+func newEnvListCmd() *cobra.Command {
 	envListCmd := &cobra.Command{
 		Use:   "list",
 		Short: envShortDesc["list"],
@@ -55,9 +54,9 @@ func newEnvListCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:    a,
 				actions.OptionOutput: viper.GetString(vEnvListOutput),
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionEnvList, m)
 		},

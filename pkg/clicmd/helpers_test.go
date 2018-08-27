@@ -67,9 +67,7 @@ func runTestCmd(t *testing.T, cases []cmdTestCase) {
 				fs := afero.NewMemMapFs()
 
 				wd := "/"
-				parsed, err := parseCommand(tc.args)
-				require.NoError(t, err)
-				if len(tc.args) > 0 && parsed.command != "init" {
+				if tc.action != actionInit {
 					wd = "/app"
 					test.StageFile(t, fs, "app.yaml", "/app/app.yaml")
 				}
@@ -96,6 +94,10 @@ func runTestCmd(t *testing.T, cases []cmdTestCase) {
 					case actions.OptionFs:
 						var expected *afero.MemMapFs
 						assert.IsType(t, expected, v)
+					case actions.OptionAppRoot, actions.OptionTLSSkipVerify:
+						if tc.expected[k] != nil {
+							assert.Equal(t, tc.expected[k], v, "unexpected value for %q", k)
+						}
 					default:
 						assert.Equal(t, tc.expected[k], v, "unexpected value for %q", k)
 					}

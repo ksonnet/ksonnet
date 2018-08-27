@@ -16,7 +16,6 @@
 package clicmd
 
 import (
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
@@ -58,17 +57,17 @@ Jsonnet files.
 `
 )
 
-func newParamCmd(a app.App) *cobra.Command {
+func newParamCmd() *cobra.Command {
 	paramCmd := &cobra.Command{
 		Use:   "param",
 		Short: `Manage ksonnet parameters for components and environments`,
 		Long:  paramLong,
 	}
 
-	paramCmd.AddCommand(newParamDeleteCmd(a))
-	paramCmd.AddCommand(newParamDiffCmd(a))
-	paramCmd.AddCommand(newParamListCmd(a))
-	paramCmd.AddCommand(newParamSetCmd(a))
+	paramCmd.AddCommand(newParamDeleteCmd())
+	paramCmd.AddCommand(newParamDiffCmd())
+	paramCmd.AddCommand(newParamListCmd())
+	paramCmd.AddCommand(newParamSetCmd())
 
 	return paramCmd
 }

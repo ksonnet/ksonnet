@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -45,7 +44,7 @@ Specifically, it matches any prototypes with names that contain the string <name
 ks prototype search service`
 )
 
-func newPrototypeSearchCmd(a app.App) *cobra.Command {
+func newPrototypeSearchCmd() *cobra.Command {
 	prototypeSearchCmd := &cobra.Command{
 		Use:     "search <name-substring>",
 		Short:   protoShortDesc["search"],
@@ -57,11 +56,10 @@ func newPrototypeSearchCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:           a,
-				actions.OptionQuery:         args[0],
-				actions.OptionOutput:        viper.GetString(vPrototypeSearchOutput),
-				actions.OptionTLSSkipVerify: viper.GetBool(flagTLSSkipVerify),
+				actions.OptionQuery:  args[0],
+				actions.OptionOutput: viper.GetString(vPrototypeSearchOutput),
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionPrototypeSearch, m)
 		},
