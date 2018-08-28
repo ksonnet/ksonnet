@@ -76,7 +76,7 @@ func TestImport_http(t *testing.T) {
 	})
 }
 
-func TestImport_file(t *testing.T) {
+func TestImport_yaml_file(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		dataPath := filepath.Join("testdata", "import", "file.yaml")
 		serviceData, err := ioutil.ReadFile(dataPath)
@@ -108,6 +108,67 @@ func TestImport_file(t *testing.T) {
 
 		err = a.Run()
 		require.NoError(t, err)
+	})
+}
+
+func TestImport_json_file(t *testing.T) {
+	withApp(t, func(appMock *amocks.App) {
+		dataPath := filepath.Join("testdata", "import", "my-service.json")
+		serviceData, err := ioutil.ReadFile(dataPath)
+		require.NoError(t, err)
+
+		path := "/my-service.json"
+
+		stageFile(t, appMock.Fs(), "import/my-service.json", path)
+
+		cases := []struct {
+			name           string
+			module         string
+			path           string
+			expectedModule string
+		}{
+			{
+				name:           "root module",
+				module:         "/",
+				expectedModule: "/",
+			},
+			{
+				name:           "module",
+				module:         "a",
+				expectedModule: "a",
+			},
+			{
+				name:           "dot module",
+				module:         "a.b",
+				expectedModule: "a.b",
+			},
+		}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				in := map[string]interface{}{
+					OptionApp:    appMock,
+					OptionModule: tc.module,
+					OptionPath:   path,
+				}
+
+				a, err := NewImport(in)
+				require.NoError(t, err)
+
+				a.createComponentFn = func(_ app.App, moduleName, name, text string, p params.Params, templateType prototype.TemplateType) (string, error) {
+					assert.Contains(t, name, "my-service")
+					assert.Equal(t, tc.expectedModule, moduleName)
+					assert.Equal(t, string(serviceData), text)
+					assert.Equal(t, params.Params{}, p)
+					assert.Equal(t, prototype.JSON, templateType)
+
+					return "/", nil
+				}
+
+				err = a.Run()
+				require.NoError(t, err)
+			})
+		}
 	})
 }
 
