@@ -72,7 +72,7 @@ required = ["k8s.io/kubernetes/pkg/kubectl/cmd/util"]
 
 [[constraint]]
   name = "github.com/spf13/cobra"
-  revision = "a1e4933ab784095895e33dbe9f001ba10cfe2060"
+  version = "v0.0.3"
 
 [[constraint]]
   name = "github.com/spf13/viper"
@@ -80,7 +80,8 @@ required = ["k8s.io/kubernetes/pkg/kubectl/cmd/util"]
 
 [[constraint]]
   name = "github.com/spf13/pflag"
-  revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
+  source = "github.com/shomron/pflag"
+  revision = "fix-unknown-flag-panic"
 
 [[constraint]]
   name = "github.com/stretchr/testify"
