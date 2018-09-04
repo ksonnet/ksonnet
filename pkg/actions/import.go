@@ -271,9 +271,6 @@ func (i *Import) createComponentFromData(name, data string, templateType prototy
 
 func (i *Import) createComponent(fileName, base, ext string, templateType prototype.TemplateType) error {
 	var name bytes.Buffer
-	if i.module != "" {
-		name.WriteString(i.module + "/")
-	}
 
 	name.WriteString(strings.TrimSuffix(base, ext))
 
