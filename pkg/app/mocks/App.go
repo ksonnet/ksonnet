@@ -27,11 +27,11 @@ type App struct {
 }
 
 // AddEnvironment provides a mock function with given fields: spec, k8sSpecFlag, isOverride
-func (_m *App) AddEnvironment(spec *app.EnvironmentConfig, k8sSpecFlag string, isOverride bool) error {
+func (_m *App) AddEnvironment(spec *app.EnvironmentConfig030, k8sSpecFlag string, isOverride bool) error {
 	ret := _m.Called(spec, k8sSpecFlag, isOverride)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*app.EnvironmentConfig, string, bool) error); ok {
+	if rf, ok := ret.Get(0).(func(*app.EnvironmentConfig030, string, bool) error); ok {
 		r0 = rf(spec, k8sSpecFlag, isOverride)
 	} else {
 		r0 = ret.Error(0)
@@ -41,38 +41,17 @@ func (_m *App) AddEnvironment(spec *app.EnvironmentConfig, k8sSpecFlag string, i
 }
 
 // AddRegistry provides a mock function with given fields: spec, isOverride
-func (_m *App) AddRegistry(spec *app.RegistryConfig, isOverride bool) error {
+func (_m *App) AddRegistry(spec *app.RegistryConfig030, isOverride bool) error {
 	ret := _m.Called(spec, isOverride)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*app.RegistryConfig, bool) error); ok {
+	if rf, ok := ret.Get(0).(func(*app.RegistryConfig030, bool) error); ok {
 		r0 = rf(spec, isOverride)
 	} else {
 		r0 = ret.Error(0)
 	}
 
 	return r0
-}
-
-// CheckUpgrade provides a mock function with given fields:
-func (_m *App) CheckUpgrade() (bool, error) {
-	ret := _m.Called()
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func() bool); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
 }
 
 // CurrentEnvironment provides a mock function with given fields:
@@ -90,15 +69,15 @@ func (_m *App) CurrentEnvironment() string {
 }
 
 // Environment provides a mock function with given fields: name
-func (_m *App) Environment(name string) (*app.EnvironmentConfig, error) {
+func (_m *App) Environment(name string) (*app.EnvironmentConfig030, error) {
 	ret := _m.Called(name)
 
-	var r0 *app.EnvironmentConfig
-	if rf, ok := ret.Get(0).(func(string) *app.EnvironmentConfig); ok {
+	var r0 *app.EnvironmentConfig030
+	if rf, ok := ret.Get(0).(func(string) *app.EnvironmentConfig030); ok {
 		r0 = rf(name)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*app.EnvironmentConfig)
+			r0 = ret.Get(0).(*app.EnvironmentConfig030)
 		}
 	}
 
@@ -134,15 +113,15 @@ func (_m *App) EnvironmentParams(name string) (string, error) {
 }
 
 // Environments provides a mock function with given fields:
-func (_m *App) Environments() (app.EnvironmentConfigs, error) {
+func (_m *App) Environments() (app.EnvironmentConfigs030, error) {
 	ret := _m.Called()
 
-	var r0 app.EnvironmentConfigs
-	if rf, ok := ret.Get(0).(func() app.EnvironmentConfigs); ok {
+	var r0 app.EnvironmentConfigs030
+	if rf, ok := ret.Get(0).(func() app.EnvironmentConfigs030); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(app.EnvironmentConfigs)
+			r0 = ret.Get(0).(app.EnvironmentConfigs030)
 		}
 	}
 
@@ -210,15 +189,15 @@ func (_m *App) LibPath(envName string) (string, error) {
 }
 
 // Libraries provides a mock function with given fields:
-func (_m *App) Libraries() (app.LibraryConfigs, error) {
+func (_m *App) Libraries() (app.LibraryConfigs030, error) {
 	ret := _m.Called()
 
-	var r0 app.LibraryConfigs
-	if rf, ok := ret.Get(0).(func() app.LibraryConfigs); ok {
+	var r0 app.LibraryConfigs030
+	if rf, ok := ret.Get(0).(func() app.LibraryConfigs030); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(app.LibraryConfigs)
+			r0 = ret.Get(0).(app.LibraryConfigs030)
 		}
 	}
 
@@ -233,15 +212,15 @@ func (_m *App) Libraries() (app.LibraryConfigs, error) {
 }
 
 // Registries provides a mock function with given fields:
-func (_m *App) Registries() (app.RegistryConfigs, error) {
+func (_m *App) Registries() (app.RegistryConfigs030, error) {
 	ret := _m.Called()
 
-	var r0 app.RegistryConfigs
-	if rf, ok := ret.Get(0).(func() app.RegistryConfigs); ok {
+	var r0 app.RegistryConfigs030
+	if rf, ok := ret.Get(0).(func() app.RegistryConfigs030); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(app.RegistryConfigs)
+			r0 = ret.Get(0).(app.RegistryConfigs030)
 		}
 	}
 
@@ -312,20 +291,20 @@ func (_m *App) SetCurrentEnvironment(name string) error {
 }
 
 // UpdateLib provides a mock function with given fields: name, env, spec
-func (_m *App) UpdateLib(name string, env string, spec *app.LibraryConfig) (*app.LibraryConfig, error) {
+func (_m *App) UpdateLib(name string, env string, spec *app.LibraryConfig030) (*app.LibraryConfig030, error) {
 	ret := _m.Called(name, env, spec)
 
-	var r0 *app.LibraryConfig
-	if rf, ok := ret.Get(0).(func(string, string, *app.LibraryConfig) *app.LibraryConfig); ok {
+	var r0 *app.LibraryConfig030
+	if rf, ok := ret.Get(0).(func(string, string, *app.LibraryConfig030) *app.LibraryConfig030); ok {
 		r0 = rf(name, env, spec)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*app.LibraryConfig)
+			r0 = ret.Get(0).(*app.LibraryConfig030)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, *app.LibraryConfig) error); ok {
+	if rf, ok := ret.Get(1).(func(string, string, *app.LibraryConfig030) error); ok {
 		r1 = rf(name, env, spec)
 	} else {
 		r1 = ret.Error(1)
@@ -335,11 +314,11 @@ func (_m *App) UpdateLib(name string, env string, spec *app.LibraryConfig) (*app
 }
 
 // UpdateRegistry provides a mock function with given fields: spec
-func (_m *App) UpdateRegistry(spec *app.RegistryConfig) error {
+func (_m *App) UpdateRegistry(spec *app.RegistryConfig030) error {
 	ret := _m.Called(spec)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*app.RegistryConfig) error); ok {
+	if rf, ok := ret.Get(0).(func(*app.RegistryConfig030) error); ok {
 		r0 = rf(spec)
 	} else {
 		r0 = ret.Error(0)
@@ -362,13 +341,13 @@ func (_m *App) UpdateTargets(envName string, targets []string) error {
 	return r0
 }
 
-// Upgrade provides a mock function with given fields: dryRun
-func (_m *App) Upgrade(dryRun bool) error {
-	ret := _m.Called(dryRun)
+// Upgrade provides a mock function with given fields: _a0
+func (_m *App) Upgrade(_a0 bool) error {
+	ret := _m.Called(_a0)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(bool) error); ok {
-		r0 = rf(dryRun)
+		r0 = rf(_a0)
 	} else {
 		r0 = ret.Error(0)
 	}

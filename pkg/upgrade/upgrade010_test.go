@@ -33,17 +33,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type upgrader interface {
-	Upgrade(dryRun bool) error
-}
-
 type fakeLibUpdater func(k8sSpecFlag string, libPath string) (string, error)
 
 func (f fakeLibUpdater) UpdateKSLib(k8sSpecFlag string, libPath string) (string, error) {
 	return f(k8sSpecFlag, libPath)
 }
 
-func withApp010Fs(t *testing.T, appName string, fn func(app *app.App010)) {
+func withApp010Fs(t *testing.T, appName string, fn func(app app.App)) {
 	fs := afero.NewMemMapFs()
 
 	envDirs := []string{
@@ -64,12 +60,12 @@ func withApp010Fs(t *testing.T, appName string, fn func(app *app.App010)) {
 
 	test.StageFile(t, fs, appName, "/app.yaml")
 
-	libUpdaterOpt := app.App010OptLibUpdater(
+	libUpdaterOpt := app.OptLibUpdater(
 		fakeLibUpdater(func(k8sSpecFlag string, libPath string) (string, error) {
 			return "v1.8.7", nil
 		}),
 	)
-	a := app.NewApp010(fs, "/", nil, libUpdaterOpt)
+	a := app.NewBaseApp(fs, "/", nil, libUpdaterOpt)
 
 	fn(a)
 }
@@ -82,15 +78,15 @@ func TestApp010_Upgrade(t *testing.T) {
 	cases := []struct {
 		name         string
 		stageFile    string
-		init         func(t *testing.T, a *app.App010) upgrader
-		checkUpgrade func(t *testing.T, a *app.App010)
+		init         func(t *testing.T, a app.App) upgrader
+		checkUpgrade func(t *testing.T, a app.App)
 		dryRun       bool
 		isErr        bool
 	}{
 		{
 			name:      "ksonnet lib doesn't need to be upgraded",
 			stageFile: "app010_app.yaml",
-			init: func(t *testing.T, a *app.App010) upgrader {
+			init: func(t *testing.T, a app.App) upgrader {
 				err := a.Fs().MkdirAll("/lib", app.DefaultFolderPermissions)
 				require.NoError(t, err)
 
@@ -105,7 +101,7 @@ func TestApp010_Upgrade(t *testing.T) {
 		{
 			name:      "ksonnet lib needs to be upgraded",
 			stageFile: "app010_app.yaml",
-			init: func(t *testing.T, a *app.App010) upgrader {
+			init: func(t *testing.T, a app.App) upgrader {
 				err := a.Fs().MkdirAll("/lib", app.DefaultFolderPermissions)
 				require.NoError(t, err)
 
@@ -120,7 +116,7 @@ func TestApp010_Upgrade(t *testing.T) {
 		{
 			name:      "ksonnet lib needs to be upgraded - dry run",
 			stageFile: "app010_app.yaml",
-			init: func(t *testing.T, a *app.App010) upgrader {
+			init: func(t *testing.T, a app.App) upgrader {
 				err := a.Fs().MkdirAll("/lib", app.DefaultFolderPermissions)
 				require.NoError(t, err)
 
@@ -130,7 +126,7 @@ func TestApp010_Upgrade(t *testing.T) {
 
 				return newUpgrade010(a, &b, &defaultPM)
 			},
-			checkUpgrade: func(t *testing.T, a *app.App010) {
+			checkUpgrade: func(t *testing.T, a app.App) {
 				isDir, err := afero.IsDir(a.Fs(), filepath.Join("/lib", "v1.10.3"))
 				require.NoError(t, err)
 				require.True(t, isDir)
@@ -141,14 +137,14 @@ func TestApp010_Upgrade(t *testing.T) {
 			name:      "lib doesn't exist",
 			stageFile: "app010_app.yaml",
 			isErr:     true,
-			init: func(t *testing.T, a *app.App010) upgrader {
+			init: func(t *testing.T, a app.App) upgrader {
 				return newUpgrade010(a, &b, &defaultPM)
 			},
 		},
 		{
 			name:      "vendored packages need to be upgraded",
 			stageFile: "app010_app.yaml",
-			init: func(t *testing.T, a *app.App010) upgrader {
+			init: func(t *testing.T, a app.App) upgrader {
 				err := a.Fs().MkdirAll("/lib", app.DefaultFolderPermissions)
 				require.NoError(t, err)
 
@@ -164,7 +160,7 @@ func TestApp010_Upgrade(t *testing.T) {
 				)
 				return newUpgrade010(a, &b, &pm)
 			},
-			checkUpgrade: func(t *testing.T, a *app.App010) {
+			checkUpgrade: func(t *testing.T, a app.App) {
 				ok, err := afero.DirExists(a.Fs(), "/vendor/incubator/mysql@1.2.3")
 				require.NoError(t, err)
 				assert.True(t, ok, "checking for upgraded package path")
@@ -174,7 +170,7 @@ func TestApp010_Upgrade(t *testing.T) {
 		{
 			name:      "unversioned packages are untouched",
 			stageFile: "app010_app.yaml",
-			init: func(t *testing.T, a *app.App010) upgrader {
+			init: func(t *testing.T, a app.App) upgrader {
 				err := a.Fs().MkdirAll("/lib", app.DefaultFolderPermissions)
 				require.NoError(t, err)
 
@@ -188,7 +184,7 @@ func TestApp010_Upgrade(t *testing.T) {
 				)
 				return newUpgrade010(a, &b, &pm)
 			},
-			checkUpgrade: func(t *testing.T, a *app.App010) {
+			checkUpgrade: func(t *testing.T, a app.App) {
 				ok, err := afero.DirExists(a.Fs(), "/vendor/incubator/mysql")
 				require.NoError(t, err)
 				assert.True(t, ok, "checking for upgraded package path")
@@ -198,7 +194,7 @@ func TestApp010_Upgrade(t *testing.T) {
 		{
 			name:      "environment targets are upgraded",
 			stageFile: "app010_env_targets.yaml",
-			init: func(t *testing.T, a *app.App010) upgrader {
+			init: func(t *testing.T, a app.App) upgrader {
 				err := a.Fs().MkdirAll("/lib", app.DefaultFolderPermissions)
 				require.NoError(t, err)
 
@@ -208,8 +204,8 @@ func TestApp010_Upgrade(t *testing.T) {
 
 				return newUpgrade010(a, &b, &defaultPM)
 			},
-			checkUpgrade: func(t *testing.T, a *app.App010) {
-				test.AssertContents(t, a.Fs(), "app020_env_targets.yaml", "/app.yaml")
+			checkUpgrade: func(t *testing.T, a app.App) {
+				test.AssertContents(t, a.Fs(), "app030_env_targets.yaml", "/app.yaml")
 			},
 			dryRun: false,
 		},
@@ -217,7 +213,7 @@ func TestApp010_Upgrade(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			withApp010Fs(t, tc.stageFile, func(a *app.App010) {
+			withApp010Fs(t, tc.stageFile, func(a app.App) {
 				var u upgrader
 				if tc.init != nil {
 					u = tc.init(t, a)

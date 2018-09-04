@@ -13,31 +13,37 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-package upgrade
+package app
 
 import (
-	"github.com/ksonnet/ksonnet/pkg/app"
+	"encoding/json"
+
+	"github.com/blang/semver"
 	"github.com/pkg/errors"
 )
 
-type upgrade001 struct {
-	app app.App
+type specBase struct {
+	APIVersion semver.Version `json:"apiVersion,omitempty"`
+	Kind       string         `json:"kind,omitempty"`
 }
 
-// newUpgrade001 constructs an Upgrader from version 0.0.1->0.1.0
-func newUpgrade001(a app.App) *upgrade001 {
-	return &upgrade001{
-		app: a,
-	}
+type specBaseRaw struct {
+	APIVersion string `json:"apiVersion,omitempty"`
+	Kind       string `json:"kind,omitempty"`
 }
 
-// Upgrade upgrades the app to the latest apiVersion.
-func (u *upgrade001) Upgrade(dryRun bool) error {
-	if u == nil {
-		return errors.Errorf("nil receiver")
+func (s *specBase) UnmarshalJSON(b []byte) error {
+	var raw specBaseRaw
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
 	}
-	if u.app == nil {
-		return errors.Errorf("nil app")
+
+	version, err := semver.Parse(raw.APIVersion)
+	if err != nil {
+		return errors.Wrapf(err, "parsing semver: %s", raw.APIVersion)
 	}
-	return u.app.Upgrade(dryRun)
+
+	s.APIVersion = version
+	s.Kind = raw.Kind
+	return nil
 }

@@ -26,6 +26,7 @@ import (
 	"github.com/ksonnet/ksonnet/pkg/lib"
 	"github.com/ksonnet/ksonnet/pkg/pkg"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
@@ -51,6 +52,13 @@ func newUpgrade010(a app.App, out io.Writer, pl PackageLister) *upgrade010 {
 
 // Upgrade upgrades the app to the latest apiVersion.
 func (u *upgrade010) Upgrade(dryRun bool) error {
+	if u == nil {
+		return errors.New("nil receiver")
+	}
+	if u.app == nil {
+		return errors.New("nil app")
+	}
+
 	if err := u.checkForOldKSLibLocation(dryRun); err != nil {
 		return errors.Wrapf(err, "upgrading kslib location")
 	}
@@ -237,4 +245,99 @@ func (*upgrade010) upgradeEnvTargets(listerUpdater envListerUpdater, dryRun bool
 	}
 
 	return nil
+}
+
+// Returns library configurations for the app, whether they are global or environment-scoped.
+func allLibraries(a app.App) (app.LibraryConfigs, error) {
+	if a == nil {
+		return nil, errors.Errorf("nil receiver")
+	}
+
+	combined := app.LibraryConfigs{}
+
+	libs, err := a.Libraries()
+	if err != nil {
+		return nil, errors.Wrapf(err, "checking libraries")
+	}
+	for _, lib := range libs {
+		combined[lib.Name] = lib
+	}
+
+	envs, err := a.Environments()
+	if err != nil {
+		return nil, errors.Wrapf(err, "checking environments")
+	}
+	for _, env := range envs {
+		for _, lib := range env.Libraries {
+			// NOTE We do not check for collisions at this time
+			combined[lib.Name] = lib
+		}
+	}
+
+	return combined, nil
+}
+
+// CheckUpgrade checks for any configuration that needs to be upgraded.
+// If any is found, the user will be informed and we will return true.
+func (u *upgrade010) CheckUpgrade() (bool, error) {
+	if u == nil {
+		return false, errors.Errorf("nil reciever")
+	}
+
+	var needUpgrade bool
+
+	legacyPkgs, err := u.checkUpgradeVendoredPackages()
+	if err != nil {
+		return false, err
+	}
+
+	if len(legacyPkgs) > 0 {
+		logrus.Warnf("Versioned packages stored in unversioned paths.")
+		needUpgrade = true
+	}
+
+	if needUpgrade {
+		logrus.Warnf("Your application must be upgraded to work with this version of ksonnet. Please run `ks upgrade` proceed.")
+	}
+
+	return needUpgrade, nil
+}
+
+// checkUpgradeVendoredPackages checks whether vendored packages need to be upgraded.
+// Upgrades are necessary if a versioned package is stored in pre-ksonnet 0.12.0, unversioned directory.
+func (u *upgrade010) checkUpgradeVendoredPackages() ([]pkg.Package, error) {
+	if u == nil {
+		return nil, errors.Errorf("nil receiver")
+	}
+	a := u.app
+	if a == nil {
+		return nil, errors.Errorf("nil app")
+	}
+	fs := a.Fs()
+	if fs == nil {
+		return nil, errors.Errorf("nil filesystem interface")
+	}
+
+	pkgs, err := u.packageLister.Packages()
+	if err != nil {
+		return nil, errors.Wrap(err, "listing packages")
+	}
+
+	results := make([]pkg.Package, 0)
+	for _, p := range pkgs {
+		if p.Version() == "" {
+			continue
+		}
+
+		path := p.Path()
+		ok, err := afero.DirExists(fs, path)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			results = append(results, p)
+		}
+	}
+
+	return results, nil
 }

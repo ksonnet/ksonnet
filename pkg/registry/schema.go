@@ -59,10 +59,10 @@ type Spec struct {
 
 // specDeprecated is the previous registry specification
 type specDeprecated struct {
-	APIVersion string              `json:"apiVersion"`
-	Kind       string              `json:"kind"`
-	GitVersion *app.GitVersionSpec `json:"gitVersion"`
-	Libraries  LibraryConfigs      `json:"libraries"`
+	APIVersion string                 `json:"apiVersion"`
+	Kind       string                 `json:"kind"`
+	GitVersion *app.GitVersionSpec010 `json:"gitVersion"`
+	Libraries  LibraryConfigs         `json:"libraries"`
 }
 
 // spec is an alias that allows us to leverage default JSON decoding

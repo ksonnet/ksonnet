@@ -31,7 +31,7 @@ func TestCreate(t *testing.T) {
 		appMock.On("Environment", "newenv").Return(nil, errors.New("it does not exist"))
 		appMock.On(
 			"AddEnvironment",
-			mock.AnythingOfType("*app.EnvironmentConfig"),
+			mock.Anything,
 			"version:v1.8.7",
 			false,
 		).Return(nil)

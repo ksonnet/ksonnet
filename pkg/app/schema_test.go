@@ -20,7 +20,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/blang/semver"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -43,41 +42,6 @@ func makeSimpleEnvironmentSpec(name, namespace, server, k8sVersion string) *Envi
 			Server:    server,
 		},
 		KubernetesVersion: k8sVersion,
-	}
-}
-
-func TestApiVersionValidate(t *testing.T) {
-	type spec struct {
-		spec string
-		err  bool
-	}
-	tests := []spec{
-		// Versions that we accept.
-		{spec: "0.0.1", err: false},
-		{spec: "0.0.1+build.1", err: false},
-		{spec: "0.1.0-alpha", err: false},
-		{spec: "0.1.0+build.1"},
-
-		// Other versions.
-		{spec: "0.0.0", err: true},
-		{spec: "0.1.0"},
-		{spec: "1.0.0", err: true},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.spec, func(t *testing.T) {
-			_, err := semver.Make(tc.spec)
-			require.NoError(t, err, "failed to parse version %q", tc.spec)
-
-			spec := &Spec{APIVersion: tc.spec}
-			err = spec.validate()
-			if tc.err {
-				require.Error(t, err)
-				return
-			}
-
-			require.NoError(t, err)
-		})
 	}
 }
 
@@ -382,7 +346,7 @@ func Test_write(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	spec := &Spec{
-		APIVersion: "0.2.0",
+		APIVersion: "0.3.0",
 		Environments: EnvironmentConfigs{
 			"a": &EnvironmentConfig{},
 			"b": &EnvironmentConfig{isOverride: true},
@@ -407,7 +371,7 @@ func Test_write_no_override(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	spec := &Spec{
-		APIVersion: "0.2.0",
+		APIVersion: "0.3.0",
 		Environments: EnvironmentConfigs{
 			"a": &EnvironmentConfig{},
 		},
@@ -435,7 +399,7 @@ func Test_read(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := &Spec{
-		APIVersion:   "0.2.0",
+		APIVersion:   "0.3.0",
 		Contributors: ContributorSpecs{},
 		Environments: EnvironmentConfigs{
 			"a": &EnvironmentConfig{Name: "a"},

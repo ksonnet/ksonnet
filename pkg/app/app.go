@@ -22,7 +22,6 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
@@ -69,8 +68,6 @@ type App interface {
 	Fs() afero.Fs
 	// HTTPClient is the app's http client
 	HTTPClient() *http.Client
-	// CheckUpgrade checks whether an app should be upgraded.
-	CheckUpgrade() (bool, error)
 	// LibPath returns the path of the lib for an environment.
 	LibPath(envName string) (string, error)
 	// Libraries returns all environments.
@@ -95,42 +92,27 @@ type App interface {
 	UpdateLib(name string, env string, spec *LibraryConfig) (*LibraryConfig, error)
 	// UpdateRegistry updates a registry.
 	UpdateRegistry(spec *RegistryConfig) error
-	// Upgrade upgrades an application to the current version.
-	Upgrade(dryRun bool) error
-
+	// Upgrade upgrades an application (app.yaml) to the current version.
+	Upgrade(bool) error
 	// VendorPath returns the root of the vendor path.
 	VendorPath() string
 }
 
 // Load loads the application configuration.
 func Load(fs afero.Fs, httpClient *http.Client, appRoot string) (App, error) {
-	log := log.WithField("action", "app.Load")
-
 	spec, err := read(fs, appRoot)
 	if os.IsNotExist(err) {
 		// During `ks init`, app.yaml will not yet exist - generate a new one.
-		return NewApp010(fs, appRoot, httpClient), nil
+		return NewBaseApp(fs, appRoot, httpClient), nil
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "reading app configuration")
 	}
 
-	switch spec.APIVersion {
-	default:
-		return nil, errors.Errorf("unknown apiVersion %q in %s", spec.APIVersion, appYamlName)
-	case "0.0.1":
-		return NewApp001(fs, appRoot, httpClient), nil
-	case "0.1.0", "0.2.0":
-		// TODO TODO
-		// 0.1.0 will auto-upgraded to 0.2.0. 0.1.0 is read-compatible with
-		// 0.2.0, but will be persisted back as 0.2.0. This behavior will be
-		// subsequently changed with new upgrade framework.
-		a := NewApp010(fs, appRoot, httpClient)
-		log.Debugf("Interpreting app version as latest (0.2.0)", a.baseApp)
-		a.config.APIVersion = "0.2.0"
-		a.baseApp.config.APIVersion = "0.2.0"
-		return a, nil
-	}
+	a := NewBaseApp(fs, appRoot, httpClient)
+	a.config = spec
+
+	return a, nil
 }
 
 func app010LibPath(root string) string {

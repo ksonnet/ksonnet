@@ -26,34 +26,11 @@ const (
 	// overrideKind is the override resource type.
 	overrideKind = "ksonnet.io/app-override"
 	// overrideVersion is the version of the override resource.
-	overrideVersion = "0.2.0"
+	overrideVersion = "0.3.0"
 )
 
 // Override defines overrides to ksonnet project configurations.
-type Override struct {
-	Kind         string             `json:"kind"`
-	APIVersion   string             `json:"apiVersion"`
-	Environments EnvironmentConfigs `json:"environments,omitempty"`
-	Registries   RegistryConfigs    `json:"registries,omitempty"`
-}
-
-// Validate validates an Override.
-func (o *Override) Validate() error {
-	if o.Kind != overrideKind {
-		return errors.Errorf("app override has unexpected kind")
-	}
-
-	if o.APIVersion != overrideVersion {
-		return errors.Errorf("app override has unexpected apiVersion")
-	}
-
-	return nil
-}
-
-// IsDefined returns true if the override has environments or registries defined.
-func (o *Override) IsDefined() bool {
-	return o != nil && (len(o.Environments) > 0 || len(o.Registries) > 0)
-}
+type Override = Override030
 
 // SaveOverride saves the override to the filesystem.
 func SaveOverride(encoder Encoder, fs afero.Fs, root string, o *Override) error {

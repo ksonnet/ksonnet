@@ -47,8 +47,8 @@ func Test_baseapp_CurrentEnvironment(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			fs := afero.NewMemMapFs()
-			stageFile(t, fs, "app010_app.yaml", "/app.yaml")
-			ba := newBaseApp(fs, "/", nil)
+			stageFile(t, fs, "app030_app.yaml", "/app.yaml")
+			ba := NewBaseApp(fs, "/", nil)
 
 			if tc.init != nil {
 				tc.init(t, fs)
@@ -79,8 +79,8 @@ func Test_baseapp_SetCurrentEnvironment(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			fs := afero.NewMemMapFs()
-			stageFile(t, fs, "app010_app.yaml", "/app.yaml")
-			ba := newBaseApp(fs, "/", nil)
+			stageFile(t, fs, "app030_app.yaml", "/app.yaml")
+			ba := NewBaseApp(fs, "/", nil)
 
 			err := ba.SetCurrentEnvironment(tc.envName)
 			if tc.isErr {
@@ -100,9 +100,9 @@ func Test_baseapp_SetCurrentEnvironment(t *testing.T) {
 func Test_baseApp_AddRegistry(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
-	stageFile(t, fs, "app010_app.yaml", "/app.yaml")
+	stageFile(t, fs, "app030_app.yaml", "/app.yaml")
 
-	ba := newBaseApp(fs, "/", nil)
+	ba := NewBaseApp(fs, "/", nil)
 
 	reg := &RegistryConfig{
 		Name: "new",
@@ -118,9 +118,9 @@ func Test_baseApp_AddRegistry(t *testing.T) {
 func Test_baseApp_AddRegistry_override(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
-	stageFile(t, fs, "app010_app.yaml", "/app.yaml")
+	stageFile(t, fs, "app030_app.yaml", "/app.yaml")
 
-	ba := newBaseApp(fs, "/", nil)
+	ba := NewBaseApp(fs, "/", nil)
 
 	reg := &RegistryConfig{
 		Name: "new",
@@ -129,16 +129,16 @@ func Test_baseApp_AddRegistry_override(t *testing.T) {
 	err := ba.AddRegistry(reg, true)
 	require.NoError(t, err)
 
-	assertContents(t, fs, "app020_app.yaml", ba.configPath())
+	assertContents(t, fs, "app030_app.yaml", ba.configPath())
 	assertContents(t, fs, "add-registry-override.yaml", ba.overridePath())
 }
 
 func Test_baseApp_AddRegistry_override_existing(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
-	stageFile(t, fs, "app010_app.yaml", "/app.yaml")
+	stageFile(t, fs, "app030_app.yaml", "/app.yaml")
 
-	ba := newBaseApp(fs, "/", nil)
+	ba := NewBaseApp(fs, "/", nil)
 
 	reg := &RegistryConfig{
 		Name: "incubator",
@@ -159,7 +159,7 @@ func Test_baseApp_UpdateRegistry(t *testing.T) {
 		{
 			name:           "no such registry",
 			regSpec:        RegistryConfig{Name: "no-such-registry"},
-			appFilePath:    "app010_app.yaml",
+			appFilePath:    "app030_app.yaml",
 			expectFilePath: "",
 			expectErr:      true,
 		},
@@ -172,7 +172,7 @@ func Test_baseApp_UpdateRegistry(t *testing.T) {
 			stageFile(t, fs, tc.appFilePath, "/app.yaml")
 		}
 
-		ba := newBaseApp(fs, "/", nil)
+		ba := NewBaseApp(fs, "/", nil)
 
 		// Test updating non-existing registry
 		err := ba.UpdateRegistry(&tc.regSpec)
@@ -206,7 +206,7 @@ func Test_baseApp_UpdateLibrary(t *testing.T) {
 				Version:  "1.2.3",
 			},
 			env:         "no-such-environment",
-			appFilePath: "app020_app.yaml",
+			appFilePath: "app030_app.yaml",
 			expectErr:   true,
 		},
 		{
@@ -217,7 +217,7 @@ func Test_baseApp_UpdateLibrary(t *testing.T) {
 				Version:  "1.2.3",
 			},
 			env:            "",
-			appFilePath:    "app020_app.yaml",
+			appFilePath:    "app030_app.yaml",
 			expectFilePath: "pkg-install-global.yaml",
 			expectErr:      false,
 		},
@@ -229,32 +229,34 @@ func Test_baseApp_UpdateLibrary(t *testing.T) {
 				Version:  "1.2.3",
 			},
 			env:            "default",
-			appFilePath:    "app010_app.yaml",
+			appFilePath:    "app030_app.yaml",
 			expectFilePath: "pkg-install-env-scope.yaml",
 			expectErr:      false,
 		},
 	}
 
 	for _, tc := range tests {
-		fs := afero.NewMemMapFs()
+		t.Run(tc.name, func(t *testing.T) {
+			fs := afero.NewMemMapFs()
 
-		if tc.appFilePath != "" {
-			stageFile(t, fs, tc.appFilePath, "/app.yaml")
-		}
+			if tc.appFilePath != "" {
+				stageFile(t, fs, tc.appFilePath, "/app.yaml")
+			}
 
-		ba := newBaseApp(fs, "/", nil)
+			ba := NewBaseApp(fs, "/", nil)
 
-		// Test updating non-existing registry
-		_, err := ba.UpdateLib(tc.libCfg.Name, tc.env, &tc.libCfg)
-		if tc.expectErr {
-			require.Error(t, err)
-		} else {
-			require.NoError(t, err)
-		}
+			// Test updating non-existing registry
+			_, err := ba.UpdateLib(tc.libCfg.Name, tc.env, &tc.libCfg)
+			if tc.expectErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 
-		if tc.expectFilePath != "" {
-			assertContents(t, fs, tc.expectFilePath, ba.configPath())
-		}
+			if tc.expectFilePath != "" {
+				assertContents(t, fs, tc.expectFilePath, ba.configPath())
+			}
+		})
 	}
 
 }
@@ -276,7 +278,7 @@ func Test_baseApp_UpdateLib_Remove(t *testing.T) {
 			name:        "remove - env - exists",
 			libName:     "nginx",
 			env:         "default",
-			appFilePath: "app020_simple.yaml",
+			appFilePath: "app030_simple.yaml",
 			environments: EnvironmentConfigs{
 				"default": &EnvironmentConfig{
 					Name: "default",
@@ -315,7 +317,7 @@ func Test_baseApp_UpdateLib_Remove(t *testing.T) {
 		{
 			name:        "remove - global - exists",
 			libName:     "nginx",
-			appFilePath: "app020_simple.yaml",
+			appFilePath: "app030_simple.yaml",
 			globalLibraries: LibraryConfigs{
 				"nginx": &LibraryConfig{
 					Name:     "nginx",
@@ -346,13 +348,13 @@ func Test_baseApp_UpdateLib_Remove(t *testing.T) {
 			name:        "no such environment",
 			libName:     "nginx",
 			env:         "no-such-environment",
-			appFilePath: "app020_app.yaml",
+			appFilePath: "app030_app.yaml",
 			expectErr:   true,
 		},
 		{
 			name:        "no such library",
 			libName:     "no-such-library",
-			appFilePath: "app020_app.yaml",
+			appFilePath: "app030_app.yaml",
 			globalLibraries: LibraryConfigs{
 				"nginx": &LibraryConfig{
 					Name:     "nginx",
@@ -377,8 +379,7 @@ func Test_baseApp_UpdateLib_Remove(t *testing.T) {
 				stageFile(t, fs, tc.appFilePath, "/app.yaml")
 			}
 
-			ba := newBaseApp(fs, "/", nil)
-			ba.load = func() error { return nil }
+			ba := NewBaseApp(fs, "/", nil, optNoopLoader())
 
 			if tc.globalLibraries != nil {
 				ba.config.Libraries = tc.globalLibraries
@@ -404,10 +405,10 @@ func Test_baseApp_UpdateLib_Remove(t *testing.T) {
 func Test_baseApp_load_override(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
-	stageFile(t, fs, "app010_app.yaml", "/app.yaml")
+	stageFile(t, fs, "app030_app.yaml", "/app.yaml")
 	stageFile(t, fs, "add-registry-override.yaml", "/app.override.yaml")
 
-	ba := newBaseApp(fs, "/", nil)
+	ba := NewBaseApp(fs, "/", nil)
 
 	err := ba.load()
 	require.NoError(t, err)
@@ -419,10 +420,10 @@ func Test_baseApp_load_override(t *testing.T) {
 func Test_baseApp_load_override_invalid(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
-	stageFile(t, fs, "app010_app.yaml", "/app.yaml")
+	stageFile(t, fs, "app030_app.yaml", "/app.yaml")
 	stageFile(t, fs, "add-registry-override-invalid.yaml", "/app.override.yaml")
 
-	ba := newBaseApp(fs, "/", nil)
+	ba := NewBaseApp(fs, "/", nil)
 
 	err := ba.load()
 	require.Error(t, err)
@@ -430,10 +431,7 @@ func Test_baseApp_load_override_invalid(t *testing.T) {
 
 func Test_baseApp_environment_override_is_merged(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	ba := newBaseApp(fs, "/", nil)
-	ba.load = func() error {
-		return nil
-	}
+	ba := NewBaseApp(fs, "/", nil, optNoopLoader())
 	ba.config.Environments = EnvironmentConfigs{
 		"default": &EnvironmentConfig{
 			Name: "default",
@@ -483,10 +481,7 @@ func Test_baseApp_environment_override_is_merged(t *testing.T) {
 
 func Test_baseApp_environment_just_override(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	ba := newBaseApp(fs, "/", nil)
-	ba.load = func() error {
-		return nil
-	}
+	ba := NewBaseApp(fs, "/", nil, optNoopLoader())
 	ba.config.Environments = EnvironmentConfigs{}
 	ba.overrides.Environments["default"] = &EnvironmentConfig{
 		Name:              "default",
@@ -517,4 +512,3 @@ func Test_baseApp_environment_just_override(t *testing.T) {
 
 	assert.Equal(t, expected, e)
 }
-

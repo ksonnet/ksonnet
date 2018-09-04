@@ -561,7 +561,7 @@ func latestPrototype(protos prototype.Prototypes) *prototype.Prototype {
 }
 
 // Given an index of libaries (as created by allLibraries),
-// return flag list of unique libraries, as distinguished by key registry:name:version.
+// return a list of unique libraries, as distinguished by key registry:name:version.
 func uniqueLibsByVersion(libIndex libraryByDesc) []*app.LibraryConfig {
 	var result = make([]*app.LibraryConfig, 0, len(libIndex))
 

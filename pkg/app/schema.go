@@ -16,7 +16,6 @@
 package app
 
 import (
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -31,7 +30,7 @@ import (
 
 const (
 	// DefaultAPIVersion is the default ks API version to use if not specified.
-	DefaultAPIVersion = "0.2.0"
+	DefaultAPIVersion = "0.3.0"
 	// Kind is the schema resource type.
 	Kind = "ksonnet.io/app"
 	// DefaultVersion is the default version of the app schema.
@@ -53,7 +52,7 @@ var (
 
 var (
 	compatibleAPIRangeStrings = []string{
-		">= 0.0.1 <= 0.2.0",
+		">= 0.1.0 <= 0.3.0",
 	}
 	compatibleAPIRanges = mustCompileRanges()
 )
@@ -68,25 +67,45 @@ func mustCompileRanges() []semver.Range {
 
 // Spec defines all the ksonnet project metadata. This includes details such as
 // the project name, authors, environments, and registries.
-type Spec struct {
-	APIVersion   string             `json:"apiVersion,omitempty"`
-	Kind         string             `json:"kind,omitempty"`
-	Name         string             `json:"name,omitempty"`
-	Version      string             `json:"version,omitempty"`
-	Description  string             `json:"description,omitempty"`
-	Authors      []string           `json:"authors,omitempty"`
-	Contributors ContributorSpecs   `json:"contributors,omitempty"`
-	Repository   *RepositorySpec    `json:"repository,omitempty"`
-	Bugs         string             `json:"bugs,omitempty"`
-	Keywords     []string           `json:"keywords,omitempty"`
-	Registries   RegistryConfigs    `json:"registries,omitempty"`
-	Environments EnvironmentConfigs `json:"environments,omitempty"`
-	Libraries    LibraryConfigs     `json:"libraries,omitempty"`
-	License      string             `json:"license,omitempty"`
+type Spec = Spec030
+
+// RepositorySpec defines the spec for the upstream repository of this project.
+type RepositorySpec = RepositorySpec030
+
+// RegistryConfig defines the spec for a registry. A registry is a collection
+// of library parts.
+type RegistryConfig = RegistryConfig030
+
+// RegistryConfigs is a map of the registry name to a RegistryConfig.
+type RegistryConfigs = RegistryConfigs030
+
+// EnvironmentConfigs contains one or more EnvironmentConfig.
+type EnvironmentConfigs = EnvironmentConfigs030
+
+// EnvironmentConfig contains the specification for ksonnet environments.
+type EnvironmentConfig = EnvironmentConfig030
+
+// EnvironmentDestinationSpec contains the specification for the cluster
+// address that the environment points to.
+type EnvironmentDestinationSpec = EnvironmentDestinationSpec030
+
+// LibraryConfig is the specification for a library part.
+type LibraryConfig = LibraryConfig030
+
+// LibraryConfigs is a mapping of a library configurations by name.
+type LibraryConfigs = LibraryConfigs030
+
+// ContributorSpec is a specification for the project contributors.
+type ContributorSpec = ContributorSpec030
+
+// ContributorSpecs is a list of 0 or more contributors.
+type ContributorSpecs = ContributorSpecs030
+
+type upgrader interface {
+	Upgrade(fs afero.Fs, from semver.Version, fromSchema interface{}) (interface{}, error)
 }
 
-// Read will return the specification for a ksonnet application. It will navigate up directories
-// to search for `app.yaml` and return error if it hits the root directory.
+// Read will return the specification for a ksonnet application.
 func read(fs afero.Fs, root string) (*Spec, error) {
 	log.Debugf("loading application configuration from %s", root)
 
@@ -95,20 +114,45 @@ func read(fs afero.Fs, root string) (*Spec, error) {
 		return nil, err
 	}
 
-	var spec Spec
+	var base specBase
 
-	err = yaml.Unmarshal(appConfig, &spec)
+	err = yaml.Unmarshal(appConfig, &base)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = spec.validate(); err != nil {
+	// Run migrations up to current version
+	spec, err := applyMigrations(fs, root, base)
+	if err != nil {
+		return nil, errors.Wrap(err, "applying migrations")
+	}
+
+	if err := applyOverrides(fs, root, spec); err != nil {
+		return nil, errors.Wrap(err, "applying overrides")
+	}
+
+	return spec, nil
+}
+
+func applyMigrations(fs afero.Fs, root string, base specBase) (*Spec, error) {
+	m := NewMigrator(fs, root)
+	untyped, err := m.Load(base.APIVersion, true)
+	if err != nil {
 		return nil, err
 	}
 
+	spec, ok := untyped.(*Spec)
+	if !ok {
+		return nil, errors.Errorf("unexpected type after migration: %T", untyped)
+	}
+
+	return spec, nil
+}
+
+func applyOverrides(fs afero.Fs, root string, spec *Spec) error {
 	exists, err := afero.Exists(fs, overridePath(root))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if exists {
@@ -116,12 +160,12 @@ func read(fs afero.Fs, root string) (*Spec, error) {
 
 		overrideConfig, err := afero.ReadFile(fs, overridePath(root))
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		err = yaml.Unmarshal(overrideConfig, &o)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		for k, v := range o.Environments {
@@ -135,11 +179,7 @@ func read(fs afero.Fs, root string) (*Spec, error) {
 		}
 	}
 
-	if err := spec.validate(); err != nil {
-		return nil, err
-	}
-
-	return &spec, nil
+	return nil
 }
 
 // Write writes the provided spec to file system.
@@ -183,6 +223,7 @@ func write(fs afero.Fs, appRoot string, spec *Spec) error {
 		return errors.Wrap(err, "convert app configuration to YAML")
 	}
 
+	log.Debugf("writing %s", specPath(appRoot))
 	if err = afero.WriteFile(fs, specPath(appRoot), appConfig, DefaultFilePermissions); err != nil {
 		return errors.Wrap(err, "write app.yaml")
 	}
@@ -217,396 +258,6 @@ func specPath(appRoot string) string {
 
 func overridePath(appRoot string) string {
 	return filepath.Join(appRoot, overrideYamlName)
-}
-
-// RepositorySpec defines the spec for the upstream repository of this project.
-type RepositorySpec struct {
-	Type string `json:"type"`
-	URI  string `json:"uri"`
-}
-
-// RegistryConfig defines the spec for a registry. A registry is a collection
-// of library parts.
-type RegistryConfig struct {
-	// Name is the user defined name of a registry.
-	Name string `json:"-"`
-	// Protocol is the registry protocol for this registry. Currently supported
-	// values are `github`, `fs`, `helm`.
-	Protocol string `json:"protocol"`
-	// URI is the location of the registry.
-	URI string `json:"uri"`
-
-	isOverride bool
-}
-
-// IsOverride is true if this RegistryConfig is an override.
-func (r *RegistryConfig) IsOverride() bool {
-	return r.isOverride
-}
-
-// RegistryConfigs is a map of the registry name to a RegistryConfig.
-type RegistryConfigs map[string]*RegistryConfig
-
-// UnmarshalJSON implements the json.Unmarshaler interface.
-// Our goal is to populate the Name field of RegistryConfig
-// objects according to they key name in the registries map.
-func (r *RegistryConfigs) UnmarshalJSON(b []byte) error {
-	registries := make(map[string]*RegistryConfig)
-	if err := json.Unmarshal(b, &registries); err != nil {
-		return err
-	}
-
-	// Set Name fields according to map keys
-	result := RegistryConfigs{}
-	for k, v := range registries {
-		if v == nil {
-			continue
-		}
-		v.Name = k
-		result[k] = v
-	}
-
-	*r = result
-	return nil
-}
-
-// EnvironmentConfigs contains one or more EnvironmentConfig.
-type EnvironmentConfigs map[string]*EnvironmentConfig
-
-// UnmarshalJSON implements the json.Unmarshaler interface.
-// Our goal is to populate the Name field of EnvironmentConfig
-// objects according to they key name in the environments map.
-func (e *EnvironmentConfigs) UnmarshalJSON(b []byte) error {
-	envs := make(map[string]*EnvironmentConfig)
-	if err := json.Unmarshal(b, &envs); err != nil {
-		return err
-	}
-
-	// Set Name fields according to map keys
-	result := EnvironmentConfigs{}
-	for k, v := range envs {
-		if v == nil {
-			continue
-		}
-		v.Name = k
-		result[k] = v
-	}
-
-	*e = result
-	return nil
-}
-
-// EnvironmentConfig contains the specification for ksonnet environments.
-type EnvironmentConfig struct {
-	// Name is the user defined name of an environment
-	Name string `json:"-"`
-	// KubernetesVersion is the kubernetes version the targeted cluster is
-	// running on.
-	KubernetesVersion string `json:"k8sVersion"`
-	// Path is the relative project path containing metadata for this
-	// environment.
-	Path string `json:"path"`
-	// Destination stores the cluster address that this environment points to.
-	Destination *EnvironmentDestinationSpec `json:"destination"`
-	// Targets contain the relative component paths that this environment
-	// wishes to deploy on it's destination.
-	Targets []string `json:"targets,omitempty"`
-	// Libraries specifies versioned libraries specifically used by this environment.
-	Libraries LibraryConfigs `json:"libraries,omitempty"`
-
-	isOverride bool
-}
-
-// MakePath return the absolute path to the environment directory.
-func (e *EnvironmentConfig) MakePath(rootPath string) string {
-	return filepath.Join(
-		rootPath,
-		EnvironmentDirName,
-		filepath.FromSlash(e.Path))
-}
-
-// IsOverride is true if this EnvironmentConfig is an override.
-func (e *EnvironmentConfig) IsOverride() bool {
-	return e.isOverride
-}
-
-// EnvironmentDestinationSpec contains the specification for the cluster
-// address that the environment points to.
-type EnvironmentDestinationSpec struct {
-	// Server is the Kubernetes server that the cluster is running on.
-	Server string `json:"server"`
-	// Namespace is the namespace of the Kubernetes server that targets should
-	// be deployed to. This is "default", if not specified.
-	Namespace string `json:"namespace"`
-}
-
-// LibraryConfig is the specification for a library part.
-type LibraryConfig struct {
-	Name     string `json:"name"`
-	Registry string `json:"registry"`
-	Version  string `json:"version"`
-}
-
-// 0.1.0 version of LibraryConfig
-type libraryConfigDeprecated struct {
-	Name       string          `json:"name"`
-	Registry   string          `json:"registry"`
-	Version    string          `json:"version"`
-	GitVersion *GitVersionSpec `json:"gitVersion,omitempty"`
-}
-
-// GitVersionSpec is the specification for a Registry's Git Version.
-type GitVersionSpec struct {
-	RefSpec   string `json:"refSpec"`
-	CommitSHA string `json:"commitSha"`
-}
-
-// LibraryConfigs is a mapping of a library configurations by name.
-type LibraryConfigs map[string]*LibraryConfig
-
-// libraryConfigs is an alias that allows us to leverage default JSON encoding
-// in our custom MarshalJSON handler without triggering infinite recursion.
-type libraryConfigs LibraryConfigs
-
-// UnmarshalJSON implements the json.Unmarshaler interface.
-// We implement some compatibility conversions.
-func (l *LibraryConfigs) UnmarshalJSON(b []byte) error {
-	var cfgs map[string]*LibraryConfig
-
-	if err := json.Unmarshal(b, &cfgs); err != nil {
-		return err
-	}
-
-	result := LibraryConfigs{}
-	for k, v := range cfgs {
-		if v == nil {
-			continue
-		}
-
-		name := libName(k)
-		qualifiedName := qualifyLibName(v.Registry, name)
-
-		v.Name = name
-		result[qualifiedName] = v
-	}
-
-	*l = result
-	return nil
-}
-
-// MarshalJSON implements the json.Unmarshaler interface.
-// We implement some compatibility conversions.
-func (l *LibraryConfigs) MarshalJSON() ([]byte, error) {
-	lc := libraryConfigs{}
-
-	for k, v := range *l {
-		if v == nil {
-			continue
-		}
-
-		name := libName(k)
-		qualifiedName := qualifyLibName(v.Registry, name)
-
-		v.Name = name
-		lc[qualifiedName] = v
-	}
-
-	return json.Marshal(lc)
-}
-
-// libraryConfig is an alias that allows us to leverage default JSON decoding
-// in our custom UnmarshalJSON handler without triggering infinite recursion.
-type libraryConfig LibraryConfig
-
-// UnmarshalJSON implements the json.Unmarshaler interface.
-// We implement some compatibility conversions.
-func (l *LibraryConfig) UnmarshalJSON(b []byte) error {
-	var cfg libraryConfig
-
-	if err := json.Unmarshal(b, &cfg); err != nil {
-		return err
-	}
-	*l = LibraryConfig(cfg)
-
-	// Check if there's any need for conversions
-	if cfg.Version != "" {
-		return nil
-	}
-
-	// Try to convert deprecated fields
-	var oldStyle libraryConfigDeprecated
-	if err := json.Unmarshal(b, &oldStyle); err != nil {
-		// This is best-effort, not an error
-		return nil
-	}
-	if oldStyle.GitVersion != nil {
-		l.Version = oldStyle.GitVersion.CommitSHA
-	}
-
-	return nil
-}
-
-// ContributorSpec is a specification for the project contributors.
-type ContributorSpec struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
-// ContributorSpecs is a list of 0 or more contributors.
-type ContributorSpecs []*ContributorSpec
-
-// Marshal converts a app.Spec into bytes for file writing.
-func (s *Spec) Marshal() ([]byte, error) {
-	return yaml.Marshal(s)
-}
-
-// RegistryConfig returns a populated RegistryConfig given a registry name.
-func (s *Spec) RegistryConfig(name string) (*RegistryConfig, bool) {
-	cfg, ok := s.Registries[name]
-	if ok {
-		// Verify map name matches the name in configuration. These should always match.
-		if cfg.Name != name {
-			log.WithField("action", "app.Spec.RegistryConfig").Warnf("registry configuration name mismatch: %v vs. %v", cfg.Name, name)
-			cfg.Name = name
-		}
-	}
-	return cfg, ok
-}
-
-// AddRegistryConfig adds the RegistryConfig to the app spec.
-func (s *Spec) AddRegistryConfig(cfg *RegistryConfig) error {
-	if cfg.Name == "" {
-		return ErrRegistryNameInvalid
-	}
-
-	if _, exists := s.Registries[cfg.Name]; exists {
-		return ErrRegistryExists
-	}
-
-	s.Registries[cfg.Name] = cfg
-	return nil
-}
-
-func (s *Spec) validate() error {
-	if s.Contributors == nil {
-		s.Contributors = ContributorSpecs{}
-	}
-
-	if s.Registries == nil {
-		s.Registries = RegistryConfigs{}
-	}
-
-	if s.Libraries == nil {
-		s.Libraries = LibraryConfigs{}
-	}
-
-	if s.Environments == nil {
-		s.Environments = EnvironmentConfigs{}
-	}
-
-	if s.APIVersion == "0.0.0" {
-		return errors.New("invalid version")
-	}
-
-	ver, err := semver.Make(s.APIVersion)
-	if err != nil {
-		return errors.Wrap(err, "Failed to parse version in app spec")
-	}
-
-	var compatible bool
-	for _, compatRange := range compatibleAPIRanges {
-		if compatRange(ver) {
-			compatible = true
-		}
-	}
-
-	if !compatible {
-		return fmt.Errorf(
-			"Current app uses unsupported spec version '%s' (this client only supports %s)",
-			s.APIVersion,
-			compatibleAPIRangeStrings)
-	}
-
-	return nil
-}
-
-// GetEnvironmentConfigs returns all environment specifications.
-// TODO: Consider returning copies instead of originals
-func (s *Spec) GetEnvironmentConfigs() EnvironmentConfigs {
-	for k, v := range s.Environments {
-		v.Name = k
-	}
-
-	return s.Environments
-}
-
-// GetEnvironmentConfig returns the environment specification for the environment.
-// TODO: Consider returning copies instead of originals
-func (s *Spec) GetEnvironmentConfig(name string) (*EnvironmentConfig, bool) {
-	env, ok := s.Environments[name]
-	if ok {
-		env.Name = name
-	}
-	return env, ok
-}
-
-// AddEnvironmentConfig adds an EnvironmentConfig to the list of EnvironmentConfigs.
-// This is equivalent to registering the environment for a ksonnet app.
-func (s *Spec) AddEnvironmentConfig(env *EnvironmentConfig) error {
-	if env.Name == "" {
-		return ErrEnvironmentNameInvalid
-	}
-
-	if _, ok := s.Environments[env.Name]; ok {
-		return ErrEnvironmentExists
-	}
-
-	s.Environments[env.Name] = env
-	return nil
-}
-
-// DeleteEnvironmentConfig removes the environment specification from the app spec.
-func (s *Spec) DeleteEnvironmentConfig(name string) error {
-	delete(s.Environments, name)
-	return nil
-}
-
-// UpdateEnvironmentConfig updates the environment with the provided name to the
-// specified spec.
-func (s *Spec) UpdateEnvironmentConfig(name string, env *EnvironmentConfig) error {
-	if env.Name == "" {
-		return ErrEnvironmentNameInvalid
-	}
-
-	_, ok := s.Environments[name]
-	if !ok {
-		return errors.Errorf("Environment with name %q does not exist", name)
-	}
-
-	if name != env.Name {
-		if err := s.DeleteEnvironmentConfig(name); err != nil {
-			return err
-		}
-	}
-
-	s.Environments[env.Name] = env
-	return nil
-}
-
-func (l LibraryConfig) String() string {
-	switch {
-	case l.Registry != "" && l.Version != "":
-		return fmt.Sprintf("%s/%s@%s", l.Registry, l.Name, l.Version)
-	case l.Registry != "" && l.Version == "":
-		return fmt.Sprintf("%s/%s", l.Registry, l.Name)
-	case l.Registry == "" && l.Version != "":
-		return fmt.Sprintf("%s@%s", l.Name, l.Version)
-	case l.Registry == "" && l.Version == "":
-		return l.Name
-	default:
-		// Not sure which case we missed, just default to verbose
-		return fmt.Sprintf("%s/%s@%s", l.Registry, l.Name, l.Version)
-	}
 }
 
 func libName(name string) string {

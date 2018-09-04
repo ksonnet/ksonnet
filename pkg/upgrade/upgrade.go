@@ -19,47 +19,47 @@ import (
 	"io"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
-	"github.com/pkg/errors"
 )
+
+type upgrader interface {
+	Upgrade(bool) error
+}
+
+type checker interface {
+	CheckUpgrade() (bool, error)
+}
 
 // Upgrade upgrades an application to the current version.
 func Upgrade(a app.App, out io.Writer, pl PackageLister, dryRun bool) error {
-	// TODO new migration framework goes here
-
-	if a == nil {
-		return errors.Errorf("nil receiver")
+	var upgrades = []upgrader{
+		newUpgrade010(a, out, pl),
 	}
 
-	switch va := a.(type) {
-	default:
-		return errors.Errorf("Unknown app type: %T", a)
-	case *app.App001:
-		// First we upgrade 0.0.1 -> 0.1.0, then 0.1.0 -> 0.2.0
-		u := newUpgrade001(va)
+	for _, u := range upgrades {
 		err := u.Upgrade(dryRun)
 		if err != nil {
-			return errors.Wrapf(err, "upgrading from 0.0.1 to 0.1.0")
+			return err
 		}
-
-		// Reload App between upgrades
-		app010, err := app.Load(va.Fs(), va.HTTPClient(), va.Root())
-		if err != nil {
-			return errors.Wrapf(err, "reloading app after 0.1.0 upgrade")
-		}
-
-		u2 := newUpgrade010(app010, out, pl)
-		err = u2.Upgrade(dryRun)
-		if err != nil {
-			return errors.Wrapf(err, "upgrading from 0.1.0 to 0.2.0")
-		}
-
-		return nil
-	case *app.App010:
-		u := newUpgrade010(va, out, pl)
-		err := u.Upgrade(dryRun)
-		if err != nil {
-			return errors.Wrapf(err, "upgrading from 0.1.0 to 0.2.0")
-		}
-		return nil
 	}
+	return nil
+}
+
+// CheckUpgrade checks whether an app should be upgraded.
+func CheckUpgrade(a app.App, out io.Writer, pl PackageLister, dryRun bool) (bool, error) {
+	var checks = []checker{
+		newUpgrade010(a, out, pl),
+	}
+
+	var needsUpgrade bool
+	for _, u := range checks {
+		var err error
+		needsUpgrade, err = u.CheckUpgrade()
+		if err != nil {
+			return false, err
+		}
+		if needsUpgrade {
+			break
+		}
+	}
+	return needsUpgrade, nil
 }
