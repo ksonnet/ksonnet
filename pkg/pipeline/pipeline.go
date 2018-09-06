@@ -18,7 +18,6 @@ package pipeline
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"path/filepath"
 	"regexp"
@@ -131,8 +130,6 @@ func (p *Pipeline) moduleParams(module component.Module, inherited bool) (string
 	if err != nil {
 		return "", errors.Wrapf(err, "resolve params for %s", module.Name())
 	}
-
-	fmt.Println(paramsStr)
 
 	return paramsStr, nil
 }
