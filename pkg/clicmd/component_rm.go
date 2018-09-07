@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
@@ -33,7 +32,7 @@ references throughout the project.`
 ks component rm guestbook`
 )
 
-func newComponentRmCmd(a app.App) *cobra.Command {
+func newComponentRmCmd() *cobra.Command {
 	componentRmCmd := &cobra.Command{
 		Use:     "rm <component-name>",
 		Short:   "Delete a component from the ksonnet application",
@@ -45,9 +44,9 @@ func newComponentRmCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:           a,
 				actions.OptionComponentName: args[0],
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionComponentRm, m)
 		},

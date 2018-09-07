@@ -21,7 +21,6 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
@@ -50,7 +49,7 @@ the following info:
 `
 )
 
-func newPkgListCmd(a app.App) *cobra.Command {
+func newPkgListCmd() *cobra.Command {
 	pkgListCmd := &cobra.Command{
 		Use:   "list",
 		Short: pkgShortDesc["list"],
@@ -61,11 +60,10 @@ func newPkgListCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:           a,
-				actions.OptionInstalled:     viper.GetBool(vPkgListInstalled),
-				actions.OptionOutput:        viper.GetString(vPkgListOutput),
-				actions.OptionTLSSkipVerify: viper.GetBool(flagTLSSkipVerify),
+				actions.OptionInstalled: viper.GetBool(vPkgListInstalled),
+				actions.OptionOutput:    viper.GetString(vPkgListOutput),
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionPkgList, m)
 		},

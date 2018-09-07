@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -57,7 +56,7 @@ ks env set us-west/staging --server=https://192.168.99.100:8443
 `
 )
 
-func newEnvSetCmd(a app.App) *cobra.Command {
+func newEnvSetCmd() *cobra.Command {
 	envSetCmd := &cobra.Command{
 		Use:     "set <env-name>",
 		Short:   envShortDesc["set"],
@@ -69,13 +68,13 @@ func newEnvSetCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:        a,
 				actions.OptionEnvName:    args[0],
 				actions.OptionNewEnvName: viper.GetString(vEnvSetName),
 				actions.OptionNamespace:  viper.GetString(vEnvSetNamespace),
 				actions.OptionServer:     viper.GetString(vEnvSetServer),
 				actions.OptionSpecFlag:   viper.GetString(vEnvSetAPISpec),
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionEnvSet, m)
 		},

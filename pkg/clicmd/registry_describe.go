@@ -19,9 +19,7 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -41,7 +39,7 @@ by ` + "`<registry-name>`" + `. Specifically, it displays the following:
 `
 )
 
-func newRegistryDescribeCmd(a app.App) *cobra.Command {
+func newRegistryDescribeCmd() *cobra.Command {
 	registryDescribeCmd := &cobra.Command{
 		Use:   "describe <registry-name>",
 		Short: regShortDesc["describe"],
@@ -52,10 +50,9 @@ func newRegistryDescribeCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:           a,
-				actions.OptionName:          args[0],
-				actions.OptionTLSSkipVerify: viper.GetBool(flagTLSSkipVerify),
+				actions.OptionName: args[0],
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionRegistryDescribe, m)
 		},

@@ -16,7 +16,6 @@
 package clicmd
 
 import (
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
@@ -46,17 +45,17 @@ described above. (See ` + "`ks prototype --help`" + ` for more information.)
 `
 )
 
-func newRegistryCmd(a app.App) *cobra.Command {
+func newRegistryCmd() *cobra.Command {
 	registryCmd := &cobra.Command{
 		Use:   "registry",
 		Short: `Manage registries for current project`,
 		Long:  registryLong,
 	}
 
-	registryCmd.AddCommand(newRegistryAddCmd(a))
-	registryCmd.AddCommand(newRegistryDescribeCmd(a))
-	registryCmd.AddCommand(newRegistryListCmd(a))
-	registryCmd.AddCommand(newRegistrySetCmd(a))
+	registryCmd.AddCommand(newRegistryAddCmd())
+	registryCmd.AddCommand(newRegistryDescribeCmd())
+	registryCmd.AddCommand(newRegistryListCmd())
+	registryCmd.AddCommand(newRegistrySetCmd())
 
 	return registryCmd
 }

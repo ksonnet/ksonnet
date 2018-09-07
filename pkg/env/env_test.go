@@ -110,7 +110,7 @@ func TestAddExtVarFile(t *testing.T) {
 					if tc.stagePath != "" {
 						test.StageFile(t, fs, "value.txt", tc.stagePath)
 					}
-					err := AddExtVarFile(a, tc.args.key, tc.args.file)
+					err := AddExtVarFile(fs, tc.args.key, tc.args.file)
 					if tc.isErr {
 						require.Error(t, err)
 						return
@@ -190,7 +190,7 @@ func TestAddTlaVarFile(t *testing.T) {
 					if tc.stagePath != "" {
 						test.StageFile(t, fs, "value.txt", tc.stagePath)
 					}
-					err := AddTlaVarFile(a, tc.args.key, tc.args.file)
+					err := AddTlaVarFile(fs, tc.args.key, tc.args.file)
 					if tc.isErr {
 						require.Error(t, err)
 						return

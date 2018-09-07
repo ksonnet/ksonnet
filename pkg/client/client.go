@@ -63,7 +63,7 @@ func defaultDiscoveryClient(config clientcmd.ClientConfig) func() (discovery.Dis
 }
 
 // NewClientConfig initializes a new client.Config with the provided loading rules and overrides.
-func NewClientConfig(a app.App, overrides clientcmd.ConfigOverrides, loadingRules clientcmd.ClientConfigLoadingRules) *Config {
+func NewClientConfig(overrides clientcmd.ConfigOverrides, loadingRules clientcmd.ClientConfigLoadingRules) *Config {
 	config := clientcmd.NewInteractiveDeferredLoadingClientConfig(&loadingRules, &overrides, os.Stdin)
 	return &Config{
 		Overrides:       &overrides,
@@ -74,18 +74,19 @@ func NewClientConfig(a app.App, overrides clientcmd.ConfigOverrides, loadingRule
 }
 
 // NewDefaultClientConfig initializes a new ClientConfig with default loading rules and no overrides.
-func NewDefaultClientConfig(a app.App) *Config {
+func NewDefaultClientConfig() *Config {
 	overrides := clientcmd.ConfigOverrides{}
 	loadingRules := *clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
 
-	return NewClientConfig(a, overrides, loadingRules)
+	return NewClientConfig(overrides, loadingRules)
 }
 
 // InitClient initializes a new ClientConfig given the specified environment
 // spec and returns the ClientPool, DiscoveryInterface, and namespace.
+// TODO DELETEME?
 func InitClient(a app.App, env string) (dynamic.ClientPool, discovery.DiscoveryInterface, string, error) {
-	clientConfig := NewDefaultClientConfig(a)
+	clientConfig := NewDefaultClientConfig()
 	return clientConfig.RestClient(a, &env)
 }
 

@@ -17,7 +17,6 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -44,7 +43,7 @@ ks param delete guestbook replicas
 ks param delete guestbook replicas --env=dev`
 )
 
-func newParamDeleteCmd(a app.App) *cobra.Command {
+func newParamDeleteCmd() *cobra.Command {
 	paramDeleteCmd := &cobra.Command{
 		Use:     "delete [component-name] <param-key>",
 		Short:   paramShortDesc["delete"],
@@ -65,11 +64,11 @@ func newParamDeleteCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:     a,
 				actions.OptionName:    name,
 				actions.OptionPath:    path,
 				actions.OptionEnvName: viper.GetString(vParamDeleteEnv),
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionParamDelete, m)
 		},

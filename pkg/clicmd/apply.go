@@ -17,9 +17,9 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -82,8 +82,8 @@ ks apply dev -c guestbook-ui -c nginx-depl --create false
 `
 )
 
-func newApplyCmd(a app.App) *cobra.Command {
-	applyClientConfig := client.NewDefaultClientConfig(a)
+func newApplyCmd(fs afero.Fs) *cobra.Command {
+	applyClientConfig := client.NewDefaultClientConfig()
 
 	applyCmd := &cobra.Command{
 		Use:   "apply <env-name> [-c <component-name>] [--dry-run]",
@@ -95,7 +95,6 @@ func newApplyCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:            a,
 				actions.OptionClientConfig:   applyClientConfig,
 				actions.OptionComponentNames: viper.GetStringSlice(vApplyComponent),
 				actions.OptionCreate:         viper.GetBool(vApplyCreate),
@@ -104,8 +103,9 @@ func newApplyCmd(a app.App) *cobra.Command {
 				actions.OptionGcTag:          viper.GetString(vApplyGcTag),
 				actions.OptionSkipGc:         viper.GetBool(vApplySkipGc),
 			}
+			addGlobalOptions(m)
 
-			if err := extractJsonnetFlags(a, "apply"); err != nil {
+			if err := extractJsonnetFlags(fs, "apply"); err != nil {
 				return errors.Wrap(err, "handle jsonnet flags")
 			}
 

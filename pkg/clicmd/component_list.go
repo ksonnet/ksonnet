@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -38,7 +37,7 @@ The ` + "`list`" + ` command displays all known components.
 ks component list`
 )
 
-func newComponentListCmd(a app.App) *cobra.Command {
+func newComponentListCmd() *cobra.Command {
 	componentListCmd := &cobra.Command{
 		Use:     "list",
 		Short:   "List known components",
@@ -50,10 +49,10 @@ func newComponentListCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:    a,
 				actions.OptionModule: viper.GetString(vComponentListNamespace),
 				actions.OptionOutput: viper.GetString(vComponentListOutput),
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionComponentList, m)
 		},

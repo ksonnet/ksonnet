@@ -19,9 +19,7 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -46,7 +44,7 @@ the specified prototype (identified by name). Specifically, this describes:
 ks prototype describe deployment`
 )
 
-func newPrototypeDescribeCmd(a app.App) *cobra.Command {
+func newPrototypeDescribeCmd() *cobra.Command {
 	prototypeDescribeCmd := &cobra.Command{
 		Use:     "describe <prototype-name>",
 		Short:   protoShortDesc["describe"],
@@ -58,10 +56,9 @@ func newPrototypeDescribeCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:           a,
-				actions.OptionQuery:         args[0],
-				actions.OptionTLSSkipVerify: viper.GetBool(flagTLSSkipVerify),
+				actions.OptionQuery: args[0],
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionPrototypeDescribe, m)
 		},

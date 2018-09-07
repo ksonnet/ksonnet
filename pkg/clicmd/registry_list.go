@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -45,7 +44,7 @@ table includes the following info:
 `
 )
 
-func newRegistryListCmd(a app.App) *cobra.Command {
+func newRegistryListCmd() *cobra.Command {
 	registryListCmd := &cobra.Command{
 		Use:   "list",
 		Short: regShortDesc["list"],
@@ -56,10 +55,9 @@ func newRegistryListCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:           a,
-				actions.OptionOutput:        viper.GetString(vRegistryListOutput),
-				actions.OptionTLSSkipVerify: viper.GetBool(flagTLSSkipVerify),
+				actions.OptionOutput: viper.GetString(vRegistryListOutput),
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionRegistryList, m)
 		},

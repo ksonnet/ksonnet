@@ -59,8 +59,8 @@ func AddExtVar(key, value string) {
 }
 
 // AddExtVarFile adds an ext var from a file to component evaluation.
-func AddExtVarFile(a app.App, key, filePath string) error {
-	data, err := afero.ReadFile(a.Fs(), filePath)
+func AddExtVarFile(fs afero.Fs, key, filePath string) error {
+	data, err := afero.ReadFile(fs, filePath)
 	if err != nil {
 		return err
 	}
@@ -75,8 +75,8 @@ func AddTlaVar(key, value string) {
 }
 
 // AddTlaVarFile adds a tla var from a file to component evaluation.
-func AddTlaVarFile(a app.App, key, filePath string) error {
-	data, err := afero.ReadFile(a.Fs(), filePath)
+func AddTlaVarFile(fs afero.Fs, key, filePath string) error {
+	data, err := afero.ReadFile(fs, filePath)
 	if err != nil {
 		return err
 	}

@@ -17,7 +17,6 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -56,7 +55,7 @@ ks param set guestbook replicas 4
 ks param set guestbook replicas 2 --env=dev`
 )
 
-func newParamSetCmd(a app.App) *cobra.Command {
+func newParamSetCmd() *cobra.Command {
 	paramSetCmd := &cobra.Command{
 		Use:     "set <component-name> <param-key> <param-value>",
 		Short:   paramShortDesc["set"],
@@ -80,7 +79,6 @@ func newParamSetCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:          a,
 				actions.OptionName:         name,
 				actions.OptionPath:         path,
 				actions.OptionValue:        value,

@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -57,7 +56,7 @@ ks param list --env=dev
 ks param list guestbook --env=dev`
 )
 
-func newParamListCmd(a app.App) *cobra.Command {
+func newParamListCmd() *cobra.Command {
 	paramListCmd := &cobra.Command{
 		Use:     "list [<component-name>] [--env <env-name>]",
 		Short:   paramShortDesc["list"],
@@ -85,7 +84,6 @@ func newParamListCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:            a,
 				actions.OptionComponentName:  component,
 				actions.OptionEnvName:        env,
 				actions.OptionModule:         module,

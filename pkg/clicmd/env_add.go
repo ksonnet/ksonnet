@@ -21,7 +21,6 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
 	"github.com/spf13/cobra"
 )
@@ -81,8 +80,8 @@ ks env add my-env --context=dev
 ks env add prod --server=https://ksonnet-1.us-west.elb.amazonaws.com`
 )
 
-func newEnvAddCmd(a app.App) *cobra.Command {
-	envClientConfig := client.NewDefaultClientConfig(a)
+func newEnvAddCmd() *cobra.Command {
+	envClientConfig := client.NewDefaultClientConfig()
 
 	envAddCmd := &cobra.Command{
 		Use:     "add <env-name>",
@@ -115,13 +114,13 @@ func newEnvAddCmd(a app.App) *cobra.Command {
 			isOverride := viper.GetBool(vEnvAddOverride)
 
 			m := map[string]interface{}{
-				actions.OptionApp:      a,
 				actions.OptionEnvName:  name,
 				actions.OptionServer:   server,
 				actions.OptionModule:   namespace,
 				actions.OptionSpecFlag: specFlag,
 				actions.OptionOverride: isOverride,
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionEnvAdd, m)
 		},

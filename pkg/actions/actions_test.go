@@ -55,7 +55,6 @@ func Test_optionLoader_types(t *testing.T) {
 		},
 		{
 			name:    "Fs",
-			hasArg:  true,
 			valid:   afero.NewMemMapFs(),
 			invalid: "invalid",
 			keyName: OptionFs,

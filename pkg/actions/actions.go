@@ -31,6 +31,8 @@ import (
 const (
 	// OptionApp is app option.
 	OptionApp = "app"
+	// OptionAppRoot is the root directory of the application.
+	OptionAppRoot = "app-root"
 	// OptionArguments is arguments option. Used for passing arguments to prototypes.
 	OptionArguments = "arguments"
 	// OptionAsString is asString. Used for setting values as strings.
@@ -67,6 +69,8 @@ const (
 	OptionGlobal = "global"
 	// OptionGracePeriod is gracePeriod option.
 	OptionGracePeriod = "grace-period"
+	// OptionHTTPClient is the http.Client for outbound network requests.
+	OptionHTTPClient = "http-client"
 	// OptionInstalled is for listing installed packages.
 	OptionInstalled = "only-installed"
 	// OptionJPaths is jsonnet paths.
@@ -79,6 +83,8 @@ const (
 	OptionModule = "module"
 	// OptionNamespace is a cluster namespace option
 	OptionNamespace = "namespace"
+	// OptionNewRoot is init new root path option.
+	OptionNewRoot = "root-path"
 	// OptionNewEnvName is newEnvName option. Used for renaming environments.
 	OptionNewEnvName = "new-env-name"
 	// OptionOutput is output option.
@@ -94,12 +100,12 @@ const (
 	// OptionResolveImage is resolve image option. It is used to resolve docker image references
 	// when setting parameters.
 	OptionResolveImage = "resolve-image"
-	// OptionRootPath is path option.
-	OptionRootPath = "root-path"
 	// OptionServer is server option.
 	OptionServer = "server"
 	// OptionServerURI is serverURI option.
 	OptionServerURI = "server-uri"
+	// OptionSkipCheckUpgrade tells app not to emit upgrade warnings, probably because the user is already upgrading.
+	OptionSkipCheckUpgrade = "skip-check-upgrade"
 	// OptionSkipDefaultRegistries is skipDefaultRegistries option. Used by init.
 	OptionSkipDefaultRegistries = "skip-default-registries"
 	// OptionSkipGc is skipGc option.
@@ -185,15 +191,15 @@ func newOptionLoader(m map[string]interface{}) *optionLoader {
 	}
 }
 
-func (o *optionLoader) LoadFs(name string) afero.Fs {
-	i := o.load(name)
+func (o *optionLoader) LoadFs() afero.Fs {
+	i := o.loadOptional(OptionFs)
 	if i == nil {
-		return nil
+		return afero.NewOsFs()
 	}
 
 	a, ok := i.(afero.Fs)
 	if !ok {
-		o.err = newInvalidOptionError(name)
+		o.err = newInvalidOptionError(OptionFs)
 		return nil
 	}
 
@@ -332,17 +338,50 @@ func (o *optionLoader) LoadClientConfig() *client.Config {
 	return a
 }
 
+// LoadApp returns an app.App reference - either as passed via OptionApp,
+// or newly constructed.
 func (o *optionLoader) LoadApp() app.App {
-	i := o.load(OptionApp)
-	if i == nil {
-		o.err = ErrNotInApp
+	i := o.loadOptional(OptionApp)
+	a, ok := i.(app.App)
+	if i != nil && !ok {
+		// App was provided but was invalid type
+		o.err = newInvalidOptionError(OptionApp)
+		return nil
+	}
+	if a != nil {
+		// Return app if a valid app.App was provided
+		return a
+	}
+
+	var fs = o.LoadFs()
+	if fs == nil {
+		o.err = errors.New("missing required fs reference")
+		return nil
+	}
+	var httpClient = o.LoadHTTPClient()
+	if httpClient == nil {
+		o.err = errors.New("initializing http client")
+		return nil
+	}
+	var appRoot = o.LoadOptionalString(OptionAppRoot)
+
+	appRoot, err := app.FindRoot(fs, appRoot)
+	if err != nil {
+		o.err = errors.Wrapf(err, "finding app root from starting path: %s", appRoot)
 		return nil
 	}
 
-	a, ok := i.(app.App)
-	if !ok {
-		o.err = newInvalidOptionError(OptionApp)
+	a, err = app.Load(fs, httpClient, appRoot)
+	if err != nil {
+		o.err = errors.New("initializing app")
 		return nil
+	}
+
+	if !o.LoadOptionalBool(OptionSkipCheckUpgrade) {
+		if _, err := a.CheckUpgrade(); err != nil {
+			o.err = errors.Wrap(err, "checking for app upgrades")
+			return nil
+		}
 	}
 
 	return a
@@ -350,6 +389,12 @@ func (o *optionLoader) LoadApp() app.App {
 
 // LoadHTTPClient loads an HTTP client based on common configuration for certificates, tls verification, timeouts, etc.
 func (o *optionLoader) LoadHTTPClient() *http.Client {
+	i := o.loadOptional(OptionHTTPClient)
+	if c, ok := i.(*http.Client); ok {
+		return c
+	}
+
+	// Construct a client if none was passed
 	tlsSkipVerify := o.LoadOptionalBool(OptionTLSSkipVerify)
 
 	tlsConfig := &tls.Config{

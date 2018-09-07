@@ -18,6 +18,7 @@ package clicmd
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 )
 
 type initName int
@@ -115,4 +116,9 @@ func runAction(name initName, args map[string]interface{}) error {
 	}
 
 	return fn(args)
+}
+
+func addGlobalOptions(m map[string]interface{}) {
+	m[actions.OptionTLSSkipVerify] = viper.GetBool(flagTLSSkipVerify)
+	m[actions.OptionAppRoot] = viper.GetString(flagDir)
 }

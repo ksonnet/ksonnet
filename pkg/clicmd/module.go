@@ -16,19 +16,18 @@
 package clicmd
 
 import (
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
-func newModuleCmd(a app.App) *cobra.Command {
+func newModuleCmd() *cobra.Command {
 	moduleCmd := &cobra.Command{
 		Use:   "module",
 		Short: "Manage ksonnet modules",
 		Long:  `Manage ksonnet modules`,
 	}
 
-	moduleCmd.AddCommand(newModuleCreateCmd(a))
-	moduleCmd.AddCommand(newModuleListCmd(a))
+	moduleCmd.AddCommand(newModuleCreateCmd())
+	moduleCmd.AddCommand(newModuleListCmd())
 
 	return moduleCmd
 }

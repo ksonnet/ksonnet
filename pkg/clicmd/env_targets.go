@@ -17,7 +17,6 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -27,7 +26,7 @@ const (
 	vEnvTargetModules = "env-target-modules"
 )
 
-func newEnvTargetsCmd(a app.App) *cobra.Command {
+func newEnvTargetsCmd() *cobra.Command {
 	envTargetsCmd := &cobra.Command{
 		Use:   "targets",
 		Short: "Set module targets for an environment",
@@ -38,10 +37,10 @@ func newEnvTargetsCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:     a,
 				actions.OptionEnvName: args[0],
 				actions.OptionModule:  viper.GetStringSlice(vEnvTargetModules),
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionEnvTargets, m)
 		},

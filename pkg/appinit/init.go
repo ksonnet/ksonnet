@@ -75,7 +75,7 @@ func (i *initApp) Run() error {
 	}
 
 	// Load application.
-	a, err := app.Load(i.fs, i.httpClient, i.rootPath, false)
+	a, err := app.Load(i.fs, i.httpClient, i.rootPath)
 	if err != nil {
 		return err
 	}

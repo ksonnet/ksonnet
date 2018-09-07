@@ -16,9 +16,12 @@
 package clicmd
 
 import (
+	"strings"
+
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -84,34 +87,83 @@ ks prototype use single-port-deployment nginx-depl \
 `
 )
 
-func newGenerateCmd(a app.App) *cobra.Command {
-	cmd := newPrototypeUseCmd(a)
+func newGenerateCmd(fs afero.Fs) *cobra.Command {
+	cmd := newPrototypeUseCmd(fs)
 	cmd.Use = "generate <prototype-name> <component-name> [type] [parameter-flags]"
 
 	return cmd
 }
 
-func newPrototypeUseCmd(a app.App) *cobra.Command {
+func newPrototypeUseCmd(fs afero.Fs) *cobra.Command {
 	prototypeUseCmd := &cobra.Command{
-		Use:                "use <prototype-name> <componentName> [type] [parameter-flags]",
-		Short:              protoShortDesc["use"],
-		Long:               prototypeUseLong,
-		Example:            prototypeUseExample,
+		Use:     "use <prototype-name> <componentName> [type] [parameter-flags]",
+		Short:   protoShortDesc["use"],
+		Long:    prototypeUseLong,
+		Example: prototypeUseExample,
+		FParseErrWhitelist: cobra.FParseErrWhitelist{
+			UnknownFlags: true,
+		},
 		DisableFlagParsing: true,
-		RunE: func(cmd *cobra.Command, rawArgs []string) error {
-			if len(rawArgs) == 1 && (rawArgs[0] == "--help" || rawArgs[0] == "-h") {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cmd.DisableFlagParsing = false
+			err := cmd.ParseFlags(args)
+			cmd.DisableFlagParsing = true
+
+			if err != nil {
+				return cmd.FlagErrorFunc()(cmd, err)
+			}
+
+			if cmd.Flags().Lookup("help").Changed {
 				return cmd.Help()
 			}
 
+			args = removePersistentFlags(cmd.Flags(), args)
+
 			m := map[string]interface{}{
-				actions.OptionApp:       a,
-				actions.OptionArguments: rawArgs,
-				// We don't pass flagTLSSkipVerify because flag parsing is disabled
+				actions.OptionFs:        fs,
+				actions.OptionArguments: args,
 			}
+			addGlobalOptions(m)
 
 			return runAction(actionPrototypeUse, m)
 		},
 	}
 
 	return prototypeUseCmd
+}
+
+func removePersistentFlags(flags *pflag.FlagSet, args []string) []string {
+	flags.Visit(func(flag *pflag.Flag) {
+		for i, arg := range args {
+			// early out if arg is zero len; otherwise check value of arg
+			if len(arg) == 0 || arg[0] != '-' || len(arg) == 1 {
+				continue
+			}
+
+			if arg[1] == '-' {
+				if len(arg) == 2 {
+					// "--" terminates the flags
+					break
+				}
+
+				// long flag that might be known by ks
+				splitFlagName := strings.SplitN(arg[2:], "=", 2)
+
+				if flags.Lookup(splitFlagName[0]) == flag {
+					if len(splitFlagName) == 2 {
+						// global flag with =
+						args = append(args[:i], args[i+1:]...)
+					} else if flag.NoOptDefVal != "" {
+						// optional flag that sets default
+						args = append(args[:i], args[i+1:]...)
+					} else {
+						// '--flag arg' means remove two
+						args = append(args[:i], args[i+2:]...)
+					}
+					return
+				}
+			}
+		}
+	})
+	return args
 }

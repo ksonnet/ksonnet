@@ -40,7 +40,7 @@ func RunInit(m map[string]interface{}) error {
 	return i.Run()
 }
 
-type appLoadFn func(fs afero.Fs, httpClient *http.Client, root string, skipFindRoot bool) (app.App, error)
+type appLoadFn func(fs afero.Fs, httpClient *http.Client, root string) (app.App, error)
 
 type appInitFn func(fs afero.Fs, httpClient *http.Client, name, rootPath, envName, k8sSpecFlag, serverURI, namespace string, registries []registry.Registry) error
 
@@ -69,9 +69,9 @@ func NewInit(m map[string]interface{}) (*Init, error) {
 	ol := newOptionLoader(m)
 
 	i := &Init{
-		fs:                    ol.LoadFs(OptionFs),
+		fs:                    ol.LoadFs(),
 		name:                  ol.LoadString(OptionName),
-		rootPath:              ol.LoadString(OptionRootPath),
+		rootPath:              ol.LoadString(OptionNewRoot),
 		envName:               ol.LoadString(OptionEnvName),
 		k8sSpecFlag:           ol.LoadString(OptionSpecFlag),
 		serverURI:             ol.LoadOptionalString(OptionServer),
@@ -97,7 +97,7 @@ func (i *Init) Run() error {
 	var registries []registry.Registry
 
 	if !i.skipDefaultRegistries {
-		a, err := i.appLoadFn(i.fs, i.httpClient, i.rootPath, true)
+		a, err := i.appLoadFn(i.fs, i.httpClient, i.rootPath)
 		if err != nil {
 			return err
 		}

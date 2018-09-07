@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -72,7 +71,7 @@ represented as a hierarchy in the ` + "`environments/`" + ` directory of a ksonn
 `
 )
 
-func newEnvCmd(a app.App) *cobra.Command {
+func newEnvCmd() *cobra.Command {
 	envCmd := &cobra.Command{
 		Use:   "env",
 		Short: `Manage ksonnet environments`,
@@ -85,14 +84,14 @@ func newEnvCmd(a app.App) *cobra.Command {
 		},
 	}
 
-	envCmd.AddCommand(newEnvAddCmd(a))
-	envCmd.AddCommand(newEnvCurrentCmd(a))
-	envCmd.AddCommand(newEnvDescribeCmd(a))
-	envCmd.AddCommand(newEnvListCmd(a))
-	envCmd.AddCommand(newEnvRmCmd(a))
-	envCmd.AddCommand(newEnvSetCmd(a))
-	envCmd.AddCommand(newEnvTargetsCmd(a))
-	envCmd.AddCommand(newEnvUpdateCmd(a))
+	envCmd.AddCommand(newEnvAddCmd())
+	envCmd.AddCommand(newEnvCurrentCmd())
+	envCmd.AddCommand(newEnvDescribeCmd())
+	envCmd.AddCommand(newEnvListCmd())
+	envCmd.AddCommand(newEnvRmCmd())
+	envCmd.AddCommand(newEnvSetCmd())
+	envCmd.AddCommand(newEnvTargetsCmd())
+	envCmd.AddCommand(newEnvUpdateCmd())
 
 	return envCmd
 

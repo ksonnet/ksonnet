@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/spf13/cobra"
 )
 
@@ -61,7 +60,7 @@ Where 'ks-values' is a jsonnet file with the contents:
 `
 )
 
-func newPrototypePreviewCmd(a app.App) *cobra.Command {
+func newPrototypePreviewCmd() *cobra.Command {
 	prototypePreviewCmd := &cobra.Command{
 		Use:                "preview <prototype-name> [parameter-flags]",
 		Short:              protoShortDesc["preview"],
@@ -79,7 +78,6 @@ func newPrototypePreviewCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:       a,
 				actions.OptionQuery:     rawArgs[0],
 				actions.OptionArguments: rawArgs[1:],
 				// We don't pass flagTLSSkipVerify because flag parsing is disabled

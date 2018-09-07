@@ -17,9 +17,9 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
-	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -57,8 +57,8 @@ ks delete dev
 ks delete --kubeconfig=./kubeconfig -c nginx`
 )
 
-func newDeleteCmd(a app.App) *cobra.Command {
-	deleteClientConfig := client.NewDefaultClientConfig(a)
+func newDeleteCmd(fs afero.Fs) *cobra.Command {
+	deleteClientConfig := client.NewDefaultClientConfig()
 
 	deleteCmd := &cobra.Command{
 		Use:     "delete [env-name] [-c <component-name>]",
@@ -72,14 +72,14 @@ func newDeleteCmd(a app.App) *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionApp:            a,
 				actions.OptionClientConfig:   deleteClientConfig,
 				actions.OptionComponentNames: viper.GetStringSlice(vDeleteComponent),
 				actions.OptionEnvName:        envName,
 				actions.OptionGracePeriod:    viper.GetInt64(vDeleteGracePeriod),
 			}
+			addGlobalOptions(m)
 
-			if err := extractJsonnetFlags(a, "delete"); err != nil {
+			if err := extractJsonnetFlags(fs, "delete"); err != nil {
 				return errors.Wrap(err, "handle jsonnet flags")
 			}
 
