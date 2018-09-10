@@ -44,14 +44,16 @@ ks env set us-west/staging --server=https://192.168.99.100:8443
   -h, --help               help for set
       --name string        Name used to uniquely identify the environment. Must not already exist within the ksonnet app
       --namespace string   Namespace for environment
+  -o, --override           Set fields in environment as override
       --server string      Cluster server for environment
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --tls-skip-verify      Skip verification of TLS server certificates
-  -v, --verbose count[=-1]   Increase verbosity. May be given multiple times.
+      --dir string        Ksonnet application root to use; Defaults to CWD
+      --tls-skip-verify   Skip verification of TLS server certificates
+  -v, --verbose count     Increase verbosity. May be given multiple times.
 ```
 
 ### SEE ALSO

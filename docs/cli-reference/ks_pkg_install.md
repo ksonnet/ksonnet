@@ -59,8 +59,9 @@ ks pkg install --env stage incubator/nginx@40285d8a14f1ac5787e405e1023cf0c07f6aa
 ### Options inherited from parent commands
 
 ```
-      --tls-skip-verify      Skip verification of TLS server certificates
-  -v, --verbose count[=-1]   Increase verbosity. May be given multiple times.
+      --dir string        Ksonnet application root to use; Defaults to CWD
+      --tls-skip-verify   Skip verification of TLS server certificates
+  -v, --verbose count     Increase verbosity. May be given multiple times.
 ```
 
 ### SEE ALSO

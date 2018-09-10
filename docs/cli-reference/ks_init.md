@@ -89,7 +89,6 @@ ks init app-name --dir=custom-location
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
       --context string                 The name of the kubeconfig context to use
-      --dir string                     Ksonnet application directory
       --env string                     Name of initial environment to create
   -h, --help                           help for init
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
@@ -107,8 +106,9 @@ ks init app-name --dir=custom-location
 ### Options inherited from parent commands
 
 ```
-      --tls-skip-verify      Skip verification of TLS server certificates
-  -v, --verbose count[=-1]   Increase verbosity. May be given multiple times.
+      --dir string        Ksonnet application root to use; Defaults to CWD
+      --tls-skip-verify   Skip verification of TLS server certificates
+  -v, --verbose count     Increase verbosity. May be given multiple times.
 ```
 
 ### SEE ALSO

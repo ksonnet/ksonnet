@@ -49,21 +49,22 @@ ks show dev -c redis -c nginx-server
 ### Options
 
 ```
-  -c, --component stringSlice      Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)
-  -V, --ext-str stringSlice        Values of external variables
-      --ext-str-file stringSlice   Read external variable from a file
-  -o, --format string              Output format.  Supported values are: json, yaml (default "yaml")
-  -h, --help                       help for show
-  -J, --jpath stringSlice          Additional jsonnet library search path
-  -A, --tla-str stringSlice        Values of top level arguments
-      --tla-str-file stringSlice   Read top level argument from a file
+  -c, --component strings      Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)
+  -V, --ext-str strings        Values of external variables
+      --ext-str-file strings   Read external variable from a file
+  -o, --format string          Output format.  Supported values are: json, yaml (default "yaml")
+  -h, --help                   help for show
+  -J, --jpath strings          Additional jsonnet library search path
+  -A, --tla-str strings        Values of top level arguments
+      --tla-str-file strings   Read top level argument from a file
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --tls-skip-verify      Skip verification of TLS server certificates
-  -v, --verbose count[=-1]   Increase verbosity. May be given multiple times.
+      --dir string        Ksonnet application root to use; Defaults to CWD
+      --tls-skip-verify   Skip verification of TLS server certificates
+  -v, --verbose count     Increase verbosity. May be given multiple times.
 ```
 
 ### SEE ALSO
