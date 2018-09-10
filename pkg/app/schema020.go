@@ -189,7 +189,7 @@ type libraryConfigs020 LibraryConfigs020
 // UnmarshalJSON implements the json.Unmarshaler interface.
 // We implement some compatibility conversions.
 func (l *LibraryConfigs020) UnmarshalJSON(b []byte) error {
-	var cfgs map[string]*LibraryConfig020
+	var cfgs libraryConfigs020
 
 	if err := json.Unmarshal(b, &cfgs); err != nil {
 		return err

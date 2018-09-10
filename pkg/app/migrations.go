@@ -190,10 +190,12 @@ func migrateSchema010To020(src *Spec010) (*Spec020, error) {
 	dst.Authors = make([]string, len(src.Authors))
 	copy(dst.Authors, src.Authors)
 
-	dst.Contributors = ContributorSpecs020{}
+	dst.Contributors = make(ContributorSpecs020, len(src.Contributors))
 	for i, c := range src.Contributors {
-		dst.Contributors[i].Name = c.Name
-		dst.Contributors[i].Email = c.Email
+		dst.Contributors[i] = &ContributorSpec020{
+			Name:  c.Name,
+			Email: c.Email,
+		}
 	}
 	if src.Repository != nil {
 		dst.Repository = &RepositorySpec020{
@@ -293,10 +295,12 @@ func migrateSchema020To030(src *Spec020) (*Spec030, error) {
 	dst.Authors = make([]string, len(src.Authors))
 	copy(dst.Authors, src.Authors)
 
-	dst.Contributors = ContributorSpecs030{}
+	dst.Contributors = make(ContributorSpecs030, len(src.Contributors))
 	for i, c := range src.Contributors {
-		dst.Contributors[i].Name = c.Name
-		dst.Contributors[i].Email = c.Email
+		dst.Contributors[i] = &ContributorSpec030{
+			Name:  c.Name,
+			Email: c.Email,
+		}
 	}
 	if src.Repository != nil {
 		dst.Repository = &RepositorySpec030{
@@ -338,23 +342,29 @@ func migrateSchema020To030(src *Spec020) (*Spec030, error) {
 		}
 
 		for lk, lv := range v.Libraries {
+			name := libName(lk)
+			qualifiedName := qualifyLibName(lv.Registry, name)
+
 			l := &LibraryConfig030{
-				Name:     lv.Name,
+				Name:     name,
 				Registry: lv.Registry,
 				Version:  lv.Version,
 			}
-			libs[lk] = l
+			libs[qualifiedName] = l
 		}
 	}
 
 	dst.Libraries = LibraryConfigs030{}
 	for k, v := range src.Libraries {
+		name := libName(k)
+		qualifiedName := qualifyLibName(v.Registry, name)
+
 		l := &LibraryConfig030{
-			Name:     v.Name,
+			Name:     name,
 			Registry: v.Registry,
 			Version:  v.Version,
 		}
-		dst.Libraries[k] = l
+		dst.Libraries[qualifiedName] = l
 	}
 
 	dst.License = src.License

@@ -61,13 +61,6 @@ func OptLibUpdater(libUpdater KSLibUpdater) Opt {
 	}
 }
 
-// optLoadFn overrides baseApp's load function, useful when testing.
-func optLoadFn(loadFn func() error) Opt {
-	return func(a *baseApp) {
-		a.load = loadFn
-	}
-}
-
 // optNopLoader overrides baseApp's loader to do nothing. (NOOP)
 func optNoopLoader() Opt {
 	return func(a *baseApp) {
