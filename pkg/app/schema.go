@@ -127,10 +127,6 @@ func read(fs afero.Fs, root string) (*Spec, error) {
 		return nil, errors.Wrap(err, "applying migrations")
 	}
 
-	if err := applyOverrides(fs, root, spec); err != nil {
-		return nil, errors.Wrap(err, "applying overrides")
-	}
-
 	return spec, nil
 }
 
@@ -149,75 +145,8 @@ func applyMigrations(fs afero.Fs, root string, base specBase) (*Spec, error) {
 	return spec, nil
 }
 
-func applyOverrides(fs afero.Fs, root string, spec *Spec) error {
-	exists, err := afero.Exists(fs, overridePath(root))
-	if err != nil {
-		return err
-	}
-
-	if exists {
-		var o Override
-
-		overrideConfig, err := afero.ReadFile(fs, overridePath(root))
-		if err != nil {
-			return err
-		}
-
-		err = yaml.Unmarshal(overrideConfig, &o)
-		if err != nil {
-			return err
-		}
-
-		for k, v := range o.Environments {
-			v.isOverride = true
-			spec.Environments[k] = v
-		}
-
-		for k, v := range o.Registries {
-			v.isOverride = true
-			spec.Registries[k] = v
-		}
-	}
-
-	return nil
-}
-
 // Write writes the provided spec to file system.
 func write(fs afero.Fs, appRoot string, spec *Spec) error {
-	o := Override{
-		Kind:         overrideKind,
-		APIVersion:   overrideVersion,
-		Environments: EnvironmentConfigs{},
-		Registries:   RegistryConfigs{},
-	}
-
-	overrideKeys := map[string][]string{
-		"environments": make([]string, 0),
-		"registries":   make([]string, 0),
-	}
-
-	for k, v := range spec.Environments {
-		if v.IsOverride() {
-			o.Environments[k] = v
-			overrideKeys["environments"] = append(overrideKeys["environments"], k)
-		}
-	}
-
-	for k, v := range spec.Registries {
-		if v.IsOverride() {
-			o.Registries[k] = v
-			overrideKeys["registries"] = append(overrideKeys["registries"], k)
-		}
-	}
-
-	for _, k := range overrideKeys["environments"] {
-		delete(spec.Environments, k)
-	}
-
-	for _, k := range overrideKeys["registries"] {
-		delete(spec.Registries, k)
-	}
-
 	appConfig, err := yaml.Marshal(&spec)
 	if err != nil {
 		return errors.Wrap(err, "convert app configuration to YAML")
@@ -228,36 +157,11 @@ func write(fs afero.Fs, appRoot string, spec *Spec) error {
 		return errors.Wrap(err, "write app.yaml")
 	}
 
-	if err = removeOverride(fs, appRoot); err != nil {
-		return errors.Wrap(err, "clean overrides")
-	}
-
-	if o.IsDefined() {
-		return SaveOverride(defaultYAMLEncoder, fs, appRoot, &o)
-	}
-
-	return nil
-}
-
-func removeOverride(fs afero.Fs, appRoot string) error {
-	exists, err := afero.Exists(fs, overridePath(appRoot))
-	if err != nil {
-		return err
-	}
-
-	if exists {
-		return fs.Remove(overridePath(appRoot))
-	}
-
 	return nil
 }
 
 func specPath(appRoot string) string {
 	return filepath.Join(appRoot, appYamlName)
-}
-
-func overridePath(appRoot string) string {
-	return filepath.Join(appRoot, overrideYamlName)
 }
 
 func libName(name string) string {

@@ -49,15 +49,15 @@ func (_m *Setter) FetchRegistrySpec() (*registry.Spec, error) {
 }
 
 // MakeRegistryConfig provides a mock function with given fields:
-func (_m *Setter) MakeRegistryConfig() *app.RegistryConfig {
+func (_m *Setter) MakeRegistryConfig() *app.RegistryConfig030 {
 	ret := _m.Called()
 
-	var r0 *app.RegistryConfig
-	if rf, ok := ret.Get(0).(func() *app.RegistryConfig); ok {
+	var r0 *app.RegistryConfig030
+	if rf, ok := ret.Get(0).(func() *app.RegistryConfig030); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*app.RegistryConfig)
+			r0 = ret.Get(0).(*app.RegistryConfig030)
 		}
 	}
 

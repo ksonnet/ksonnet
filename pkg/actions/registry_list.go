@@ -41,8 +41,9 @@ type RegistryList struct {
 	app        app.App
 	outputType string
 
-	registryListFn func(ksApp app.App) ([]registry.Registry, error)
-	out            io.Writer
+	registryListFn       func(ksApp app.App) ([]registry.Registry, error)
+	registryIsOverrideFn func(name string) bool
+	out                  io.Writer
 }
 
 // NewRegistryList creates an instance of RegistryList
@@ -50,14 +51,20 @@ func NewRegistryList(m map[string]interface{}) (*RegistryList, error) {
 	ol := newOptionLoader(m)
 
 	httpClient := ol.LoadHTTPClient()
+	a := ol.LoadApp()
+	if ol.err != nil {
+		return nil, ol.err
+	}
+
 	rl := &RegistryList{
-		app:        ol.LoadApp(),
+		app:        a,
 		outputType: ol.LoadOptionalString(OptionOutput),
 
 		registryListFn: func(ksApp app.App) ([]registry.Registry, error) {
 			return registry.List(ksApp, httpClient)
 		},
-		out: os.Stdout,
+		registryIsOverrideFn: a.IsRegistryOverride,
+		out:                  os.Stdout,
 	}
 
 	if ol.err != nil {
@@ -87,7 +94,7 @@ func (rl *RegistryList) Run() error {
 
 	for _, r := range registries {
 		override := ""
-		if r.IsOverride() {
+		if rl.registryIsOverrideFn(r.Name()) {
 			override = "*"
 		}
 

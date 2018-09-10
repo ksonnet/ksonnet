@@ -310,10 +310,9 @@ func migrateSchema020To030(src *Spec020) (*Spec030, error) {
 	dst.Registries = RegistryConfigs030{}
 	for k, v := range src.Registries {
 		dst.Registries[k] = &RegistryConfig030{
-			Name:       v.Name,
-			Protocol:   v.Protocol,
-			URI:        v.URI,
-			isOverride: false,
+			Name:     v.Name,
+			Protocol: v.Protocol,
+			URI:      v.URI,
 		}
 	}
 
@@ -329,7 +328,6 @@ func migrateSchema020To030(src *Spec020) (*Spec030, error) {
 			Path:              v.Path,
 			Targets:           targets,
 			Libraries:         libs,
-			isOverride:        false,
 		}
 
 		if v.Destination != nil {

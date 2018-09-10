@@ -68,6 +68,10 @@ type App interface {
 	Fs() afero.Fs
 	// HTTPClient is the app's http client
 	HTTPClient() *http.Client
+	// IsEnvOverride returns whether the specified environment has overriding configuration
+	IsEnvOverride(name string) bool
+	// IsRegistryOverride returns whether the specified registry has overriding configuration
+	IsRegistryOverride(name string) bool
 	// LibPath returns the path of the lib for an environment.
 	LibPath(envName string) (string, error)
 	// Libraries returns all environments.
@@ -100,17 +104,23 @@ type App interface {
 
 // Load loads the application configuration.
 func Load(fs afero.Fs, httpClient *http.Client, appRoot string) (App, error) {
-	spec, err := read(fs, appRoot)
+	if fs == nil {
+		return nil, errors.New("nil fs interface")
+	}
+
+	_, err := fs.Stat(specPath(appRoot))
 	if os.IsNotExist(err) {
 		// During `ks init`, app.yaml will not yet exist - generate a new one.
 		return NewBaseApp(fs, appRoot, httpClient), nil
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "reading app configuration")
+		return nil, errors.Wrap(err, "checking existence of app configuration")
 	}
 
 	a := NewBaseApp(fs, appRoot, httpClient)
-	a.config = spec
+	if err := a.doLoad(); err != nil {
+		return nil, errors.Wrap(err, "reading app configuration")
+	}
 
 	return a, nil
 }

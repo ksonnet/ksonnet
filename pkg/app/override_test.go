@@ -102,7 +102,7 @@ func TestSaveOverride(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			fs := afero.NewMemMapFs()
 
-			err := SaveOverride(tc.encoder, fs, "/", tc.o)
+			err := saveOverride(tc.encoder, fs, "/", tc.o)
 			if tc.isErr {
 				require.Error(t, err)
 				return

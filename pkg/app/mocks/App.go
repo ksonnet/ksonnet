@@ -167,6 +167,34 @@ func (_m *App) HTTPClient() *http.Client {
 	return r0
 }
 
+// IsEnvOverride provides a mock function with given fields: name
+func (_m *App) IsEnvOverride(name string) bool {
+	ret := _m.Called(name)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(string) bool); ok {
+		r0 = rf(name)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
+// IsRegistryOverride provides a mock function with given fields: name
+func (_m *App) IsRegistryOverride(name string) bool {
+	ret := _m.Called(name)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(string) bool); ok {
+		r0 = rf(name)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // LibPath provides a mock function with given fields: envName
 func (_m *App) LibPath(envName string) (string, error) {
 	ret := _m.Called(envName)

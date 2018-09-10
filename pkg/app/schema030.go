@@ -61,13 +61,6 @@ type RegistryConfig030 struct {
 	Protocol string `json:"protocol"`
 	// URI is the location of the registry.
 	URI string `json:"uri"`
-
-	isOverride bool
-}
-
-// IsOverride is true if this RegistryConfig is an override.
-func (r *RegistryConfig030) IsOverride() bool {
-	return r.isOverride
 }
 
 // RegistryConfigs030 is a map of the registry name to a RegistryConfig.
@@ -139,8 +132,6 @@ type EnvironmentConfig030 struct {
 	Targets []string `json:"targets,omitempty"`
 	// Libraries specifies versioned libraries specifically used by this environment.
 	Libraries LibraryConfigs030 `json:"libraries,omitempty"`
-
-	isOverride bool
 }
 
 // MakePath return the absolute path to the environment directory.
@@ -149,11 +140,6 @@ func (e *EnvironmentConfig030) MakePath(rootPath string) string {
 		rootPath,
 		EnvironmentDirName,
 		filepath.FromSlash(e.Path))
-}
-
-// IsOverride is true if this EnvironmentConfig is an override.
-func (e *EnvironmentConfig030) IsOverride() bool {
-	return e.isOverride
 }
 
 // EnvironmentDestinationSpec030 contains the specification for the cluster

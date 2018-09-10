@@ -468,9 +468,8 @@ func Test_baseApp_environment_override_is_merged(t *testing.T) {
 			Server:    "http://override.com",
 			Namespace: "override",
 		},
-		Path:       "overrides/path",
-		Targets:    []string{"override1", "override2"},
-		isOverride: true,
+		Path:    "overrides/path",
+		Targets: []string{"override1", "override2"},
 	}
 
 	e, err := ba.Environment("default")
@@ -490,9 +489,8 @@ func Test_baseApp_environment_just_override(t *testing.T) {
 			Server:    "http://override.com",
 			Namespace: "override",
 		},
-		Path:       "overrides/path",
-		Targets:    []string{"override1", "override2"},
-		isOverride: false,
+		Path:    "overrides/path",
+		Targets: []string{"override1", "override2"},
 	}
 
 	expected := &EnvironmentConfig{
@@ -502,9 +500,8 @@ func Test_baseApp_environment_just_override(t *testing.T) {
 			Server:    "http://override.com",
 			Namespace: "override",
 		},
-		Path:       "overrides/path",
-		Targets:    []string{"override1", "override2"},
-		isOverride: true,
+		Path:    "overrides/path",
+		Targets: []string{"override1", "override2"},
 	}
 
 	e, err := ba.Environment("default")

@@ -61,6 +61,7 @@ type EnvSet struct {
 	newNsName  string
 	newServer  string
 	newAPISpec string
+	isOverride bool
 
 	envRenameFn envRenameFn
 	saveFn      saveFn
@@ -77,6 +78,7 @@ func NewEnvSet(m map[string]interface{}) (*EnvSet, error) {
 		newNsName:  ol.LoadOptionalString(OptionNamespace),
 		newServer:  ol.LoadOptionalString(OptionServer),
 		newAPISpec: ol.LoadOptionalString(OptionSpecFlag),
+		isOverride: ol.LoadOptionalBool(OptionOverride),
 
 		envRenameFn: env.Rename,
 		saveFn:      save,
@@ -96,11 +98,11 @@ func (es *EnvSet) Run() error {
 		return err
 	}
 
-	if err := es.updateName(env.IsOverride()); err != nil {
+	if err := es.updateName(es.isOverride); err != nil {
 		return err
 	}
 
-	if err := es.updateEnvConfig(*env, es.newNsName, es.newServer, es.newAPISpec, env.IsOverride()); err != nil {
+	if err := es.updateEnvConfig(*env, es.newNsName, es.newServer, es.newAPISpec, es.isOverride); err != nil {
 		return err
 	}
 

@@ -204,11 +204,6 @@ func (h *Helm) URI() string {
 	return h.spec.URI
 }
 
-// IsOverride is true if this registry is an override.
-func (h *Helm) IsOverride() bool {
-	return h.spec.IsOverride()
-}
-
 // CacheRoot returns the root for caching by combining the path with the registry
 // name.
 func (h *Helm) CacheRoot(name string, relPath string) (string, error) {

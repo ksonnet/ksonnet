@@ -152,22 +152,16 @@ func (ba *baseApp) save() error {
 	// Signal we have converted to new app version
 	ba.config.APIVersion = DefaultAPIVersion
 	log.Debugf("saving app version %v", ba.config.APIVersion)
-
-	configData, err := yaml.Marshal(ba.config)
-	if err != nil {
-		return errors.Wrap(err, "convert application configuration to YAML")
+	if err := write(ba.fs, ba.root, ba.config); err != nil {
+		return errors.Wrap(err, "serializing configuration")
 	}
 
-	if err = afero.WriteFile(ba.fs, ba.configPath(), configData, DefaultFilePermissions); err != nil {
-		return errors.Wrapf(err, "write %s", ba.configPath())
-	}
-
-	if err = removeOverride(ba.fs, ba.root); err != nil {
+	if err := removeOverride(ba.fs, ba.root); err != nil {
 		return errors.Wrap(err, "clean overrides")
 	}
 
 	if ba.overrides.IsDefined() {
-		return SaveOverride(defaultYAMLEncoder, ba.fs, ba.root, ba.overrides)
+		return saveOverride(defaultYAMLEncoder, ba.fs, ba.root, ba.overrides)
 	}
 
 	return nil
@@ -177,46 +171,22 @@ func (ba *baseApp) doLoad() error {
 	ba.mu.Lock()
 	defer ba.mu.Unlock()
 
-	// TODO remove applyOverrides from read()? Remove read altogether?
 	config, err := read(ba.fs, ba.root)
 	if err != nil {
 		return err
 	}
 
-	exists, err := afero.Exists(ba.fs, ba.overridePath())
+	overrides, err := readOverrides(ba.fs, ba.root)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "reading app overrides")
 	}
 
-	override := Override{
-		Environments: EnvironmentConfigs{},
-		Registries:   RegistryConfigs{},
-	}
-	if exists {
-		overrideData, err := afero.ReadFile(ba.fs, ba.overridePath())
-		if err != nil {
-			return errors.Wrapf(err, "read %s", ba.overridePath())
-		}
-		if err = yaml.Unmarshal(overrideData, &override); err != nil {
-			return errors.Wrapf(err, "unmarshal override YAML config")
-		}
-
-		if err = override.Validate(); err != nil {
-			return errors.Wrap(err, "validating override")
-		}
-
-		for k := range override.Registries {
-			override.Registries[k].isOverride = true
-		}
-
-		for k := range override.Environments {
-			override.Environments[k].isOverride = true
-		}
-
+	if overrides == nil {
+		overrides = newOverride()
 	}
 
-	ba.overrides = &override
 	ba.config = config
+	ba.overrides = overrides
 	ba.loaded = true
 
 	return nil
@@ -231,25 +201,20 @@ func (ba *baseApp) AddRegistry(newReg *RegistryConfig, isOverride bool) error {
 		return ErrRegistryNameInvalid
 	}
 
+	var regMap = ba.config.Registries
 	if isOverride {
-		_, exists := ba.overrides.Registries[newReg.Name]
-		if exists {
-			return ErrRegistryExists
+		if ba.overrides == nil {
+			ba.overrides = newOverride()
 		}
-
-		newReg.isOverride = true
-
-		ba.overrides.Registries[newReg.Name] = newReg
-		return ba.save()
+		regMap = ba.overrides.Registries
 	}
 
-	_, exists := ba.config.Registries[newReg.Name]
+	_, exists := regMap[newReg.Name]
 	if exists {
 		return ErrRegistryExists
 	}
 
-	newReg.isOverride = false
-	ba.config.Registries[newReg.Name] = newReg
+	regMap[newReg.Name] = newReg
 
 	return ba.save()
 }
@@ -487,7 +452,6 @@ func (ba *baseApp) mergedEnvironment(name string) *EnvironmentConfig {
 	switch {
 	case hasPrimary && !hasOverride:
 		e := deepCopyEnvironmentConfig(*primary)
-		e.isOverride = false
 		return e
 	case hasPrimary && hasOverride:
 		combined := deepCopyEnvironmentConfig(*primary)
@@ -503,11 +467,9 @@ func (ba *baseApp) mergedEnvironment(name string) *EnvironmentConfig {
 			copy(t, override.Targets)
 			combined.Targets = t
 		}
-		combined.isOverride = true
 		return combined
 	case hasOverride:
 		e := deepCopyEnvironmentConfig(*override)
-		e.isOverride = true
 		return e
 	default:
 		return nil
@@ -582,14 +544,15 @@ func (ba *baseApp) AddEnvironment(newEnv *EnvironmentConfig, k8sSpecFlag string,
 		newEnv.KubernetesVersion = ver
 	}
 
-	newEnv.isOverride = isOverride
-
+	var envMap = ba.config.Environments
 	if isOverride {
-		ba.overrides.Environments[newEnv.Name] = newEnv
-	} else {
-		ba.config.Environments[newEnv.Name] = newEnv
+		if ba.overrides == nil {
+			ba.overrides = newOverride()
+		}
+		envMap = ba.overrides.Environments
 	}
 
+	envMap[newEnv.Name] = newEnv
 	return ba.save()
 }
 
@@ -679,7 +642,8 @@ func (ba *baseApp) UpdateTargets(envName string, targets []string) error {
 
 	spec.Targets = targets
 
-	return errors.Wrap(ba.AddEnvironment(spec, "", spec.isOverride), "update targets")
+	isOverride := ba.IsEnvOverride(envName)
+	return errors.Wrap(ba.AddEnvironment(spec, "", isOverride), "update targets")
 }
 
 // LibPath returns the lib path for an env environment.
@@ -756,4 +720,22 @@ func (ba *baseApp) Upgrade(bool) error {
 	// TODO handle override upgrades
 
 	return nil
+}
+
+// IsEnvOverride returns whether the specified environment has overriding configuration
+func (ba *baseApp) IsEnvOverride(name string) bool {
+	if ba.overrides == nil {
+		return false
+	}
+	_, ok := ba.overrides.Environments[name]
+	return ok
+}
+
+// IsRegistryOverride returns whether the specified registry has overriding configuration
+func (ba *baseApp) IsRegistryOverride(name string) bool {
+	if ba.overrides == nil {
+		return false
+	}
+	_, ok := ba.overrides.Registries[name]
+	return ok
 }

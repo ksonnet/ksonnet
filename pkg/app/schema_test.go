@@ -349,11 +349,9 @@ func Test_write(t *testing.T) {
 		APIVersion: "0.3.0",
 		Environments: EnvironmentConfigs{
 			"a": &EnvironmentConfig{},
-			"b": &EnvironmentConfig{isOverride: true},
 		},
 		Registries: RegistryConfigs{
 			"a": &RegistryConfig{},
-			"b": &RegistryConfig{isOverride: true},
 		},
 	}
 
@@ -362,9 +360,6 @@ func Test_write(t *testing.T) {
 
 	assertExists(t, fs, specPath("/"))
 	assertContents(t, fs, "write-app.yaml", specPath("/"))
-
-	assertExists(t, fs, overridePath("/"))
-	assertContents(t, fs, "write-override.yaml", overridePath("/"))
 }
 
 func Test_write_no_override(t *testing.T) {
@@ -403,12 +398,10 @@ func Test_read(t *testing.T) {
 		Contributors: ContributorSpecs{},
 		Environments: EnvironmentConfigs{
 			"a": &EnvironmentConfig{Name: "a"},
-			"b": &EnvironmentConfig{Name: "b", isOverride: true},
 		},
 		Libraries: LibraryConfigs{},
 		Registries: RegistryConfigs{
 			"a": &RegistryConfig{Name: "a"},
-			"b": &RegistryConfig{Name: "b", isOverride: true},
 		},
 	}
 

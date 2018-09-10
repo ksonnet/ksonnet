@@ -17,8 +17,11 @@ package app
 
 import (
 	"os"
+	"path/filepath"
 
+	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
@@ -32,8 +35,56 @@ const (
 // Override defines overrides to ksonnet project configurations.
 type Override = Override030
 
-// SaveOverride saves the override to the filesystem.
-func SaveOverride(encoder Encoder, fs afero.Fs, root string, o *Override) error {
+// overridePath constructs a path for app.override.yaml
+func overridePath(appRoot string) string {
+	return filepath.Join(appRoot, overrideYamlName)
+}
+
+func newOverride() *Override {
+	o := &Override{
+		APIVersion:   overrideVersion,
+		Kind:         overrideKind,
+		Environments: EnvironmentConfigs{},
+		Registries:   RegistryConfigs{},
+	}
+	return o
+}
+
+// readOverrides returns optional override configuration
+// Returns nil if no overrides were defined.
+func readOverrides(fs afero.Fs, root string) (*Override, error) {
+	log.Debugf("loading overrides from %s", root)
+
+	exists, err := afero.Exists(fs, overridePath(root))
+	if err != nil {
+		return nil, err
+	}
+
+	if !exists {
+		return nil, nil
+	}
+
+	var o Override
+
+	overrideConfig, err := afero.ReadFile(fs, overridePath(root))
+	if err != nil {
+		return nil, err
+	}
+
+	err = yaml.Unmarshal(overrideConfig, &o)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := o.Validate(); err != nil {
+		return nil, err
+	}
+
+	return &o, nil
+}
+
+// saveOverride saves the override to the filesystem.
+func saveOverride(encoder Encoder, fs afero.Fs, root string, o *Override) error {
 	if o == nil {
 		return errors.New("override was nil")
 	}
@@ -48,6 +99,19 @@ func SaveOverride(encoder Encoder, fs afero.Fs, root string, o *Override) error 
 
 	if err := encoder.Encode(o, f); err != nil {
 		return errors.Wrap(err, "encoding override")
+	}
+
+	return nil
+}
+
+func removeOverride(fs afero.Fs, appRoot string) error {
+	exists, err := afero.Exists(fs, overridePath(appRoot))
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		return fs.Remove(overridePath(appRoot))
 	}
 
 	return nil

@@ -28,6 +28,7 @@ const (
 	vEnvSetNamespace = "env-set-namespace"
 	vEnvSetServer    = "env-set-server"
 	vEnvSetAPISpec   = "env-set-spec-flag"
+	vEnvSetOverride  = "env-set-override-flag"
 )
 
 var (
@@ -73,6 +74,7 @@ func newEnvSetCmd() *cobra.Command {
 				actions.OptionNamespace:  viper.GetString(vEnvSetNamespace),
 				actions.OptionServer:     viper.GetString(vEnvSetServer),
 				actions.OptionSpecFlag:   viper.GetString(vEnvSetAPISpec),
+				actions.OptionOverride:   viper.GetBool(vEnvSetOverride),
 			}
 			addGlobalOptions(m)
 
@@ -95,5 +97,9 @@ func newEnvSetCmd() *cobra.Command {
 	envSetCmd.Flags().String(flagAPISpec, "",
 		"Kubernetes version for environment")
 	viper.BindPFlag(vEnvSetAPISpec, envSetCmd.Flags().Lookup(flagAPISpec))
+
+	envSetCmd.Flags().BoolP(flagOverride, shortOverride, false, "Set fields in environment as override")
+	viper.BindPFlag(vEnvSetOverride, envSetCmd.Flags().Lookup(flagOverride))
+
 	return envSetCmd
 }

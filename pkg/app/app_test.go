@@ -420,3 +420,68 @@ func withAppFs(t *testing.T, appName string, fn func(app *baseApp)) {
 
 	fn(app)
 }
+
+func TestApp_Load(t *testing.T) {
+	fs := afero.NewMemMapFs()
+
+	expectedEnvs := EnvironmentConfigs{
+		"default": &EnvironmentConfig{
+			Name: "default",
+			Destination: &EnvironmentDestinationSpec{
+				Namespace: "some-namespace",
+				Server:    "http://example.com",
+			},
+			KubernetesVersion: "v1.7.0",
+			Path:              "default",
+		},
+		"us-east/test": &EnvironmentConfig{
+			Name: "us-east/test",
+			Destination: &EnvironmentDestinationSpec{
+				Namespace: "some-namespace",
+				Server:    "http://example.com",
+			},
+			KubernetesVersion: "v1.7.0",
+			Path:              "us-east/test",
+		},
+		"us-west/prod": &EnvironmentConfig{
+			Name: "us-west/prod",
+			Destination: &EnvironmentDestinationSpec{
+				Namespace: "some-namespace",
+				Server:    "http://example.com",
+			},
+			KubernetesVersion: "v1.7.0",
+			Path:              "us-west/prod",
+		},
+		"us-west/test": &EnvironmentConfig{
+			Name: "us-west/test",
+			Destination: &EnvironmentDestinationSpec{
+				Namespace: "some-namespace",
+				Server:    "http://example.com",
+			},
+			KubernetesVersion: "v1.7.0",
+			Path:              "us-west/test",
+		},
+	}
+
+	stageFile(t, fs, "app030_app.yaml", "/app.yaml")
+
+	a, err := Load(fs, nil, "/")
+	require.NoError(t, err)
+
+	envs, err := a.Environments()
+	require.NoError(t, err, "loading environments")
+
+	assert.Equal(t, expectedEnvs, envs, "unexpected app content")
+}
+
+// Tests that a new app is initialized when an app.yaml does not yet exist
+func TestApp_Load_no_cfg(t *testing.T) {
+	fs := afero.NewMemMapFs()
+
+	a, err := Load(fs, nil, "/")
+	require.NoError(t, err)
+	require.NotNil(t, a)
+
+	_, err = fs.Stat("/app.yaml")
+	require.True(t, os.IsNotExist(err), "app.yaml should not exist")
+}
