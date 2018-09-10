@@ -73,7 +73,7 @@ func Test_migrateSchema010To020(t *testing.T) {
 					Server:    "https://localhost:6443",
 					Namespace: "default-namespace",
 				},
-				Targets: []string{"target1", "target2"},
+				Targets: []string{"/", "foo/bar/baz", "simple"},
 			},
 		},
 		Libraries: LibraryConfigs010{
@@ -145,7 +145,7 @@ func Test_migrateSchema010To020(t *testing.T) {
 					Server:    "https://localhost:6443",
 					Namespace: "default-namespace",
 				},
-				Targets:   []string{"target1", "target2"},
+				Targets:   []string{"/", "foo.bar.baz", "simple"},
 				Libraries: LibraryConfigs020{},
 			},
 		},
@@ -217,7 +217,7 @@ func Test_migrateSchema020To030(t *testing.T) {
 					Server:    "https://localhost:6443",
 					Namespace: "default-namespace",
 				},
-				Targets: []string{"target1", "target2"},
+				Targets: []string{"/", "foo.bar.baz", "simple"},
 				Libraries: LibraryConfigs020{
 					"nginx": &LibraryConfig020{
 						Name:     "nginx",
@@ -295,7 +295,7 @@ func Test_migrateSchema020To030(t *testing.T) {
 					Server:    "https://localhost:6443",
 					Namespace: "default-namespace",
 				},
-				Targets: []string{"target1", "target2"},
+				Targets: []string{"/", "foo.bar.baz", "simple"},
 				Libraries: LibraryConfigs030{
 					"incubator/nginx": &LibraryConfig030{
 						Name:     "nginx",
@@ -379,7 +379,7 @@ func Test_Migrator_Load(t *testing.T) {
 					Server:    "https://localhost:6443",
 					Namespace: "default-namespace",
 				},
-				Targets: []string{"target1", "target2"},
+				Targets: []string{"/", "foo.bar.baz", "simple"},
 				Libraries: LibraryConfigs030{
 					"incubator/nginx": &LibraryConfig030{
 						Name:     "nginx",
@@ -457,7 +457,7 @@ func Test_Migrator_Load(t *testing.T) {
 					Server:    "https://localhost:6443",
 					Namespace: "default-namespace",
 				},
-				Targets:   []string{"target1", "target2"},
+				Targets:   []string{"/", "foo.bar.baz", "simple"},
 				Libraries: LibraryConfigs030{},
 			},
 		},

@@ -27,8 +27,9 @@ environments:
         version: 1.2.3
     path: default-path
     targets:
-    - target1
-    - target2
+    - /
+    - foo.bar.baz
+    - simple
 keywords:
 - ksonnet
 - kubernetes

@@ -18,8 +18,9 @@ environments:
     k8sVersion: v1.10.3
     path: default-path
     targets:
-    - target1
-    - target2
+    - /
+    - foo/bar/baz
+    - simple
 keywords:
 - ksonnet
 - kubernetes

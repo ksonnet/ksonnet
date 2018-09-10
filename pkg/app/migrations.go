@@ -16,6 +16,8 @@
 package app
 
 import (
+	"strings"
+
 	"github.com/blang/semver"
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -220,7 +222,14 @@ func migrateSchema010To020(src *Spec010) (*Spec020, error) {
 	dst.Environments = EnvironmentConfigs020{}
 	for k, v := range src.Environments {
 		targets := make([]string, len(v.Targets))
-		copy(targets, v.Targets)
+		for i, t := range v.Targets {
+			// Target separators changed from "/" to "." in 0.2.0
+			if t == "/" {
+				targets[i] = t
+			} else {
+				targets[i] = strings.Replace(t, "/", ".", -1)
+			}
+		}
 
 		dst.Environments[k] = &EnvironmentConfig020{
 			Name:              v.Name,
