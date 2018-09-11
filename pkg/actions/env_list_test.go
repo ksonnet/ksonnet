@@ -24,6 +24,7 @@ import (
 	amocks "github.com/ksonnet/ksonnet/pkg/app/mocks"
 	"github.com/ksonnet/ksonnet/pkg/util/test"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -52,10 +53,12 @@ func TestEnvList(t *testing.T) {
 		}
 
 		appMock.On("Environments").Return(envs, nil)
+		appMock.On("IsEnvOverride", mock.Anything).Return(false)
 	}
 
 	envListFail := func(appMock *amocks.App) {
 		appMock.On("Environments").Return(nil, errors.New("failed"))
+		appMock.On("IsEnvOverride", mock.Anything).Return(false)
 	}
 
 	cases := []struct {

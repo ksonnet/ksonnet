@@ -155,6 +155,7 @@ func TestEnvSet(t *testing.T) {
 					}
 				},
 			},
+			// TODO add tests for overrides here
 		}
 
 		for _, tc := range cases {

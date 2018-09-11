@@ -86,8 +86,8 @@ func runTestCmd(t *testing.T, cases []cmdTestCase) {
 				for k, v := range s.got {
 					switch k {
 					case actions.OptionApp:
-						var expected *app.App010
-						assert.IsType(t, expected, v)
+						var expected = (*app.App)(nil)
+						assert.Implements(t, expected, v)
 					case actions.OptionClientConfig:
 						var expected *client.Config
 						assert.IsType(t, expected, v)

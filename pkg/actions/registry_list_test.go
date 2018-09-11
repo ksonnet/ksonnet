@@ -66,10 +66,16 @@ func TestRegistryList(t *testing.T) {
 
 				a.registryListFn = func(app.App) ([]registry.Registry, error) {
 					registries := []registry.Registry{
-						mockRegistry("override", true),
-						mockRegistry("incubator", false),
+						mockRegistry("override"),
+						mockRegistry("incubator"),
 					}
 					return registries, nil
+				}
+				a.registryIsOverrideFn = func(name string) bool {
+					if name == "override" {
+						return true
+					}
+					return false
 				}
 
 				err = a.Run()

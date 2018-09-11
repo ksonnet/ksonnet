@@ -16,11 +16,14 @@
 package app
 
 import (
+	"fmt"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/ghodss/yaml"
+	"github.com/ksonnet/ksonnet/pkg/lib"
 	stringutils "github.com/ksonnet/ksonnet/pkg/util/strings"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -34,16 +37,40 @@ type baseApp struct {
 
 	// LibUpdater updates ksonnet lib versions.
 	libUpdater KSLibUpdater
+	// libPath caches ksonnet lib paths after generation / validation
+	libPaths map[string]string
 
 	config    *Spec
 	overrides *Override
 
 	mu sync.Mutex
 
-	load func() error
+	load   func() error
+	loaded bool
 }
 
-func newBaseApp(fs afero.Fs, root string, httpClient *http.Client) *baseApp {
+var _ App = (*baseApp)(nil)
+
+// Opt is a constructor option for baseApp
+type Opt func(*baseApp)
+
+// OptLibUpdater returns an option for setting a KSLibUpdater on an App010
+func OptLibUpdater(libUpdater KSLibUpdater) Opt {
+	return func(a *baseApp) {
+		a.libUpdater = libUpdater
+	}
+}
+
+// optNopLoader overrides baseApp's loader to do nothing. (NOOP)
+func optNoopLoader() Opt {
+	return func(a *baseApp) {
+		a.load = func() error { return nil }
+	}
+}
+
+// NewBaseApp constructs a baseApp, a container of dependencies and configuration describing
+// a ksonnet project.
+func NewBaseApp(fs afero.Fs, root string, httpClient *http.Client, opts ...Opt) *baseApp {
 	ba := &baseApp{
 		fs:         fs,
 		httpClient: httpClient,
@@ -57,8 +84,14 @@ func newBaseApp(fs afero.Fs, root string, httpClient *http.Client) *baseApp {
 			Environments: EnvironmentConfigs{},
 			Registries:   RegistryConfigs{},
 		},
+		libPaths: make(map[string]string),
 	}
 	ba.load = ba.doLoad
+
+	for _, optFn := range opts {
+		optFn(ba)
+	}
+
 	return ba
 }
 
@@ -112,22 +145,16 @@ func (ba *baseApp) save() error {
 	// Signal we have converted to new app version
 	ba.config.APIVersion = DefaultAPIVersion
 	log.Debugf("saving app version %v", ba.config.APIVersion)
-
-	configData, err := yaml.Marshal(ba.config)
-	if err != nil {
-		return errors.Wrap(err, "convert application configuration to YAML")
+	if err := write(ba.fs, ba.root, ba.config); err != nil {
+		return errors.Wrap(err, "serializing configuration")
 	}
 
-	if err = afero.WriteFile(ba.fs, ba.configPath(), configData, DefaultFilePermissions); err != nil {
-		return errors.Wrapf(err, "write %s", ba.configPath())
-	}
-
-	if err = removeOverride(ba.fs, ba.root); err != nil {
+	if err := removeOverride(ba.fs, ba.root); err != nil {
 		return errors.Wrap(err, "clean overrides")
 	}
 
 	if ba.overrides.IsDefined() {
-		return SaveOverride(defaultYAMLEncoder, ba.fs, ba.root, ba.overrides)
+		return saveOverride(defaultYAMLEncoder, ba.fs, ba.root, ba.overrides)
 	}
 
 	return nil
@@ -137,68 +164,25 @@ func (ba *baseApp) doLoad() error {
 	ba.mu.Lock()
 	defer ba.mu.Unlock()
 
-	configData, err := afero.ReadFile(ba.fs, ba.configPath())
-	if err != nil {
-		return errors.Wrapf(err, "read %s", ba.configPath())
-	}
-
-	var config Spec
-	if err = yaml.Unmarshal(configData, &config); err != nil {
-		return errors.Wrapf(err, "unmarshal application YAML config")
-	}
-
-	exists, err := afero.Exists(ba.fs, ba.overridePath())
+	config, err := read(ba.fs, ba.root)
 	if err != nil {
 		return err
 	}
 
-	if len(config.Environments) == 0 {
-		config.Environments = EnvironmentConfigs{}
+	overrides, err := readOverrides(ba.fs, ba.root)
+	if err != nil {
+		return errors.Wrap(err, "reading app overrides")
 	}
 
-	if len(config.Registries) == 0 {
-		config.Registries = RegistryConfigs{}
+	if overrides == nil {
+		overrides = newOverride()
 	}
 
-	override := Override{
-		Environments: EnvironmentConfigs{},
-		Registries:   RegistryConfigs{},
-	}
-	if exists {
-		overrideData, err := afero.ReadFile(ba.fs, ba.overridePath())
-		if err != nil {
-			return errors.Wrapf(err, "read %s", ba.overridePath())
-		}
-		if err = yaml.Unmarshal(overrideData, &override); err != nil {
-			return errors.Wrapf(err, "unmarshal override YAML config")
-		}
+	ba.config = config
+	ba.overrides = overrides
+	ba.loaded = true
 
-		if err = override.Validate(); err != nil {
-			return errors.Wrap(err, "validating override")
-		}
-
-		if len(override.Environments) == 0 {
-			override.Environments = EnvironmentConfigs{}
-		}
-
-		if len(override.Registries) == 0 {
-			override.Registries = RegistryConfigs{}
-		}
-
-		for k := range override.Registries {
-			override.Registries[k].isOverride = true
-		}
-
-		for k := range override.Environments {
-			override.Environments[k].isOverride = true
-		}
-
-	}
-
-	ba.overrides = &override
-	ba.config = &config
-
-	return ba.config.validate()
+	return nil
 }
 
 func (ba *baseApp) AddRegistry(newReg *RegistryConfig, isOverride bool) error {
@@ -210,27 +194,42 @@ func (ba *baseApp) AddRegistry(newReg *RegistryConfig, isOverride bool) error {
 		return ErrRegistryNameInvalid
 	}
 
+	var regMap = ba.config.Registries
 	if isOverride {
-		_, exists := ba.overrides.Registries[newReg.Name]
-		if exists {
-			return ErrRegistryExists
+		if ba.overrides == nil {
+			ba.overrides = newOverride()
 		}
-
-		newReg.isOverride = true
-
-		ba.overrides.Registries[newReg.Name] = newReg
-		return ba.save()
+		regMap = ba.overrides.Registries
 	}
 
-	_, exists := ba.config.Registries[newReg.Name]
+	_, exists := regMap[newReg.Name]
 	if exists {
 		return ErrRegistryExists
 	}
 
-	newReg.isOverride = false
-	ba.config.Registries[newReg.Name] = newReg
+	regMap[newReg.Name] = newReg
 
 	return ba.save()
+}
+
+// libKeyByDesc scans for a library in the referenced LibraryConfigs map.
+// Matching is by registry/name or name if registry is not provided.
+// Versions are ignored.
+// Complexity: O(n)
+// Returns key of matching library, or empty string if no match is found.
+func libKeyByDesc(desc LibraryConfig, libs LibraryConfigs) string {
+	for k, v := range libs {
+		if desc.Name != v.Name {
+			continue
+		}
+		if desc.Registry == "" {
+			return k
+		}
+		if desc.Registry == v.Registry {
+			return k
+		}
+	}
+	return ""
 }
 
 // UpdateLib adds or updates a library reference.
@@ -238,7 +237,7 @@ func (ba *baseApp) AddRegistry(newReg *RegistryConfig, isOverride bool) error {
 // otherwise it is globally scoped.
 // If spec if nil, the library reference will be removed.
 // Returns the previous reference for the named library, if one existed.
-func (ba *baseApp) UpdateLib(name string, env string, libSpec *LibraryConfig) (*LibraryConfig, error) {
+func (ba *baseApp) UpdateLib(id string, env string, libSpec *LibraryConfig) (*LibraryConfig, error) {
 	if err := ba.load(); err != nil {
 		return nil, errors.Wrap(err, "load configuration")
 	}
@@ -247,8 +246,13 @@ func (ba *baseApp) UpdateLib(name string, env string, libSpec *LibraryConfig) (*
 		return nil, errors.Errorf("invalid app - configuration is nil")
 	}
 
-	if libSpec != nil && libSpec.Name != name {
-		return nil, errors.Errorf("library name mismatch: %v vs %v", libSpec.Name, name)
+	desc, err := parseLibraryConfig(id)
+	if err != nil {
+		return nil, errors.Wrapf(err, "parsing id: %s", id)
+	}
+
+	if libSpec != nil && libSpec.Name != desc.Name {
+		return nil, errors.Errorf("library name mismatch: %v vs %v", libSpec.Name, desc.Name)
 	}
 
 	// TODO support app overrides
@@ -256,18 +260,10 @@ func (ba *baseApp) UpdateLib(name string, env string, libSpec *LibraryConfig) (*
 	var oldSpec *LibraryConfig
 	switch env {
 	case "":
-		if ba.config.Libraries == nil {
-			ba.config.Libraries = LibraryConfigs{}
-		}
 		// Globally scoped
-		oldSpec = ba.config.Libraries[name]
-		if libSpec == nil {
-			if oldSpec == nil {
-				return nil, errors.Errorf("package not found: %s", name)
-			}
-			delete(ba.config.Libraries, name)
-		} else {
-			ba.config.Libraries[name] = libSpec
+		oldSpec, err = updateLibInScope(desc, libSpec, &ba.config.Libraries)
+		if err != nil {
+			return nil, errors.Wrap(err, "updating library in global scope")
 		}
 	default:
 		// Scoped by environment
@@ -276,19 +272,9 @@ func (ba *baseApp) UpdateLib(name string, env string, libSpec *LibraryConfig) (*
 			return nil, errors.Errorf("invalid environment: %v", env)
 		}
 
-		if e.Libraries == nil {
-			// We may want to move this into EnvrionmentConfig unmarshaling code.
-			e.Libraries = LibraryConfigs{}
-		}
-		oldSpec = e.Libraries[name]
-
-		if libSpec == nil {
-			if oldSpec == nil {
-				return nil, errors.Errorf("package %s not found in environment: %s", name, env)
-			}
-			delete(e.Libraries, name)
-		} else {
-			e.Libraries[name] = libSpec
+		oldSpec, err = updateLibInScope(desc, libSpec, &e.Libraries)
+		if err != nil {
+			return nil, errors.Wrap(err, "updating library in environment scope")
 		}
 
 		if err := ba.config.UpdateEnvironmentConfig(env, e); err != nil {
@@ -297,6 +283,29 @@ func (ba *baseApp) UpdateLib(name string, env string, libSpec *LibraryConfig) (*
 	}
 
 	return oldSpec, ba.save()
+}
+
+func updateLibInScope(desc LibraryConfig, libSpec *LibraryConfig, scope *LibraryConfigs) (*LibraryConfig, error) {
+	if scope == nil {
+		return nil, errors.New("nil scope")
+	}
+	if *scope == nil {
+		*scope = LibraryConfigs{}
+	}
+
+	oldSpecKey := libKeyByDesc(desc, *scope)
+	oldSpec := (*scope)[oldSpecKey]
+	if libSpec == nil {
+		if oldSpecKey == "" || oldSpec == nil {
+			return nil, errors.Errorf("package not found: %v", desc)
+		}
+		delete(*scope, oldSpecKey)
+	} else {
+		newKey := qualifyLibName(libSpec.Registry, libSpec.Name)
+		(*scope)[newKey] = libSpec
+	}
+
+	return oldSpec, nil
 }
 
 // UpdateRegistry updates a registry spec and persists in app[.override].yaml
@@ -366,8 +375,10 @@ func (ba *baseApp) VendorPath() string {
 
 // Environment returns the spec for an environment.
 func (ba *baseApp) Environment(name string) (*EnvironmentConfig, error) {
-	if err := ba.load(); err != nil {
-		return nil, errors.Wrap(err, "load configuration")
+	if !ba.loaded {
+		if err := ba.load(); err != nil {
+			return nil, errors.Wrap(err, "load configuration")
+		}
 	}
 
 	e := ba.mergedEnvironment(name)
@@ -434,7 +445,6 @@ func (ba *baseApp) mergedEnvironment(name string) *EnvironmentConfig {
 	switch {
 	case hasPrimary && !hasOverride:
 		e := deepCopyEnvironmentConfig(*primary)
-		e.isOverride = false
 		return e
 	case hasPrimary && hasOverride:
 		combined := deepCopyEnvironmentConfig(*primary)
@@ -450,11 +460,9 @@ func (ba *baseApp) mergedEnvironment(name string) *EnvironmentConfig {
 			copy(t, override.Targets)
 			combined.Targets = t
 		}
-		combined.isOverride = true
 		return combined
 	case hasOverride:
 		e := deepCopyEnvironmentConfig(*override)
-		e.isOverride = true
 		return e
 	default:
 		return nil
@@ -464,8 +472,10 @@ func (ba *baseApp) mergedEnvironment(name string) *EnvironmentConfig {
 // Environments returns all environment specs, merged with any corresponding overrides.
 // Note overrides cannot override environment libraries.
 func (ba *baseApp) Environments() (EnvironmentConfigs, error) {
-	if err := ba.load(); err != nil {
-		return nil, errors.Wrap(err, "load configuration")
+	if !ba.loaded {
+		if err := ba.load(); err != nil {
+			return nil, err
+		}
 	}
 
 	// Build merged list of keys
@@ -492,4 +502,233 @@ func (ba *baseApp) Environments() (EnvironmentConfigs, error) {
 	}
 
 	return environments, nil
+}
+
+// AddEnvironment adds an environment spec to the app spec. If the spec already exists,
+// it is overwritten.
+func (ba *baseApp) AddEnvironment(newEnv *EnvironmentConfig, k8sSpecFlag string, isOverride bool) error {
+	log.WithFields(log.Fields{
+		"k8s-spec-flag": k8sSpecFlag,
+		"name":          newEnv.Name,
+	}).Debug("adding environment")
+
+	if newEnv == nil {
+		return errors.Errorf("nil environment")
+	}
+
+	if newEnv.Name == "" {
+		return errors.Errorf("invalid environment name")
+	}
+
+	if isOverride && len(newEnv.Libraries) > 0 {
+		return errors.Errorf("library references not allowed in overrides")
+	}
+
+	if err := ba.load(); err != nil {
+		return errors.Wrap(err, "load configuration")
+	}
+
+	if k8sSpecFlag != "" {
+		ver, err := ba.libUpdater.UpdateKSLib(k8sSpecFlag, app010LibPath(ba.root))
+		if err != nil {
+			return err
+		}
+
+		newEnv.KubernetesVersion = ver
+	}
+
+	var envMap = ba.config.Environments
+	if isOverride {
+		if ba.overrides == nil {
+			ba.overrides = newOverride()
+		}
+		envMap = ba.overrides.Environments
+	}
+
+	envMap[newEnv.Name] = newEnv
+	return ba.save()
+}
+
+// Libraries returns application libraries.
+func (ba *baseApp) Libraries() (LibraryConfigs, error) {
+	if !ba.loaded {
+		if err := ba.load(); err != nil {
+			return nil, errors.Wrap(err, "load configuration")
+		}
+	}
+
+	return ba.config.Libraries, nil
+}
+
+// Registries returns application registries.
+func (ba *baseApp) Registries() (RegistryConfigs, error) {
+	if !ba.loaded {
+		if err := ba.load(); err != nil {
+			return nil, errors.Wrap(err, "load configuration")
+		}
+	}
+
+	registries := RegistryConfigs{}
+
+	for k, v := range ba.config.Registries {
+		registries[k] = v
+	}
+
+	for k, v := range ba.overrides.Registries {
+		registries[k] = v
+	}
+
+	return registries, nil
+}
+
+// RemoveEnvironment removes an environment.
+func (ba *baseApp) RemoveEnvironment(envName string, override bool) error {
+	if err := ba.load(); err != nil {
+		return errors.Wrap(err, "load configuration")
+	}
+
+	envMap := ba.config.Environments
+	if override {
+		envMap = ba.overrides.Environments
+	}
+
+	if _, ok := envMap[envName]; !ok {
+		return errors.Errorf("environment %q does not exist", envName)
+	}
+
+	delete(envMap, envName)
+
+	return ba.save()
+}
+
+// RenameEnvironment renames environments.
+func (ba *baseApp) RenameEnvironment(from, to string, override bool) error {
+	if err := ba.load(); err != nil {
+		return errors.Wrap(err, "load configuration")
+	}
+
+	envMap := ba.config.Environments
+	if override {
+		envMap = ba.overrides.Environments
+	}
+
+	if _, ok := envMap[from]; !ok {
+		return errors.Errorf("environment %q does not exist", from)
+	}
+	envMap[to] = envMap[from]
+	envMap[to].Path = to
+	delete(envMap, from)
+
+	if err := moveEnvironment(ba.fs, ba.root, from, to); err != nil {
+		return err
+	}
+
+	return ba.save()
+}
+
+// UpdateTargets updates the list of targets. Note this overrwrite any existing targets.
+func (ba *baseApp) UpdateTargets(envName string, targets []string) error {
+	spec, err := ba.Environment(envName)
+	if err != nil {
+		return err
+	}
+
+	spec.Targets = targets
+
+	isOverride := ba.IsEnvOverride(envName)
+	return errors.Wrap(ba.AddEnvironment(spec, "", isOverride), "update targets")
+}
+
+// LibPath returns the lib path for an env environment.
+func (ba *baseApp) LibPath(envName string) (string, error) {
+	if lp, ok := ba.libPaths[envName]; ok {
+		return lp, nil
+	}
+
+	env, err := ba.Environment(envName)
+	if err != nil {
+		return "", err
+	}
+
+	ver := fmt.Sprintf("version:%s", env.KubernetesVersion)
+	lm, err := lib.NewManager(ver, ba.fs, app010LibPath(ba.root), ba.httpClient)
+	if err != nil {
+		return "", err
+	}
+
+	lp, err := lm.GetLibPath()
+	if err != nil {
+		return "", err
+	}
+
+	ba.checkKsonnetLib(lp)
+
+	ba.libPaths[envName] = lp
+	return lp, nil
+}
+
+// TODO move this to migrations somewhere
+func (ba *baseApp) checkKsonnetLib(lp string) {
+	libRoot := filepath.Join(ba.Root(), LibDirName, "ksonnet-lib")
+	if !strings.HasPrefix(lp, libRoot) {
+		log.Warnf("ksonnet has moved ksonnet-lib paths to %q. The current location of "+
+			"of your existing ksonnet-libs can be automatically moved by ksonnet with `ks upgrade`",
+			libRoot)
+	}
+}
+
+// Upgrade upgrades an application (app.yaml) to the current version.
+func (ba *baseApp) Upgrade(bool) error {
+	if ba == nil {
+		return errors.New("nil receiver")
+	}
+	if ba.config == nil {
+		return errors.New("nil configuration")
+	}
+	if ba.fs == nil {
+		return errors.New("nil fs interface")
+	}
+
+	appConfig, err := afero.ReadFile(ba.fs, specPath(ba.root))
+	if err != nil {
+		return err
+	}
+
+	var base specBase
+
+	err = yaml.Unmarshal(appConfig, &base)
+	if err != nil {
+		return err
+	}
+
+	if base.APIVersion.String() == DefaultAPIVersion {
+		// Nothing to do, schema on disk is already latest.
+		return nil
+	}
+
+	if err := write(ba.fs, ba.root, ba.config); err != nil {
+		return err
+	}
+
+	// TODO handle override upgrades
+
+	return nil
+}
+
+// IsEnvOverride returns whether the specified environment has overriding configuration
+func (ba *baseApp) IsEnvOverride(name string) bool {
+	if ba.overrides == nil {
+		return false
+	}
+	_, ok := ba.overrides.Environments[name]
+	return ok
+}
+
+// IsRegistryOverride returns whether the specified registry has overriding configuration
+func (ba *baseApp) IsRegistryOverride(name string) bool {
+	if ba.overrides == nil {
+		return false
+	}
+	_, ok := ba.overrides.Registries[name]
+	return ok
 }

@@ -70,30 +70,16 @@ func (_m *Registry) FetchRegistrySpec() (*registry.Spec, error) {
 	return r0, r1
 }
 
-// IsOverride provides a mock function with given fields:
-func (_m *Registry) IsOverride() bool {
-	ret := _m.Called()
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func() bool); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	return r0
-}
-
 // MakeRegistryConfig provides a mock function with given fields:
-func (_m *Registry) MakeRegistryConfig() *app.RegistryConfig {
+func (_m *Registry) MakeRegistryConfig() *app.RegistryConfig030 {
 	ret := _m.Called()
 
-	var r0 *app.RegistryConfig
-	if rf, ok := ret.Get(0).(func() *app.RegistryConfig); ok {
+	var r0 *app.RegistryConfig030
+	if rf, ok := ret.Get(0).(func() *app.RegistryConfig030); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*app.RegistryConfig)
+			r0 = ret.Get(0).(*app.RegistryConfig030)
 		}
 	}
 
@@ -157,7 +143,7 @@ func (_m *Registry) RegistrySpecFilePath() string {
 }
 
 // ResolveLibrary provides a mock function with given fields: libID, libAlias, version, onFile, onDir
-func (_m *Registry) ResolveLibrary(libID string, libAlias string, version string, onFile registry.ResolveFile, onDir registry.ResolveDirectory) (*parts.Spec, *app.LibraryConfig, error) {
+func (_m *Registry) ResolveLibrary(libID string, libAlias string, version string, onFile registry.ResolveFile, onDir registry.ResolveDirectory) (*parts.Spec, *app.LibraryConfig030, error) {
 	ret := _m.Called(libID, libAlias, version, onFile, onDir)
 
 	var r0 *parts.Spec
@@ -169,12 +155,12 @@ func (_m *Registry) ResolveLibrary(libID string, libAlias string, version string
 		}
 	}
 
-	var r1 *app.LibraryConfig
-	if rf, ok := ret.Get(1).(func(string, string, string, registry.ResolveFile, registry.ResolveDirectory) *app.LibraryConfig); ok {
+	var r1 *app.LibraryConfig030
+	if rf, ok := ret.Get(1).(func(string, string, string, registry.ResolveFile, registry.ResolveDirectory) *app.LibraryConfig030); ok {
 		r1 = rf(libID, libAlias, version, onFile, onDir)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*app.LibraryConfig)
+			r1 = ret.Get(1).(*app.LibraryConfig030)
 		}
 	}
 

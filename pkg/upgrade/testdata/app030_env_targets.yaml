@@ -6,12 +6,18 @@ environments:
       server: http://example.com
     k8sVersion: v1.7.0
     path: default
+    targets:
+    - /
   us-east/test:
     destination:
       namespace: some-namespace
       server: http://example.com
     k8sVersion: v1.7.0
     path: us-east/test
+    targets:
+    - /
+    - path.to.module
+    - path.to.other.module
   us-west/prod:
     destination:
       namespace: some-namespace
@@ -25,11 +31,6 @@ environments:
     k8sVersion: v1.7.0
     path: us-west/test
 kind: ksonnet.io/app
-libraries:
-  incubator/nginx:
-    name: nginx
-    registry: incubator
-    version: 1.2.3
 name: test-get-envs
 registries:
   incubator:

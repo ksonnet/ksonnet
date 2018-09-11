@@ -38,9 +38,10 @@ func RunEnvList(m map[string]interface{}) error {
 // EnvList lists available namespaces. To initialize EnvList,
 // use the `NewEnvList` constructor.
 type EnvList struct {
-	envListFn  func() (app.EnvironmentConfigs, error)
-	outputType string
-	out        io.Writer
+	envListFn       func() (app.EnvironmentConfigs, error)
+	envIsOverrideFn func(name string) bool
+	outputType      string
+	out             io.Writer
 }
 
 // NewEnvList creates an instance of EnvList
@@ -55,9 +56,10 @@ func NewEnvList(m map[string]interface{}) (*EnvList, error) {
 	}
 
 	el := &EnvList{
-		outputType: outputType,
-		envListFn:  a.Environments,
-		out:        os.Stdout,
+		outputType:      outputType,
+		envListFn:       a.Environments,
+		envIsOverrideFn: a.IsEnvOverride,
+		out:             os.Stdout,
 	}
 
 	return el, nil
@@ -83,7 +85,7 @@ func (el *EnvList) Run() error {
 
 	for name, env := range environments {
 		override := ""
-		if env.IsOverride() {
+		if el.envIsOverrideFn(name) {
 			override = "*"
 		}
 

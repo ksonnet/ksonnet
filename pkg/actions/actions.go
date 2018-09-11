@@ -16,6 +16,7 @@
 package actions
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
 	"net"
@@ -24,6 +25,8 @@ import (
 
 	"github.com/ksonnet/ksonnet/pkg/app"
 	"github.com/ksonnet/ksonnet/pkg/client"
+	"github.com/ksonnet/ksonnet/pkg/registry"
+	"github.com/ksonnet/ksonnet/pkg/upgrade"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
@@ -378,7 +381,8 @@ func (o *optionLoader) LoadApp() app.App {
 	}
 
 	if !o.LoadOptionalBool(OptionSkipCheckUpgrade) {
-		if _, err := a.CheckUpgrade(); err != nil {
+		pm := registry.NewPackageManager(a)
+		if _, err := upgrade.CheckUpgrade(a, new(bytes.Buffer), pm, false); err != nil {
 			o.err = errors.Wrap(err, "checking for app upgrades")
 			return nil
 		}

@@ -359,14 +359,14 @@ func (m *packageManager) PackagesForEnv(e *app.EnvironmentConfig) ([]pkg.Package
 		combined[k] = cfg
 	}
 
-	for k, libraryConfig := range combined {
+	for _, libraryConfig := range combined {
 		protocol, ok := registryProtocol(m.app, libraryConfig.Registry)
 		if !ok {
 			return nil, errors.Errorf("registry %q required by library %q is not defined in the configuration",
-				libraryConfig.Registry, k)
+				libraryConfig.Registry, libraryConfig.Name)
 		}
 
-		p, err := m.loadPackage(protocol, k, libraryConfig.Registry, libraryConfig.Version, pkg.TrueInstallChecker{})
+		p, err := m.loadPackage(protocol, libraryConfig.Name, libraryConfig.Registry, libraryConfig.Version, pkg.TrueInstallChecker{})
 		if err != nil {
 			return nil, err
 		}
@@ -561,7 +561,7 @@ func latestPrototype(protos prototype.Prototypes) *prototype.Prototype {
 }
 
 // Given an index of libaries (as created by allLibraries),
-// return flag list of unique libraries, as distinguished by key registry:name:version.
+// return a list of unique libraries, as distinguished by key registry:name:version.
 func uniqueLibsByVersion(libIndex libraryByDesc) []*app.LibraryConfig {
 	var result = make([]*app.LibraryConfig, 0, len(libIndex))
 

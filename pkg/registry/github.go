@@ -96,11 +96,6 @@ func NewGitHub(a app.App, registryRef *app.RegistryConfig, opts ...GitHubOpt) (*
 	return gh, nil
 }
 
-// IsOverride is true if this registry an an override.
-func (gh *GitHub) IsOverride() bool {
-	return gh.spec.IsOverride()
-}
-
 // Name is the registry name.
 func (gh *GitHub) Name() string {
 	return gh.name

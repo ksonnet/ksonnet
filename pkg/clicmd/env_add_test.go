@@ -37,6 +37,32 @@ func Test_envAddCmd(t *testing.T) {
 			},
 		},
 		{
+			name:   "override flag - short",
+			args:   []string{"env", "add", "prod", "--server", "http://example.com", "--api-spec", "version:v1.9.5", "-o"},
+			action: actionEnvAdd,
+			expected: map[string]interface{}{
+				actions.OptionApp:      nil,
+				actions.OptionEnvName:  "prod",
+				actions.OptionModule:   "default",
+				actions.OptionOverride: true,
+				actions.OptionServer:   "http://example.com",
+				actions.OptionSpecFlag: "version:v1.9.5",
+			},
+		},
+		{
+			name:   "override flag - long",
+			args:   []string{"env", "add", "prod", "--server", "http://example.com", "--api-spec", "version:v1.9.5", "--override"},
+			action: actionEnvAdd,
+			expected: map[string]interface{}{
+				actions.OptionApp:      nil,
+				actions.OptionEnvName:  "prod",
+				actions.OptionModule:   "default",
+				actions.OptionOverride: true,
+				actions.OptionServer:   "http://example.com",
+				actions.OptionSpecFlag: "version:v1.9.5",
+			},
+		},
+		{
 			name:  "no environment",
 			args:  []string{"env", "add"},
 			isErr: true,

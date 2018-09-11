@@ -71,12 +71,7 @@ func RunPkgRemove(m map[string]interface{}) error {
 
 // Run removes packages
 func (pr *PkgRemove) Run() error {
-	desc, err := pkg.Parse(pr.pkgName)
-	if err != nil {
-		return err
-	}
-
-	oldCfg, err := pr.libUpdateFn(desc.Name, pr.envName, nil)
+	oldCfg, err := pr.libUpdateFn(pr.pkgName, pr.envName, nil)
 	if err != nil {
 		return err
 	}

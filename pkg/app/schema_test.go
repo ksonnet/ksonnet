@@ -20,7 +20,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/blang/semver"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -43,41 +42,6 @@ func makeSimpleEnvironmentSpec(name, namespace, server, k8sVersion string) *Envi
 			Server:    server,
 		},
 		KubernetesVersion: k8sVersion,
-	}
-}
-
-func TestApiVersionValidate(t *testing.T) {
-	type spec struct {
-		spec string
-		err  bool
-	}
-	tests := []spec{
-		// Versions that we accept.
-		{spec: "0.0.1", err: false},
-		{spec: "0.0.1+build.1", err: false},
-		{spec: "0.1.0-alpha", err: false},
-		{spec: "0.1.0+build.1"},
-
-		// Other versions.
-		{spec: "0.0.0", err: true},
-		{spec: "0.1.0"},
-		{spec: "1.0.0", err: true},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.spec, func(t *testing.T) {
-			_, err := semver.Make(tc.spec)
-			require.NoError(t, err, "failed to parse version %q", tc.spec)
-
-			spec := &Spec{APIVersion: tc.spec}
-			err = spec.validate()
-			if tc.err {
-				require.Error(t, err)
-				return
-			}
-
-			require.NoError(t, err)
-		})
 	}
 }
 
@@ -382,14 +346,12 @@ func Test_write(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	spec := &Spec{
-		APIVersion: "0.2.0",
+		APIVersion: "0.3.0",
 		Environments: EnvironmentConfigs{
 			"a": &EnvironmentConfig{},
-			"b": &EnvironmentConfig{isOverride: true},
 		},
 		Registries: RegistryConfigs{
 			"a": &RegistryConfig{},
-			"b": &RegistryConfig{isOverride: true},
 		},
 	}
 
@@ -398,16 +360,13 @@ func Test_write(t *testing.T) {
 
 	assertExists(t, fs, specPath("/"))
 	assertContents(t, fs, "write-app.yaml", specPath("/"))
-
-	assertExists(t, fs, overridePath("/"))
-	assertContents(t, fs, "write-override.yaml", overridePath("/"))
 }
 
 func Test_write_no_override(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	spec := &Spec{
-		APIVersion: "0.2.0",
+		APIVersion: "0.3.0",
 		Environments: EnvironmentConfigs{
 			"a": &EnvironmentConfig{},
 		},
@@ -435,16 +394,14 @@ func Test_read(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := &Spec{
-		APIVersion:   "0.2.0",
+		APIVersion:   "0.3.0",
 		Contributors: ContributorSpecs{},
 		Environments: EnvironmentConfigs{
 			"a": &EnvironmentConfig{Name: "a"},
-			"b": &EnvironmentConfig{Name: "b", isOverride: true},
 		},
 		Libraries: LibraryConfigs{},
 		Registries: RegistryConfigs{
 			"a": &RegistryConfig{Name: "a"},
-			"b": &RegistryConfig{Name: "b", isOverride: true},
 		},
 	}
 
@@ -546,4 +503,46 @@ func assertContents(t *testing.T, fs afero.Fs, expectedPath, contentPath string)
 	require.NoError(t, err)
 
 	require.Equal(t, string(expected), string(got), "unexpected %q contents", contentPath)
+}
+
+func Test_parseLibraryConfig(t *testing.T) {
+	cases := []struct {
+		name     string
+		expected LibraryConfig
+		isErr    bool
+	}{
+		{
+			name:     "parts-infra/contour",
+			expected: LibraryConfig{Registry: "parts-infra", Name: "contour"},
+		},
+		{
+			name:     "contour",
+			expected: LibraryConfig{Name: "contour"},
+		},
+		{
+			name:     "parts-infra/contour@0.1.0",
+			expected: LibraryConfig{Registry: "parts-infra", Name: "contour", Version: "0.1.0"},
+		},
+		{
+			name:     "contour@0.1.0",
+			expected: LibraryConfig{Registry: "", Name: "contour", Version: "0.1.0"},
+		},
+		{
+			name:  "@foo/bar@baz@doh",
+			isErr: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			d, err := parseLibraryConfig(tc.name)
+			if tc.isErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.expected, d)
+		})
+	}
 }

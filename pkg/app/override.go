@@ -17,8 +17,11 @@ package app
 
 import (
 	"os"
+	"path/filepath"
 
+	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 )
 
@@ -26,37 +29,62 @@ const (
 	// overrideKind is the override resource type.
 	overrideKind = "ksonnet.io/app-override"
 	// overrideVersion is the version of the override resource.
-	overrideVersion = "0.2.0"
+	overrideVersion = "0.3.0"
 )
 
 // Override defines overrides to ksonnet project configurations.
-type Override struct {
-	Kind         string             `json:"kind"`
-	APIVersion   string             `json:"apiVersion"`
-	Environments EnvironmentConfigs `json:"environments,omitempty"`
-	Registries   RegistryConfigs    `json:"registries,omitempty"`
+type Override = Override030
+
+// overridePath constructs a path for app.override.yaml
+func overridePath(appRoot string) string {
+	return filepath.Join(appRoot, overrideYamlName)
 }
 
-// Validate validates an Override.
-func (o *Override) Validate() error {
-	if o.Kind != overrideKind {
-		return errors.Errorf("app override has unexpected kind")
+func newOverride() *Override {
+	o := &Override{
+		APIVersion:   overrideVersion,
+		Kind:         overrideKind,
+		Environments: EnvironmentConfigs{},
+		Registries:   RegistryConfigs{},
+	}
+	return o
+}
+
+// readOverrides returns optional override configuration
+// Returns nil if no overrides were defined.
+func readOverrides(fs afero.Fs, root string) (*Override, error) {
+	log.Debugf("loading overrides from %s", root)
+
+	exists, err := afero.Exists(fs, overridePath(root))
+	if err != nil {
+		return nil, err
 	}
 
-	if o.APIVersion != overrideVersion {
-		return errors.Errorf("app override has unexpected apiVersion")
+	if !exists {
+		return nil, nil
 	}
 
-	return nil
+	var o Override
+
+	overrideConfig, err := afero.ReadFile(fs, overridePath(root))
+	if err != nil {
+		return nil, err
+	}
+
+	err = yaml.Unmarshal(overrideConfig, &o)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := o.Validate(); err != nil {
+		return nil, err
+	}
+
+	return &o, nil
 }
 
-// IsDefined returns true if the override has environments or registries defined.
-func (o *Override) IsDefined() bool {
-	return o != nil && (len(o.Environments) > 0 || len(o.Registries) > 0)
-}
-
-// SaveOverride saves the override to the filesystem.
-func SaveOverride(encoder Encoder, fs afero.Fs, root string, o *Override) error {
+// saveOverride saves the override to the filesystem.
+func saveOverride(encoder Encoder, fs afero.Fs, root string, o *Override) error {
 	if o == nil {
 		return errors.New("override was nil")
 	}
@@ -71,6 +99,19 @@ func SaveOverride(encoder Encoder, fs afero.Fs, root string, o *Override) error 
 
 	if err := encoder.Encode(o, f); err != nil {
 		return errors.Wrap(err, "encoding override")
+	}
+
+	return nil
+}
+
+func removeOverride(fs afero.Fs, appRoot string) error {
+	exists, err := afero.Exists(fs, overridePath(appRoot))
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		return fs.Remove(overridePath(appRoot))
 	}
 
 	return nil

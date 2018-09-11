@@ -1,0 +1,58 @@
+apiVersion: 0.3.0
+authors:
+- Philip K. Dick
+- Frank Herbert
+- Nnedi Okorafor
+bugs: fingers crossed
+contributors:
+- email: cthulu@theabyss.com
+  name: H.P. Lovecraft
+- email: sandman@comics.com
+  name: Neil Gaiman
+description: test migration description
+environments:
+  default:
+    destination:
+      namespace: default-namespace
+      server: https://localhost:6443
+    k8sVersion: v1.10.3
+    libraries:
+      incubator/mysql:
+        name: mysql
+        registry: incubator
+        version: 8.0.0
+      incubator/nginx:
+        name: nginx
+        registry: incubator
+        version: 1.2.3
+    path: default-path
+    targets:
+    - /
+    - foo.bar.baz
+    - simple
+keywords:
+- ksonnet
+- kubernetes
+kind: ksonnet.io/app
+libraries:
+  helm-stable/redis:
+    name: redis
+    registry: helm-stable
+    version: 7.6.5
+  incubator/postgres:
+    name: postgres
+    registry: incubator
+    version: 9.1.3
+license: Apache License 2.0
+name: test-migration
+registries:
+  helm-stable:
+    protocol: helm
+    uri: https://kubernetes-charts.storage.googleapis.com
+  incubator:
+    protocol: github
+    uri: github.com/ksonnet/parts/tree/master/incubator
+repository:
+  type: git
+  uri: https://github.com/ksonnet/mixins
+version: 0.0.1

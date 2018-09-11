@@ -71,15 +71,15 @@ func (_m *PackageManager) IsInstalled(d pkg.Descriptor) (bool, error) {
 }
 
 // PackageEnvironments provides a mock function with given fields: _a0
-func (_m *PackageManager) PackageEnvironments(_a0 pkg.Package) ([]*app.EnvironmentConfig, error) {
+func (_m *PackageManager) PackageEnvironments(_a0 pkg.Package) ([]*app.EnvironmentConfig030, error) {
 	ret := _m.Called(_a0)
 
-	var r0 []*app.EnvironmentConfig
-	if rf, ok := ret.Get(0).(func(pkg.Package) []*app.EnvironmentConfig); ok {
+	var r0 []*app.EnvironmentConfig030
+	if rf, ok := ret.Get(0).(func(pkg.Package) []*app.EnvironmentConfig030); ok {
 		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*app.EnvironmentConfig)
+			r0 = ret.Get(0).([]*app.EnvironmentConfig030)
 		}
 	}
 
@@ -117,11 +117,11 @@ func (_m *PackageManager) Packages() ([]pkg.Package, error) {
 }
 
 // PackagesForEnv provides a mock function with given fields: e
-func (_m *PackageManager) PackagesForEnv(e *app.EnvironmentConfig) ([]pkg.Package, error) {
+func (_m *PackageManager) PackagesForEnv(e *app.EnvironmentConfig030) ([]pkg.Package, error) {
 	ret := _m.Called(e)
 
 	var r0 []pkg.Package
-	if rf, ok := ret.Get(0).(func(*app.EnvironmentConfig) []pkg.Package); ok {
+	if rf, ok := ret.Get(0).(func(*app.EnvironmentConfig030) []pkg.Package); ok {
 		r0 = rf(e)
 	} else {
 		if ret.Get(0) != nil {
@@ -130,7 +130,7 @@ func (_m *PackageManager) PackagesForEnv(e *app.EnvironmentConfig) ([]pkg.Packag
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(*app.EnvironmentConfig) error); ok {
+	if rf, ok := ret.Get(1).(func(*app.EnvironmentConfig030) error); ok {
 		r1 = rf(e)
 	} else {
 		r1 = ret.Error(1)

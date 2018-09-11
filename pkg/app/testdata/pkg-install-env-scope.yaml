@@ -1,4 +1,4 @@
-apiVersion: 0.2.0
+apiVersion: 0.3.0
 environments:
   default:
     destination:
@@ -6,7 +6,7 @@ environments:
       server: http://example.com
     k8sVersion: v1.7.0
     libraries:
-      nginx:
+      incubator/nginx:
         name: nginx
         registry: incubator
         version: 1.2.3
