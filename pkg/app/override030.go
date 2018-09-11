@@ -18,6 +18,7 @@ package app
 import (
 	"encoding/json"
 
+	"github.com/blang/semver"
 	"github.com/pkg/errors"
 )
 
@@ -35,8 +36,18 @@ func (o *Override030) Validate() error {
 		return errors.Errorf("app override has unexpected kind")
 	}
 
-	if o.APIVersion != overrideVersion {
-		return errors.Errorf("app override has unexpected apiVersion")
+	ov, err := semver.Parse(o.APIVersion)
+	if err != nil {
+		return errors.Errorf("override has invalid version: %s", o.APIVersion)
+	}
+	var compatible bool
+	for _, compatRange := range compatibleAPIRanges {
+		if compatRange(ov) {
+			compatible = true
+		}
+	}
+	if !compatible {
+		return errors.Errorf("override has incompatible version: %s", o.APIVersion)
 	}
 
 	return nil
@@ -56,12 +67,8 @@ func (o *Override030) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	if r.Kind != overrideKind {
-		return errors.Errorf("app override has unexpected kind")
-	}
-
-	if r.APIVersion != overrideVersion {
-		return errors.Errorf("app override has unexpected apiVersion")
+	if err := (*Override030)(&r).Validate(); err != nil {
+		return err
 	}
 
 	if r.Environments == nil {

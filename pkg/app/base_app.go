@@ -701,16 +701,20 @@ func (ba *baseApp) Upgrade(bool) error {
 		return err
 	}
 
-	if base.APIVersion.String() == DefaultAPIVersion {
-		// Nothing to do, schema on disk is already latest.
-		return nil
+	if base.APIVersion.String() != DefaultAPIVersion {
+		if err := write(ba.fs, ba.root, ba.config); err != nil {
+			return err
+		}
 	}
 
-	if err := write(ba.fs, ba.root, ba.config); err != nil {
-		return err
+	// Handle overrides
+	if err := removeOverride(ba.fs, ba.root); err != nil {
+		return errors.Wrap(err, "clean overrides")
 	}
 
-	// TODO handle override upgrades
+	if ba.overrides.IsDefined() {
+		return saveOverride(defaultYAMLEncoder, ba.fs, ba.root, ba.overrides)
+	}
 
 	return nil
 }
