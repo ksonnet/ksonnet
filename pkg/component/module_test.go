@@ -16,6 +16,7 @@
 package component
 
 import (
+	"io/ioutil"
 	"path/filepath"
 	"testing"
 
@@ -240,4 +241,27 @@ func TestModuleFromPath(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestFilesystemModule_Integration_ParamEscaping(t *testing.T) {
+	test.WithApp(t, "/app", func(a *mocks.App, fs afero.Fs) {
+		test.StageFile(t, fs, "params-quotes.libsonnet", "/app/components/params.libsonnet")
+		a.On("Environment", "default").Return(&app.EnvironmentConfig{
+			Name: "default",
+			Destination: &app.EnvironmentDestinationSpec{
+				Server:    "http://localhost:6443",
+				Namespace: "default",
+			},
+		}, nil)
+
+		module := NewModule(a, ".")
+
+		actual, err := module.ResolvedParams("default")
+		require.NoError(t, err)
+
+		expected, err := ioutil.ReadFile(filepath.Join("testdata", "params-quotes-expected.json"))
+		require.NoError(t, err)
+
+		assert.Equal(t, string(expected), actual)
+	})
 }

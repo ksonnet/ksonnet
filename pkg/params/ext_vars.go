@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 
 	"github.com/ksonnet/ksonnet/pkg/app"
+	"github.com/pkg/errors"
 )
 
 // JsonnetEnvObject creates an object with the current ksonnet environment.
@@ -28,6 +29,9 @@ func JsonnetEnvObject(a app.App, envName string) (string, error) {
 	envDetails, err := a.Environment(envName)
 	if err != nil {
 		return "", err
+	}
+	if envDetails.Destination == nil {
+		return "", errors.Errorf("environment lacks destination: %s", envName)
 	}
 
 	dest := map[string]string{

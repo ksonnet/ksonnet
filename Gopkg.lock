@@ -598,7 +598,7 @@
   revision = "ae77be60afb1dcacde03767a8c37337fad28ac14"
 
 [[projects]]
-  digest = "1:3c2482214573e1f285edcd28d5fc224117c5fe4bb0ee984fcbfd900bda955192"
+  digest = "1:940f9581e8a768010b6dada7055bc86bd872f7f64e7affe894f39115956073c2"
   name = "github.com/ksonnet/ksonnet-lib"
   packages = [
     "ksonnet-gen/astext",
@@ -610,8 +610,8 @@
     "ksonnet-gen/printer",
   ]
   pruneopts = "UT"
-  revision = "83f20ee933bcd13fcf4ad1b49a40c92135c5569c"
-  version = "v0.1.10"
+  revision = "ed0796f3cb97ebc35ae54f543b1814a7c8dae305"
+  version = "v0.1.11"
 
 [[projects]]
   digest = "1:c568d7727aa262c32bdf8a3f7db83614f7af0ed661474b24588de635c20024c7"
@@ -861,14 +861,6 @@
   ]
   pruneopts = "UT"
   revision = "b6b7b6733b8c9589e2452df9345ddaf75badd0db"
-
-[[projects]]
-  branch = "fix-unknown-flag-panic"
-  digest = "1:bd8bd2d2f6623cf67f7dc400fc6fda10ecf5589d1ddec66d404bb8f33f781741"
-  name = "github.com/shomron/pflag"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "2c9c3172bde8c8557c4326e31b116d3e2d092da8"
 
 [[projects]]
   digest = "1:7ab696eb65eef48aa01c255ce3979e716259987e1af2a69891d47b17c6127819"
@@ -1631,7 +1623,6 @@
     "github.com/onsi/gomega",
     "github.com/pkg/errors",
     "github.com/shazow/go-diff",
-    "github.com/shomron/pflag",
     "github.com/sirupsen/logrus",
     "github.com/spf13/afero",
     "github.com/spf13/cobra",
