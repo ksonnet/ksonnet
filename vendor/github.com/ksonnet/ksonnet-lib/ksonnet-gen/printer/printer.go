@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/parser"
@@ -176,27 +177,89 @@ func detectQuoteMode(s string, kind ast.LiteralStringKind) quoteMode {
 	return quoteModeNone
 }
 
+func unquote(s string) string {
+	if !strings.ContainsRune(s, '\\') {
+		return s
+	}
+
+	sb := strings.Builder{}
+	sb.Grow(len(s))
+
+	tail := s
+	for len(tail) > 0 {
+		c, width := utf8.DecodeRuneInString(tail)
+
+		switch c {
+		case utf8.RuneError:
+			tail = tail[width:]
+			continue // Skip this character
+		case '"':
+			// strconv.UnquoteChar won't allow a bare quote in double-quote mode, but we will
+			sb.WriteRune(c)
+			tail = tail[width:]
+		default:
+			c, _, t2, err := strconv.UnquoteChar(tail, byte('"'))
+			if err != nil {
+				// Skip character. Ensure we move forward.
+				tail = tail[width:]
+				continue
+			}
+			tail = t2
+			sb.WriteRune(c)
+		}
+	}
+
+	return sb.String()
+}
+
+// quote returns a single or double quoted string, escaped for jsonnet.
+// This function does *not* protect against double-escaping. Instead use `stringQuote`.
+func quote(s string, useSingle bool) string {
+	var quote rune
+	if useSingle {
+		quote = '\''
+	} else {
+		quote = '"'
+	}
+
+	sb := strings.Builder{}
+	sb.Grow(len(s) + 2)
+
+	sb.WriteRune(quote)
+
+	for _, c := range s {
+		switch c {
+		case '\'':
+			if useSingle {
+				sb.WriteString("\\'")
+			} else {
+				sb.WriteRune(c)
+			}
+		case '"':
+			if !useSingle {
+				sb.WriteString("\\\"")
+			} else {
+				sb.WriteRune(c)
+			}
+		default:
+			q := strconv.QuoteRune(c) // This is returned with unneeded quotes
+			sb.WriteString(q[1 : len(q)-1])
+		}
+	}
+
+	sb.WriteRune(quote)
+	return sb.String()
+}
+
 // stringQuote returns a quoted jsonnet string ready for serialization.
-// useSingle specifies whether to use single quotes, otherwise double-quotes
-// will be used instead.
+// Appropriate measures are taken to avoid double-escaping any control characters.
+// `useSingle` specifies whether to use single quotes, otherwise double-quotes are used.
 // Note the following characters will be escaped (with leading backslash): "'\/bfnrt
 // Quotes (single or double) will only be escaped to avoid conflict with the enclosing quote type.
 func stringQuote(s string, useSingle bool) string {
-	quoted := strconv.Quote(s)
+	unquoted := unquote(s) // Avoid double-escaping control characters
 
-	if !useSingle {
-		return quoted
-	}
-
-	// Convert to single quotes
-	sb := strings.Builder{}
-	sb.WriteByte(singleQuote)
-	flipped := strings.Replace(quoted[1:len(quoted)-1], "'", "\\'", -1)
-	flipped = strings.Replace(flipped, "\\\"", "\"", -1) // TODO use Replacer
-	sb.WriteString(flipped)
-	sb.WriteByte(singleQuote)
-
-	return sb.String()
+	return quote(unquoted, useSingle)
 }
 
 // printer prints a node.
