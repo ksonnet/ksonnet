@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/blang/semver"
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -31,6 +32,9 @@ const (
 	// overrideVersion is the version of the override resource.
 	overrideVersion = "0.3.0"
 )
+
+// overrideSemVersion is a parsed semver.Version representing the current Override version.
+var overrideSemVersion = semver.MustParse(overrideVersion)
 
 // Override defines overrides to ksonnet project configurations.
 type Override = Override030
@@ -115,4 +119,22 @@ func removeOverride(fs afero.Fs, appRoot string) error {
 	}
 
 	return nil
+}
+
+// CheckOverrideUpgrade returns true if the specified override version should be upgraded.
+func CheckOverrideUpgrade(fs afero.Fs, root string) bool {
+	o, err := readOverrides(fs, root)
+	if err != nil {
+		return false
+	}
+	if o == nil {
+		return false
+	}
+
+	v, err := semver.Parse(o.APIVersion)
+	if err != nil {
+		return false
+	}
+
+	return v.LT(overrideSemVersion)
 }

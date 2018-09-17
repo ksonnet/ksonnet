@@ -216,6 +216,7 @@ func cleanEnv(fs afero.Fs, root string) error {
 	return nil
 }
 
+// FindRoot finds a ksonnet app.yaml in the current directory or its ancestors.
 func FindRoot(fs afero.Fs, cwd string) (string, error) {
 	prev := cwd
 

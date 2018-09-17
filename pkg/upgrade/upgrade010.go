@@ -296,6 +296,13 @@ func (u *upgrade010) CheckUpgrade() (bool, error) {
 		needUpgrade = true
 	}
 
+	// Check overrides
+	if app.CheckOverrideUpgrade(u.app.Fs(), u.app.Root()) {
+		logrus.Warn("Application override should be upgraded.")
+		needUpgrade = true
+
+	}
+
 	if needUpgrade {
 		logrus.Warnf("Your application must be upgraded to work with this version of ksonnet. Please run `ks upgrade` proceed.")
 	}

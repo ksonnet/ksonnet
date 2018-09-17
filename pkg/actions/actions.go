@@ -376,7 +376,7 @@ func (o *optionLoader) LoadApp() app.App {
 
 	a, err = app.Load(fs, httpClient, appRoot)
 	if err != nil {
-		o.err = errors.New("initializing app")
+		o.err = errors.Wrap(err, "initializing app")
 		return nil
 	}
 
