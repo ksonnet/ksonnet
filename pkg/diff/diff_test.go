@@ -335,6 +335,12 @@ metadata:
   namespace: a-before-d
 ---
 apiVersion: v1
+kind: Service
+metadata:
+  name: serviceA
+  namespace: default
+---
+apiVersion: v1
 kind: Pod
 metadata:
   generateName: podA
@@ -344,12 +350,6 @@ apiVersion: v1
 kind: Pod
 metadata:
   generateName: podZ
-  namespace: default
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: serviceA
   namespace: default
 ---
 apiVersion: apps/v1
