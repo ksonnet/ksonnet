@@ -367,7 +367,7 @@ func TestApp_RenameEnvironment(t *testing.T) {
 
 func TestApp_UpdateTargets(t *testing.T) {
 	withAppFs(t, "app010_app.yaml", func(app *baseApp) {
-		err := app.UpdateTargets("default", []string{"foo"})
+		err := app.UpdateTargets("default", []string{"foo"}, false)
 		require.NoError(t, err)
 
 		e, err := app.Environment("default")

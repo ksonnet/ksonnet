@@ -254,7 +254,7 @@ func Test_upgrade010_upgradeEnvTargets(t *testing.T) {
 		a.On("Environments").Return(func() app.EnvironmentConfigs {
 			return envs
 		}, nil)
-		a.On("UpdateTargets", mock.Anything, mock.Anything).Return(func(name string, targets []string) error {
+		a.On("UpdateTargets", mock.Anything, mock.Anything, mock.Anything).Return(func(name string, targets []string, isOverride bool) error {
 			tCopy := make([]string, len(targets))
 			copy(tCopy, targets)
 			e, ok := envs[name]
@@ -320,7 +320,7 @@ func Test_upgrade010_upgradeEnvTargets(t *testing.T) {
 			}
 
 			if !tt.expectUpdate {
-				a.AssertNotCalled(t, "UpdateTargets", mock.Anything, mock.Anything)
+				a.AssertNotCalled(t, "UpdateTargets", mock.Anything, mock.Anything, mock.Anything)
 				return
 			}
 

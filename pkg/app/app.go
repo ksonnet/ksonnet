@@ -87,7 +87,7 @@ type App interface {
 	// SetCurrentEnvironment sets the current environment.
 	SetCurrentEnvironment(name string) error
 	// UpdateTargets sets the targets for an environment.
-	UpdateTargets(envName string, targets []string) error
+	UpdateTargets(envName string, targets []string, isOverride bool) error
 	// UpdateLib adds, updates or removes a library reference.
 	// env is optional - if provided the reference is scoped under the environment,
 	// otherwise it is globally scoped.

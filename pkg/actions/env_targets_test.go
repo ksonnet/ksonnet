@@ -31,15 +31,49 @@ func TestEnvTargets(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		envName := "default"
 		modules := []string{"foo"}
+		isOverride := false
 
 		env := &app.EnvironmentConfig{}
 		appMock.On("Environment", "default").Return(env, nil)
-		appMock.On("UpdateTargets", envName, modules).Return(nil)
+		appMock.On("UpdateTargets", envName, modules, isOverride).Return(nil)
 
 		in := map[string]interface{}{
-			OptionApp:     appMock,
-			OptionEnvName: envName,
-			OptionModule:  modules,
+			OptionApp:      appMock,
+			OptionEnvName:  envName,
+			OptionModule:   modules,
+			OptionOverride: isOverride,
+		}
+
+		a, err := NewEnvTargets(in)
+		require.NoError(t, err)
+
+		ns := &cmocks.Module{}
+
+		cm := &cmocks.Manager{}
+		cm.On("Module", mock.Anything, "foo").Return(ns, nil)
+
+		a.cm = cm
+
+		err = a.Run()
+		require.NoError(t, err)
+	})
+}
+
+func TestEnvTargets_with_override(t *testing.T) {
+	withApp(t, func(appMock *amocks.App) {
+		envName := "default"
+		modules := []string{"foo"}
+		isOverride := true
+
+		env := &app.EnvironmentConfig{}
+		appMock.On("Environment", "default").Return(env, nil)
+		appMock.On("UpdateTargets", envName, modules, isOverride).Return(nil)
+
+		in := map[string]interface{}{
+			OptionApp:      appMock,
+			OptionEnvName:  envName,
+			OptionModule:   modules,
+			OptionOverride: isOverride,
 		}
 
 		a, err := NewEnvTargets(in)
@@ -61,15 +95,17 @@ func TestEnvTargets_invalid_module(t *testing.T) {
 	withApp(t, func(appMock *amocks.App) {
 		envName := "default"
 		modules := []string{"foo"}
+		isOverride := false
 
 		env := &app.EnvironmentConfig{}
 		appMock.On("Environment", "default").Return(env, nil)
-		appMock.On("UpdateTargets", envName, modules).Return(nil)
+		appMock.On("UpdateTargets", envName, modules, isOverride).Return(nil)
 
 		in := map[string]interface{}{
-			OptionApp:     appMock,
-			OptionEnvName: envName,
-			OptionModule:  modules,
+			OptionApp:      appMock,
+			OptionEnvName:  envName,
+			OptionModule:   modules,
+			OptionOverride: isOverride,
 		}
 
 		a, err := NewEnvTargets(in)

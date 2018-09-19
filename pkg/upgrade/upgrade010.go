@@ -198,7 +198,7 @@ type envListerUpdater interface {
 	// Environments returns all environments.
 	Environments() (app.EnvironmentConfigs, error)
 	// UpdateTargets sets the targets for an environment.
-	UpdateTargets(envName string, targets []string) error
+	UpdateTargets(envName string, targets []string, isOverride bool) error
 }
 
 // In ksonnet 0.12.0 (app version 0.2.0) - environment targets began using the dot (.) separator for modules.
@@ -239,7 +239,7 @@ func (*upgrade010) upgradeEnvTargets(listerUpdater envListerUpdater, dryRun bool
 	}
 
 	for name, upgraded := range targets {
-		if err := listerUpdater.UpdateTargets(name, upgraded); err != nil {
+		if err := listerUpdater.UpdateTargets(name, upgraded, false); err != nil {
 			return errors.Wrapf(err, "updating targets for environment: %s", name)
 		}
 	}
