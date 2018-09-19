@@ -23,7 +23,8 @@ import (
 )
 
 const (
-	vEnvTargetModules = "env-target-modules"
+	vEnvTargetModules  = "env-target-modules"
+	vEnvTargetOverride = "env-target-override-flag"
 )
 
 func newEnvTargetsCmd() *cobra.Command {
@@ -37,8 +38,9 @@ func newEnvTargetsCmd() *cobra.Command {
 			}
 
 			m := map[string]interface{}{
-				actions.OptionEnvName: args[0],
-				actions.OptionModule:  viper.GetStringSlice(vEnvTargetModules),
+				actions.OptionEnvName:  args[0],
+				actions.OptionModule:   viper.GetStringSlice(vEnvTargetModules),
+				actions.OptionOverride: viper.GetBool(vEnvTargetOverride),
 			}
 			addGlobalOptions(m)
 
@@ -48,6 +50,9 @@ func newEnvTargetsCmd() *cobra.Command {
 
 	envTargetsCmd.Flags().StringSlice(flagModule, nil, "Component modules to include")
 	viper.BindPFlag(vEnvTargetModules, envTargetsCmd.Flags().Lookup(flagModule))
+
+	envTargetsCmd.Flags().BoolP(flagOverride, shortOverride, false, "Set targets in environment as override")
+	viper.BindPFlag(vEnvTargetOverride, envTargetsCmd.Flags().Lookup(flagOverride))
 
 	return envTargetsCmd
 }

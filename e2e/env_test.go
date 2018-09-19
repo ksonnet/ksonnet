@@ -212,7 +212,7 @@ var _ = Describe("ks env", func() {
 					o := a.envAdd("default", true)
 					assertExitStatus(o, 0)
 
-					o = a.runKs("env", "set", "default", "--namespace", "new-name")
+					o = a.runKs("env", "set", "default", "--override", "--namespace", "new-name")
 					assertExitStatus(o, 0)
 
 					expected := []envListRow{
@@ -234,7 +234,7 @@ var _ = Describe("ks env", func() {
 					o := a.envAdd("default", true)
 					assertExitStatus(o, 0)
 
-					o = a.runKs("env", "set", "default", "--name", "new-name")
+					o = a.runKs("env", "set", "default", "--override", "--name", "new-name")
 					assertExitStatus(o, 0)
 
 					expected := []envListRow{

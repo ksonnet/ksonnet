@@ -28,9 +28,10 @@ func Test_envTargetsCmd(t *testing.T) {
 			args:   []string{"env", "targets", "prod", "--module", "app1"},
 			action: actionEnvTargets,
 			expected: map[string]interface{}{
-				actions.OptionApp:     nil,
-				actions.OptionEnvName: "prod",
-				actions.OptionModule:  []string{"app1"},
+				actions.OptionApp:      nil,
+				actions.OptionEnvName:  "prod",
+				actions.OptionModule:   []string{"app1"},
+				actions.OptionOverride: false,
 			},
 		},
 		{

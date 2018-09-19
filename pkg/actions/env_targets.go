@@ -32,10 +32,11 @@ func RunEnvTargets(m map[string]interface{}) error {
 
 // EnvTargets sets targets for an environment.
 type EnvTargets struct {
-	app     app.App
-	envName string
-	modules []string
-	cm      component.Manager
+	app        app.App
+	envName    string
+	modules    []string
+	cm         component.Manager
+	isOverride bool
 }
 
 // NewEnvTargets creates an instance of EnvTargets.
@@ -43,9 +44,10 @@ func NewEnvTargets(m map[string]interface{}) (*EnvTargets, error) {
 	ol := newOptionLoader(m)
 
 	et := &EnvTargets{
-		app:     ol.LoadApp(),
-		envName: ol.LoadString(OptionEnvName),
-		modules: ol.LoadStringSlice(OptionModule),
+		app:        ol.LoadApp(),
+		envName:    ol.LoadString(OptionEnvName),
+		modules:    ol.LoadStringSlice(OptionModule),
+		isOverride: ol.LoadOptionalBool(OptionOverride),
 
 		cm: component.DefaultManager,
 	}
@@ -71,5 +73,5 @@ func (et *EnvTargets) Run() error {
 		}
 	}
 
-	return et.app.UpdateTargets(et.envName, et.modules)
+	return et.app.UpdateTargets(et.envName, et.modules, et.isOverride)
 }

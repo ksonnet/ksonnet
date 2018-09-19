@@ -355,13 +355,13 @@ func (_m *App) UpdateRegistry(spec *app.RegistryConfig030) error {
 	return r0
 }
 
-// UpdateTargets provides a mock function with given fields: envName, targets
-func (_m *App) UpdateTargets(envName string, targets []string) error {
-	ret := _m.Called(envName, targets)
+// UpdateTargets provides a mock function with given fields: envName, targets, isOverride
+func (_m *App) UpdateTargets(envName string, targets []string, isOverride bool) error {
+	ret := _m.Called(envName, targets, isOverride)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, []string) error); ok {
-		r0 = rf(envName, targets)
+	if rf, ok := ret.Get(0).(func(string, []string, bool) error); ok {
+		r0 = rf(envName, targets, isOverride)
 	} else {
 		r0 = ret.Error(0)
 	}

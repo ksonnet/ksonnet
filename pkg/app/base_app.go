@@ -627,7 +627,7 @@ func (ba *baseApp) RenameEnvironment(from, to string, override bool) error {
 }
 
 // UpdateTargets updates the list of targets. Note this overrwrite any existing targets.
-func (ba *baseApp) UpdateTargets(envName string, targets []string) error {
+func (ba *baseApp) UpdateTargets(envName string, targets []string, isOverride bool) error {
 	spec, err := ba.Environment(envName)
 	if err != nil {
 		return err
@@ -635,7 +635,6 @@ func (ba *baseApp) UpdateTargets(envName string, targets []string) error {
 
 	spec.Targets = targets
 
-	isOverride := ba.IsEnvOverride(envName)
 	return errors.Wrap(ba.AddEnvironment(spec, "", isOverride), "update targets")
 }
 
