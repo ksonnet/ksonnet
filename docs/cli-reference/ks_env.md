@@ -46,8 +46,9 @@ ks env [flags]
 ### Options inherited from parent commands
 
 ```
-      --tls-skip-verify      Skip verification of TLS server certificates
-  -v, --verbose count[=-1]   Increase verbosity. May be given multiple times.
+      --dir string        Ksonnet application root to use; Defaults to CWD
+      --tls-skip-verify   Skip verification of TLS server certificates
+  -v, --verbose count     Increase verbosity. May be given multiple times.
 ```
 
 ### SEE ALSO
@@ -59,6 +60,6 @@ ks env [flags]
 * [ks env list](ks_env_list.md)	 - List all environments in a ksonnet application
 * [ks env rm](ks_env_rm.md)	 - Delete an environment from a ksonnet application
 * [ks env set](ks_env_set.md)	 - Set environment-specific fields (name, namespace, server)
-* [ks env targets](ks_env_targets.md)	 - Set module targets for an environment
+* [ks env targets](ks_env_targets.md)	 - Set target modules for an environment
 * [ks env update](ks_env_update.md)	 - Updates the libs for an environment
 

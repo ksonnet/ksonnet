@@ -33,8 +33,9 @@ ks component list
 ### Options inherited from parent commands
 
 ```
-      --tls-skip-verify      Skip verification of TLS server certificates
-  -v, --verbose count[=-1]   Increase verbosity. May be given multiple times.
+      --dir string        Ksonnet application root to use; Defaults to CWD
+      --tls-skip-verify   Skip verification of TLS server certificates
+  -v, --verbose count     Increase verbosity. May be given multiple times.
 ```
 
 ### SEE ALSO

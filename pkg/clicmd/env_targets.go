@@ -27,14 +27,34 @@ const (
 	vEnvTargetOverride = "env-target-override-flag"
 )
 
+var (
+	envTargetLong = `
+The ` + "`targets`" + ` command selects one or more modules to be applied by an
+environment. The default environment target is the root module, ` + "`/`" + `.
+
+Changing targets for an environment will require specifying all desired modules including the root module.
+`
+	envTargetExample = `
+# Create a new module
+ks module create db
+
+# Generate a component and specify the module
+ks generate redis-stateless redis --module db
+
+# Change the default environment target from / to db
+# The targets are tracked in app.yaml
+ks env targets default --module db`
+)
+
 func newEnvTargetsCmd() *cobra.Command {
 	envTargetsCmd := &cobra.Command{
-		Use:   "targets",
-		Short: "Set module targets for an environment",
-		Long:  `targets`,
+		Use:     "targets",
+		Short:   envShortDesc["targets"],
+		Long:    envTargetLong,
+		Example: envTargetExample,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
-				return errors.New("env targets <environment> <--module name>...")
+				return errors.New("'env targets' takes only one argument. Pass the environment name followed by the module flag with the target module")
 			}
 
 			m := map[string]interface{}{
