@@ -1,5 +1,36 @@
 # Change Log
 
+## [v0.13.0](https://github.com/ksonnet/ksonnet/tree/v0.13.0) (2018-09-20)
+[Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.12.0...v0.13.0)
+
+ksonnet 0.13 introduces the following changes:
+
+**Enhancements:**
+
+* Added `--without-modules` flag to list params set within the environment [\#817](https://github.com/ksonnet/ksonnet/pull/817)
+* Added `--tls-skip-verify` global flag to disable TLS verification  [\#831](https://github.com/ksonnet/ksonnet/pull/831)
+* Added reuse of installed packages in other scopes  [\#833](https://github.com/ksonnet/ksonnet/pull/833)
+* Added `ks pkg remove` [\#834](https://github.com/ksonnet/ksonnet/pull/834)
+* Added validation to check environment exists prior to installing package [\#835](https://github.com/ksonnet/ksonnet/pull/835)
+* Added garbage collection for vendored packages  [\#837](https://github.com/ksonnet/ksonnet/pull/837)
+* Helm client caches chart configuration to avoid multiple back-to-back downloads  [\#841](https://github.com/ksonnet/ksonnet/pull/841)
+* Changed `ks import` to use `/` by default [\#843](https://github.com/ksonnet/ksonnet/pull/843)
+* Upgraded cobra and pflag [\#845](https://github.com/ksonnet/ksonnet/pull/845)
+* Added `--dir` flag to allow running ksonnet from any path  [\#847](https://github.com/ksonnet/ksonnet/pull/847)
+* Added `--override` flag to `ks env set` [\#855](https://github.com/ksonnet/ksonnet/pull/855)
+* Qualified packages to allow identically named packages from different registries to be installed  [\#855](https://github.com/ksonnet/ksonnet/pull/855)
+* Dropped support for 0.0.1 apps [\#855](https://github.com/ksonnet/ksonnet/pull/855)
+* Added `--override` flag to `ks env targets` [\#865](https://github.com/ksonnet/ksonnet/pull/865)
+* Added sort for resources to handle semantic dependencies [\#867](https://github.com/ksonnet/ksonnet/pull/867)
+
+**Bug Fixes:**
+
+* Fixed `ks env current` to allow setting an environment only if it exists [\#818](https://github.com/ksonnet/ksonnet/pull/818)
+* Updated deployment example from `labels` to `withLabels`  [\#823](https://github.com/ksonnet/ksonnet/pull/823)
+* Fixed sourcePath for imported json on root module [\#844](https://github.com/ksonnet/ksonnet/pull/844)
+* Fixed failing Jsonnet version and pipeline e2e tests [\#852](https://github.com/ksonnet/ksonnet/pull/852)
+* Upgraded ksonnet-lib printer to avoid double-escaping param values [\#863](https://github.com/ksonnet/ksonnet/pull/863)
+
 ## [v0.12.0](https://github.com/ksonnet/ksonnet/tree/v0.12.0) (2018-8-2)
 [Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.11.0...v0.12.0)
 
