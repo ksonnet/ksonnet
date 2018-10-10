@@ -156,7 +156,7 @@ func (p *defaultObjectMerger) Merge(namespace string, obj *unstructured.Unstruct
 
 	patchBytes, patchedObject, err := patcher.patch(info.Object, modified, info.Source, info.Namespace, info.Name, os.Stderr)
 	if err != nil {
-		logrus.Debug("applying patch:\n%s\nto:\n%v\nfor:\n", patchBytes, info)
+		logrus.Debugf("applying patch:\n%s\nto:\n%v\nfor:\n", patchBytes, info)
 		return nil, errors.Wrap(err, "path object")
 	}
 

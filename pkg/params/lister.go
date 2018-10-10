@@ -253,7 +253,7 @@ func newEntryCreator() *entryCreator {
 func (ec *entryCreator) Create(id string, object *astext.Object) ([]Entry, error) {
 	var buf bytes.Buffer
 	if err := printer.Fprint(&buf, object); err != nil {
-		return nil, errors.Wrapf(err, "converting %q object to text")
+		return nil, errors.Wrapf(err, "converting %q object to text", id)
 	}
 
 	var entries []Entry

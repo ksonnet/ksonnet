@@ -183,7 +183,7 @@ func newDirective(src string) directive {
 
 	if len(parts) != 2 {
 		return func(*Prototype) error {
-			return errors.Errorf("%q is not a valid directive")
+			return errors.Errorf("%q is not a valid directive", src)
 		}
 	}
 
