@@ -1,32 +1,32 @@
 local env = std.extVar("__ksonnet/environments");
 local params = std.extVar("__ksonnet/params").components.deployment;
 {
-   "apiVersion": "apps/v1beta1",
-   "kind": "Deployment",
-   "metadata": {
-      "name": params.name
-   },
-   "spec": {
-      "replicas": params.replicas,
-      "template": {
-         "metadata": {
-            "labels": {
-               "app": params.name
-            }
-         },
-         "spec": {
-            "containers": [
-               {
-                  "image": params.image,
-                  "name": params.name,
-                  "ports": [
-                     {
-                        "containerPort": params.containerPort
-                     }
-                  ]
-               }
+  "apiVersion": "apps/v1beta1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": params.name
+  },
+  "spec": {
+    "replicas": params.replicas,
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": params.name
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "image": params.image,
+            "name": params.name,
+            "ports": [
+              {
+                "containerPort": params.containerPort
+              }
             ]
-         }
+          }
+        ]
       }
-   }
+    }
+  }
 }

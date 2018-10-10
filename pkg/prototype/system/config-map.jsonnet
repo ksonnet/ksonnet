@@ -5,10 +5,10 @@
 // @param name string Name to give the configMap.
 // @optionalParam data object {} Data for the configMap.
 {
-   "apiVersion": "v1",
-   "data": import 'param://data',
-   "kind": "ConfigMap",
-   "metadata": {
-    "name": import 'param://name'
-  }
+  apiVersion: 'v1',
+  data: import 'param://data',
+  kind: 'ConfigMap',
+  metadata: {
+    name: import 'param://name',
+  },
 }
