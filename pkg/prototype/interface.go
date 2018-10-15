@@ -26,7 +26,7 @@ var (
 	DefaultBuilder = JsonnetParse
 )
 
-// PrototypeBuilder builds a prototype from a source string.
+// Builder builds a prototype from a source string.
 type Builder func(source string) (*Prototype, error)
 
 // Unmarshal takes the bytes of a JSON-encoded prototype specification, and

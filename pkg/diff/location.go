@@ -57,7 +57,7 @@ func NewLocation(src string) *Location {
 		l.envName = parts[0]
 	case 2:
 		if !strings.InSlice(parts[0], diffDestinationNames) {
-			l.err = errors.Errorf("%q is not a valid destination name")
+			l.err = errors.Errorf("%q is not a valid destination name", parts[0])
 			break
 		}
 		l.destination = parts[0]

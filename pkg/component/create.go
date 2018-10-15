@@ -91,7 +91,7 @@ func (cc *componentCreator) Create(module, name, text string, params param.Param
 
 	log.Infof("Writing component at '%s'", componentPath)
 	if err := afero.WriteFile(cc.app.Fs(), componentPath, []byte(text), defaultFilePermissions); err != nil {
-		return "", errors.Wrapf(err, "write component %s")
+		return "", errors.Wrapf(err, "write component at %s", componentPath)
 	}
 
 	log.Debugf("Writing component parameters at '%s/%s", componentsRoot, name)

@@ -114,7 +114,7 @@ func (d *Delete) Delete() error {
 			return fmt.Errorf("Error deleting %s: %s", desc, err)
 		}
 
-		log.Debugf("Deleted object: ", obj)
+		log.Debugf("Deleted object: %v", obj)
 	}
 
 	return nil
