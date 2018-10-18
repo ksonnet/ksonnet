@@ -4,12 +4,12 @@
 // @shortDescription Namespace with labels automatically populated from the name
 // @param name string Name to give the namespace
 {
-   "apiVersion": "v1",
-   "kind": "Namespace",
-   "metadata": {
-      "labels": {
-         "name": import 'param://name'
-      },
-      "name": import 'param://name'
-   }
+  apiVersion: 'v1',
+  kind: 'Namespace',
+  metadata: {
+    labels: {
+      name: import 'param://name',
+    },
+    name: import 'param://name',
+  },
 }

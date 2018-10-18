@@ -81,7 +81,7 @@ func assertContents(name, path string) {
 	ExpectWithOffset(1, err).To(Not(HaveOccurred()))
 	got := string(b)
 
-	ExpectWithOffset(1, expected).To(Equal(got),
+	ExpectWithOffset(1, got).To(Equal(expected),
 		"expected output to be:\n%s\nit was:\n%s\n",
 		expected, got)
 }

@@ -7,32 +7,32 @@
 // @optionalParam replicas number 1 Number of replicas
 // @optionalParam containerPort number 80 Port to expose
 {
-   "apiVersion": "apps/v1beta1",
-   "kind": "Deployment",
-   "metadata": {
-      "name": import 'param://name'
-   },
-   "spec": {
-      "replicas": import 'param://replicas',
-      "template": {
-         "metadata": {
-            "labels": {
-               "app": import 'param://name'
-            }
-         },
-         "spec": {
-            "containers": [
-               {
-                  "image": import 'param://image',
-                  "name": import 'param://name',
-                  "ports": [
-                     {
-                        "containerPort": import 'param://containerPort'
-                     }
-                  ]
-               }
-            ]
-         }
-      }
-   }
+  apiVersion: 'apps/v1beta1',
+  kind: 'Deployment',
+  metadata: {
+    name: import 'param://name',
+  },
+  spec: {
+    replicas: import 'param://replicas',
+    template: {
+      metadata: {
+        labels: {
+          app: import 'param://name',
+        },
+      },
+      spec: {
+        containers: [
+          {
+            image: import 'param://image',
+            name: import 'param://name',
+            ports: [
+              {
+                containerPort: import 'param://containerPort',
+              },
+            ],
+          },
+        ],
+      },
+    },
+  },
 }

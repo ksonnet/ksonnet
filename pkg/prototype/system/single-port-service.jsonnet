@@ -14,20 +14,20 @@
 // @optionalParam protocol string TCP Protocol to use (either TCP or UDP)
 // @optionalParam serviceType string ClusterIP Type of service to expose
 {
-   "apiVersion": "v1",
-   "kind": "Service",
-   "metadata": {
-      "name": import 'param://name'
-   },
-   "spec": {
-      "ports": [
-         {
-            "protocol": import 'param://protocol',
-            "port": import 'param://servicePort',
-            "targetPort": import 'param://targetPort'
-         }
-      ],
-      "selector": import 'param://targetLabelSelector',
-      "type": import 'param://serviceType'
-   }
+  apiVersion: 'v1',
+  kind: 'Service',
+  metadata: {
+    name: import 'param://name',
+  },
+  spec: {
+    ports: [
+      {
+        protocol: import 'param://protocol',
+        port: import 'param://servicePort',
+        targetPort: import 'param://targetPort',
+      },
+    ],
+    selector: import 'param://targetLabelSelector',
+    type: import 'param://serviceType',
+  },
 }
