@@ -17,6 +17,7 @@ package clicmd
 
 import (
 	"github.com/ksonnet/ksonnet/pkg/actions"
+	"github.com/ksonnet/ksonnet/pkg/client"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -65,6 +66,7 @@ ks show dev -c redis -c nginx-server
 )
 
 func newShowCmd(fs afero.Fs) *cobra.Command {
+	showClientConfig := client.NewDefaultClientConfig()
 	showCmd := &cobra.Command{
 		Use:     "show <env> [-c <component-filename>]",
 		Short:   showShortDesc,
@@ -90,6 +92,7 @@ func newShowCmd(fs afero.Fs) *cobra.Command {
 		},
 	}
 	bindJsonnetFlags(showCmd, "show")
+	showClientConfig.BindClientGoFlags(showCmd)
 
 	showCmd.Flags().StringSliceP(flagComponent, shortComponent, nil, "Name of a specific component (multiple -c flags accepted, allows YAML, JSON, and Jsonnet)")
 	viper.BindPFlag(vShowComponent, showCmd.Flags().Lookup(flagComponent))
