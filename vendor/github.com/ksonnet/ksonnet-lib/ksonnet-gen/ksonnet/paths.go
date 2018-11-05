@@ -19,17 +19,23 @@ func parsePaths(apiSpec *spec.Swagger) (map[string]Component, error) {
 				continue
 			}
 
-			var body *spec.Parameter
+			var body spec.Parameter
+			var hasBody bool
 			for _, param := range verb.Parameters {
 				if param.Name == "body" {
-					body = &param
+					body = param // shallow copy
+					hasBody = true
+					break
 				}
 			}
 
-			if body == nil {
+			if !hasBody {
 				continue
 			}
 
+			if body.Schema == nil {
+				return nil, errors.Errorf("invalid body parameter - missing required field: schema")
+			}
 			ref := extractRef(*body.Schema)
 
 			component, exists, err := pathExtensionComponent(verb.Extensions)
