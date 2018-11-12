@@ -9,6 +9,8 @@ builds:
       - windows
     goarch:
       - amd64
+      - ppc64le
+      - s390x
 archive:
   wrap_in_directory: true
   format_overrides:
