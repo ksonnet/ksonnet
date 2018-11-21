@@ -1,5 +1,14 @@
 # Change Log
 
+## [v0.13.1](https://github.com/ksonnet/ksonnet/tree/v0.13.1) (2018-11-21)
+[Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.13.0...v0.13.1)
+
+ksonnet 0.13.1 introduces the following changes:
+
+**Bug Fixes:**
+
+* Fix panic during ksonnet-lib generate - when parameters exist after body parameter in cluster OpenAPI spec
+
 ## [v0.13.0](https://github.com/ksonnet/ksonnet/tree/v0.13.0) (2018-09-20)
 [Full Changelog](https://github.com/ksonnet/ksonnet/compare/v0.12.0...v0.13.0)
 
