@@ -53,7 +53,7 @@ func (t *Tgz) Unarchive(r io.Reader, handler FileHandler) error {
 		name := header.Name
 
 		switch header.Typeflag {
-		case 0:
+		case tar.TypeReg:
 			tf := &File{
 				Name:   name,
 				Reader: tarReader,
@@ -62,6 +62,8 @@ func (t *Tgz) Unarchive(r io.Reader, handler FileHandler) error {
 			if err = handler(tf); err != nil {
 				return err
 			}
+		default:
+			// noop
 		}
 	}
 	return nil
