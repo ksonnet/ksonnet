@@ -28,3 +28,6 @@ If your ksonnet is properly installed, you should be able to run `ks --help` and
 
 * **If your error is "command not found", make sure that Go binaries are included in your $PATH**.
   You can do this by running `PATH=$PATH:$GOPATH/bin`.
+
+* **You need to use go over 1.10 version**
+  Use `go version` to check it.
