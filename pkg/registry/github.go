@@ -332,7 +332,7 @@ func (gh *GitHub) chrootOnFile(onFile ResolveFile) ResolveFile {
 	return func(relPath string, contents []byte) error {
 		chrootedPath, err := gh.rebaseToRoot(relPath)
 		if err != nil {
-			return errors.Wrapf(err, "chrooting path %v relative to registry root %v", relPath, gh.URI)
+			return errors.Wrapf(err, "chrooting path %v relative to registry root %v", relPath, gh.URI())
 		}
 		return onFile(chrootedPath, contents)
 	}
@@ -348,7 +348,7 @@ func (gh *GitHub) chrootOnDir(onDir ResolveDirectory) ResolveDirectory {
 	return func(relPath string) error {
 		chrootedPath, err := gh.rebaseToRoot(relPath)
 		if err != nil {
-			return errors.Wrapf(err, "chrooting path %v relative to registry root %v", relPath, gh.URI)
+			return errors.Wrapf(err, "chrooting path %v relative to registry root %v", relPath, gh.URI())
 		}
 		return onDir(chrootedPath)
 	}
