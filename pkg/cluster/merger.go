@@ -63,14 +63,16 @@ type objectMerger interface {
 // will ensure that important cluster values aren't overwritten.
 type defaultObjectMerger struct {
 	factory cmdutil.Factory
+	dryRun  bool
 }
 
 var _ objectMerger = (*defaultObjectMerger)(nil)
 
 // newDefaultObjectMerger creates an instance of objectMerge.
-func newDefaultObjectMerger(factory cmdutil.Factory) *defaultObjectMerger {
+func newDefaultObjectMerger(factory cmdutil.Factory, dryRun bool) *defaultObjectMerger {
 	p := &defaultObjectMerger{
 		factory: factory,
+		dryRun:  dryRun,
 	}
 
 	return p
@@ -127,6 +129,10 @@ func (p *defaultObjectMerger) Merge(namespace string, obj *unstructured.Unstruct
 	modified, err := runtime.Encode(encoder, obj)
 	if err != nil {
 		return nil, errors.Wrap(err, "encode modified object")
+	}
+
+	if p.dryRun {
+		return obj, nil
 	}
 
 	helper := resource.NewHelper(info.Client, info.Mapping)
@@ -207,9 +213,15 @@ type patcher struct {
 	gracePeriod int
 
 	openapiSchema openapi.Resources
+
+	dryRun bool
 }
 
 func (p *patcher) patchSimple(obj runtime.Object, modified []byte, source, namespace, name string, errOut io.Writer) ([]byte, runtime.Object, error) {
+	if p.dryRun {
+		return modified, obj, nil
+	}
+
 	// Serialize the current configuration of the object from the server.
 	current, err := runtime.Encode(p.encoder, obj)
 	if err != nil {
@@ -293,6 +305,10 @@ func (p *patcher) patchSimple(obj runtime.Object, modified []byte, source, names
 }
 
 func (p *patcher) patch(current runtime.Object, modified []byte, source, namespace, name string, errOut io.Writer) ([]byte, runtime.Object, error) {
+	if p.dryRun {
+		return modified, current, nil
+	}
+
 	var getErr error
 	patchBytes, patchObject, err := p.patchSimple(current, modified, source, namespace, name, errOut)
 	for i := 1; i <= maxPatchRetry && kerrors.IsConflict(err); i++ {
@@ -312,6 +328,9 @@ func (p *patcher) patch(current runtime.Object, modified []byte, source, namespa
 }
 
 func (p *patcher) deleteAndCreate(original runtime.Object, modified []byte, namespace, name string) ([]byte, runtime.Object, error) {
+	if p.dryRun {
+		return modified, original, nil
+	}
 	err := p.delete(namespace, name)
 	if err != nil {
 		return modified, nil, err
@@ -344,6 +363,9 @@ func (p *patcher) deleteAndCreate(original runtime.Object, modified []byte, name
 }
 
 func (p *patcher) delete(namespace, name string) error {
+	if p.dryRun {
+		return nil
+	}
 	c, err := p.clientFunc(p.mapping)
 	if err != nil {
 		return err

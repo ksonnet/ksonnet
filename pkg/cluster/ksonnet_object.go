@@ -34,8 +34,8 @@ type defaultKsonnetObject struct {
 
 var _ ksonnetObject = (*defaultKsonnetObject)(nil)
 
-func newDefaultKsonnetObject(factory cmdutil.Factory) *defaultKsonnetObject {
-	merger := newDefaultObjectMerger(factory)
+func newDefaultKsonnetObject(factory cmdutil.Factory, dryRun bool) *defaultKsonnetObject {
+	merger := newDefaultObjectMerger(factory, dryRun)
 
 	return &defaultKsonnetObject{
 		objectMerger: merger,

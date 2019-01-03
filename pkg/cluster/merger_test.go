@@ -122,7 +122,7 @@ func Test_merger_merge(t *testing.T) {
 
 	tf.ClientConfigVal = &restclient.Config{}
 
-	om := newDefaultObjectMerger(tf)
+	om := newDefaultObjectMerger(tf, false)
 
 	obj := &unstructured.Unstructured{
 		Object: map[string]interface{}{
@@ -154,6 +154,102 @@ func Test_merger_merge(t *testing.T) {
 	require.NoError(t, err)
 
 	require.True(t, isPatched)
+}
+
+func Test_merger_merge_dryrun(t *testing.T) {
+	tf := cmdtesting.NewTestFactory()
+	defer tf.Cleanup()
+
+	codec := legacyscheme.Codecs.LegacyCodec(scheme.Versions...)
+
+	servicePath := "/namespaces/testing/services/service"
+
+	clusterService := &api.Service{
+		Spec: api.ServiceSpec{
+			Ports: []api.ServicePort{
+				{NodePort: 30000},
+			},
+		},
+	}
+
+	isPatched := false
+
+	tf.UnstructuredClient = &fake.RESTClient{
+		NegotiatedSerializer: unstructuredSerializer,
+		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
+			switch p, m := req.URL.Path, req.Method; {
+			case p == servicePath && m == "GET":
+				return &http.Response{StatusCode: 200, Header: defaultHeader(), Body: objBody(codec, clusterService)}, nil
+			case p == servicePath && m == "PATCH":
+				defer req.Body.Close()
+				_, err := convertToObject(req.Body)
+				require.NoError(t, err)
+
+				isPatched = true
+
+				return &http.Response{StatusCode: 200, Header: defaultHeader(), Body: objBody(codec, clusterService)}, nil
+			default:
+				t.Fatalf("unexpected request using unstructured client: %#v\n%#v", req.URL, req)
+				return nil, nil
+			}
+		}),
+	}
+
+	tf.Client = &fake.RESTClient{
+		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
+			switch p, m := req.URL.Path, req.Method; {
+			case p == "/openapi/v2" && m == "GET":
+				schemaPath := filepath.Join("testdata", "swagger.json")
+				f, err := os.Open(schemaPath)
+				require.NoError(t, err)
+
+				return &http.Response{StatusCode: 200, Body: f}, nil
+			default:
+				t.Fatalf("unexpected request using client: %#v\n%#v", req.URL, req)
+				return nil, errors.New("not found")
+			}
+		}),
+	}
+
+	tf.OpenAPISchemaFunc = func() (openapi.Resources, error) {
+		return nil, errors.New("not found")
+	}
+
+	tf.ClientConfigVal = &restclient.Config{}
+
+	om := newDefaultObjectMerger(tf, true)
+
+	obj := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "v1",
+			"kind":       "Service",
+			"metadata": map[string]interface{}{
+				"name": "service",
+				"labels": map[string]interface{}{
+					"foo": "bar",
+				},
+			},
+			"spec": map[string]interface{}{
+				"ports": []interface{}{
+					map[string]interface{}{
+						"protocol":   "TCP",
+						"targetPort": 8080,
+						"port":       80,
+					},
+				},
+				"selector": map[string]interface{}{
+					"app": "MyApp",
+				},
+				"type": "NodePort",
+			},
+		},
+	}
+
+	_, err := om.Merge("testing", obj)
+	require.NoError(t, err)
+
+	// Won't patch because of dry-run
+	require.False(t, isPatched)
 }
 
 type fakeObjectMerger struct {

@@ -53,6 +53,7 @@ func Test_defaultKsonnetObject_MergeFromCluster(t *testing.T) {
 		expected     *unstructured.Unstructured
 		objectMerger *fakeObjectMerger
 		isErr        bool
+		dryRun       bool
 	}{
 		{
 			name: "merge object",
@@ -78,6 +79,15 @@ func Test_defaultKsonnetObject_MergeFromCluster(t *testing.T) {
 			},
 			expected: sampleObj,
 		},
+		{
+			name: "dry run",
+			obj:  sampleObj,
+			objectMerger: &fakeObjectMerger{
+				mergeObj: sampleObj,
+			},
+			expected: sampleObj,
+			dryRun:   true,
+		},
 	}
 
 	for _, tc := range cases {
@@ -87,7 +97,7 @@ func Test_defaultKsonnetObject_MergeFromCluster(t *testing.T) {
 
 			co := Clients{}
 
-			ko := newDefaultKsonnetObject(factory)
+			ko := newDefaultKsonnetObject(factory, tc.dryRun)
 			ko.objectMerger = tc.objectMerger
 
 			merged, err := ko.MergeFromCluster(co, tc.obj)

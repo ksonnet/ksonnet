@@ -107,6 +107,7 @@ func (u *defaultUpserter) updateObject(rc ResourceClient, obj *unstructured.Unst
 	}
 
 	if u.DryRun {
+		log.Info("skipping patch (dry-run)")
 		return obj, nil
 	}
 
