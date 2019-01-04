@@ -92,7 +92,7 @@ func RunApply(config ApplyConfig, opts ...ApplyOpts) error {
 		objectInfo:            &objectInfo{},
 		ksonnetObjectFactory: func() ksonnetObject {
 			factory := cmdutil.NewFactory(config.ClientConfig.Config)
-			return newDefaultKsonnetObject(factory)
+			return newDefaultKsonnetObject(factory, config.DryRun)
 		},
 		conflictTimeout: 1 * time.Second,
 	}
