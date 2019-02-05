@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -127,11 +128,8 @@ type clusterSpecVersion struct {
 	httpClient *http.Client
 }
 
-func (cs *clusterSpecVersion) OpenAPI() ([]byte, error) {
-	if cs.httpClient == nil {
-		return nil, errors.New("nil httpClient")
-	}
-	versionURL := fmt.Sprintf(k8sVersionURLTemplate, cs.k8sVersion)
+func (cs *clusterSpecVersion) attemptToGetSchema(version string) ([]byte, error) {
+	versionURL := fmt.Sprintf(k8sVersionURLTemplate, version)
 	resp, err := cs.httpClient.Get(versionURL)
 	if err != nil {
 		return nil, err
@@ -139,12 +137,45 @@ func (cs *clusterSpecVersion) OpenAPI() ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf(
-			"Received status code '%d' when trying to retrieve OpenAPI schema for cluster version '%s' from URL '%s'",
-			resp.StatusCode, cs.k8sVersion, versionURL)
+		log.Warningf("received status code '%d' when attempting to retrieve OpenAPI schema for cluster "+
+			"version '%s' from URL '%s'", resp.StatusCode, version, versionURL)
+		return nil, nil
+	}
+	return ioutil.ReadAll(resp.Body)
+}
+
+func (cs *clusterSpecVersion) OpenAPI() ([]byte, error) {
+	if cs.httpClient == nil {
+		return nil, errors.New("nil httpClient")
 	}
 
-	return ioutil.ReadAll(resp.Body)
+	schema, err := cs.attemptToGetSchema(cs.k8sVersion)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if schema == nil {
+		// try again with a release version, e.g., for v1.11.7,
+		// the release version tag should be release-1.11
+		segments := strings.Split(strings.Replace(cs.k8sVersion, "v", "", 1), ".")
+		if len(segments) >= 2 {
+			releaseVersion := "release-" + strings.Join(segments[0:2], ".")
+			schema, err = cs.attemptToGetSchema(releaseVersion)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, fmt.Errorf("unrecognizable k8s version '%s'", cs.k8sVersion)
+		}
+		// TODO: handle other corner cases
+	}
+
+	if schema == nil {
+		return nil, fmt.Errorf("unable to fetch OpenAPI schema")
+	}
+
+	return schema, err
 }
 
 func (cs *clusterSpecVersion) Resource() string {
