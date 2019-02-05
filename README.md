@@ -1,5 +1,7 @@
 # ksonnet
 
+**The team behind ksonnet is stepping back from the project. As a result, work on ksonnet will end and the GitHub repositories will be archived. You can read more about our decision [here.](https://blogs.vmware.com/cloudnative/2019/02/05/welcoming-heptio-open-source-projects-to-vmware/)**
+
 [**Official Site**](https://ksonnet.io/)
 
 [![Build Status](https://travis-ci.org/ksonnet/ksonnet.svg?branch=master)](https://travis-ci.org/ksonnet/ksonnet)
