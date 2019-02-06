@@ -139,7 +139,7 @@ func evaluateMain(a app.App, envName, snippet, components, paramsStr string, opt
 	)
 
 	helmRenderer := helm.NewRenderer(a, envName)
-	vm.AddFunctions(helmRenderer.JsonnetNativeFunc())
+	vm.AddFunctions(helmRenderer.JsonnetNativeFunc()...)
 
 	// Re-vendor versioned packages, such that import paths will remain path-agnostic.
 	// TODO Where should packagemanager come from?

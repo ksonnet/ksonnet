@@ -68,47 +68,65 @@ func (r *Renderer) namespace() (string, error) {
 }
 
 // JsonnetNativeFunc is a jsonnet native function that renders helm charts.
-func (r *Renderer) JsonnetNativeFunc() *jsonnet.NativeFunction {
+func (r *Renderer) JsonnetNativeFunc() []*jsonnet.NativeFunction {
 	fn := func(input []interface{}) (interface{}, error) {
-		repoName, ok := input[0].(string)
-		if !ok {
-			return nil, errors.New("invalid repository name")
-		}
+		var componentNamespace string
+		switch len(input) {
+		case 6:
+			if ns, ok := input[5].(string); ok {
+				componentNamespace = ns
+			} else {
+				return nil, errors.New("invalid component namespace")
+			}
+			fallthrough
+		case 5:
+			repoName, ok := input[0].(string)
+			if !ok {
+				return nil, errors.New("invalid repository name")
+			}
 
-		chartName, ok := input[1].(string)
-		if !ok {
-			return nil, errors.New("invalid Helm chart name")
-		}
+			chartName, ok := input[1].(string)
+			if !ok {
+				return nil, errors.New("invalid Helm chart name")
+			}
 
-		chartVersion, ok := input[2].(string)
-		if !ok {
-			return nil, errors.New("invalid Helm chart version")
-		}
+			chartVersion, ok := input[2].(string)
+			if !ok {
+				return nil, errors.New("invalid Helm chart version")
+			}
 
-		values, ok := input[3].(map[string]interface{})
-		if !ok {
-			return nil, errors.New("invalid Helm chart values")
-		}
+			values, ok := input[3].(map[string]interface{})
+			if !ok {
+				return nil, errors.New("invalid Helm chart values")
+			}
 
-		componentName, ok := input[4].(string)
-		if !ok {
-			return nil, errors.New("invalid component name")
-		}
+			componentName, ok := input[4].(string)
+			if !ok {
+				return nil, errors.New("invalid component name")
+			}
 
-		return r.Render(repoName, chartName, chartVersion, componentName, values)
+			return r.Render(repoName, chartName, chartVersion, componentName, componentNamespace, values)
+		default:
+			return nil, errors.New("Invalid number of arguments")
+		}
 	}
 
-	nf := &jsonnet.NativeFunction{
-		Name:   "renderHelmChart",
-		Params: ast.Identifiers{"repository", "chart", "version", "params", "componentName"},
-		Func:   fn,
+	return []*jsonnet.NativeFunction{
+		&jsonnet.NativeFunction{
+			Name:   "renderHelmChart",
+			Params: ast.Identifiers{"repository", "chart", "version", "params", "componentName"},
+			Func:   fn,
+		},
+		&jsonnet.NativeFunction{
+			Name:   "renderHelmChartNS",
+			Params: ast.Identifiers{"repository", "chart", "version", "params", "componentName", "componentNamespace"},
+			Func:   fn,
+		},
 	}
-
-	return nf
 }
 
 // Render renders a Helm chart.
-func (r *Renderer) Render(repoName, chartName, chartVersion, componentName string, values map[string]interface{}) ([]interface{}, error) {
+func (r *Renderer) Render(repoName, chartName, chartVersion, componentName, componentNamespace string, values map[string]interface{}) ([]interface{}, error) {
 	logrus.WithFields(logrus.Fields{
 		"repoName":     repoName,
 		"chartName":    chartName,
@@ -140,7 +158,7 @@ func (r *Renderer) Render(repoName, chartName, chartVersion, componentName strin
 		return nil, err
 	}
 
-	rendered, err := r.renderWithHelm(componentName, string(b), chartPath)
+	rendered, err := r.renderWithHelm(componentName, componentNamespace, string(b), chartPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "rendering Helm chart")
 	}
@@ -175,7 +193,7 @@ func (r *Renderer) Render(repoName, chartName, chartVersion, componentName strin
 	return out, nil
 }
 
-func (r *Renderer) renderWithHelm(componentName, raw, chartPath string) (map[string]string, error) {
+func (r *Renderer) renderWithHelm(componentName, componentNamespace, raw, chartPath string) (map[string]string, error) {
 	config := &chart.Config{Raw: raw, Values: map[string]*chart.Value{}}
 
 	c, err := chartutil.LoadDir(chartPath)
@@ -201,7 +219,7 @@ func (r *Renderer) renderWithHelm(componentName, raw, chartPath string) (map[str
 		return nil, err
 	}
 
-	options, caps, err := r.extractChartComponents(componentName)
+	options, caps, err := r.extractChartComponents(componentName, componentNamespace)
 	if err != nil {
 		return nil, err
 	}
@@ -220,15 +238,18 @@ func (r *Renderer) renderWithHelm(componentName, raw, chartPath string) (map[str
 	return rendered, nil
 }
 
-func (r *Renderer) extractChartComponents(componentName string) (*chartutil.ReleaseOptions, *chartutil.Capabilities, error) {
-	clusterNS, err := r.namespace()
-	if err != nil {
-		return nil, nil, err
+func (r *Renderer) extractChartComponents(componentName, componentNamespace string) (*chartutil.ReleaseOptions, *chartutil.Capabilities, error) {
+	if componentNamespace == "" {
+		clusterNS, err := r.namespace()
+		if err != nil {
+			return nil, nil, err
+		}
+		componentNamespace = clusterNS
 	}
 
 	options := &chartutil.ReleaseOptions{
 		Name:      componentName,
-		Namespace: clusterNS,
+		Namespace: componentNamespace,
 	}
 
 	kubeVersion, err := r.k8sVersion()

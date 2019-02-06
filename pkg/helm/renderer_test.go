@@ -74,7 +74,7 @@ func TestRenderer_Render(t *testing.T) {
 
 				values := map[string]interface{}{}
 
-				got, err := r.Render("helm-stable", "redis", tc.version, "componentName", values)
+				got, err := r.Render("helm-stable", "redis", tc.version, "componentName", "", values)
 				if tc.isErr {
 					require.Error(t, err)
 					return
@@ -127,7 +127,7 @@ func TestRenderer_JsonnetNativeFunc(t *testing.T) {
 				r := NewRenderer(a, "default")
 
 				vm := jsonnet.NewVM()
-				vm.AddFunctions(r.JsonnetNativeFunc())
+				vm.AddFunctions(r.JsonnetNativeFunc()...)
 
 				_, err := vm.EvaluateSnippet("snippet", tc.snippet)
 				if tc.isErr {
