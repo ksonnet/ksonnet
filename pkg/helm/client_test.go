@@ -87,7 +87,7 @@ func Test_normalizeHelmURI(t *testing.T) {
 func TestRepository_Latest(t *testing.T) {
 	r := Repository{
 		Charts: map[string][]RepositoryChart{
-			"app-a": []RepositoryChart{
+			"app-a": {
 				{
 					Name:    "app-a",
 					Version: "0.2.0",

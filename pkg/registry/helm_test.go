@@ -120,13 +120,13 @@ func TestHelm_FetchRegistrySpec(t *testing.T) {
 		rc := &fakeHelmRepositoryClient{
 			entries: &helm.Repository{
 				Charts: map[string][]helm.RepositoryChart{
-					"app-a": []helm.RepositoryChart{
+					"app-a": {
 						{
 							Name:    "app-a",
 							Version: "0.1.0",
 						},
 					},
-					"app-b": []helm.RepositoryChart{
+					"app-b": {
 						{
 							Name:    "app-b",
 							Version: "0.1.0",

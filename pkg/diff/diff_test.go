@@ -258,7 +258,7 @@ func showYAML(out io.Writer, objects []*unstructured.Unstructured) error {
 
 func genObjects() []*unstructured.Unstructured {
 	return []*unstructured.Unstructured{
-		&unstructured.Unstructured{
+		{
 			Object: map[string]interface{}{
 				"apiVersion": "apps/v1",
 				"kind":       "Deployment",
@@ -271,7 +271,7 @@ func genObjects() []*unstructured.Unstructured {
 				},
 			},
 		},
-		&unstructured.Unstructured{
+		{
 			Object: map[string]interface{}{
 				"apiVersion": "v1",
 				"kind":       "Service",
@@ -281,7 +281,7 @@ func genObjects() []*unstructured.Unstructured {
 				},
 			},
 		},
-		&unstructured.Unstructured{
+		{
 			Object: map[string]interface{}{
 				"apiVersion": "apps/v1",
 				"kind":       "Deployment",
@@ -294,7 +294,7 @@ func genObjects() []*unstructured.Unstructured {
 				},
 			},
 		},
-		&unstructured.Unstructured{
+		{
 			Object: map[string]interface{}{
 				"apiVersion": "v1",
 				"kind":       "Pod",
@@ -304,7 +304,7 @@ func genObjects() []*unstructured.Unstructured {
 				},
 			},
 		},
-		&unstructured.Unstructured{
+		{
 			Object: map[string]interface{}{
 				"apiVersion": "v1",
 				"kind":       "Pod",
@@ -314,7 +314,7 @@ func genObjects() []*unstructured.Unstructured {
 				},
 			},
 		},
-		&unstructured.Unstructured{
+		{
 			Object: map[string]interface{}{
 				"apiVersion": "v1",
 				"kind":       "Pod",

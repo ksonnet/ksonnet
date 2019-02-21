@@ -34,7 +34,7 @@ k.core.v1.list.new([
   nginx.parts.serverBlockConfigMap(namespace, appName),
 ])
 ```
- 
+
 This example does not lend well to the ksonnet desired model where components
 are environment agnostic; meaning a component should not need information on
 which environment the resulting Kubernetes Objects will be deployed to. Yet,
@@ -61,7 +61,7 @@ reference a namespace, server URI, or other metadata.
 
 ## Non Goals
 
-* Access to a specific environment's metadata. 
+* Access to a specific environment's metadata.
   Example: There should not be access to an attribute like
   `env.prod.namespace`. The evaluation of `env.namespace` should happen on
   `apply`, `diff`, or other ks functionalities that operate on an environment.
@@ -123,7 +123,7 @@ k.core.v1.list.new([
 ```
 
 ksonnet would translate `import 'env://namespace'` prototype snippets to
-`env.namespace` during the `generate` command. 
+`env.namespace` during the `generate` command.
 
 Note: This proposal does not prevent users from writing such things as:
 
@@ -147,7 +147,7 @@ environment the user specified in the command.
 
 A version 2 of the existing system prototypes and prototypes in the
 [incubator registry](https://github.com/ksonnet/parts/tree/master/incubator)
-will need to be provided. 
+will need to be provided.
 
 These version 2 prototypes will remove any hard-coded namespace or other
 environment metadata values to use the proposal from the Fundamentals section

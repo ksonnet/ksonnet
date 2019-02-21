@@ -525,7 +525,7 @@ func TestGetAllComponentParams(t *testing.T) {
   },
 }`,
 			map[string]Params{
-				"bar": Params{"replicas": "5"},
+				"bar": {"replicas": "5"},
 			},
 		},
 		// Test getting the parameters where there are multiple components
@@ -544,8 +544,8 @@ func TestGetAllComponentParams(t *testing.T) {
   },
 }`,
 			map[string]Params{
-				"bar":     Params{"replicas": "5"},
-				"foo-bar": Params{"name": `"foo-bar"`, "replicas": "1"},
+				"bar":     {"replicas": "5"},
+				"foo-bar": {"name": `"foo-bar"`, "replicas": "1"},
 			},
 		},
 	}
@@ -831,7 +831,7 @@ params + {
   },
 }`,
 			map[string]Params{
-				"bar": Params{"name": `"bar"`, "replicas": "1"},
+				"bar": {"name": `"bar"`, "replicas": "1"},
 			},
 		},
 		// Test getting the parameters where there are multiple components
@@ -851,8 +851,8 @@ params + {
   },
 }`,
 			map[string]Params{
-				"bar": Params{"name": `"bar"`, "replicas": "1"},
-				"foo": Params{"name": `"foo"`, "replica-count": "5"},
+				"bar": {"name": `"bar"`, "replicas": "1"},
+				"foo": {"name": `"foo"`, "replica-count": "5"},
 			},
 		},
 	}

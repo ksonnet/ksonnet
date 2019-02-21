@@ -55,11 +55,11 @@ func Test_CacheDependency(t *testing.T) {
 		a.On("Registries").Return(registries, nil)
 
 		libs := []*app.LibraryConfig{
-			&app.LibraryConfig{
+			{
 				Name:     "apache",
 				Registry: "incubator",
 			},
-			&app.LibraryConfig{
+			{
 				Name:     "nginx",
 				Registry: "incubator",
 				Version:  "", // TODO inject custom registry resolver so we can test versioned packages too

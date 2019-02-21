@@ -14,5 +14,5 @@ This configuration will be used when present and not change the configuration pr
 
 ## Overriding registries
 
-Add an override registry with the following syntax: `ks registry add <registry-name> <registry-uri> --override`. This configuration will be added to the local configuration that will not be checked into Git by default. If you specify a registry that already exists, the local version will be preferred. 
+Add an override registry with the following syntax: `ks registry add <registry-name> <registry-uri> --override`. This configuration will be added to the local configuration that will not be checked into Git by default. If you specify a registry that already exists, the local version will be preferred.
 

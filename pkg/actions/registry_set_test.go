@@ -43,11 +43,11 @@ func mockLocator(name string, oldURI string, newURI string) locateFn {
 func mockSetter(name string, oldURI string, newURI string) registry.Setter {
 	i := 0
 	returnValues := []*app.RegistryConfig{
-		&app.RegistryConfig{
+		{
 			Name: name,
 			URI:  oldURI,
 		},
-		&app.RegistryConfig{
+		{
 			Name: name,
 			URI:  newURI,
 		},

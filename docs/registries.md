@@ -1,19 +1,19 @@
 # ksonnet Registries
 
-ksonnet registries allow for sharing of code used to build ksonnet components. Currently, ksonnet supports two types of registries: `github` and `fs`. 
+ksonnet registries allow for sharing of code used to build ksonnet components. Currently, ksonnet supports two types of registries: `github` and `fs`.
 
 ## GitHub Registries
 
-`github` registries are hosted on GitHub. 
+`github` registries are hosted on GitHub.
 
 ## Fs Registries
 
-`fs` registries are hosted on the local filesystem. They can be used when developing a registry. 
+`fs` registries are hosted on the local filesystem. They can be used when developing a registry.
 
 
 ## Creating a Registry
 
-Registries require a `registry.yaml` file. This file contains configuration for the registry and pointers to its components. 
+Registries require a `registry.yaml` file. This file contains configuration for the registry and pointers to its components.
 
 An example `registry.yaml`:
 

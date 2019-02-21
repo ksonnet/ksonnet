@@ -18,7 +18,7 @@ Suggested command usage is described below:
   * [`ks apply`](ks_apply.md)
 
 * Delete resources running on a cluster
-  * [`ks delete`](ks_delete.md)  
+  * [`ks delete`](ks_delete.md)
 
 ## Fancier components
 

@@ -279,32 +279,32 @@ func Test_upgrade010_upgradeEnvTargets(t *testing.T) {
 		{
 			name: "nothing to upgrade",
 			targets: map[string][]string{
-				"default": []string{"/", "module_a", "module_b"},
+				"default": {"/", "module_a", "module_b"},
 			},
 			expected: map[string][]string{
-				"default": []string{"/", "module_a", "module_b"},
+				"default": {"/", "module_a", "module_b"},
 			},
 			expectUpdate: false,
 		},
 		{
 			name: "need to upgrade",
 			targets: map[string][]string{
-				"default": []string{"/", "prefix/module_b", "prefix/module/module_b"},
-				"stage":   []string{"prefix/module_b", "/"},
+				"default": {"/", "prefix/module_b", "prefix/module/module_b"},
+				"stage":   {"prefix/module_b", "/"},
 			},
 			expected: map[string][]string{
-				"default": []string{"/", "prefix.module_b", "prefix.module.module_b"},
-				"stage":   []string{"prefix.module_b", "/"},
+				"default": {"/", "prefix.module_b", "prefix.module.module_b"},
+				"stage":   {"prefix.module_b", "/"},
 			},
 			expectUpdate: true,
 		},
 		{
 			name: "dry run",
 			targets: map[string][]string{
-				"default": []string{"/", "module/module_a", "prefix/module/module_b"},
+				"default": {"/", "module/module_a", "prefix/module/module_b"},
 			},
 			expected: map[string][]string{
-				"default": []string{"/", "module/module_a", "prefix/module/module_b"},
+				"default": {"/", "module/module_a", "prefix/module/module_b"},
 			},
 			dryRun:       true,
 			expectUpdate: false,

@@ -37,7 +37,7 @@ See the [releases page](https://github.com/ksonnet/ksonnet/releases) to download
 
 ### Build a docker image
 
-A docker image can be built and used similarly to our manual build [as seen here](/docs/docker-image-build.md) 
+A docker image can be built and used similarly to our manual build [as seen here](/docs/docker-image-build.md)
 
 ### Manually build and install
 

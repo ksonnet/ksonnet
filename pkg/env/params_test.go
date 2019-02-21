@@ -83,7 +83,7 @@ func TestGetParams(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := map[string]params.Params{
-			"component1": params.Params{
+			"component1": {
 				"foo": `"bar"`,
 			},
 		}
@@ -100,41 +100,41 @@ func TestMergeParamMaps(t *testing.T) {
 	}{
 		{
 			map[string]params.Params{
-				"bar": params.Params{"replicas": "5"},
+				"bar": {"replicas": "5"},
 			},
 			map[string]params.Params{
-				"foo": params.Params{"name": `"foo"`, "replicas": "1"},
+				"foo": {"name": `"foo"`, "replicas": "1"},
 			},
 			map[string]params.Params{
-				"bar": params.Params{"replicas": "5"},
-				"foo": params.Params{"name": `"foo"`, "replicas": "1"},
-			},
-		},
-		{
-			map[string]params.Params{
-				"bar": params.Params{"replicas": "5"},
-			},
-			map[string]params.Params{
-				"bar": params.Params{"name": `"foo"`},
-			},
-			map[string]params.Params{
-				"bar": params.Params{"name": `"foo"`, "replicas": "5"},
+				"bar": {"replicas": "5"},
+				"foo": {"name": `"foo"`, "replicas": "1"},
 			},
 		},
 		{
 			map[string]params.Params{
-				"bar": params.Params{"name": `"bar"`, "replicas": "5"},
-				"foo": params.Params{"name": `"foo"`, "replicas": "4"},
-				"baz": params.Params{"name": `"baz"`, "replicas": "3"},
+				"bar": {"replicas": "5"},
 			},
 			map[string]params.Params{
-				"foo": params.Params{"replicas": "1"},
-				"baz": params.Params{"name": `"foobaz"`},
+				"bar": {"name": `"foo"`},
 			},
 			map[string]params.Params{
-				"bar": params.Params{"name": `"bar"`, "replicas": "5"},
-				"foo": params.Params{"name": `"foo"`, "replicas": "1"},
-				"baz": params.Params{"name": `"foobaz"`, "replicas": "3"},
+				"bar": {"name": `"foo"`, "replicas": "5"},
+			},
+		},
+		{
+			map[string]params.Params{
+				"bar": {"name": `"bar"`, "replicas": "5"},
+				"foo": {"name": `"foo"`, "replicas": "4"},
+				"baz": {"name": `"baz"`, "replicas": "3"},
+			},
+			map[string]params.Params{
+				"foo": {"replicas": "1"},
+				"baz": {"name": `"foobaz"`},
+			},
+			map[string]params.Params{
+				"bar": {"name": `"bar"`, "replicas": "5"},
+				"foo": {"name": `"foo"`, "replicas": "1"},
+				"baz": {"name": `"foobaz"`, "replicas": "3"},
 			},
 		},
 	}

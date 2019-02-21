@@ -22,7 +22,7 @@ patterns:
    _prod_, _dev_, and _staging_).
 2. Configurations that are nearly identical, however have simple parameters
    that need to be tweaked across environments (_i.e._, _prod_ accessing a
-   different _mysql_ server than _dev_) 
+   different _mysql_ server than _dev_)
 3. Configurations that are similar, however, have large pieces of code that
    differ between environments and are not easily customizable by parameters.
 4. Configurations that are distinctively used in a single environment.

@@ -102,16 +102,16 @@ func TestPkgList(t *testing.T) {
 				switch {
 				case p.Name() == "lib1" && p.Version() == "0.0.1":
 					return []*app.EnvironmentConfig{
-						&app.EnvironmentConfig{
+						{
 							Name: "production",
 						},
-						&app.EnvironmentConfig{
+						{
 							Name: "default",
 						},
 					}
 				case p.Name() == "lib1" && p.Version() == "0.0.2":
 					return []*app.EnvironmentConfig{
-						&app.EnvironmentConfig{
+						{
 							Name: "stage",
 						},
 					}
@@ -192,8 +192,8 @@ func makePkg(name string) pkg.Package {
 }
 func TestPkgList_envListForPackage(t *testing.T) {
 	var pkgEnvs = map[string][]string{
-		"lib1": []string{"z", "y", "x"},
-		"lib2": []string{},
+		"lib1": {"z", "y", "x"},
+		"lib2": {},
 	}
 	pm := rmocks.PackageManager{}
 	pm.On("PackageEnvironments", mock.Anything).Return(

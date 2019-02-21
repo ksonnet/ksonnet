@@ -18,8 +18,8 @@ package schema
 var (
 	// TODO: might need something in ksonnet lib to look this up
 	groupMappings = map[string][]string{
-		"apiextensions.k8s.io":      []string{"apiextensions"},
-		"rbac.authorization.k8s.io": []string{"rbac"},
+		"apiextensions.k8s.io":      {"apiextensions"},
+		"rbac.authorization.k8s.io": {"rbac"},
 	}
 )
 

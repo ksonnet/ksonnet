@@ -65,7 +65,7 @@ var (
 			},
 
 			expected: map[string]Values{
-				crdPrefix + "mixin.metadata.labels": Values{
+				crdPrefix + "mixin.metadata.labels": {
 					Lookup: []string{"metadata", "labels"},
 					Setter: crdPrefix + "mixin.metadata.withLabels",
 					Value: map[interface{}]interface{}{
@@ -75,32 +75,32 @@ var (
 						"heritage": "Tiller",
 					},
 				},
-				crdPrefix + "mixin.metadata.name": Values{
+				crdPrefix + "mixin.metadata.name": {
 					Lookup: []string{"metadata", "name"},
 					Setter: crdPrefix + "mixin.metadata.withName",
 					Value:  "certificates.certmanager.k8s.io",
 				},
-				crdPrefix + "mixin.spec.group": Values{
+				crdPrefix + "mixin.spec.group": {
 					Lookup: []string{"spec", "group"},
 					Setter: crdPrefix + "mixin.spec.withGroup",
 					Value:  "certmanager.k8s.io",
 				},
-				crdPrefix + "mixin.spec.names.kind": Values{
+				crdPrefix + "mixin.spec.names.kind": {
 					Lookup: []string{"spec", "names", "kind"},
 					Setter: crdPrefix + "mixin.spec.names.withKind",
 					Value:  "Certificate",
 				},
-				crdPrefix + "mixin.spec.names.plural": Values{
+				crdPrefix + "mixin.spec.names.plural": {
 					Lookup: []string{"spec", "names", "plural"},
 					Setter: crdPrefix + "mixin.spec.names.withPlural",
 					Value:  "certificates",
 				},
-				crdPrefix + "mixin.spec.scope": Values{
+				crdPrefix + "mixin.spec.scope": {
 					Lookup: []string{"spec", "scope"},
 					Setter: crdPrefix + "mixin.spec.withScope",
 					Value:  "Namespaced",
 				},
-				crdPrefix + "mixin.spec.version": Values{
+				crdPrefix + "mixin.spec.version": {
 					Lookup: []string{"spec", "version"},
 					Setter: crdPrefix + "mixin.spec.withVersion",
 					Value:  "v1alpha1",
@@ -150,30 +150,30 @@ var (
 				Kind:      "deployment",
 			},
 			expected: map[string]Values{
-				"apps.v1beta2.deployment.mixin.spec.selector.matchLabels": Values{
+				"apps.v1beta2.deployment.mixin.spec.selector.matchLabels": {
 					Lookup: []string{"spec", "selector", "matchLabels"},
 					Setter: "apps.v1beta2.deployment.mixin.spec.selector.withMatchLabels",
 					Value:  map[interface{}]interface{}{"app": "nginx"}},
-				"apps.v1beta2.deployment.mixin.spec.template.metadata.labels": Values{
+				"apps.v1beta2.deployment.mixin.spec.template.metadata.labels": {
 					Lookup: []string{"spec", "template", "metadata", "labels"},
 					Setter: "apps.v1beta2.deployment.mixin.spec.template.metadata.withLabels",
 					Value:  map[interface{}]interface{}{"app": "nginx"}},
-				"apps.v1beta2.deployment.mixin.spec.template.spec.containers": Values{
+				"apps.v1beta2.deployment.mixin.spec.template.spec.containers": {
 					Lookup: []string{"spec", "template", "spec", "containers"},
 					Setter: "apps.v1beta2.deployment.mixin.spec.template.spec.withContainers",
 					Value: []interface{}{map[interface{}]interface{}{
 						"image": "nginx:1.7.9",
 						"ports": []interface{}{
 							map[interface{}]interface{}{"containerPort": 80}}, "name": "nginx"}}},
-				"apps.v1beta2.deployment.mixin.metadata.labels": Values{
+				"apps.v1beta2.deployment.mixin.metadata.labels": {
 					Lookup: []string{"metadata", "labels"},
 					Setter: "apps.v1beta2.deployment.mixin.metadata.withLabels",
 					Value:  map[interface{}]interface{}{"app": "nginx"}},
-				"apps.v1beta2.deployment.mixin.metadata.name": Values{
+				"apps.v1beta2.deployment.mixin.metadata.name": {
 					Lookup: []string{"metadata", "name"},
 					Setter: "apps.v1beta2.deployment.mixin.metadata.withName",
 					Value:  "nginx-deployment"},
-				"apps.v1beta2.deployment.mixin.spec.replicas": Values{
+				"apps.v1beta2.deployment.mixin.spec.replicas": {
 					Lookup: []string{"spec", "replicas"},
 					Setter: "apps.v1beta2.deployment.mixin.spec.withReplicas",
 					Value:  3}},
