@@ -24,6 +24,7 @@ var (
 		"list":     "List all registries known to the current ksonnet app",
 		"describe": "Describe a ksonnet registry and the packages it contains",
 		"add":      "Add a registry to the current ksonnet app",
+		"remove":   "Remove a registry from the current ksonnet app",
 		"set":      "Set configuration options for registry",
 	}
 	registryLong = `
@@ -53,6 +54,7 @@ func newRegistryCmd() *cobra.Command {
 	}
 
 	registryCmd.AddCommand(newRegistryAddCmd())
+	registryCmd.AddCommand(newRegistryRemoveCmd())
 	registryCmd.AddCommand(newRegistryDescribeCmd())
 	registryCmd.AddCommand(newRegistryListCmd())
 	registryCmd.AddCommand(newRegistrySetCmd())

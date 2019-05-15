@@ -42,6 +42,8 @@ var (
 	ErrRegistryNameInvalid = fmt.Errorf("Registry name is invalid")
 	// ErrRegistryExists is the error when trying to create a registry that already exists.
 	ErrRegistryExists = fmt.Errorf("Registry with name already exists")
+	// ErrRegistryNotExists is the error when trying to update a registry that doesn't exist.
+	ErrRegistryNotExists = fmt.Errorf("Registry with name doesn't exist")
 	// ErrEnvironmentNameInvalid is the error where an environment name is invalid.
 	ErrEnvironmentNameInvalid = fmt.Errorf("Environment name is invalid")
 	// ErrEnvironmentExists is the error when trying to create an environment that already exists.

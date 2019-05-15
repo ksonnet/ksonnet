@@ -56,6 +56,7 @@ const (
 	actionPrototypeSearch
 	actionPrototypeUse
 	actionRegistryAdd
+	actionRegistryRemove
 	actionRegistryDescribe
 	actionRegistryList
 	actionRegistrySet
@@ -100,6 +101,7 @@ var (
 		actionPrototypeSearch:   actions.RunPrototypeSearch,
 		actionPrototypeUse:      actions.RunPrototypeUse,
 		actionRegistryAdd:       actions.RunRegistryAdd,
+		actionRegistryRemove:    actions.RunRegistryRemove,
 		actionRegistryDescribe:  actions.RunRegistryDescribe,
 		actionRegistryList:      actions.RunRegistryList,
 		actionRegistrySet:       actions.RunRegistrySet,

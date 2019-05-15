@@ -56,6 +56,8 @@ type App interface {
 	AddEnvironment(spec *EnvironmentConfig, k8sSpecFlag string, isOverride bool) error
 	// AddRegistry adds a registry.
 	AddRegistry(spec *RegistryConfig, isOverride bool) error
+	// RemoveRegistry removes a registry.
+	RemoveRegistry(name string) error
 	// CurrentEnvironment returns the current environment name or an empty string.
 	CurrentEnvironment() string
 	// Environment finds an environment by name.

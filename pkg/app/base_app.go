@@ -212,6 +212,27 @@ func (ba *baseApp) AddRegistry(newReg *RegistryConfig, isOverride bool) error {
 	return ba.save()
 }
 
+func (ba *baseApp) RemoveRegistry(name string) error {
+	if name == "" {
+		return ErrRegistryNameInvalid
+	}
+
+	if err := ba.load(); err != nil {
+		return errors.Wrap(err, "load configuration")
+	}
+
+	var regMap = ba.config.Registries
+
+	_, exists := regMap[name]
+	if !exists {
+		return ErrRegistryNotExists
+	}
+
+	delete(regMap, name)
+
+	return ba.save()
+}
+
 // libKeyByDesc scans for a library in the referenced LibraryConfigs map.
 // Matching is by registry/name or name if registry is not provided.
 // Versions are ignored.
